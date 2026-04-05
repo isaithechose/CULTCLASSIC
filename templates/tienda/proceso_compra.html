@@ -1,0 +1,17 @@
+{% extends "tienda/index.html" %}
+
+<h2>Proceso de Compra</h2>
+<p>Total a pagar: ${{ total }}</p>
+<!-- Botón de PayPal -->
+<form action="{% url 'paypal_payment' %}" method="post">
+    {% csrf_token %}
+    <button type="submit">Pagar con PayPal</button>
+</form>
+<!-- Botón de Stripe -->
+<form action="{% url 'stripe_payment' %}" method="post">
+    {% csrf_token %}
+    <button type="submit">Pagar con Stripe</button>
+</form>
+<p>{{ mensaje }}</p>
+
+<h1 class="text-success">¡Compra exitosa!</h1>

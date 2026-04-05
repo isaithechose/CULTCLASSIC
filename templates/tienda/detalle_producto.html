@@ -1,0 +1,699 @@
+{% extends "tienda/base.html" %}
+{% load static %}
+
+{% block title %}{{ producto.nombre }} - Cult Calle{% endblock %}
+
+{% block content %}
+<style>
+    main {
+        background: #111113;
+    }
+
+    .product-detail-shell {
+        max-width: 1220px;
+        margin: 0 auto;
+        padding-inline: 1rem;
+        color: var(--cc-ink);
+    }
+
+    .product-detail-card {
+        border: 1px solid var(--cc-line);
+        border-radius: 2rem;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.015));
+        box-shadow: var(--cc-shadow);
+        overflow: hidden;
+        display: grid;
+        grid-template-columns: minmax(320px, 0.9fr) minmax(420px, 1fr);
+        align-items: start;
+        gap: clamp(1.5rem, 3vw, 2.75rem);
+        max-width: 1160px;
+        margin: 0 auto;
+        padding: clamp(1rem, 2vw, 2rem);
+    }
+
+    .product-detail-col {
+        min-width: 0;
+    }
+
+    .product-detail-col:last-child {
+        padding-top: 0.35rem;
+    }
+
+    .detail-content-pane {
+        width: 100%;
+        max-width: 34rem;
+    }
+
+    .product-gallery {
+        background:
+            radial-gradient(circle at top, rgba(214, 195, 161, 0.08), transparent 28%),
+            #141416;
+        padding: 1.25rem;
+        border-radius: 1.6rem;
+        border: 1px solid var(--cc-line);
+    }
+
+    #imagen-principal {
+        transition: transform 0.3s ease;
+        cursor: zoom-in;
+        width: 100%;
+        max-height: 820px;
+        object-fit: contain;
+        object-position: center center;
+        border-radius: 1.25rem;
+        background: #f1ede6;
+        padding: 0.75rem;
+    }
+
+    #imagen-principal:hover {
+        transform: scale(1.02);
+    }
+
+    .miniatura {
+        width: 58px;
+        height: 58px;
+        object-fit: cover;
+        border: 1px solid var(--cc-line);
+        border-radius: 0.45rem;
+        cursor: pointer;
+        background: rgba(255,255,255,0.05);
+    }
+
+    .miniatura:hover {
+        border-color: var(--cc-accent);
+    }
+
+    .color-circle {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        border: 1px solid rgba(0, 0, 0, 0.12);
+        cursor: pointer;
+        box-shadow: inset 0 0 0 1px rgba(255,255,255,0.18);
+        transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    }
+    .color-circle[data-color="negro"]      { background-color: #000; }
+    .color-circle[data-color="blanco"]      { background-color: #fff; border: 1px solid #000; }
+    .color-circle[data-color="black"]      { background-color: #000; }
+    .color-circle[data-color="white"]      { background-color: #fff; border: 1px solid #000; }
+    .color-circle[data-color="off_black"]  { background-color: #888; }
+    .color-circle[data-color="burgundy"]   { background-color: #721c24; }
+    .color-circle[data-color="offwhite"]   { background-color: #f8f8f8; }
+    .color-circle[data-color="latte"]      { background-color: #e3cfab; }
+    .color-circle[data-color="slate_blue"] { background-color: #6a7ba2; }
+    .color-circle[data-color="tan"]        { background-color: #d2b48c; }
+    .color-circle[data-color="brown"]      { background-color: #8b4513; }
+    .color-circle[data-color="cream"]      { background-color: #f5f5dc; }
+    .color-circle[data-color="grey"]       { background-color: #808080; }
+    .color-circle[data-color="darkgrey"]   { background-color: #4f4a50; }
+    .color-circle[data-color="shadow"]     { background-color: #5d5259; }
+    .color-circle[data-color="mocha"]      { background-color: #7b4a35; }
+    .color-circle[data-color="camo"]       {
+        background:
+            linear-gradient(135deg, #7b8b41 0%, #b8ba66 35%, #55622d 70%, #1f2918 100%);
+    }
+    .color-circle[data-color="coral"]      { background-color: coral; }
+
+    .color-circle:hover,
+    .color-circle.is-active {
+        transform: scale(1.08);
+        box-shadow: 0 0 0 2px var(--cc-accent);
+    }
+
+    .detail-kicker {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        align-items: flex-start;
+        gap: 1.2rem;
+        margin-bottom: 1.45rem;
+    }
+
+    .detail-kicker__weight {
+        font-family: "Teko", sans-serif;
+        font-size: clamp(3.6rem, 7vw, 5rem);
+        line-height: 0.78;
+        color: #cf0804;
+    }
+
+    .detail-kicker__stack {
+        display: flex;
+        flex-direction: column;
+        gap: 0.3rem;
+        min-width: 0;
+    }
+
+    .detail-kicker__line {
+        font-family: "Teko", sans-serif;
+        font-size: clamp(1.6rem, 2.4vw, 2.2rem);
+        line-height: 0.9;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--cc-ink);
+    }
+
+    .detail-title {
+        font-family: "Teko", sans-serif;
+        font-size: clamp(2.6rem, 4.2vw, 4.2rem);
+        line-height: 0.88;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+        margin: 0;
+        color: var(--cc-ink);
+    }
+
+    .detail-price-main {
+        font-size: clamp(2.1rem, 3vw, 2.8rem);
+        margin-bottom: 1.45rem;
+        font-weight: 500;
+        color: var(--cc-ink);
+        white-space: nowrap;
+        line-height: 1;
+    }
+
+    .detail-color-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.7rem;
+    }
+
+    .detail-thumbs {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, 58px);
+        gap: 0.7rem;
+    }
+
+    .detail-size-grid {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 92px));
+        gap: 0.7rem;
+        margin-bottom: 1.2rem;
+    }
+
+    .btn-talla {
+        padding: 1rem 0.75rem;
+        border-radius: 0;
+        border: 1px solid rgba(255,255,255,0.16);
+        background: transparent;
+        color: var(--cc-ink);
+        text-transform: uppercase;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+    }
+
+    .btn-talla:hover,
+    .btn-talla.active {
+        background: #111111;
+        color: #ffffff;
+        border-color: #111111;
+    }
+
+    .detail-description {
+        color: var(--cc-muted);
+        line-height: 1.8;
+        margin-bottom: 1.5rem;
+        max-width: 100%;
+    }
+
+    .detail-label-row {
+        display: flex;
+        align-items: center;
+        gap: 0.55rem;
+        margin-bottom: 0.9rem;
+        font-size: 1rem;
+    }
+
+    .detail-label-row strong {
+        color: var(--cc-ink);
+        letter-spacing: 0.08em;
+        font-size: 0.78rem;
+        text-transform: uppercase;
+    }
+
+    .detail-current-value {
+        color: var(--cc-muted);
+    }
+
+    .detail-utility-note {
+        margin: 1.5rem 0 1.2rem;
+        color: #7f7ad1;
+        font-size: 0.95rem;
+    }
+
+    .detail-secondary-actions {
+        display: flex;
+        gap: 0.8rem;
+        margin-bottom: 1rem;
+    }
+
+    .detail-secondary-actions .site-btn {
+        background: rgba(255,255,255,0.08);
+        border-color: rgba(255,255,255,0.08);
+        color: var(--cc-ink);
+        padding-inline: 1.2rem;
+    }
+
+    .detail-order-actions {
+        display: grid;
+        gap: 0.8rem;
+        margin-bottom: 1.75rem;
+    }
+
+    .detail-order-actions .site-btn {
+        width: 100%;
+        justify-content: center;
+        font-size: 0.96rem;
+    }
+
+    .detail-order-actions .site-btn--ghost {
+        background: #111111;
+        border-color: #111111;
+        color: #ffffff;
+    }
+
+    .detail-order-actions .site-btn--accent {
+        background: var(--cc-accent);
+        border-color: var(--cc-accent);
+        color: #111111;
+    }
+
+    .detail-order-actions .site-btn--accent:hover {
+        background: var(--cc-accent-strong);
+        border-color: var(--cc-accent-strong);
+        color: #111111;
+    }
+
+    .detail-meta-stack {
+        display: grid;
+        gap: 1.4rem;
+        max-width: 36rem;
+    }
+
+    .detail-choice-block {
+        display: grid;
+        gap: 0.2rem;
+    }
+
+    .detail-top-space {
+        padding-top: 0.75rem;
+    }
+
+    .detail-accordion {
+        margin-top: 0.75rem;
+    }
+
+    .detail-accordion .accordion-button {
+        color: var(--cc-ink);
+    }
+
+    .detail-accordion .accordion-button:not(.collapsed) {
+        color: var(--cc-ink);
+    }
+
+    .detail-accordion .accordion-button::after {
+        filter: invert(1);
+    }
+
+    .detail-accordion .accordion-item {
+        border-top: 1px solid var(--cc-line);
+    }
+
+    .detail-accordion .accordion-body {
+        color: var(--cc-muted);
+    }
+
+    .detail-info-compact {
+        display: grid;
+        gap: 1.25rem;
+        max-width: 30rem;
+    }
+
+    .detail-order-actions .site-btn--ghost:hover {
+        color: #ffffff;
+    }
+
+    .detail-secondary-actions .site-btn:hover {
+        color: #ffffff;
+    }
+
+    .detail-customizer {
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--cc-line);
+    }
+
+    .detail-customizer .accordion-button,
+    .detail-customizer .accordion-body {
+        color: var(--cc-muted);
+    }
+
+    .detail-customizer .accordion-button:not(.collapsed) {
+        color: var(--cc-ink);
+    }
+
+    .miniatura-diseño {
+        width: 74px;
+        height: 74px;
+        object-fit: contain;
+        border-radius: 1rem;
+        border: 1px solid var(--cc-line);
+        background: rgba(255,255,255,0.05);
+        padding: 0.35rem;
+        cursor: pointer;
+    }
+
+    @media (max-width: 639.98px) {
+        .detail-size-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .product-detail-card {
+            grid-template-columns: 1fr;
+            padding: 1rem;
+        }
+
+        .product-detail-col:last-child {
+            padding-left: 0;
+            padding-top: 0.75rem;
+        }
+
+        .detail-content-pane,
+        .detail-info-compact {
+            max-width: none;
+        }
+    }
+
+    @media (max-width: 479.98px) {
+        .detail-kicker {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<div class="container py-5">
+    <div class="product-detail-shell">
+    <div class="product-detail-card">
+        <!-- Galería de producto -->
+        <div class="product-detail-col position-relative">
+            <div class="product-gallery position-relative">
+                <div class="position-relative">
+                {% if producto.imagen %}
+                    <img id="imagen-principal" src="{{ producto.imagen.url }}" class="img-fluid mb-3" alt="{{ producto.nombre }}">
+                {% else %}
+                    <img id="imagen-principal" src="https://via.placeholder.com/450x300?text=Sin+imagen" class="img-fluid mb-3" alt="Sin imagen">
+                {% endif %}
+
+                <!-- Capa del diseño sobre la imagen -->
+                <!-- Capa del diseño sobre la imagen -->
+                <img id="diseño-overlay" src=""
+                     class="position-absolute"
+                     style="
+                        pointer-events: none;
+                        z-index: 6;
+                        max-height: 35%;
+                        top: 50%;
+                        left: 50%;
+                        transform: translate(-60%, -50%);
+                     ">
+                </div>
+
+            <div class="detail-thumbs mt-3">
+                {% for color in colores_disponibles %}
+                    <img src="/media/productos/{{ producto.slug_imagen }}_{{ color|lower }}_001.webp"
+                         class="miniatura"
+                         onclick="cambiarImagen(this)">
+                {% endfor %}
+            </div>
+        </div>
+        </div>
+
+        <!-- Información del producto -->
+        <div class="product-detail-col">
+            <div class="detail-content-pane">
+                <div class="detail-kicker">
+                    <div class="detail-kicker__weight">
+                        {% if producto.slug_imagen == "max_overweight_oversized" or producto.slug_imagen == "dropshoulder" %}
+                            7.5<br>OZ
+                        {% else %}
+                            9.0<br>OZ
+                        {% endif %}
+                    </div>
+                    <div class="detail-kicker__stack">
+                        {% if producto.slug_imagen != "max_overweight_oversized" %}
+                            <div class="detail-kicker__line">Garment Dye</div>
+                        {% endif %}
+                        <h2 class="detail-title">{{ producto.nombre }}</h2>
+                    </div>
+                </div>
+
+                <p class="detail-price-main">$ <span id="precio-total">{{ producto.precio }}</span></p>
+                <div style="display:none;">
+                    <span id="precio-base">{{ producto.precio }}</span>
+                    <span id="precio-extra">0</span>
+                </div>
+
+
+
+                <!-- Formulario -->
+                <form method="post" action="{% url 'tienda:agregar_al_carrito' producto.id %}">
+                  {% csrf_token %}
+                  <div class="detail-info-compact">
+                      <!-- COLOR -->
+                      <input type="hidden" name="color" id="colorInput">
+                      <div>
+                        <div class="detail-label-row">
+                          <strong>Color</strong>
+                          <span class="detail-current-value" id="colorLabel">Selecciona un color</span>
+                        </div>
+                        <div class="detail-color-grid">
+                          {% for color in colores_disponibles %}
+                            <div class="color-circle" data-color="{{ color|lower }}"></div>
+                          {% endfor %}
+                        </div>
+                      </div>
+
+                      <!-- TALLA -->
+                      <input type="hidden" name="talla" id="tallaInput">
+                      <div>
+                        <div class="detail-label-row">
+                          <strong>Talla</strong>
+                          <span class="detail-current-value" id="tallaLabel">Selecciona una talla</span>
+                        </div>
+                        <div class="detail-size-grid">
+                          {% for talla in tallas_disponibles %}
+                            <button type="button" class="btn btn-outline-dark btn-sm btn-talla" data-talla="{{ talla }}">{{ talla }}</button>
+                          {% endfor %}
+                        </div>
+                      </div>
+
+                      <div class="detail-secondary-actions">
+                          <button type="button" class="btn site-btn site-btn--ghost">Size Guide</button>
+                      </div>
+
+                      <div class="detail-order-actions">
+                          <button type="button" class="btn site-btn site-btn--ghost">Order Multiple</button>
+                          <button type="submit" class="btn site-btn site-btn--accent">Order Boxes</button>
+                      </div>
+                  </div>
+
+                  <!-- DISEÑOS -->
+                  <input type="hidden" name="diseño_pecho" id="diseñoPechoInput">
+                  <input type="hidden" name="diseño_espalda" id="diseñoEspaldaInput">
+
+                  <div class="accordion detail-customizer" id="accordionDiseños">
+                    <!-- Pecho -->
+                    <div class="accordion-item">
+                      <h2 class="accordion-header" id="headingPecho">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapsePecho">
+                          Diseño para Pecho
+                        </button>
+                      </h2>
+                      <div id="collapsePecho" class="accordion-collapse collapse" data-bs-parent="#accordionDiseños">
+                        <div class="accordion-body">
+                          {% for diseño in diseños_anime %}
+                            {% get_media_prefix as MEDIA_URL %}
+                            <div class="d-flex align-items-center mb-2 gap-3">
+                              <img src="{{ MEDIA_URL }}diseños_nuevos/{{ diseño|urlencode }}" style="width: 70px; height: 70px; object-fit: contain; border: 1px solid #ccc;">
+                              <div>
+                                <small>{{ diseño }}</small><br>
+                                <button type="button" onclick="seleccionarDiseñoLista('{{ diseño }}', 'pecho')" class="btn btn-sm btn-dark">Usar</button>
+                              </div>
+                            </div>
+                          {% empty %}
+                            <p>No hay diseños disponibles.</p>
+                          {% endfor %}
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Espalda -->
+                    <div class="accordion-item">
+                      <h2 class="accordion-header" id="headingEspalda">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseEspalda">
+                          Diseño para Espalda
+                        </button>
+                      </h2>
+                      <div id="collapseEspalda" class="accordion-collapse collapse" data-bs-parent="#accordionDiseños">
+                        <div class="accordion-body">
+                          {% for diseño in diseños_anime %}
+                            {% get_media_prefix as MEDIA_URL %}
+                            <div class="d-flex align-items-center mb-2 gap-3">
+                              <img src="{{ MEDIA_URL }}diseños_nuevos/{{ diseño|urlencode }}" style="width: 70px; height: 70px; object-fit: contain; border: 1px solid #ccc;">
+                              <div>
+                                <small>{{ diseño }}</small><br>
+                                <button type="button" onclick="seleccionarDiseñoLista('{{ diseño }}', 'espalda')" class="btn btn-sm btn-secondary">Usar</button>
+                              </div>
+                            </div>
+                          {% empty %}
+                            <p>No hay diseños disponibles.</p>
+                          {% endfor %}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Diseño Personalizado -->
+                  <div class="mb-3">
+                    <div class="detail-label-row">
+                        <strong>Diseño personalizado</strong>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2 mt-2">
+                      {% for diseño in diseños_personalizados %}
+                        <img src="{{ MEDIA_URL }}diseños_propios/{{ diseño|urlencode }}"
+                             class="miniatura-diseño"
+                             onclick="seleccionarDiseño(this)"
+                             alt="{{ diseño }}">
+                      {% empty %}
+                        <p class="text-muted">No hay diseños disponibles.</p>
+                      {% endfor %}
+                    </div>
+                  </div>
+
+                </form>
+
+
+                <!-- Acordeón -->
+                <div class="accordion detail-accordion" id="accordionInfo">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#descripcion">
+                                Product Description
+                            </button>
+                        </h2>
+                        <div id="descripcion" class="accordion-collapse collapse">
+                            <div class="accordion-body">
+                                {{ producto.descripcion }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+</div>
+<!-- Galería de producto con diseño overlay -->
+
+<!-- Scripts -->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const colorMap = {
+    'negro': 'black',
+    'blanco': 'white',
+    'griss': 'gray',
+    'guinda': 'burgundy',
+    'azul': 'blue',
+    'offwhite': 'offwhite',
+    'off_black': 'off_black',
+    'latte': 'latte',
+    'slate_blue': 'slate_blue',
+    'darkgrey': 'darkgrey',
+    'shadow': 'shadow',
+    'mocha': 'mocha',
+    'camo': 'camo'
+  };
+
+  const precioBase = parseFloat("{{ producto.precio }}");
+  const PRECIO_DISENO = 200; // Precio fijo por diseño
+  let precioPecho = 0;
+  let precioEspalda = 0;
+
+  function actualizarPrecio() {
+    const precioExtra = precioPecho + precioEspalda;
+    document.getElementById("precio-extra").textContent = precioExtra.toFixed(2);
+    document.getElementById("precio-total").textContent = (precioBase + precioExtra).toFixed(2);
+  }
+
+  // Cambiar imagen principal con miniaturas
+  document.querySelectorAll('.miniatura').forEach(img => {
+    img.addEventListener('click', () => {
+      document.getElementById("imagen-principal").src = img.src;
+    });
+  });
+
+  // Cambiar color
+  document.querySelectorAll('.color-circle').forEach(circle => {
+    circle.addEventListener('click', () => {
+      const colorEsp = circle.dataset.color;
+      const colorEng = colorMap[colorEsp] || colorEsp;
+      const nombreBase = "{{ producto.slug_imagen }}";
+      const nuevaUrl = `/media/productos/${nombreBase}_${colorEng}_001.webp`;
+      document.getElementById("imagen-principal").src = nuevaUrl;
+      document.getElementById("colorInput").value = colorEsp;
+      document.getElementById("colorLabel").textContent = colorEsp;
+
+      document.querySelectorAll('.color-circle').forEach(c => c.classList.remove("is-active"));
+      circle.classList.add("is-active");
+    });
+  });
+
+  // Cambiar talla
+  document.querySelectorAll('.btn-talla').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const talla = btn.dataset.talla;
+      document.getElementById("tallaInput").value = talla;
+      document.getElementById("tallaLabel").textContent = talla;
+      document.querySelectorAll('.btn-talla').forEach(b => b.classList.remove("active", "btn-dark"));
+      btn.classList.add("active", "btn-dark");
+    });
+  });
+
+  // Seleccionar diseño anime (pecho o espalda)
+  window.seleccionarDiseñoLista = function(nombre, parte) {
+    const ruta = `/media/diseños_nuevos/${nombre}`;
+
+    if (parte === 'pecho') {
+      document.getElementById('diseñoPechoInput').value = nombre;
+      document.getElementById('diseño-overlay').src = ruta;
+      precioPecho = PRECIO_DISENO;
+
+      const collapse = bootstrap.Collapse.getOrCreateInstance(document.getElementById('collapsePecho'));
+      collapse.hide();
+    } else {
+      document.getElementById('diseñoEspaldaInput').value = nombre;
+      precioEspalda = PRECIO_DISENO;
+
+      const collapse = bootstrap.Collapse.getOrCreateInstance(document.getElementById('collapseEspalda'));
+      collapse.hide();
+    }
+
+    actualizarPrecio();
+  };
+
+  // Seleccionar diseño personalizado para PECHO
+  window.seleccionarDiseño = function(img) {
+    const nombre = img.src.split('/').pop();
+    document.getElementById('diseñoPechoInput').value = nombre;
+    document.getElementById('diseño-overlay').src = img.src;
+
+    precioPecho = PRECIO_DISENO;
+    actualizarPrecio();
+
+    document.querySelectorAll('.miniatura-diseño').forEach(i => i.style.outline = "none");
+    img.style.outline = "3px solid black";
+  };
+});
+</script>
+
+
+
+{% endblock %}

@@ -1,0 +1,10 @@
+{% extends "tienda/base.html" %}
+{% block title %}Pago cancelado - Cult Calle{% endblock %}
+
+{% block content %}
+<div class="container py-5 text-center">
+  <h1>Pago cancelado</h1>
+  <p>Lo sentimos, tu pago no se completó.</p>
+  <a href="{% url 'tienda:carrito' %}" class="btn btn-dark">Regresar al carrito</a>
+</div>
+{% endblock %}

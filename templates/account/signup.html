@@ -1,0 +1,162 @@
+{% extends "tienda/base.html" %}
+{% load socialaccount %}
+
+{% block title %}Cult Clasiccs | Registro{% endblock %}
+
+{% block hero %}
+<section class="page-hero page-hero--compact">
+    <div class="container px-4 px-lg-5">
+        <div class="page-hero__inner">
+            <p class="page-eyebrow">Create account</p>
+            <h1 class="page-hero__title">Crea tu cuenta en segundos.</h1>
+            <p class="page-hero__copy">
+                Regístrate para guardar tu carrito, seguir pedidos y entrar al checkout con una experiencia mucho más fluida.
+            </p>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block content %}
+<section class="auth-page">
+    <div class="container px-4 px-lg-5">
+        <div class="auth-shell">
+            <div class="auth-panel auth-panel--form">
+                <p class="auth-panel__eyebrow">Signup</p>
+                <h2 class="auth-panel__title">Crear cuenta</h2>
+
+                <form method="post" action="{% url 'account_signup' %}" class="auth-form">
+                    {% csrf_token %}
+                    {% if redirect_field_value %}
+                        <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}">
+                    {% endif %}
+
+                    {% if form.non_field_errors %}
+                        <div class="auth-form__alert">
+                            {% for error in form.non_field_errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    <div class="auth-form__group">
+                        <label for="id_email">Correo electrónico</label>
+                        <input
+                            class="auth-input"
+                            type="email"
+                            name="email"
+                            id="id_email"
+                            autocomplete="email"
+                            placeholder="nombre@correo.com"
+                            value="{{ form.email.value|default_if_none:'' }}"
+                            required
+                        >
+                        {% if form.email.errors %}
+                            <div class="auth-form__error">
+                                {% for error in form.email.errors %}
+                                    <span>{{ error }}</span>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    {% if form.email2 %}
+                        <div class="auth-form__group">
+                            <label for="id_email2">Confirmar correo electrónico</label>
+                            <input
+                                class="auth-input"
+                                type="email"
+                                name="email2"
+                                id="id_email2"
+                                autocomplete="email"
+                                placeholder="Confirma tu correo"
+                                value="{{ form.email2.value|default_if_none:'' }}"
+                                required
+                            >
+                            {% if form.email2.errors %}
+                                <div class="auth-form__error">
+                                    {% for error in form.email2.errors %}
+                                        <span>{{ error }}</span>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+
+                    {% if form.password1 %}
+                        <div class="auth-form__group">
+                            <label for="id_password1">Contraseña</label>
+                            <input
+                                class="auth-input"
+                                type="password"
+                                name="password1"
+                                id="id_password1"
+                                autocomplete="new-password"
+                                placeholder="Crea una contraseña"
+                                required
+                            >
+                            {% if form.password1.errors %}
+                                <div class="auth-form__error">
+                                    {% for error in form.password1.errors %}
+                                        <span>{{ error }}</span>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            {% if form.password1.help_text %}
+                                <small class="auth-form__help">{{ form.password1.help_text|safe }}</small>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+
+                    {% if form.password2 %}
+                        <div class="auth-form__group">
+                            <label for="id_password2">Confirmar contraseña</label>
+                            <input
+                                class="auth-input"
+                                type="password"
+                                name="password2"
+                                id="id_password2"
+                                autocomplete="new-password"
+                                placeholder="Repite tu contraseña"
+                                required
+                            >
+                            {% if form.password2.errors %}
+                                <div class="auth-form__error">
+                                    {% for error in form.password2.errors %}
+                                        <span>{{ error }}</span>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+
+                    <button type="submit" class="btn site-btn site-btn--accent auth-form__submit">Registrarme</button>
+                </form>
+
+                <div class="auth-divider"><span>o regístrate con</span></div>
+
+                <div class="auth-socials">
+                    <a class="btn site-btn site-btn--accent auth-social auth-social--google" href="{% provider_login_url 'google' process='login' %}">
+                        Continuar con Google
+                    </a>
+                    <a class="btn site-btn site-btn--accent auth-social auth-social--facebook" href="{% provider_login_url 'facebook' process='login' %}">
+                        Continuar con Facebook
+                    </a>
+                </div>
+            </div>
+
+            <div class="auth-panel auth-panel--aside">
+                <p class="auth-panel__eyebrow">Members</p>
+                <h2 class="auth-panel__title">Tu cuenta conecta carrito, compras y seguimiento.</h2>
+                <p class="auth-panel__text">
+                    Mantén tus piezas guardadas, simplifica el checkout y administra tus pedidos desde un solo lugar.
+                </p>
+                <p class="auth-panel__text">
+                    Si ya tienes una cuenta, entra directamente y sigue tu compra sin perder el ritmo.
+                </p>
+                <a class="btn site-btn site-btn--ghost" href="{% url 'account_login' %}">Ya tengo cuenta</a>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

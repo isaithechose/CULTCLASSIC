@@ -1,0 +1,26 @@
+{% extends "tienda/index.html" %}
+{% block content %}
+<section class="py-5">
+    <div class="container">
+        <h2>Seguimiento del Pedido #{{ order.id }}</h2>
+        <p><strong>Estado actual:</strong> {{ order.status }}</p>
+
+        {% if updates %}
+            <h4>Historial de Actualizaciones:</h4>
+            <ul>
+                {% for update in updates %}
+                    <li>
+                        <strong>{{ update.updated_at|date:"SHORT_DATETIME_FORMAT" }}:</strong>
+                        {{ update.status_message }}
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p>Aún no hay actualizaciones de envío.</p>
+        {% endif %}
+
+        <!-- Botón para "seguir" el pedido (redirecciona a esta vista de seguimiento) -->
+        <a href="{% url 'tienda:order_tracking' order.id %}" class="btn btn-primary">Seguir Pedido</a>
+    </div>
+</section>
+{% endblock %}

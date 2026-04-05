@@ -1,0 +1,126 @@
+{% extends "tienda/base.html" %}
+{% load socialaccount %}
+
+{% block title %}Cult Clasiccs | Iniciar sesión{% endblock %}
+
+{% block hero %}
+<section class="page-hero page-hero--compact">
+    <div class="container px-4 px-lg-5">
+        <div class="page-hero__inner">
+            <p class="page-eyebrow">Access</p>
+            <h1 class="page-hero__title">Entra a tu cuenta.</h1>
+            <p class="page-hero__copy">
+                Usa tu correo o continúa con Google y Facebook para entrar más rápido al archivo, carrito y seguimiento de pedidos.
+            </p>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block content %}
+<section class="auth-page">
+    <div class="container px-4 px-lg-5">
+        <div class="auth-shell">
+            <div class="auth-panel auth-panel--form">
+                <p class="auth-panel__eyebrow">Login</p>
+                <h2 class="auth-panel__title">Iniciar sesión</h2>
+
+                <form method="post" action="{% url 'account_login' %}" class="auth-form">
+                    {% csrf_token %}
+                    {% if redirect_field_value %}
+                        <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}">
+                    {% endif %}
+
+                    {% if form.non_field_errors %}
+                        <div class="auth-form__alert">
+                            {% for error in form.non_field_errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    <div class="auth-form__group">
+                        <label for="id_login">Correo electrónico:</label>
+                        <input
+                            class="auth-input"
+                            type="email"
+                            name="login"
+                            id="id_login"
+                            autocomplete="email"
+                            placeholder="nombre@correo.com"
+                            value="{{ form.login.value|default_if_none:'' }}"
+                            required
+                        >
+                        <small class="auth-form__subline">Usa el correo con el que creaste tu cuenta.</small>
+                        {% if form.login.errors %}
+                            <div class="auth-form__error">
+                                {% for error in form.login.errors %}
+                                    <span>{{ error }}</span>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="auth-form__group">
+                        <label for="id_password">Contraseña:</label>
+                        <input
+                            class="auth-input"
+                            type="password"
+                            name="password"
+                            id="id_password"
+                            autocomplete="current-password"
+                            placeholder="Tu contraseña"
+                            required
+                        >
+                        <div class="auth-form__subline-row">
+                            <small class="auth-form__subline">Mantén tu acceso seguro con una contraseña fuerte.</small>
+                            <a href="{% url 'account_reset_password' %}" class="auth-form__helper">¿Olvidaste tu contraseña?</a>
+                        </div>
+                        {% if form.password.errors %}
+                            <div class="auth-form__error">
+                                {% for error in form.password.errors %}
+                                    <span>{{ error }}</span>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    {% if form.remember %}
+                        <div class="auth-form__check">
+                            <label for="id_remember">
+                                <input type="checkbox" name="remember" id="id_remember">
+                                <span>Recordarme</span>
+                            </label>
+                        </div>
+                    {% endif %}
+
+                    <button type="submit" class="btn site-btn site-btn--accent auth-form__submit">Entrar</button>
+                </form>
+
+                <div class="auth-divider"><span>o continúa con</span></div>
+
+                <div class="auth-socials">
+                    <a class="btn site-btn site-btn--accent auth-social auth-social--google" href="{% provider_login_url 'google' process='login' %}">
+                        Continuar con Google
+                    </a>
+                    <a class="btn site-btn site-btn--accent auth-social auth-social--facebook" href="{% provider_login_url 'facebook' process='login' %}">
+                        Continuar con Facebook
+                    </a>
+                </div>
+            </div>
+
+            <div class="auth-panel auth-panel--aside">
+                <p class="auth-panel__eyebrow">Cult Clasiccs</p>
+                <h2 class="auth-panel__title">Acceso rápido al checkout y tus pedidos.</h2>
+                <p class="auth-panel__text">
+                    Tu sesión te permite guardar progreso, revisar órdenes y entrar al pago sin volver a capturar información.
+                </p>
+                <p class="auth-panel__text">
+                    Si todavía no tienes cuenta, puedes registrarte en segundos con correo, Google o Facebook.
+                </p>
+                <a class="btn site-btn site-btn--ghost" href="{% url 'account_signup' %}">Crear cuenta</a>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

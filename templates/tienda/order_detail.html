@@ -1,0 +1,47 @@
+{% extends "tienda/index.html" %}
+
+{% block content %}
+<section class="py-5">
+  <div class="container px-4 px-lg-5">
+    <h1>Detalle del Pedido #{{ order.id }}</h1>
+    <p>Fecha: {{ order.created_at|date:"d/m/Y H:i" }}</p>
+    <p>Estado: {{ order.status }}</p>
+
+    <h3>Productos</h3>
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Producto</th>
+          <th>Cantidad</th>
+          <th>Precio</th>
+          <th>Subtotal</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in order.items.all %}
+        <tr>
+          <td>{{ item.product.nombre }}</td>
+          <td>{{ item.quantity }}</td>
+          <td>${{ item.price|floatformat:2 }}</td>
+          <td>${{ item.subtotal|floatformat:2 }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <h4>Total: ${{ order.total_price|floatformat:2 }}</h4>
+
+    {% if order.shipping_address %}
+      <h3>Dirección de Envío</h3>
+      <p>{{ order.shipping_address.address_line1 }}</p>
+      {% if order.shipping_address.address_line2 %}
+        <p>{{ order.shipping_address.address_line2 }}</p>
+      {% endif %}
+      <p>{{ order.shipping_address.city }}, {{ order.shipping_address.state }}</p>
+      <p>{{ order.shipping_address.postal_code }}, {{ order.shipping_address.country }}</p>
+    {% endif %}
+
+    <!-- Botón para seguir el pedido -->
+    <a href="{% url 'tienda:shipping_details' %}" class="btn btn-info">Seguir pedido</a>
+  </div>
+</section>
+{% endblock %}

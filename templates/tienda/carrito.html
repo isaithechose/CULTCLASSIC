@@ -1,0 +1,124 @@
+{% extends "tienda/base.html" %}
+{% load static %}
+
+{% block title %}Cult Clasiccs | Carrito{% endblock %}
+
+{% block hero %}
+<section class="page-hero page-hero--compact">
+    <div class="container px-4 px-lg-5">
+        <div class="page-hero__inner">
+            <p class="page-eyebrow">Cart</p>
+            <h1 class="page-hero__title">Tu selección lista para cerrar el drop.</h1>
+            <p class="page-hero__copy">
+                Revisa piezas, variantes y diseños antes de pasar al checkout. Todo dentro del mismo lenguaje visual de Cult Clasiccs.
+            </p>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block content %}
+<section class="cart-page">
+    <div class="container px-4 px-lg-5">
+        {% if carrito %}
+            <div class="cart-layout">
+                <div class="cart-list">
+                    {% for item in carrito %}
+                        <article class="cart-item">
+                            <div class="cart-item__image-wrap">
+                                {% if item.imagen %}
+                                    <img class="cart-item__image" src="{{ item.imagen }}" alt="{{ item.nombre }}">
+                                {% else %}
+                                    <div class="cart-item__placeholder"></div>
+                                {% endif %}
+                            </div>
+
+                            <div class="cart-item__content">
+                                <div class="cart-item__header">
+                                    <div>
+                                        <p class="cart-item__eyebrow">Cult Clasiccs / Cart</p>
+                                        <h2 class="cart-item__title">{{ item.nombre }}</h2>
+                                    </div>
+                                    <p class="cart-item__price">${{ item.precio }}</p>
+                                </div>
+
+                                <div class="cart-item__meta">
+                                    <div class="cart-meta-block">
+                                        <span class="cart-meta-block__label">Talla</span>
+                                        <span class="cart-meta-block__value">{{ item.talla }}</span>
+                                    </div>
+                                    <div class="cart-meta-block">
+                                        <span class="cart-meta-block__label">Color</span>
+                                        <span class="cart-meta-block__value">{{ item.color }}</span>
+                                    </div>
+                                    <div class="cart-meta-block">
+                                        <span class="cart-meta-block__label">Cantidad</span>
+                                        <span class="cart-meta-block__value">{{ item.cantidad }}</span>
+                                    </div>
+                                    <div class="cart-meta-block">
+                                        <span class="cart-meta-block__label">Subtotal</span>
+                                        <span class="cart-meta-block__value">${{ item.subtotal }}</span>
+                                    </div>
+                                </div>
+
+                                <div class="cart-item__designs">
+                                    <div class="cart-design">
+                                        <span class="cart-design__label">Diseño pecho</span>
+                                        {% if item.diseño_pecho %}
+                                            <img class="cart-design__thumb" src="/media/diseños_nuevos/{{ item.diseño_pecho }}" alt="Diseño pecho">
+                                        {% else %}
+                                            <span class="cart-design__empty">Sin diseño</span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="cart-design">
+                                        <span class="cart-design__label">Diseño espalda</span>
+                                        {% if item.diseño_espalda %}
+                                            <img class="cart-design__thumb" src="/media/diseños_nuevos/{{ item.diseño_espalda }}" alt="Diseño espalda">
+                                        {% else %}
+                                            <span class="cart-design__empty">Sin diseño</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <div class="cart-item__actions">
+                                    <form method="post" action="{% url 'tienda:eliminar_del_carrito' item.producto_id %}">
+                                        {% csrf_token %}
+                                        <button class="btn site-btn site-btn--ghost" type="submit">Eliminar</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </article>
+                    {% endfor %}
+                </div>
+
+                <aside class="cart-summary">
+                    <p class="cart-summary__eyebrow">Order summary</p>
+                    <h2 class="cart-summary__title">Total del carrito</h2>
+                    <div class="cart-summary__row">
+                        <span>Total</span>
+                        <strong>${{ total }}</strong>
+                    </div>
+                    <p class="cart-summary__text">
+                        Tu checkout mantiene las variantes y diseños elegidos para que cierres la compra sin perder configuración.
+                    </p>
+                    <a href="{% url 'tienda:stripe_checkout' %}" class="btn site-btn site-btn--accent cart-summary__cta">
+                        Proceder a la compra
+                    </a>
+                </aside>
+            </div>
+        {% else %}
+            <div class="product-empty">
+                <p class="product-empty__eyebrow">Cart empty</p>
+                <h2 class="product-empty__title">Tu carrito todavía no tiene piezas seleccionadas.</h2>
+                <p class="product-empty__text">
+                    Vuelve al drop, explora el archivo o arma tu primera combinación para seguir con el checkout.
+                </p>
+                <div class="hero-editorial__actions">
+                    <a class="btn site-btn site-btn--accent" href="{% url 'tienda:tienda' %}">Volver al inicio</a>
+                    <a class="btn site-btn site-btn--ghost" href="{% url 'tienda:archivo' %}">Explorar archivo</a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,39 @@
+{% load static %}
+{% load static %}
+<!DOCTYPE html>
+<html lang="es-mx">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <meta name="description" content="Cult Calle - Streetwear Mexicano" />
+    <meta name="author" content="Cult Calle" />
+    <title>Cult Calle - Tienda</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}" />
+    <!-- Bootstrap icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.5.0/font/bootstrap-icons.css" rel="stylesheet" />
+    <!-- Core theme CSS (includes Bootstrap) -->
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+</head>
+{% block content %}
+<section class="py-5">
+    <div class="container px-4 px-lg-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-6">
+                <div class="card shadow">
+                    <div class="card-body p-5">
+                        <h2 class="fw-bolder mb-4 text-center">Inicio de sesión mediante Google</h2>
+                        <p class="text-center">Se dispone a iniciar sesión usando una cuenta externa.</p>
+                        <form method="post" action="">
+                            {% csrf_token %}
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-dark">Continuar</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
