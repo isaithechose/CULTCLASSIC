@@ -6,7 +6,10 @@ import sys
 
 def main():
     """Run administrative tasks."""
-    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'CULTCALLE.settings.local')
+    os.environ.setdefault(
+        'DJANGO_SETTINGS_MODULE',
+        os.getenv('DJANGO_SETTINGS_MODULE', 'CULTCALLE.settings.local')
+    )
     try:
         from django.core.management import execute_from_command_line
     except ImportError as exc:
