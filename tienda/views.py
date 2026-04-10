@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from .models import Producto, OrderItem
-from .forms import SeleccionarTallaColorForm, ReseñaForm
+from .forms import SeleccionarTallaColorForm, ReseñaForm, UserProfileForm
 import stripe
 from django.conf import settings
 from django.urls import reverse
@@ -69,6 +69,33 @@ def detalle_producto(request, producto_id):
 
 
 from django.contrib.auth.decorators import login_required
+
+
+@login_required
+def profile_view(request):
+    orders = Order.objects.filter(customer=request.user).order_by("-created_at")
+    recent_orders = orders[:3]
+    completed_orders = orders.filter(status="Completed").count()
+    pending_orders = orders.filter(status="Pending").count()
+
+    if request.method == "POST":
+        form = UserProfileForm(request.POST, instance=request.user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Tu perfil se actualizo correctamente.")
+            return redirect("tienda:profile")
+        messages.error(request, "No pudimos guardar tus cambios. Revisa los campos e intenta de nuevo.")
+    else:
+        form = UserProfileForm(instance=request.user)
+
+    context = {
+        "form": form,
+        "orders_count": orders.count(),
+        "completed_orders": completed_orders,
+        "pending_orders": pending_orders,
+        "recent_orders": recent_orders,
+    }
+    return render(request, "tienda/profile.html", context)
 
 
 @login_required
@@ -153,8 +180,10 @@ def agregar_al_carrito(request, producto_id):
         color = request.POST.get('color')
         diseño_pecho = request.POST.get('diseño_pecho', '')
         diseño_espalda = request.POST.get('diseño_espalda', '')
+        action = request.POST.get('action', 'add_to_cart')
 
         if not talla or not color:
+            messages.error(request, "Selecciona una talla y un color antes de continuar.")
             return redirect('tienda:detalle_producto', producto_id=producto.id)
 
         carrito = request.session.get('carrito', {})
@@ -182,6 +211,14 @@ def agregar_al_carrito(request, producto_id):
         producto.stock -= 1
         producto.save()
         request.session['carrito'] = carrito
+        if action == 'buy_now':
+            if request.user.is_authenticated:
+                return redirect('tienda:checkout')
+            login_url = reverse('account_login')
+            checkout_url = reverse('tienda:checkout')
+            return redirect(f'{login_url}?next={checkout_url}')
+
+        messages.success(request, f"{producto.nombre} se agrego a tu carrito.")
         return redirect('tienda:carrito')
 
     return redirect('tienda:detalle_producto', producto_id=producto.id)

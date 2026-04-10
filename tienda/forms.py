@@ -1,6 +1,7 @@
 from django import forms
 from .models import Reseña
 from .models import ShippingAddress
+from django.contrib.auth.models import User
 
 class ShippingAddressForm(forms.ModelForm):
     class Meta:
@@ -23,3 +24,14 @@ class SeleccionarTallaColorForm(forms.Form):
         super().__init__(*args, **kwargs)
         self.fields['talla'].choices = [(talla, talla) for talla in tallas]
         self.fields['color'].choices = [(color, color) for color in colores]
+
+
+class UserProfileForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = ["first_name", "last_name", "email"]
+        widgets = {
+            "first_name": forms.TextInput(attrs={"placeholder": "Nombre"}),
+            "last_name": forms.TextInput(attrs={"placeholder": "Apellido"}),
+            "email": forms.EmailInput(attrs={"placeholder": "correo@ejemplo.com"}),
+        }

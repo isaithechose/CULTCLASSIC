@@ -67,6 +67,9 @@
                     </span>
                 </a>
                 {% if user.is_authenticated %}
+                    <a class="btn site-btn site-btn--ghost" href="{% url 'tienda:profile' %}">
+                        Mi perfil
+                    </a>
                     <a class="btn site-btn site-btn--ghost" href="{% url 'tienda:my_orders' %}">
                         Seguir mis Pedidos
                     </a>

@@ -104,31 +104,68 @@ SOCIALACCOUNT_LOGIN_ON_GET = True
 
 # Configuraciones de Jazzmin (panel de administración)
 JAZZMIN_SETTINGS = {
-    "site_title": "Cult Calle Admin",  # Título de la pestaña del navegador
-    "site_header": "Cult Calle Admin",  # Título en el encabezado
-    "site_brand": "Cult Calle",        # Marca en el encabezado
-    "site_logo": "images/logo.png",    # Ruta al logo (opcional)
-    "login_logo": "images/logo.png",   # Logo de la pantalla de login (opcional)
-    "login_logo_dark": None,           # Logo oscuro (opcional)
-    "site_logo_classes": "img-circle", # Clase CSS para el logo
-    "welcome_sign": "Bienvenido al Administrador", # Mensaje de bienvenida
-    "copyright": "Cult Calle 2023",
-    "search_model": "tienda.Producto", # Modelo a buscar desde el panel
+    "site_title": "Cult Clasiccs Admin",
+    "site_header": "Cult Clasiccs Admin",
+    "site_brand": "Cult Clasiccs",
+    "site_logo": "images/logo.png",
+    "login_logo": "images/logo.png",
+    "login_logo_dark": None,
+    "site_logo_classes": "img-circle",
+    "welcome_sign": "Panel de control para catalogo, pedidos y operacion diaria.",
+    "copyright": "Cult Clasiccs",
+    "search_model": ["tienda.Producto", "tienda.Order", "auth.User"],
     "topmenu_links": [
         {"name": "Inicio", "url": "/", "permissions": ["auth.view_user"]},
-        {"model": "tienda.Producto"},  # Modelo directo como enlace
-        {"app": "tienda"},            # Enlace al app
+        {"model": "tienda.Producto"},
+        {"model": "tienda.Order"},
+        {"model": "auth.User"},
     ],
     "usermenu_links": [
-        {"name": "Soporte", "url": "https://cultcalle.com/soporte", "new_window": True},
+        {"name": "Ver tienda", "url": "/", "new_window": True},
     ],
     "icons": {
         "auth": "fas fa-users-cog",
         "auth.user": "fas fa-user",
         "auth.Group": "fas fa-users",
+        "sites.Site": "fas fa-globe",
+        "socialaccount.SocialApp": "fas fa-share-alt",
+        "tienda.Categoria": "fas fa-layer-group",
+        "tienda.Subcategoria": "fas fa-sitemap",
+        "tienda.Producto": "fas fa-shirt",
+        "tienda.Order": "fas fa-bag-shopping",
+        "tienda.OrderItem": "fas fa-box-open",
+        "tienda.Carrito": "fas fa-cart-shopping",
+        "tienda.Reseña": "fas fa-star",
+        "tienda.ShippingAddress": "fas fa-location-dot",
+        "tienda.ShippingUpdate": "fas fa-truck-fast",
     },
-    "order_with_respect_to": ["auth", "tienda", "tienda.Producto"],  # Orden del menú
-    "navigation_expanded": True,  # Expande automáticamente el menú lateral
+    "order_with_respect_to": [
+        "auth",
+        "sites",
+        "socialaccount",
+        "tienda",
+        "tienda.Categoria",
+        "tienda.Subcategoria",
+        "tienda.Producto",
+        "tienda.Order",
+        "tienda.Carrito",
+        "tienda.Reseña",
+    ],
+    "navigation_expanded": True,
+    "hide_apps": [],
+    "custom_links": {
+        "tienda": [{
+            "name": "Pedidos pendientes",
+            "url": "/admin/tienda/order/?status__exact=Pending",
+            "icon": "fas fa-clock",
+            "permissions": ["tienda.view_order"],
+        }, {
+            "name": "Productos sin stock",
+            "url": "/admin/tienda/producto/?stock__exact=0",
+            "icon": "fas fa-triangle-exclamation",
+            "permissions": ["tienda.view_producto"],
+        }]
+    },
 }
 
 DEBUG = True

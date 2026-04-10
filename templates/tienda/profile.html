@@ -1,0 +1,132 @@
+{% extends "tienda/base.html" %}
+
+{% block title %}Mi Perfil | Cult Clasiccs{% endblock %}
+{% block body_class %}brand-page{% endblock %}
+
+{% block hero %}
+<header class="page-hero page-hero--compact">
+    <div class="container px-4 px-lg-5">
+        <div class="page-hero__inner">
+            <p class="page-eyebrow">Perfil</p>
+            <h1 class="page-hero__title">Tu archivo personal dentro de Cult Clasiccs.</h1>
+            <p class="page-hero__copy">
+                Administra tus datos, revisa tu actividad reciente y mantén tu cuenta lista para el siguiente drop.
+            </p>
+        </div>
+    </div>
+</header>
+{% endblock %}
+
+{% block content %}
+<section class="profile-page py-5">
+    <div class="container px-4 px-lg-5">
+        <div class="profile-layout">
+            <aside class="profile-card profile-card--summary">
+                <p class="profile-card__eyebrow">Cuenta</p>
+                <h2 class="profile-card__title">
+                    {% if user.first_name %}
+                        {{ user.first_name }} {{ user.last_name }}
+                    {% else %}
+                        {{ user.username }}
+                    {% endif %}
+                </h2>
+                <p class="profile-card__text">{{ user.email|default:"Sin correo registrado" }}</p>
+
+                <div class="profile-stats">
+                    <div class="profile-stat">
+                        <span class="profile-stat__value">{{ orders_count }}</span>
+                        <span class="profile-stat__label">Pedidos</span>
+                    </div>
+                    <div class="profile-stat">
+                        <span class="profile-stat__value">{{ completed_orders }}</span>
+                        <span class="profile-stat__label">Completados</span>
+                    </div>
+                    <div class="profile-stat">
+                        <span class="profile-stat__value">{{ pending_orders }}</span>
+                        <span class="profile-stat__label">Pendientes</span>
+                    </div>
+                </div>
+
+                <div class="profile-actions">
+                    <a class="btn site-btn site-btn--ghost" href="{% url 'tienda:my_orders' %}">Ver pedidos</a>
+                    <a class="btn site-btn site-btn--accent" href="{% url 'tienda:archivo' %}">Explorar archivo</a>
+                </div>
+            </aside>
+
+            <div class="profile-stack">
+                <section class="profile-card">
+                    <div class="profile-card__header">
+                        <div>
+                            <p class="profile-card__eyebrow">Datos</p>
+                            <h2 class="profile-card__title profile-card__title--small">Informacion personal</h2>
+                        </div>
+                    </div>
+
+                    {% if messages %}
+                        <div class="profile-messages">
+                            {% for message in messages %}
+                                <div class="auth-form__alert">{{ message }}</div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    <form method="post" class="profile-form">
+                        {% csrf_token %}
+                        <div class="profile-form__grid">
+                            <div class="auth-form__group">
+                                <label for="{{ form.first_name.id_for_label }}">Nombre</label>
+                                {{ form.first_name }}
+                            </div>
+                            <div class="auth-form__group">
+                                <label for="{{ form.last_name.id_for_label }}">Apellido</label>
+                                {{ form.last_name }}
+                            </div>
+                        </div>
+
+                        <div class="auth-form__group">
+                            <label for="{{ form.email.id_for_label }}">Correo electronico</label>
+                            {{ form.email }}
+                        </div>
+
+                        <div class="profile-form__footer">
+                            <p class="profile-form__meta">Tu usuario actual es <strong>{{ user.username }}</strong>.</p>
+                            <button type="submit" class="btn site-btn site-btn--accent">Guardar cambios</button>
+                        </div>
+                    </form>
+                </section>
+
+                <section class="profile-card">
+                    <div class="profile-card__header">
+                        <div>
+                            <p class="profile-card__eyebrow">Actividad</p>
+                            <h2 class="profile-card__title profile-card__title--small">Pedidos recientes</h2>
+                        </div>
+                    </div>
+
+                    {% if recent_orders %}
+                        <div class="profile-orders">
+                            {% for order in recent_orders %}
+                                <article class="profile-order">
+                                    <div>
+                                        <p class="profile-order__id">Orden #{{ order.id }}</p>
+                                        <p class="profile-order__meta">{{ order.created_at|date:"d/m/Y H:i" }}</p>
+                                    </div>
+                                    <div>
+                                        <p class="profile-order__status">{{ order.status }}</p>
+                                        <p class="profile-order__total">${{ order.total_price }}</p>
+                                    </div>
+                                    <a class="btn site-btn site-btn--ghost profile-order__cta" href="{% url 'tienda:order_detail' order.id %}">
+                                        Ver detalle
+                                    </a>
+                                </article>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="profile-empty">Aun no tienes pedidos. Cuando compres, tu actividad aparecera aqui.</p>
+                    {% endif %}
+                </section>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

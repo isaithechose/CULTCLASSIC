@@ -10,6 +10,7 @@ app_name = 'tienda'
 
 urlpatterns = [
     path('', views.tienda_view, name='tienda'),
+    path('perfil/', views.profile_view, name='profile'),
     path('agregar/<int:producto_id>/', views.agregar_al_carrito, name='agregar_al_carrito'),
     path('carrito/', views.carrito_view, name='carrito'),
     path('eliminar/<int:producto_id>/', views.eliminar_del_carrito, name='eliminar_del_carrito'),
