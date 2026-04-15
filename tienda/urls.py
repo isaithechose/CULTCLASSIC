@@ -18,6 +18,7 @@ urlpatterns = [
     path('productos/', views.lista_productos, name='lista_productos'),
     path('archivo/', views.archivo_view, name='archivo'),
     path('proceso_compra/', views.proceso_compra, name='proceso_compra'),
+    path('checkout/', views.checkout, name='checkout'),
     path('my-orders/', my_orders, name='my_orders'),
     path('order/<int:order_id>/', order_detail, name='order_detail'),
     # Rutas para Stripe Checkout
@@ -25,12 +26,12 @@ urlpatterns = [
     path('payment_success/', payment_success, name='payment_success'),
     path('payment_cancel/', payment_cancel, name='payment_cancel'),
     path('shipping/', shipping_details, name='shipping_details'),
-    path('shipping/', shipping_details, name='shipping_details'),
     path('order/<int:order_id>/tracking/', views.order_tracking, name='order_tracking'),
+    path('order/<int:order_id>/sync-skydrop/', views.sync_skydrop_order, name='sync_skydrop_order'),
     path('tracking/', views.tracking_view, name='tracking'),
+    path('webhooks/skydrop/', views.skydrop_webhook, name='skydrop_webhook'),
     path('diseños/', views.catalogo_diseños, name='catalogo_diseños'),
     path('diseños-propios/', views.catalogo_diseños_propios, name='catalogo_diseños_propios'),
-    path("diseños/", views.catalogo_diseños, name="catalogo_diseños"),
     path('subir_diseno_personalizado/', views.subir_diseño_personalizado, name='subir_diseño_personalizado'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 if settings.DEBUG:

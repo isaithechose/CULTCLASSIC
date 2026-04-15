@@ -3,6 +3,7 @@ from django.contrib import admin
 from django.db.models import Count, Sum
 from django.utils.html import format_html
 
+from .skydrop import SkydropError, create_shipment, quote_order, sync_shipment
 from .models import (
     Carrito,
     Categoria,
@@ -71,6 +72,93 @@ def marcar_pedidos_enviados(modeladmin, request, queryset):
     modeladmin.message_user(request, f"{updated} pedidos marcados como enviados.")
 
 
+@admin.action(description="Cotizar envío con Skydrop")
+def cotizar_con_skydrop(modeladmin, request, queryset):
+    procesados = 0
+    for order in queryset:
+        try:
+            result = quote_order(order)
+            best_rate = result["best_rate"]
+            order.skydrop_quotation_id = result["quotation_id"]
+            order.skydrop_rate_id = best_rate["id"]
+            order.skydrop_carrier = best_rate["carrier"]
+            order.skydrop_service = best_rate["service"]
+            order.skydrop_last_payload = result["payload"]
+            order.skydrop_last_error = ""
+            order.save()
+            order.shipping_updates.create(
+                status_message=(
+                    f"Cotización Skydrop lista. "
+                    f"{best_rate['carrier']} / {best_rate['service']} - ${best_rate['amount']} MXN."
+                )
+            )
+            procesados += 1
+        except Exception as exc:
+            order.skydrop_last_error = str(exc)
+            order.save(update_fields=["skydrop_last_error"])
+    modeladmin.message_user(request, f"{procesados} pedidos cotizados en Skydrop.")
+
+
+@admin.action(description="Crear guía en Skydrop")
+def crear_guia_skydrop(modeladmin, request, queryset):
+    procesados = 0
+    for order in queryset:
+        try:
+            result = create_shipment(order, order.skydrop_rate_id)
+            order.skydrop_shipment_id = result["shipment_id"]
+            order.skydrop_label_url = result["label_url"]
+            order.skydrop_tracking_url = result["tracking_url"]
+            order.tracking_number = result["tracking_number"]
+            order.skydrop_carrier = result["carrier"] or order.skydrop_carrier
+            order.skydrop_service = result["service"] or order.skydrop_service
+            order.skydrop_last_payload = result["payload"]
+            order.skydrop_last_error = ""
+            order.shipping_status = "Shipped" if result["tracking_number"] else order.shipping_status
+            order.save()
+            order.shipping_updates.create(
+                status_message=(
+                    f"Guía creada en Skydrop. "
+                    f"Tracking: {result['tracking_number'] or 'pendiente'}."
+                )
+            )
+            procesados += 1
+        except Exception as exc:
+            order.skydrop_last_error = str(exc)
+            order.save(update_fields=["skydrop_last_error"])
+    modeladmin.message_user(
+        request,
+        f"{procesados} guías creadas. Revisa el detalle del pedido para tracking o errores.",
+    )
+
+
+@admin.action(description="Sincronizar tracking desde Skydrop")
+def sincronizar_skydrop(modeladmin, request, queryset):
+    procesados = 0
+    for order in queryset:
+        try:
+            result = sync_shipment(order)
+            order.tracking_number = result.get("tracking_number") or order.tracking_number
+            order.skydrop_tracking_url = result.get("tracking_url") or order.skydrop_tracking_url
+            order.skydrop_carrier = result.get("carrier") or order.skydrop_carrier
+            order.skydrop_service = result.get("service") or order.skydrop_service
+            if result.get("status"):
+                normalized = result["status"].lower()
+                if "deliver" in normalized:
+                    order.shipping_status = "Delivered"
+                elif any(token in normalized for token in ["transit", "ship", "pickup", "label"]):
+                    order.shipping_status = "Shipped"
+                else:
+                    order.shipping_status = "Processing"
+            order.skydrop_last_payload = result.get("payload")
+            order.skydrop_last_error = ""
+            order.save()
+            procesados += 1
+        except Exception as exc:
+            order.skydrop_last_error = str(exc)
+            order.save(update_fields=["skydrop_last_error"])
+    modeladmin.message_user(request, f"{procesados} pedidos sincronizados con Skydrop.")
+
+
 class SubcategoriaInline(admin.TabularInline):
     model = Subcategoria
     extra = 0
@@ -80,7 +168,7 @@ class SubcategoriaInline(admin.TabularInline):
 class OrderItemInline(admin.TabularInline):
     model = OrderItem
     extra = 0
-    fields = ("product", "quantity", "price")
+    fields = ("product", "talla", "color", "diseño_pecho", "diseño_espalda", "quantity", "price")
     autocomplete_fields = ("product",)
 
 
@@ -203,14 +291,43 @@ class OrderAdmin(admin.ModelAdmin):
         "shipping_badge",
         "total_items",
         "total_amount",
+        "skydrop_badge",
         "created_at",
     )
     list_filter = ("status", "shipping_status", "created_at")
     search_fields = ("id", "customer__username", "customer__email", "tracking_number")
-    readonly_fields = ("created_at", "total_amount")
+    readonly_fields = (
+        "created_at",
+        "total_amount",
+        "skydrop_summary",
+    )
     autocomplete_fields = ("customer",)
     inlines = [OrderItemInline, ShippingAddressInline, ShippingUpdateInline]
-    actions = [marcar_pedidos_completados, marcar_pedidos_enviados]
+    actions = [
+        marcar_pedidos_completados,
+        marcar_pedidos_enviados,
+        cotizar_con_skydrop,
+        crear_guia_skydrop,
+        sincronizar_skydrop,
+    ]
+    fieldsets = (
+        ("Pedido", {
+            "fields": ("customer", "status", "shipping_status", "tracking_number", "created_at")
+        }),
+        ("Skydrop", {
+            "fields": (
+                "skydrop_summary",
+                "skydrop_quotation_id",
+                "skydrop_rate_id",
+                "skydrop_shipment_id",
+                "skydrop_label_url",
+                "skydrop_tracking_url",
+                "skydrop_carrier",
+                "skydrop_service",
+                "skydrop_last_error",
+            )
+        }),
+    )
 
     def get_queryset(self, request):
         queryset = super().get_queryset(request)
@@ -255,10 +372,39 @@ class OrderAdmin(admin.ModelAdmin):
     def total_amount(self, obj):
         return f"${obj.total_price:.2f}"
 
+    @admin.display(description="Skydrop")
+    def skydrop_badge(self, obj):
+        if obj.skydrop_shipment_id:
+            return format_html(
+                '<span style="padding:0.25rem 0.55rem;border-radius:999px;background:#2d8a4b22;color:#2d8a4b;font-weight:700;">Guía creada</span>'
+            )
+        if obj.skydrop_quotation_id:
+            return format_html(
+                '<span style="padding:0.25rem 0.55rem;border-radius:999px;background:#2f67b022;color:#2f67b0;font-weight:700;">Cotizado</span>'
+            )
+        return format_html(
+            '<span style="padding:0.25rem 0.55rem;border-radius:999px;background:#66666622;color:#888;font-weight:700;">Sin conectar</span>'
+        )
+
+    @admin.display(description="Resumen Skydrop")
+    def skydrop_summary(self, obj):
+        rows = []
+        if obj.skydrop_carrier or obj.skydrop_service:
+            rows.append(f"{obj.skydrop_carrier or '-'} / {obj.skydrop_service or '-'}")
+        if obj.tracking_number:
+            rows.append(f"Tracking: {obj.tracking_number}")
+        if obj.skydrop_label_url:
+            rows.append(f'<a href="{obj.skydrop_label_url}" target="_blank">Abrir guía</a>')
+        if obj.skydrop_tracking_url:
+            rows.append(f'<a href="{obj.skydrop_tracking_url}" target="_blank">Abrir tracking</a>')
+        if obj.skydrop_last_error:
+            rows.append(f'<span style="color:#d46b6b;">{obj.skydrop_last_error}</span>')
+        return format_html("<br>".join(rows) if rows else "Sin datos de Skydrop.")
+
 
 @admin.register(OrderItem)
 class OrderItemAdmin(admin.ModelAdmin):
-    list_display = ("order", "product", "quantity", "price")
+    list_display = ("order", "product", "talla", "color", "quantity", "price")
     list_filter = ("order__status", "order__shipping_status")
     search_fields = ("order__id", "product__nombre")
     autocomplete_fields = ("order", "product")
@@ -286,8 +432,8 @@ class ResenaAdmin(admin.ModelAdmin):
 
 @admin.register(ShippingAddress)
 class ShippingAddressAdmin(admin.ModelAdmin):
-    list_display = ("order", "city", "state", "country", "postal_code")
-    search_fields = ("order__id", "city", "state", "country", "postal_code")
+    list_display = ("order", "phone", "city", "state", "country", "postal_code")
+    search_fields = ("order__id", "phone", "city", "state", "country", "postal_code")
     autocomplete_fields = ("order",)
 
 

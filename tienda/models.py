@@ -44,6 +44,16 @@ class Order(models.Model):
         ('Processing', 'Processing'), ('Shipped', 'Shipped'), ('Delivered', 'Delivered')
     ], default='Processing')
     tracking_number = models.CharField(max_length=50, blank=True, null=True)
+    skydrop_quotation_id = models.CharField(max_length=80, blank=True, null=True)
+    skydrop_rate_id = models.CharField(max_length=80, blank=True, null=True)
+    skydrop_shipment_id = models.CharField(max_length=80, blank=True, null=True)
+    skydrop_label_url = models.URLField(blank=True, null=True)
+    skydrop_tracking_url = models.URLField(blank=True, null=True)
+    skydrop_carrier = models.CharField(max_length=80, blank=True, null=True)
+    skydrop_service = models.CharField(max_length=120, blank=True, null=True)
+    skydrop_last_error = models.TextField(blank=True, null=True)
+    skydrop_last_payload = models.JSONField(blank=True, null=True)
+    stripe_session_id = models.CharField(max_length=255, blank=True, null=True)
 
     @property
     def total_price(self):
@@ -57,6 +67,14 @@ class OrderItem(models.Model):
     product = models.ForeignKey(Producto, on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField()
     price = models.DecimalField(max_digits=10, decimal_places=2)
+    talla = models.CharField(max_length=10, blank=True, null=True)
+    color = models.CharField(max_length=40, blank=True, null=True)
+    diseño_pecho = models.CharField(max_length=255, blank=True, null=True)
+    diseño_espalda = models.CharField(max_length=255, blank=True, null=True)
+
+    @property
+    def subtotal(self):
+        return self.price * self.quantity
 
     def __str__(self):
         return f"{self.product.nombre} x {self.quantity}"
@@ -84,6 +102,7 @@ class Reseña(models.Model):
 
 class ShippingAddress(models.Model):
     order = models.OneToOneField(Order, on_delete=models.CASCADE, related_name='shipping_address')
+    phone = models.CharField(max_length=30, blank=True, null=True)
     address_line1 = models.CharField(max_length=255)
     address_line2 = models.CharField(max_length=255, blank=True, null=True)
     city = models.CharField(max_length=100)

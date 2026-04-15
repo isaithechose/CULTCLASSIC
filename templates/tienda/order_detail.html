@@ -12,6 +12,8 @@
       <thead>
         <tr>
           <th>Producto</th>
+          <th>Talla</th>
+          <th>Color</th>
           <th>Cantidad</th>
           <th>Precio</th>
           <th>Subtotal</th>
@@ -21,10 +23,21 @@
         {% for item in order.items.all %}
         <tr>
           <td>{{ item.product.nombre }}</td>
+          <td>{{ item.talla|default:"-" }}</td>
+          <td>{{ item.color|default:"-" }}</td>
           <td>{{ item.quantity }}</td>
           <td>${{ item.price|floatformat:2 }}</td>
           <td>${{ item.subtotal|floatformat:2 }}</td>
         </tr>
+        {% if item.diseño_pecho or item.diseño_espalda %}
+        <tr>
+          <td colspan="6">
+            {% if item.diseño_pecho %}<strong>Pecho:</strong> {{ item.diseño_pecho }}{% endif %}
+            {% if item.diseño_pecho and item.diseño_espalda %} | {% endif %}
+            {% if item.diseño_espalda %}<strong>Espalda:</strong> {{ item.diseño_espalda }}{% endif %}
+          </td>
+        </tr>
+        {% endif %}
         {% endfor %}
       </tbody>
     </table>
@@ -32,6 +45,9 @@
 
     {% if order.shipping_address %}
       <h3>Dirección de Envío</h3>
+      {% if order.shipping_address.phone %}
+        <p>Teléfono: {{ order.shipping_address.phone }}</p>
+      {% endif %}
       <p>{{ order.shipping_address.address_line1 }}</p>
       {% if order.shipping_address.address_line2 %}
         <p>{{ order.shipping_address.address_line2 }}</p>
@@ -40,8 +56,22 @@
       <p>{{ order.shipping_address.postal_code }}, {{ order.shipping_address.country }}</p>
     {% endif %}
 
+    {% if order.tracking_number %}
+      <h3>Tracking</h3>
+      <p>Número de seguimiento: {{ order.tracking_number }}</p>
+    {% endif %}
+
+    {% if order.skydrop_label_url %}
+      <p><a href="{{ order.skydrop_label_url }}" target="_blank" rel="noopener">Abrir guía Skydrop</a></p>
+    {% endif %}
+
+    {% if order.skydrop_tracking_url %}
+      <p><a href="{{ order.skydrop_tracking_url }}" target="_blank" rel="noopener">Abrir tracking Skydrop</a></p>
+    {% endif %}
+
     <!-- Botón para seguir el pedido -->
     <a href="{% url 'tienda:shipping_details' %}" class="btn btn-info">Seguir pedido</a>
+    <a href="{% url 'tienda:sync_skydrop_order' order.id %}" class="btn btn-dark">Sincronizar con Skydrop</a>
   </div>
 </section>
 {% endblock %}

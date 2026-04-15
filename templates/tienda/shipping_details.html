@@ -24,6 +24,13 @@
     <form method="post">
       {% csrf_token %}
       <div class="mb-3">
+         {{ form.phone.label_tag }}
+         {{ form.phone }}
+         {% for error in form.phone.errors %}
+            <div class="text-danger">{{ error }}</div>
+         {% endfor %}
+      </div>
+      <div class="mb-3">
          {{ form.address_line1.label_tag }}
          {{ form.address_line1 }}
          {% for error in form.address_line1.errors %}

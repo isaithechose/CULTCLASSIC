@@ -1,6 +1,14 @@
+import json
+from collections import defaultdict
+
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import Producto, OrderItem
-from .forms import SeleccionarTallaColorForm, ReseñaForm, UserProfileForm
+from .models import Producto, OrderItem, ShippingAddress
+from .forms import (
+    SeleccionarTallaColorForm,
+    ReseñaForm,
+    UserProfileForm,
+    ShippingAddressForm,
+)
 import stripe
 from django.conf import settings
 from django.urls import reverse
@@ -13,6 +21,10 @@ from .models import Producto, Categoria
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
 from django.contrib import messages
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+
+from .skydrop import SkydropError, sync_shipment
 
 def subir_diseño_personalizado(request):
     if request.method == 'POST' and request.FILES.get('imagen'):
@@ -71,6 +83,66 @@ def detalle_producto(request, producto_id):
 from django.contrib.auth.decorators import login_required
 
 
+def _build_order_from_cart(order, carrito):
+    order.items.all().delete()
+    for key, item in carrito.items():
+        parts = key.split("-", 4)
+        if len(parts) != 5:
+            continue
+        product_id, talla, color, diseño_pecho, diseño_espalda = parts
+        OrderItem.objects.create(
+            order=order,
+            product_id=product_id,
+            quantity=item["cantidad"],
+            price=item["precio"],
+            talla=talla,
+            color=color,
+            diseño_pecho=diseño_pecho or "",
+            diseño_espalda=diseño_espalda or "",
+        )
+    return order
+
+
+def _cart_stock_issues(carrito):
+    quantities_by_product = defaultdict(int)
+    for key, item in carrito.items():
+        product_id = key.split("-", 1)[0]
+        quantities_by_product[int(product_id)] += int(item["cantidad"])
+
+    issues = []
+    for product_id, requested_qty in quantities_by_product.items():
+        producto = get_object_or_404(Producto, id=product_id)
+        if producto.stock < requested_qty:
+            issues.append((producto.nombre, producto.stock, requested_qty))
+    return issues
+
+
+def _get_checkout_order(request):
+    carrito = request.session.get("carrito", {})
+    if not carrito:
+        return None
+
+    stock_issues = _cart_stock_issues(carrito)
+    if stock_issues:
+        return None
+
+    order_id = request.session.get("order_id")
+    if order_id:
+        existing_order = Order.objects.filter(
+            id=order_id,
+            customer=request.user,
+            status="Pending",
+        ).first()
+        if existing_order:
+            _build_order_from_cart(existing_order, carrito)
+            return existing_order
+
+    order = Order.objects.create(customer=request.user)
+    _build_order_from_cart(order, carrito)
+    request.session["order_id"] = order.id
+    return order
+
+
 @login_required
 def profile_view(request):
     orders = Order.objects.filter(customer=request.user).order_by("-created_at")
@@ -100,25 +172,21 @@ def profile_view(request):
 
 @login_required
 def checkout(request):
-    # Ahora request.user es un usuario autenticado
-    carrito = request.session.get('carrito', {})
-    user = request.user  # Siempre autenticado
-    total = sum(item['precio'] * item['cantidad'] for item in carrito.values())
+    carrito = request.session.get("carrito", {})
+    stock_issues = _cart_stock_issues(carrito)
+    if stock_issues:
+        for nombre, stock, requested_qty in stock_issues:
+            messages.error(
+                request,
+                f"{nombre} ya no tiene stock suficiente. Disponible: {stock}, solicitado: {requested_qty}."
+            )
+        return redirect("tienda:carrito")
 
-    # Crea la orden con el usuario autenticado
-    order = Order.objects.create(customer=user)
-    request.session['order_id'] = order.id
-
-    for key, item in carrito.items():
-        product_id = key.split("-")[0]
-        OrderItem.objects.create(
-            order=order,
-            product_id=product_id,
-            quantity=item['cantidad'],
-            price=item['precio']
-        )
-
-    return redirect('tienda:stripe_checkout')
+    order = _get_checkout_order(request)
+    if order is None:
+        messages.error(request, "No pudimos preparar tu compra. Revisa tu carrito e inténtalo de nuevo.")
+        return redirect("tienda:carrito")
+    return redirect("tienda:shipping_details")
 
 
 @login_required
@@ -127,24 +195,39 @@ def shipping_details(request):
     if order_id:
         order = get_object_or_404(Order, id=order_id, customer=request.user)
     else:
-        # Intenta recuperar la última orden pendiente del usuario
-        order = Order.objects.filter(customer=request.user, status='Pending').order_by('-created_at').first()
-        if not order:
-            return redirect('tienda:tienda')
-        # Guarda el order_id en la sesión
-        request.session['order_id'] = order.id
+        messages.error(request, "Tu sesión de compra expiró. Vuelve al carrito para continuar.")
+        return redirect('tienda:carrito')
 
     if request.method == 'POST':
         form = ShippingAddressForm(request.POST)
         if form.is_valid():
-            shipping_address = form.save(commit=False)
-            shipping_address.order = order
-            shipping_address.save()
-            # Una vez guardada la dirección, puedes eliminar el order_id si ya no es necesario
-            del request.session['order_id']
-            return redirect('tienda:order_detail', order_id=order.id)
+            ShippingAddress.objects.update_or_create(
+                order=order,
+                defaults=form.cleaned_data,
+            )
+            if getattr(settings, "SKYDROP_CLIENT_ID", "") and getattr(settings, "SKYDROP_CLIENT_SECRET", ""):
+                messages.info(
+                    request,
+                    "Dirección guardada. El pago queda como último paso y después podrás cotizar o crear la guía de Skydrop."
+                )
+            else:
+                messages.success(request, "Dirección guardada. Ahora continúa con el pago.")
+            request.session['order_id'] = order.id
+            return redirect('tienda:stripe_checkout')
     else:
-        form = ShippingAddressForm()
+        initial = {}
+        if hasattr(order, "shipping_address"):
+            shipping_address = order.shipping_address
+            initial = {
+                "phone": shipping_address.phone,
+                "address_line1": shipping_address.address_line1,
+                "address_line2": shipping_address.address_line2,
+                "city": shipping_address.city,
+                "state": shipping_address.state,
+                "postal_code": shipping_address.postal_code,
+                "country": shipping_address.country,
+            }
+        form = ShippingAddressForm(initial=initial)
 
     return render(request, 'tienda/shipping_details.html', {'form': form})
 
@@ -208,8 +291,6 @@ def agregar_al_carrito(request, producto_id):
                 'diseño_espalda': diseño_espalda,
             }
 
-        producto.stock -= 1
-        producto.save()
         request.session['carrito'] = carrito
         if action == 'buy_now':
             if request.user.is_authenticated:
@@ -267,11 +348,6 @@ def eliminar_del_carrito(request, producto_id):
     keys_to_remove = [key for key in carrito if key.startswith(f"{producto_id}-")]
 
     for key in keys_to_remove:
-        cantidad = carrito[key]['cantidad']
-        producto = get_object_or_404(Producto, id=producto_id)
-        # Restaura el stock del producto al eliminarlo del carrito
-        producto.stock += cantidad
-        producto.save()
         del carrito[key]
 
     # Guarda el carrito actualizado
@@ -332,6 +408,7 @@ def lista_productos(request):
 def filtrar_productos(request, categoria_id):
     productos = Producto.objects.filter(categoria__id=categoria_id)
     return render(request, 'tienda/filtrar_productos.html', {'productos': productos})
+@login_required
 def stripe_checkout(request):
     # Configura la API key de Stripe con la clave secreta desde settings
     stripe.api_key = settings.STRIPE_SECRET_KEY
@@ -340,6 +417,23 @@ def stripe_checkout(request):
     carrito = request.session.get('carrito', {})
     if not carrito:
         return redirect('tienda:carrito')  # Si el carrito está vacío, redirige
+
+    stock_issues = _cart_stock_issues(carrito)
+    if stock_issues:
+        for nombre, stock, requested_qty in stock_issues:
+            messages.error(
+                request,
+                f"{nombre} ya no tiene stock suficiente. Disponible: {stock}, solicitado: {requested_qty}."
+            )
+        return redirect("tienda:carrito")
+
+    order = _get_checkout_order(request)
+    if order is None:
+        messages.error(request, "No pudimos preparar tu pedido para el checkout.")
+        return redirect("tienda:carrito")
+    if not hasattr(order, "shipping_address"):
+        messages.error(request, "Primero necesitamos tu dirección de envío.")
+        return redirect("tienda:shipping_details")
 
     # Prepara los items para Stripe (Stripe requiere montos en centavos)
     line_items = []
@@ -362,40 +456,77 @@ def stripe_checkout(request):
         payment_method_types=['card'],
         line_items=line_items,
         mode='payment',
+        metadata={"order_id": str(order.id)},
         # Genera URLs absolutas para éxito y cancelación
-        success_url=request.build_absolute_uri(reverse('tienda:payment_success')),
+        success_url=request.build_absolute_uri(reverse('tienda:payment_success')) + "?session_id={CHECKOUT_SESSION_ID}",
         cancel_url=request.build_absolute_uri(reverse('tienda:payment_cancel')),
         locale='es',  # Opcional: para mostrar el checkout en español
     )
+    order.stripe_session_id = session.id
+    order.save(update_fields=["stripe_session_id"])
 
     # Redirige al usuario a la URL de Stripe para procesar el pago
     return redirect(session.url, code=303)
 
-
-
-
+@login_required
 def payment_success(request):
-    order_id = request.session.get('order_id')
-    if order_id:
-        order = get_object_or_404(Order, id=order_id)
-        order.status = 'Completed'  # O el estado que consideres adecuado
-        order.save()
-        # No eliminar el order_id aquí para que shipping_details pueda acceder a la orden
-        # del request.session['order_id']
+    session_id = request.GET.get("session_id")
+    order_id = request.session.get("order_id")
 
-        # Enviar correo de confirmación, etc.
+    if not session_id or not order_id:
+        messages.error(request, "No pudimos validar tu pago.")
+        return redirect("tienda:carrito")
+
+    stripe.api_key = settings.STRIPE_SECRET_KEY
+    checkout_session = stripe.checkout.Session.retrieve(session_id)
+    if checkout_session.payment_status != "paid":
+        messages.error(request, "Tu pago todavía no aparece como completado.")
+        return redirect("tienda:order_detail", order_id=order_id)
+
+    order = get_object_or_404(Order, id=order_id, customer=request.user)
+    if order.stripe_session_id and order.stripe_session_id != session_id:
+        messages.error(request, "La sesión de pago no coincide con este pedido.")
+        return redirect("tienda:carrito")
+
+    if order.status != "Completed":
+        stock_issues = []
+        for item in order.items.select_related("product"):
+            if item.product.stock < item.quantity:
+                stock_issues.append((item.product.nombre, item.product.stock, item.quantity))
+
+        if stock_issues:
+            for nombre, stock, requested_qty in stock_issues:
+                messages.error(
+                    request,
+                    f"{nombre} ya no tiene stock suficiente para finalizar. Disponible: {stock}, solicitado: {requested_qty}."
+                )
+            return redirect("tienda:carrito")
+
+        for item in order.items.select_related("product"):
+            item.product.stock -= item.quantity
+            item.product.save(update_fields=["stock"])
+
+        order.status = "Completed"
+        order.save(update_fields=["status"])
+
         subject = f"Pedido #{order.id} - Confirmación de Envío"
-        message = f"Hola {order.customer.username},\n\nTu pedido #{order.id} ha sido procesado. Por favor, ingresa tu dirección de envío para continuar con el proceso.\n\n¡Gracias por comprar en Cult Calle!"
+        message = (
+            f"Hola {order.customer.username},\n\n"
+            f"Tu pedido #{order.id} ha sido procesado. Por favor, ingresa tu dirección de envío para continuar con el proceso.\n\n"
+            "¡Gracias por comprar en Cult Calle!"
+        )
         from_email = settings.DEFAULT_FROM_EMAIL
         recipient_list = [order.customer.email]
         send_mail(subject, message, from_email, recipient_list)
 
     request.session['carrito'] = {}
-    return redirect('tienda:shipping_details')
+    return redirect('tienda:order_detail', order_id=order.id)
 
 
 def payment_cancel(request):
-    # Vista de cancelación del pago
+    messages.warning(request, "El pago fue cancelado. Tu pedido sigue pendiente para que puedas retomarlo.")
+    if request.session.get("order_id"):
+        return redirect("tienda:shipping_details")
     return render(request, 'tienda/payment_cancel.html')
 from .forms import ShippingAddressForm
 
@@ -410,6 +541,87 @@ def order_tracking(request, order_id):
 def tracking_view(request):
     orders = Order.objects.filter(customer=request.user)
     return render(request, 'tienda/tracking.html', {'orders': orders})
+
+
+def _map_skydrop_status(raw_status):
+    normalized = (raw_status or "").lower()
+    if "deliver" in normalized:
+        return "Delivered"
+    if any(token in normalized for token in ["transit", "ship", "pickup", "label"]):
+        return "Shipped"
+    return "Processing"
+
+
+@csrf_exempt
+def skydrop_webhook(request):
+    if request.method != "POST":
+        return JsonResponse({"ok": False, "error": "method_not_allowed"}, status=405)
+
+    try:
+        payload = json.loads(request.body.decode("utf-8") or "{}")
+    except json.JSONDecodeError:
+        return JsonResponse({"ok": False, "error": "invalid_json"}, status=400)
+
+    data = payload.get("data", {}) if isinstance(payload, dict) else {}
+    attributes = data.get("attributes", {}) if isinstance(data, dict) else {}
+    shipment_id = data.get("id") or payload.get("shipment_id")
+    tracking_number = (
+        attributes.get("master_tracking_number")
+        or attributes.get("tracking_number")
+        or payload.get("tracking_number")
+    )
+    raw_status = attributes.get("status") or payload.get("status")
+
+    order = None
+    if shipment_id:
+        order = Order.objects.filter(skydrop_shipment_id=shipment_id).first()
+    if order is None and tracking_number:
+        order = Order.objects.filter(tracking_number=tracking_number).first()
+    if order is None:
+        return JsonResponse({"ok": True, "ignored": True})
+
+    order.skydrop_last_payload = payload
+    if shipment_id:
+        order.skydrop_shipment_id = shipment_id
+    if tracking_number:
+        order.tracking_number = tracking_number
+    if raw_status:
+        order.shipping_status = _map_skydrop_status(raw_status)
+    order.save(update_fields=[
+        "skydrop_last_payload",
+        "skydrop_shipment_id",
+        "tracking_number",
+        "shipping_status",
+    ])
+
+    status_message = f"Skydrop actualizo el envío a: {raw_status or order.shipping_status}."
+    if tracking_number:
+        status_message += f" Tracking: {tracking_number}."
+    order.shipping_updates.create(status_message=status_message)
+    return JsonResponse({"ok": True})
+
+
+def sync_skydrop_order(request, order_id):
+    order = get_object_or_404(Order, id=order_id, customer=request.user)
+    try:
+        payload = sync_shipment(order)
+    except SkydropError as exc:
+        messages.error(request, str(exc))
+        return redirect("tienda:order_detail", order_id=order.id)
+    except Exception:
+        messages.error(request, "No pudimos sincronizar este envío con Skydrop.")
+        return redirect("tienda:order_detail", order_id=order.id)
+
+    order.tracking_number = payload.get("tracking_number") or order.tracking_number
+    order.skydrop_tracking_url = payload.get("tracking_url") or order.skydrop_tracking_url
+    order.skydrop_carrier = payload.get("carrier") or order.skydrop_carrier
+    order.skydrop_service = payload.get("service") or order.skydrop_service
+    if payload.get("status"):
+        order.shipping_status = _map_skydrop_status(payload["status"])
+    order.skydrop_last_payload = payload.get("payload")
+    order.save()
+    messages.success(request, "Actualizamos el tracking desde Skydrop.")
+    return redirect("tienda:order_detail", order_id=order.id)
 
 def catalogo_diseños(request):
     categoria_diseños = Categoria.objects.filter(nombre__icontains="dise").first()

@@ -6,7 +6,16 @@ from django.contrib.auth.models import User
 class ShippingAddressForm(forms.ModelForm):
     class Meta:
         model = ShippingAddress
-        fields = ['address_line1', 'address_line2', 'city', 'state', 'postal_code', 'country']
+        fields = ['phone', 'address_line1', 'address_line2', 'city', 'state', 'postal_code', 'country']
+        widgets = {
+            "phone": forms.TextInput(attrs={"placeholder": "Teléfono de contacto"}),
+            "address_line1": forms.TextInput(attrs={"placeholder": "Calle y número"}),
+            "address_line2": forms.TextInput(attrs={"placeholder": "Interior, referencia o colonia"}),
+            "city": forms.TextInput(attrs={"placeholder": "Ciudad"}),
+            "state": forms.TextInput(attrs={"placeholder": "Estado"}),
+            "postal_code": forms.TextInput(attrs={"placeholder": "Código postal"}),
+            "country": forms.TextInput(attrs={"placeholder": "País"}),
+        }
 
 
 class ReseñaForm(forms.ModelForm):
