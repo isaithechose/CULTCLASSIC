@@ -1,8 +1,12 @@
 {% extends "tienda/base.html" %}
 {% block content %}
 <section class="py-5">
-    <div class="container">
-        <h2 class="mb-4">Seguimiento de Pedidos</h2>
+    <div class="container px-4 px-lg-5">
+        <div class="mb-4">
+            <p class="page-eyebrow mb-2">Tracking</p>
+            <h2 class="mb-2">Seguimiento de pedidos</h2>
+            <p class="text-muted mb-0">Consulta el estado de envío y entra al detalle de cada orden.</p>
+        </div>
         {% if orders %}
             <table class="table">
                 <thead>
@@ -13,6 +17,7 @@
                         <th>Estado de Envío</th>
                         <th>Número de Seguimiento</th>
                         <th>Total</th>
+                        <th>Acción</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -24,6 +29,11 @@
                             <td>{{ order.shipping_status }}</td>
                             <td>{{ order.tracking_number|default:"-" }}</td>
                             <td>${{ order.total_price }}</td>
+                            <td>
+                                <a href="{% url 'tienda:order_tracking' order.id %}" class="btn btn-sm btn-outline-dark">
+                                    Ver seguimiento
+                                </a>
+                            </td>
                         </tr>
                     {% endfor %}
                 </tbody>

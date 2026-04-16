@@ -1,11 +1,14 @@
-{% extends "tienda/index.html" %}
+{% extends "tienda/base.html" %}
 
 {% block content %}
 <section class="py-5">
   <div class="container px-4 px-lg-5">
-    <h1>Detalle del Pedido #{{ order.id }}</h1>
-    <p>Fecha: {{ order.created_at|date:"d/m/Y H:i" }}</p>
-    <p>Estado: {{ order.status }}</p>
+    <div class="mb-4">
+      <p class="page-eyebrow mb-2">Order #{{ order.id }}</p>
+      <h1 class="mb-2">Detalle del pedido</h1>
+      <p class="text-muted mb-1">Fecha: {{ order.created_at|date:"d/m/Y H:i" }}</p>
+      <p class="text-muted mb-0">Estado: {{ order.status }}{% if order.shipping_status %} | Envío: {{ order.shipping_status }}{% endif %}</p>
+    </div>
 
     <h3>Productos</h3>
     <table class="table">
@@ -69,9 +72,11 @@
       <p><a href="{{ order.skydrop_tracking_url }}" target="_blank" rel="noopener">Abrir tracking Skydrop</a></p>
     {% endif %}
 
-    <!-- Botón para seguir el pedido -->
-    <a href="{% url 'tienda:shipping_details' %}" class="btn btn-info">Seguir pedido</a>
-    <a href="{% url 'tienda:sync_skydrop_order' order.id %}" class="btn btn-dark">Sincronizar con Skydrop</a>
+    <div class="d-flex flex-wrap gap-2 mt-4">
+      <a href="{% url 'tienda:my_orders' %}" class="btn btn-outline-secondary">Volver a mis pedidos</a>
+      <a href="{% url 'tienda:order_tracking' order.id %}" class="btn btn-info">Seguir pedido</a>
+      <a href="{% url 'tienda:sync_skydrop_order' order.id %}" class="btn btn-dark">Sincronizar con Skydrop</a>
+    </div>
   </div>
 </section>
 {% endblock %}

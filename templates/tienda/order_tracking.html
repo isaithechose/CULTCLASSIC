@@ -1,9 +1,21 @@
-{% extends "tienda/index.html" %}
+{% extends "tienda/base.html" %}
 {% block content %}
 <section class="py-5">
-    <div class="container">
-        <h2>Seguimiento del Pedido #{{ order.id }}</h2>
-        <p><strong>Estado actual:</strong> {{ order.status }}</p>
+    <div class="container px-4 px-lg-5">
+        <div class="mb-4">
+            <p class="page-eyebrow mb-2">Tracking</p>
+            <h2 class="mb-2">Seguimiento del pedido #{{ order.id }}</h2>
+            <p class="text-muted mb-1"><strong>Pago:</strong> {{ order.status }}</p>
+            <p class="text-muted mb-0"><strong>Envío:</strong> {{ order.shipping_status }}</p>
+        </div>
+
+        {% if order.tracking_number %}
+            <p><strong>Número de seguimiento:</strong> {{ order.tracking_number }}</p>
+        {% endif %}
+
+        {% if order.skydrop_tracking_url %}
+            <p><a href="{{ order.skydrop_tracking_url }}" target="_blank" rel="noopener">Abrir tracking de Skydrop</a></p>
+        {% endif %}
 
         {% if updates %}
             <h4>Historial de Actualizaciones:</h4>
@@ -19,8 +31,10 @@
             <p>Aún no hay actualizaciones de envío.</p>
         {% endif %}
 
-        <!-- Botón para "seguir" el pedido (redirecciona a esta vista de seguimiento) -->
-        <a href="{% url 'tienda:order_tracking' order.id %}" class="btn btn-primary">Seguir Pedido</a>
+        <div class="d-flex flex-wrap gap-2 mt-4">
+            <a href="{% url 'tienda:order_detail' order.id %}" class="btn btn-outline-secondary">Volver al detalle</a>
+            <a href="{% url 'tienda:my_orders' %}" class="btn btn-primary">Mis pedidos</a>
+        </div>
     </div>
 </section>
 {% endblock %}

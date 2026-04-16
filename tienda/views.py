@@ -390,6 +390,7 @@ def proceso_compra(request):
 
 
 
+@login_required
 def my_orders(request):
     orders_list = Order.objects.filter(customer=request.user).order_by('-created_at')
     paginator = Paginator(orders_list, 10)  # 10 pedidos por página
@@ -397,6 +398,7 @@ def my_orders(request):
     orders = paginator.get_page(page_number)
     return render(request, 'tienda/my_orders.html', {'orders': orders})
 
+@login_required
 def order_detail(request, order_id):
     order = get_object_or_404(Order, id=order_id, customer=request.user)
     return render(request, 'tienda/order_detail.html', {'order': order})
@@ -531,6 +533,7 @@ def payment_cancel(request):
 from .forms import ShippingAddressForm
 
 
+@login_required
 def order_tracking(request, order_id):
     order = get_object_or_404(Order, id=order_id, customer=request.user)
     updates = order.shipping_updates.all().order_by('-updated_at')
@@ -538,6 +541,8 @@ def order_tracking(request, order_id):
         'order': order,
         'updates': updates,
     })
+
+@login_required
 def tracking_view(request):
     orders = Order.objects.filter(customer=request.user)
     return render(request, 'tienda/tracking.html', {'orders': orders})
@@ -601,6 +606,7 @@ def skydrop_webhook(request):
     return JsonResponse({"ok": True})
 
 
+@login_required
 def sync_skydrop_order(request, order_id):
     order = get_object_or_404(Order, id=order_id, customer=request.user)
     try:

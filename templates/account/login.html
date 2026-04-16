@@ -10,7 +10,7 @@
             <p class="page-eyebrow">Access</p>
             <h1 class="page-hero__title">Entra a tu cuenta.</h1>
             <p class="page-hero__copy">
-                Usa tu correo o continúa con Google y Facebook para entrar más rápido al archivo, carrito y seguimiento de pedidos.
+                Usa tu correo o continúa con Google para entrar más rápido al archivo, carrito y seguimiento de pedidos.
             </p>
         </div>
     </div>
@@ -103,9 +103,6 @@
                     <a class="btn site-btn site-btn--accent auth-social auth-social--google" href="{% provider_login_url 'google' process='login' %}">
                         Continuar con Google
                     </a>
-                    <a class="btn site-btn site-btn--accent auth-social auth-social--facebook" href="{% provider_login_url 'facebook' process='login' %}">
-                        Continuar con Facebook
-                    </a>
                 </div>
             </div>
 
@@ -116,7 +113,7 @@
                     Tu sesión te permite guardar progreso, revisar órdenes y entrar al pago sin volver a capturar información.
                 </p>
                 <p class="auth-panel__text">
-                    Si todavía no tienes cuenta, puedes registrarte en segundos con correo, Google o Facebook.
+                    Si todavía no tienes cuenta, puedes registrarte en segundos con correo o Google.
                 </p>
                 <a class="btn site-btn site-btn--ghost" href="{% url 'account_signup' %}">Crear cuenta</a>
             </div>

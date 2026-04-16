@@ -33,10 +33,6 @@ SKYDROP_ORIGIN_CITY = config("SKYDROP_ORIGIN_CITY", default="")
 SKYDROP_ORIGIN_NEIGHBORHOOD = config("SKYDROP_ORIGIN_NEIGHBORHOOD", default="")
 SKYDROP_ORIGIN_COUNTRY_CODE = config("SKYDROP_ORIGIN_COUNTRY_CODE", default="MX")
 
-
-# Imprime el valor de la variable de entorno para verificar que se esté cargando correctamente
-print("GOOGLE_CLIENT_ID:", config('GOOGLE_CLIENT_ID', default='No configurado'))
-
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
@@ -61,7 +57,7 @@ INSTALLED_APPS = [
     'allauth.socialaccount.providers.facebook',  # Para Facebook
 ]
 
-SITE_ID = 4
+SITE_ID = config("SITE_ID", default=4, cast=int)
 
 
 
@@ -85,12 +81,13 @@ MIDDLEWARE = [
 LOGIN_REDIRECT_URL = 'tienda:tienda'  # A dónde redirigir después del inicio de sesión
 LOGOUT_REDIRECT_URL = 'tienda:tienda'          # A dónde redirigir después del cierre de sesión
 
-# Configuración de proveedores sociales (Google y Facebook)
+# Configuración de proveedores sociales.
+# En local usamos las credenciales desde .env para no depender del admin.
 SOCIALACCOUNT_PROVIDERS = {
     'google': {
         'APP': {
-            'client_id': config('GOOGLE_CLIENT_ID', default='TU_CLIENT_ID_DE_PRUEBA'),
-            'secret': config('GOOGLE_CLIENT_SECRET', default='TU_SECRET_DE_PRUEBA'),
+            'client_id': config('GOOGLE_CLIENT_ID', default=''),
+            'secret': config('GOOGLE_CLIENT_SECRET', default=''),
             'key': ''
         },
         'SCOPE': ['email', 'profile'],
@@ -98,11 +95,6 @@ SOCIALACCOUNT_PROVIDERS = {
         'OAUTH_PKCE_ENABLED': True,
     },
     'facebook': {
-        'APP': {
-            'client_id': config('FACEBOOK_CLIENT_ID', default='TU_FACEBOOK_APP_ID'),
-            'secret': config('FACEBOOK_CLIENT_SECRET', default='TU_FACEBOOK_APP_SECRET'),
-            'key': ''
-        },
         'METHOD': 'oauth2',
         'SCOPE': ['email', 'public_profile'],
         'FIELDS': ['id', 'email', 'name', 'first_name', 'last_name'],
