@@ -4,18 +4,28 @@ from .models import ShippingAddress
 from django.contrib.auth.models import User
 
 class ShippingAddressForm(forms.ModelForm):
+    base_input_class = "shipping-form__control"
+
     class Meta:
         model = ShippingAddress
         fields = ['phone', 'address_line1', 'address_line2', 'city', 'state', 'postal_code', 'country']
         widgets = {
-            "phone": forms.TextInput(attrs={"placeholder": "Teléfono de contacto"}),
-            "address_line1": forms.TextInput(attrs={"placeholder": "Calle y número"}),
-            "address_line2": forms.TextInput(attrs={"placeholder": "Interior, referencia o colonia"}),
-            "city": forms.TextInput(attrs={"placeholder": "Ciudad"}),
-            "state": forms.TextInput(attrs={"placeholder": "Estado"}),
-            "postal_code": forms.TextInput(attrs={"placeholder": "Código postal"}),
-            "country": forms.TextInput(attrs={"placeholder": "País"}),
+            "phone": forms.TextInput(attrs={"placeholder": "Teléfono de contacto", "autocomplete": "tel"}),
+            "address_line1": forms.TextInput(attrs={"placeholder": "Calle y número", "autocomplete": "address-line1"}),
+            "address_line2": forms.TextInput(attrs={"placeholder": "Interior, referencia o colonia", "autocomplete": "address-line2"}),
+            "city": forms.TextInput(attrs={"placeholder": "Ciudad", "autocomplete": "address-level2"}),
+            "state": forms.TextInput(attrs={"placeholder": "Estado", "autocomplete": "address-level1"}),
+            "postal_code": forms.TextInput(attrs={"placeholder": "Código postal", "autocomplete": "postal-code"}),
+            "country": forms.TextInput(attrs={"placeholder": "País", "autocomplete": "country-name"}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for name, field in self.fields.items():
+            existing_classes = field.widget.attrs.get("class", "")
+            field.widget.attrs["class"] = f"{existing_classes} {self.base_input_class}".strip()
+        self.fields["postal_code"].widget.attrs["inputmode"] = "numeric"
+        self.fields["phone"].widget.attrs["inputmode"] = "tel"
 
 
 class ReseñaForm(forms.ModelForm):

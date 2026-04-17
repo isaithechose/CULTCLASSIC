@@ -10,7 +10,7 @@
         <div class="hero-editorial__layout">
             <div class="hero-editorial__copy">
                 <p class="hero-editorial__eyebrow">Cult Clasiccs</p>
-                <h1 class="hero-editorial__title">Streetwear de lujo para un guardarropa que no necesita excesos.</h1>
+                <h1 class="hero-editorial__title">Streetwear de lujo con presencia limpia y silenciosa.</h1>
                 <p class="hero-editorial__text">
                     Construimos una estética limpia, oscura y precisa: cortes sólidos, gráfica medida y una presencia silenciosa que se siente premium.
                 </p>
@@ -19,17 +19,17 @@
                     <a class="btn site-btn site-btn--ghost" href="{% url 'tienda:archivo' %}">Explorar archivo</a>
                 </div>
             </div>
-            <div class="hero-editorial__visual" aria-hidden="true">
+            <div class="hero-editorial__visual">
                 <div class="hero-editorial__panel hero-editorial__panel--tall"></div>
                 <div class="hero-editorial__stack">
                     {% for producto in productos|slice:":2" %}
-                        <div class="hero-editorial__product">
+                        <a class="hero-editorial__product" href="{% url 'tienda:detalle_producto' producto.id %}" aria-label="Ver {{ producto.nombre }}">
                             {% if producto.imagen %}
                                 <img src="{{ producto.imagen.url }}" alt="{{ producto.nombre }}">
                             {% else %}
                                 <div class="hero-editorial__placeholder"></div>
                             {% endif %}
-                        </div>
+                        </a>
                     {% empty %}
                         <div class="hero-editorial__product"><div class="hero-editorial__placeholder"></div></div>
                         <div class="hero-editorial__product"><div class="hero-editorial__placeholder"></div></div>
