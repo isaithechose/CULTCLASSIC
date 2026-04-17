@@ -8,9 +8,9 @@
     <div class="container px-4 px-lg-5">
         <div class="page-hero__inner">
             <p class="page-eyebrow">Cart</p>
-            <h1 class="page-hero__title">Tu selección lista para cerrar el drop.</h1>
+            <h1 class="page-hero__title">Revisa tu carrito antes de pagar.</h1>
             <p class="page-hero__copy">
-                Revisa piezas, variantes y diseños antes de pasar al checkout. Todo dentro del mismo lenguaje visual de Cult Clasiccs.
+                Aquí puedes revisar tallas, colores, diseños y total antes de pasar al checkout.
             </p>
         </div>
     </div>
@@ -36,7 +36,7 @@
                             <div class="cart-item__content">
                                 <div class="cart-item__header">
                                     <div>
-                                        <p class="cart-item__eyebrow">Cult Clasiccs / Cart</p>
+                                        <p class="cart-item__eyebrow">Cult Clasiccs</p>
                                         <h2 class="cart-item__title">{{ item.nombre }}</h2>
                                     </div>
                                     <p class="cart-item__price">${{ item.precio }}</p>
@@ -92,30 +92,30 @@
                 </div>
 
                 <aside class="cart-summary">
-                    <p class="cart-summary__eyebrow">Order summary</p>
+                    <p class="cart-summary__eyebrow">Resumen</p>
                     <h2 class="cart-summary__title">Total del carrito</h2>
                     <div class="cart-summary__row">
                         <span>Total</span>
                         <strong>${{ total }}</strong>
                     </div>
                     <p class="cart-summary__text">
-                        Tu checkout mantiene las variantes y diseños elegidos para que cierres la compra sin perder configuración.
+                        Al seguir, vas a guardar tu dirección, revisar el envío y después pasar al pago.
                     </p>
                     <a href="{% url 'tienda:checkout' %}" class="btn site-btn site-btn--accent cart-summary__cta">
-                        Proceder a la compra
+                        Continuar al checkout
                     </a>
                 </aside>
             </div>
         {% else %}
             <div class="product-empty">
-                <p class="product-empty__eyebrow">Cart empty</p>
-                <h2 class="product-empty__title">Tu carrito todavía no tiene piezas seleccionadas.</h2>
+                <p class="product-empty__eyebrow">Carrito vacío</p>
+                <h2 class="product-empty__title">Todavía no has agregado productos.</h2>
                 <p class="product-empty__text">
-                    Vuelve al drop, explora el archivo o arma tu primera combinación para seguir con el checkout.
+                    Vuelve al inicio, revisa el catálogo o arma tu primera combinación para seguir con la compra.
                 </p>
                 <div class="hero-editorial__actions">
                     <a class="btn site-btn site-btn--accent" href="{% url 'tienda:tienda' %}">Volver al inicio</a>
-                    <a class="btn site-btn site-btn--ghost" href="{% url 'tienda:archivo' %}">Explorar archivo</a>
+                    <a class="btn site-btn site-btn--ghost" href="{% url 'tienda:archivo' %}">Ver catálogo</a>
                 </div>
             </div>
         {% endif %}

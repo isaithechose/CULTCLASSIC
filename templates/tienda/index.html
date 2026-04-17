@@ -10,13 +10,13 @@
         <div class="hero-editorial__layout">
             <div class="hero-editorial__copy">
                 <p class="hero-editorial__eyebrow">Cult Clasiccs</p>
-                <h1 class="hero-editorial__title">Streetwear de lujo con presencia limpia y silenciosa.</h1>
+                <h1 class="hero-editorial__title">Playeras y prendas con estilo limpio y fácil de usar.</h1>
                 <p class="hero-editorial__text">
-                    Construimos una estética limpia, oscura y precisa: cortes sólidos, gráfica medida y una presencia silenciosa que se siente premium.
+                    Diseños claros, cortes cómodos y piezas pensadas para usarse todos los días sin complicarte de más.
                 </p>
                 <div class="hero-editorial__actions">
-                    <a class="btn site-btn site-btn--accent" href="#drop">Ver drop actual</a>
-                    <a class="btn site-btn site-btn--ghost" href="{% url 'tienda:archivo' %}">Explorar archivo</a>
+                    <a class="btn site-btn site-btn--accent" href="#drop">Ver productos</a>
+                    <a class="btn site-btn site-btn--ghost" href="{% url 'tienda:archivo' %}">Ver catálogo</a>
                 </div>
             </div>
             <div class="hero-editorial__visual">
@@ -35,8 +35,8 @@
                         <div class="hero-editorial__product"><div class="hero-editorial__placeholder"></div></div>
                     {% endfor %}
                     <div class="hero-editorial__note">
-                        <p class="hero-editorial__note-label">Drop language</p>
-                        <p class="hero-editorial__note-text">Sharp silhouettes. Quiet graphics. Premium restraint.</p>
+                        <p class="hero-editorial__note-label">Disponible ahora</p>
+                        <p class="hero-editorial__note-text">Tallas, colores y diseños listos para pedir.</p>
                     </div>
                 </div>
             </div>
@@ -50,16 +50,16 @@
     <div class="container px-4 px-lg-5">
         <div class="brand-strip__grid">
             <div>
-                <p class="brand-strip__label">Visual thesis</p>
-                <p class="brand-strip__text">Negro, hueso y metal cepillado. Silencio visual con energía de editorial urbana.</p>
+                <p class="brand-strip__label">Compra fácil</p>
+                <p class="brand-strip__text">Elige tu diseño, revisa tu carrito y termina la compra sin pasos de más.</p>
             </div>
             <div>
-                <p class="brand-strip__label">Signature</p>
-                <p class="brand-strip__text">Streetwear minimalista de lujo hecho para destacar sin ruido.</p>
+                <p class="brand-strip__label">Diseños propios</p>
+                <p class="brand-strip__text">También puedes ver piezas personalizadas y revisar variantes antes de pagar.</p>
             </div>
             <div>
-                <p class="brand-strip__label">Drop rhythm</p>
-                <p class="brand-strip__text">Piezas seleccionadas, catálogo controlado y narrativa de archivo.</p>
+                <p class="brand-strip__label">Seguimiento</p>
+                <p class="brand-strip__text">Tu cuenta guarda pedidos, dirección y estado del envío en un solo lugar.</p>
             </div>
         </div>
     </div>
@@ -68,9 +68,9 @@
 <section id="drop" class="product-showcase">
     <div class="container px-4 px-lg-5">
         <div class="section-heading">
-            <p class="section-heading__eyebrow">Drop actual</p>
+            <p class="section-heading__eyebrow">Productos</p>
             <div class="section-heading__row">
-                <h2 class="section-heading__title">Piezas listas para entrar al clóset principal.</h2>
+                <h2 class="section-heading__title">Lo que ya está listo para comprar.</h2>
                 <a class="section-heading__link" href="{% url 'tienda:catalogo_diseños_propios' %}">Ver diseños propios</a>
             </div>
         </div>
@@ -87,7 +87,7 @@
                     </a>
                     <div class="product-tile__body">
                         <div>
-                            <p class="product-tile__meta">Cult Clasiccs / Drop 01</p>
+                            <p class="product-tile__meta">Cult Clasiccs</p>
                             <h3 class="product-tile__title">{{ producto.nombre }}</h3>
                         </div>
                         <div class="product-tile__footer">
@@ -99,8 +99,8 @@
             {% empty %}
                 <div class="product-empty">
                     <p class="product-empty__eyebrow">Catálogo en preparación</p>
-                    <h3 class="product-empty__title">Tu home ya tiene dirección de marca; falta cargar el primer drop.</h3>
-                    <p class="product-empty__text">Cuando agregues productos en esta categoría, aparecerán aquí con la nueva presentación editorial.</p>
+                    <h3 class="product-empty__title">Todavía no hay productos en esta sección.</h3>
+                    <p class="product-empty__text">Cuando agregues productos, aparecerán aquí listos para entrar al detalle y al carrito.</p>
                 </div>
             {% endfor %}
         </div>
@@ -111,15 +111,15 @@
     <div class="container px-4 px-lg-5">
         <div class="brand-story__layout">
             <div class="brand-story__intro">
-                <p class="section-heading__eyebrow">Manifesto</p>
-                <h2 class="section-heading__title">Lujo minimalista con raíz street.</h2>
+                <p class="section-heading__eyebrow">Cómo comprar</p>
+                <h2 class="section-heading__title">Explora, elige y termina tu compra sin complicarte.</h2>
             </div>
             <div class="brand-story__details">
                 <p>
-                    Cult Clasiccs vive entre archivo, uniforme y cultura urbana. La intención no es saturar la vista, sino construir piezas que se sientan permanentes.
+                    Entra al producto, elige talla, color y diseño, y guarda todo en tu carrito antes de pasar al pago.
                 </p>
                 <p>
-                    La web ahora empuja esa idea con una portada más limpia, tipografía más contundente y una navegación sobria que deja respirar al producto.
+                    Antes de cobrarte, guardamos tu dirección y revisamos el envío para que veas el total completo.
                 </p>
             </div>
         </div>
@@ -129,10 +129,10 @@
 <section class="final-cta">
     <div class="container px-4 px-lg-5">
         <div class="final-cta__box">
-            <p class="section-heading__eyebrow">Siguiente paso</p>
-            <h2 class="final-cta__title">Convierte la marca en una experiencia completa de compra.</h2>
+            <p class="section-heading__eyebrow">Sigue viendo</p>
+            <h2 class="final-cta__title">Ve al catálogo o entra directo al carrito.</h2>
             <p class="final-cta__text">
-                Podemos seguir con fichas de producto más premium, una página de catálogo más limpia o una identidad visual todavía más fuerte en todo el sitio.
+                Si ya encontraste lo que buscabas, sigue con la compra. Si no, todavía puedes seguir revisando diseños.
             </p>
             <div class="hero-editorial__actions">
                 <a class="btn site-btn site-btn--accent" href="{% url 'tienda:catalogo_diseños' %}">Ver catálogo</a>
