@@ -173,6 +173,37 @@ def _has_skydrop_credentials():
     return bool(getattr(settings, "SKYDROP_CLIENT_ID", "")) and bool(getattr(settings, "SKYDROP_CLIENT_SECRET", ""))
 
 
+def _fallback_shipping_amount():
+    return Decimal(str(getattr(settings, "FALLBACK_SHIPPING_FLAT_RATE", "199.00"))).quantize(
+        Decimal("0.01"), rounding=ROUND_HALF_UP
+    )
+
+
+def _apply_manual_shipping_quote(order, reason=""):
+    amount = _fallback_shipping_amount()
+    order.skydrop_quotation_id = None
+    order.skydrop_rate_id = None
+    order.skydrop_carrier = "Tarifa fija"
+    order.skydrop_service = "Envío estándar"
+    order.shipping_quote_amount = amount
+    order.shipping_quote_currency = "MXN"
+    order.stripe_session_id = None
+    order.skydrop_last_error = reason
+    order.save(
+        update_fields=[
+            "skydrop_quotation_id",
+            "skydrop_rate_id",
+            "skydrop_carrier",
+            "skydrop_service",
+            "shipping_quote_amount",
+            "shipping_quote_currency",
+            "stripe_session_id",
+            "skydrop_last_error",
+        ]
+    )
+    return amount
+
+
 def _apply_skydrop_quote(order):
     result = quote_order(order)
     best_rate = result["best_rate"]
@@ -267,33 +298,45 @@ def shipping_details(request):
             if _has_skydrop_credentials():
                 try:
                     amount = _apply_skydrop_quote(order)
-                except SkydropError as exc:
-                    order.skydrop_last_error = str(exc)
-                    order.shipping_quote_amount = None
-                    order.stripe_session_id = None
-                    order.save(update_fields=["skydrop_last_error", "shipping_quote_amount", "stripe_session_id"])
-                    messages.error(
-                        request,
-                        f"Guardamos tu dirección, pero no pudimos cotizar el envío todavía: {exc}"
-                    )
-                    return redirect('tienda:shipping_details')
-
-                order.shipping_updates.create(
-                    status_message=(
+                    shipping_note = (
                         f"Envío cotizado antes del pago. "
                         f"{order.skydrop_carrier or 'Skydrop'} / {order.skydrop_service or 'servicio disponible'} - "
                         f"${amount:.2f} {order.shipping_quote_currency or 'MXN'}."
                     )
-                )
-                messages.success(
-                    request,
-                    f"Dirección guardada. Tu envío quedó cotizado en ${amount:.2f} MXN. Revisa el total y continúa al pago."
-                )
+                    user_message = (
+                        f"Dirección guardada. Tu envío quedó cotizado en ${amount:.2f} MXN. Revisa el total y continúa al pago."
+                    )
+                except SkydropError as exc:
+                    amount = _apply_manual_shipping_quote(order, str(exc))
+                    shipping_note = (
+                        f"Skydrop no devolvió tarifa en tiempo real. "
+                        f"Aplicamos envío estándar temporal por ${amount:.2f} MXN para no frenar tu compra."
+                    )
+                    user_message = (
+                        f"Dirección guardada. Skydrop no pudo cotizar en tiempo real, así que aplicamos un envío estándar temporal de ${amount:.2f} MXN."
+                    )
+                    messages.warning(
+                        request,
+                        f"{user_message} Después podrás ajustar la guía desde administración si hace falta."
+                    )
+                else:
+                    messages.success(request, user_message)
             else:
-                messages.warning(
-                    request,
-                    "Guardamos tu dirección, pero Skydrop no está configurado. El pago seguirá sin cotización automática de envío."
+                amount = _apply_manual_shipping_quote(
+                    order,
+                    "Skydrop no está configurado. Se aplicó una tarifa fija temporal."
                 )
+                shipping_note = (
+                    f"Skydrop no está configurado. Aplicamos envío estándar temporal por ${amount:.2f} MXN."
+                )
+                messages.info(
+                    request,
+                    f"Dirección guardada. Aplicamos un envío estándar temporal de ${amount:.2f} MXN para continuar con el pago."
+                )
+
+            order.shipping_updates.create(
+                status_message=shipping_note
+            )
             request.session['order_id'] = order.id
             return redirect('tienda:shipping_details')
     else:
@@ -311,9 +354,7 @@ def shipping_details(request):
             }
         form = ShippingAddressForm(initial=initial)
 
-    can_continue_to_payment = hasattr(order, "shipping_address") and (
-        not _has_skydrop_credentials() or bool(order.shipping_quote_amount)
-    )
+    can_continue_to_payment = hasattr(order, "shipping_address") and bool(order.shipping_quote_amount)
     context = {
         'form': form,
         'order': order,

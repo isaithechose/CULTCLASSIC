@@ -26,7 +26,7 @@
                     <p class="shipping-panel__eyebrow">Delivery details</p>
                     <h2 class="shipping-panel__title">Información de envío</h2>
                     <p class="shipping-panel__copy">
-                        Llena los datos tal como quieres que aparezcan en la guía. Primero guardamos la dirección, después cotizamos el envío y al final te llevamos al pago con el total completo.
+                        Llena los datos tal como quieres que aparezcan en la guía. Primero guardamos la dirección, después cotizamos el envío y al final te llevamos al pago con el total completo. Si Skydrop no responde, usamos una tarifa estándar temporal para no frenar tu compra.
                     </p>
                 </div>
 
@@ -114,10 +114,8 @@
                             <strong>Envío:</strong>
                             {% if order.shipping_quote_amount %}
                                 ${{ order.shipping_quote_amount|floatformat:2 }} {{ order.shipping_quote_currency|default:"MXN" }}
-                            {% elif has_skydrop_credentials %}
-                                Pendiente de cotizar
                             {% else %}
-                                Sin cotización automática
+                                Pendiente de cotizar
                             {% endif %}
                         </div>
                         {% if order.skydrop_carrier or order.skydrop_service %}
@@ -135,7 +133,7 @@
                             Continuar al pago
                         </a>
                     {% else %}
-                        <p class="shipping-form__hint">Necesitamos guardar la dirección y tener una cotización de envío antes de abrir Stripe.</p>
+                        <p class="shipping-form__hint">Necesitamos guardar la dirección para calcular el envío y abrir Stripe.</p>
                     {% endif %}
                 </div>
 
