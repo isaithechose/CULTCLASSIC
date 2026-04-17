@@ -1,4 +1,5 @@
 import json
+import logging
 from collections import defaultdict
 
 from django.shortcuts import render, redirect, get_object_or_404
@@ -25,6 +26,8 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 
 from .skydrop import SkydropError, sync_shipment
+
+logger = logging.getLogger(__name__)
 
 def subir_diseño_personalizado(request):
     if request.method == 'POST' and request.FILES.get('imagen'):
@@ -415,6 +418,13 @@ def stripe_checkout(request):
     # Configura la API key de Stripe con la clave secreta desde settings
     stripe.api_key = settings.STRIPE_SECRET_KEY
 
+    if not getattr(settings, "STRIPE_SECRET_KEY", ""):
+        messages.error(
+            request,
+            "El checkout no está configurado todavía. Agrega las credenciales de Stripe en producción e inténtalo de nuevo."
+        )
+        return redirect("tienda:shipping_details")
+
     # Obtén el carrito desde la sesión
     carrito = request.session.get('carrito', {})
     if not carrito:
@@ -454,16 +464,27 @@ def stripe_checkout(request):
         })
 
     # Crea la sesión de Checkout de Stripe
-    session = stripe.checkout.Session.create(
-        payment_method_types=['card'],
-        line_items=line_items,
-        mode='payment',
-        metadata={"order_id": str(order.id)},
-        # Genera URLs absolutas para éxito y cancelación
-        success_url=request.build_absolute_uri(reverse('tienda:payment_success')) + "?session_id={CHECKOUT_SESSION_ID}",
-        cancel_url=request.build_absolute_uri(reverse('tienda:payment_cancel')),
-        locale='es',  # Opcional: para mostrar el checkout en español
-    )
+    try:
+        session = stripe.checkout.Session.create(
+            payment_method_types=['card'],
+            line_items=line_items,
+            mode='payment',
+            metadata={"order_id": str(order.id)},
+            # Genera URLs absolutas para éxito y cancelación
+            success_url=request.build_absolute_uri(reverse('tienda:payment_success')) + "?session_id={CHECKOUT_SESSION_ID}",
+            cancel_url=request.build_absolute_uri(reverse('tienda:payment_cancel')),
+            locale='es',  # Opcional: para mostrar el checkout en español
+        )
+    except stripe.error.StripeError as exc:
+        logger.exception("Stripe checkout session creation failed for order %s", order.id)
+        user_message = getattr(exc, "user_message", None) or str(exc) or "No pudimos iniciar el pago con Stripe."
+        messages.error(request, f"Stripe no pudo iniciar el pago: {user_message}")
+        return redirect("tienda:shipping_details")
+    except Exception:
+        logger.exception("Unexpected error while creating Stripe checkout session for order %s", order.id)
+        messages.error(request, "Ocurrió un problema inesperado al iniciar el checkout. Inténtalo de nuevo.")
+        return redirect("tienda:shipping_details")
+
     order.stripe_session_id = session.id
     order.save(update_fields=["stripe_session_id"])
 
@@ -480,7 +501,18 @@ def payment_success(request):
         return redirect("tienda:carrito")
 
     stripe.api_key = settings.STRIPE_SECRET_KEY
-    checkout_session = stripe.checkout.Session.retrieve(session_id)
+    try:
+        checkout_session = stripe.checkout.Session.retrieve(session_id)
+    except stripe.error.StripeError as exc:
+        logger.exception("Stripe checkout session retrieve failed for session %s", session_id)
+        user_message = getattr(exc, "user_message", None) or str(exc) or "No pudimos validar tu pago con Stripe."
+        messages.error(request, f"No pudimos validar el pago: {user_message}")
+        return redirect("tienda:carrito")
+    except Exception:
+        logger.exception("Unexpected error while retrieving Stripe checkout session %s", session_id)
+        messages.error(request, "Ocurrió un problema inesperado al validar tu pago.")
+        return redirect("tienda:carrito")
+
     if checkout_session.payment_status != "paid":
         messages.error(request, "Tu pago todavía no aparece como completado.")
         return redirect("tienda:order_detail", order_id=order_id)
