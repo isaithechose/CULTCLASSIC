@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from decimal import Decimal
 
 class Categoria(models.Model):
     nombre = models.CharField(max_length=50)
@@ -53,11 +54,21 @@ class Order(models.Model):
     skydrop_service = models.CharField(max_length=120, blank=True, null=True)
     skydrop_last_error = models.TextField(blank=True, null=True)
     skydrop_last_payload = models.JSONField(blank=True, null=True)
+    shipping_quote_amount = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    shipping_quote_currency = models.CharField(max_length=10, blank=True, null=True, default="MXN")
     stripe_session_id = models.CharField(max_length=255, blank=True, null=True)
 
     @property
-    def total_price(self):
+    def subtotal_price(self):
         return sum(item.price * item.quantity for item in self.items.all())
+
+    @property
+    def shipping_total(self):
+        return self.shipping_quote_amount or Decimal("0.00")
+
+    @property
+    def total_price(self):
+        return self.subtotal_price + self.shipping_total
 
     def __str__(self):
         return f"Orden {self.id} de {self.customer}"

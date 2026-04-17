@@ -26,7 +26,7 @@
           <tr>
             <td>{{ order.id }}</td>
             <td>{{ order.created_at|date:"d/m/Y H:i" }}</td>
-            <td>${{ order.total_price }}</td>
+            <td>${{ order.total_price|floatformat:2 }}</td>
             <td>{{ order.status }}</td>
             <td>
               <a href="{% url 'tienda:order_detail' order.id %}" class="btn btn-sm btn-primary">

@@ -26,7 +26,7 @@
                     <p class="shipping-panel__eyebrow">Delivery details</p>
                     <h2 class="shipping-panel__title">Información de envío</h2>
                     <p class="shipping-panel__copy">
-                        Llena los datos tal como quieres que aparezcan en la guía. Esto también nos ayuda a preparar la cotización y el seguimiento.
+                        Llena los datos tal como quieres que aparezcan en la guía. Primero guardamos la dirección, después cotizamos el envío y al final te llevamos al pago con el total completo.
                     </p>
                 </div>
 
@@ -92,15 +92,53 @@
                     </div>
 
                     <div class="shipping-form__footer">
-                        <p class="shipping-form__hint">Guardamos esta dirección para continuar con el pago y preparar tu guía.</p>
+                        <p class="shipping-form__hint">Guardamos esta dirección dentro de tu pedido y calculamos el envío antes de cobrar.</p>
                         <button type="submit" class="btn site-btn site-btn--accent shipping-form__submit">
-                            Guardar dirección
+                            Guardar y cotizar envío
                         </button>
                     </div>
                 </form>
             </div>
 
             <aside class="shipping-panel shipping-panel--map">
+                <div class="shipping-map-card shipping-map-card--summary">
+                    <div class="shipping-map-card__header">
+                        <p class="shipping-panel__eyebrow">Order summary</p>
+                        <h2 class="shipping-panel__title shipping-panel__title--small">Resumen antes del pago</h2>
+                    </div>
+
+                    <div class="shipping-map-card__address">
+                        <div><strong>Pedido:</strong> #{{ order.id }}</div>
+                        <div><strong>Productos:</strong> ${{ order.subtotal_price|floatformat:2 }} MXN</div>
+                        <div>
+                            <strong>Envío:</strong>
+                            {% if order.shipping_quote_amount %}
+                                ${{ order.shipping_quote_amount|floatformat:2 }} {{ order.shipping_quote_currency|default:"MXN" }}
+                            {% elif has_skydrop_credentials %}
+                                Pendiente de cotizar
+                            {% else %}
+                                Sin cotización automática
+                            {% endif %}
+                        </div>
+                        {% if order.skydrop_carrier or order.skydrop_service %}
+                            <div><strong>Servicio:</strong> {{ order.skydrop_carrier|default:"Skydrop" }}{% if order.skydrop_service %} / {{ order.skydrop_service }}{% endif %}</div>
+                        {% endif %}
+                        <div><strong>Total final:</strong> ${{ order.total_price|floatformat:2 }} MXN</div>
+                    </div>
+
+                    {% if order.skydrop_last_error %}
+                        <div class="shipping-form__error">{{ order.skydrop_last_error }}</div>
+                    {% endif %}
+
+                    {% if can_continue_to_payment %}
+                        <a href="{% url 'tienda:stripe_checkout' %}" class="btn site-btn site-btn--accent shipping-form__submit">
+                            Continuar al pago
+                        </a>
+                    {% else %}
+                        <p class="shipping-form__hint">Necesitamos guardar la dirección y tener una cotización de envío antes de abrir Stripe.</p>
+                    {% endif %}
+                </div>
+
                 <div class="shipping-map-card">
                     <div class="shipping-map-card__header">
                         <p class="shipping-panel__eyebrow">Map preview</p>

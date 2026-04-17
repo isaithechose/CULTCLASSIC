@@ -351,6 +351,8 @@ class OrderAdmin(admin.ModelAdmin):
                 "skydrop_tracking_url",
                 "skydrop_carrier",
                 "skydrop_service",
+                "shipping_quote_amount",
+                "shipping_quote_currency",
                 "skydrop_last_error",
             )
         }),

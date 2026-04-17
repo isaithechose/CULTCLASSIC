@@ -1,6 +1,7 @@
 import json
 import logging
 from collections import defaultdict
+from decimal import Decimal, ROUND_HALF_UP
 
 from django.shortcuts import render, redirect, get_object_or_404
 from .models import Producto, OrderItem, ShippingAddress
@@ -25,7 +26,7 @@ from django.contrib import messages
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 
-from .skydrop import SkydropError, sync_shipment
+from .skydrop import SkydropError, quote_order, sync_shipment
 
 logger = logging.getLogger(__name__)
 
@@ -103,6 +104,28 @@ def _build_order_from_cart(order, carrito):
             diseño_pecho=diseño_pecho or "",
             diseño_espalda=diseño_espalda or "",
         )
+    order.skydrop_quotation_id = None
+    order.skydrop_rate_id = None
+    order.skydrop_carrier = None
+    order.skydrop_service = None
+    order.skydrop_last_error = ""
+    order.skydrop_last_payload = None
+    order.shipping_quote_amount = None
+    order.shipping_quote_currency = "MXN"
+    order.stripe_session_id = None
+    order.save(
+        update_fields=[
+            "skydrop_quotation_id",
+            "skydrop_rate_id",
+            "skydrop_carrier",
+            "skydrop_service",
+            "skydrop_last_error",
+            "skydrop_last_payload",
+            "shipping_quote_amount",
+            "shipping_quote_currency",
+            "stripe_session_id",
+        ]
+    )
     return order
 
 
@@ -144,6 +167,39 @@ def _get_checkout_order(request):
     _build_order_from_cart(order, carrito)
     request.session["order_id"] = order.id
     return order
+
+
+def _has_skydrop_credentials():
+    return bool(getattr(settings, "SKYDROP_CLIENT_ID", "")) and bool(getattr(settings, "SKYDROP_CLIENT_SECRET", ""))
+
+
+def _apply_skydrop_quote(order):
+    result = quote_order(order)
+    best_rate = result["best_rate"]
+    amount = Decimal(str(best_rate["amount"])).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    order.skydrop_quotation_id = result["quotation_id"]
+    order.skydrop_rate_id = best_rate["id"]
+    order.skydrop_carrier = best_rate["carrier"]
+    order.skydrop_service = best_rate["service"]
+    order.shipping_quote_amount = amount
+    order.shipping_quote_currency = best_rate.get("currency") or "MXN"
+    order.skydrop_last_payload = result["payload"]
+    order.skydrop_last_error = ""
+    order.stripe_session_id = None
+    order.save(
+        update_fields=[
+            "skydrop_quotation_id",
+            "skydrop_rate_id",
+            "skydrop_carrier",
+            "skydrop_service",
+            "shipping_quote_amount",
+            "shipping_quote_currency",
+            "skydrop_last_payload",
+            "skydrop_last_error",
+            "stripe_session_id",
+        ]
+    )
+    return amount
 
 
 @login_required
@@ -208,15 +264,38 @@ def shipping_details(request):
                 order=order,
                 defaults=form.cleaned_data,
             )
-            if getattr(settings, "SKYDROP_CLIENT_ID", "") and getattr(settings, "SKYDROP_CLIENT_SECRET", ""):
-                messages.info(
+            if _has_skydrop_credentials():
+                try:
+                    amount = _apply_skydrop_quote(order)
+                except SkydropError as exc:
+                    order.skydrop_last_error = str(exc)
+                    order.shipping_quote_amount = None
+                    order.stripe_session_id = None
+                    order.save(update_fields=["skydrop_last_error", "shipping_quote_amount", "stripe_session_id"])
+                    messages.error(
+                        request,
+                        f"Guardamos tu dirección, pero no pudimos cotizar el envío todavía: {exc}"
+                    )
+                    return redirect('tienda:shipping_details')
+
+                order.shipping_updates.create(
+                    status_message=(
+                        f"Envío cotizado antes del pago. "
+                        f"{order.skydrop_carrier or 'Skydrop'} / {order.skydrop_service or 'servicio disponible'} - "
+                        f"${amount:.2f} {order.shipping_quote_currency or 'MXN'}."
+                    )
+                )
+                messages.success(
                     request,
-                    "Dirección guardada. El pago queda como último paso y después podrás cotizar o crear la guía de Skydrop."
+                    f"Dirección guardada. Tu envío quedó cotizado en ${amount:.2f} MXN. Revisa el total y continúa al pago."
                 )
             else:
-                messages.success(request, "Dirección guardada. Ahora continúa con el pago.")
+                messages.warning(
+                    request,
+                    "Guardamos tu dirección, pero Skydrop no está configurado. El pago seguirá sin cotización automática de envío."
+                )
             request.session['order_id'] = order.id
-            return redirect('tienda:stripe_checkout')
+            return redirect('tienda:shipping_details')
     else:
         initial = {}
         if hasattr(order, "shipping_address"):
@@ -232,7 +311,16 @@ def shipping_details(request):
             }
         form = ShippingAddressForm(initial=initial)
 
-    return render(request, 'tienda/shipping_details.html', {'form': form})
+    can_continue_to_payment = hasattr(order, "shipping_address") and (
+        not _has_skydrop_credentials() or bool(order.shipping_quote_amount)
+    )
+    context = {
+        'form': form,
+        'order': order,
+        'has_skydrop_credentials': _has_skydrop_credentials(),
+        'can_continue_to_payment': can_continue_to_payment,
+    }
+    return render(request, 'tienda/shipping_details.html', context)
 
 def tienda_view(request):
     productos = Producto.objects.filter(categoria__nombre__iexact="cortes")  # o "Cortes"
@@ -446,6 +534,9 @@ def stripe_checkout(request):
     if not hasattr(order, "shipping_address"):
         messages.error(request, "Primero necesitamos tu dirección de envío.")
         return redirect("tienda:shipping_details")
+    if _has_skydrop_credentials() and not order.shipping_quote_amount:
+        messages.error(request, "Primero necesitamos cotizar tu envío antes de enviarte a Stripe.")
+        return redirect("tienda:shipping_details")
 
     # Prepara los items para Stripe (Stripe requiere montos en centavos)
     line_items = []
@@ -461,6 +552,19 @@ def stripe_checkout(request):
                 'unit_amount': price_in_cents,
             },
             'quantity': item['cantidad'],
+        })
+
+    if order.shipping_quote_amount:
+        shipping_amount_cents = int(order.shipping_quote_amount * 100)
+        line_items.append({
+            'price_data': {
+                'currency': (order.shipping_quote_currency or 'mxn').lower(),
+                'product_data': {
+                    'name': f"Envío {order.skydrop_carrier or 'Skydrop'}",
+                },
+                'unit_amount': shipping_amount_cents,
+            },
+            'quantity': 1,
         })
 
     # Crea la sesión de Checkout de Stripe
@@ -546,7 +650,10 @@ def payment_success(request):
         subject = f"Pedido #{order.id} - Confirmación de Envío"
         message = (
             f"Hola {order.customer.username},\n\n"
-            f"Tu pedido #{order.id} ha sido procesado. Por favor, ingresa tu dirección de envío para continuar con el proceso.\n\n"
+            f"Tu pedido #{order.id} ha sido pagado y ya tenemos tu dirección de envío.\n"
+            f"Subtotal de productos: ${order.subtotal_price:.2f} MXN.\n"
+            f"Envío cotizado: ${order.shipping_total:.2f} MXN.\n"
+            f"Total final: ${order.total_price:.2f} MXN.\n\n"
             "¡Gracias por comprar en Cult Calle!"
         )
         from_email = settings.DEFAULT_FROM_EMAIL
