@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+import unicodedata
 from decimal import Decimal
 
 import requests
@@ -23,6 +25,14 @@ def _api_base_url() -> str:
 
 def _clean_value(value) -> str:
     return str(value or "").strip()
+
+
+def _clean_person_name(value: str) -> str:
+    normalized = unicodedata.normalize("NFKD", _clean_value(value))
+    ascii_value = normalized.encode("ascii", "ignore").decode("ascii")
+    safe_value = re.sub(r"[^A-Za-z0-9 '\s]", " ", ascii_value)
+    safe_value = re.sub(r"\s+", " ", safe_value).strip()
+    return safe_value
 
 
 def _normalize_country_code(value: str) -> str:
@@ -54,7 +64,8 @@ def _recipient_name(order) -> str:
     if not customer:
         return "Cliente Cult Classics"
     full_name = f"{customer.first_name} {customer.last_name}".strip()
-    return full_name or customer.username or customer.email or "Cliente Cult Classics"
+    candidate = full_name or customer.username or customer.email or "Cliente Cult Classics"
+    return _clean_person_name(candidate) or "Cliente Cult Classics"
 
 
 def _recipient_email(order) -> str:
