@@ -167,32 +167,71 @@ def _extract_rates(payload: dict) -> list[dict]:
 
     if isinstance(payload.get("included"), list):
         containers.extend(payload["included"])
+    if isinstance(payload.get("rates"), list):
+        containers.extend(payload["rates"])
+    if isinstance(payload.get("meta"), dict) and isinstance(payload["meta"].get("rates"), list):
+        containers.extend(payload["meta"]["rates"])
     if isinstance(payload.get("data"), list):
         containers.extend(payload["data"])
     elif isinstance(payload.get("data"), dict):
         containers.append(payload["data"])
+        attributes = payload["data"].get("attributes", {})
+        if isinstance(attributes, dict):
+            if isinstance(attributes.get("rates"), list):
+                containers.extend(attributes["rates"])
+            if isinstance(attributes.get("available_rates"), list):
+                containers.extend(attributes["available_rates"])
 
     for item in containers:
         if not isinstance(item, dict):
             continue
-        if item.get("type") != "rate":
+        item_type = item.get("type")
+        attributes = item.get("attributes", {}) if isinstance(item.get("attributes"), dict) else {}
+        if item_type not in (None, "rate") and not attributes:
             continue
-        attributes = item.get("attributes", {})
         if attributes.get("success") is False:
             continue
 
-        total = attributes.get("total") or attributes.get("amount") or attributes.get("cost") or "0"
+        raw_id = item.get("id") or attributes.get("id") or item.get("rate_id")
+        total = (
+            attributes.get("total")
+            or attributes.get("amount")
+            or attributes.get("cost")
+            or item.get("total")
+            or item.get("amount")
+            or item.get("cost")
+            or "0"
+        )
         try:
             total_amount = Decimal(str(total))
         except Exception:
             total_amount = Decimal("0")
 
+        carrier = (
+            attributes.get("provider_display_name")
+            or attributes.get("provider_name")
+            or attributes.get("carrier")
+            or item.get("provider_display_name")
+            or item.get("provider_name")
+            or item.get("carrier")
+        )
+        service = (
+            attributes.get("provider_service_name")
+            or attributes.get("provider_service_code")
+            or attributes.get("service")
+            or item.get("provider_service_name")
+            or item.get("provider_service_code")
+            or item.get("service")
+        )
+        if not raw_id or total_amount <= 0:
+            continue
+
         candidates.append(
             {
-                "id": item.get("id"),
+                "id": raw_id,
                 "amount": total_amount,
-                "carrier": attributes.get("provider_display_name") or attributes.get("provider_name"),
-                "service": attributes.get("provider_service_name") or attributes.get("provider_service_code"),
+                "carrier": carrier,
+                "service": service,
                 "raw": item,
             }
         )
@@ -223,7 +262,21 @@ def quote_order(order) -> dict:
     )
     rates = _extract_rates(response)
     if not rates:
-        raise SkydropError("Skydrop no devolvió tarifas para este pedido.")
+        summary = []
+        data = response.get("data")
+        if isinstance(data, dict):
+            attributes = data.get("attributes", {})
+            if isinstance(attributes, dict):
+                for key in ("error", "errors", "message", "messages", "warnings"):
+                    value = attributes.get(key)
+                    if value:
+                        summary.append(f"{key}: {value}")
+        for key in ("error", "errors", "message", "messages"):
+            value = response.get(key)
+            if value:
+                summary.append(f"{key}: {value}")
+        detail = f" Detalle: {' | '.join(map(str, summary))}" if summary else ""
+        raise SkydropError(f"Skydrop no devolvió tarifas para este pedido.{detail}")
 
     best_rate = rates[0]
     return {
