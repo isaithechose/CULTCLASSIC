@@ -78,6 +78,11 @@ def _validate_payload(data: dict, label: str) -> None:
 
 def _destination_payload(order) -> dict:
     shipping_address = order.shipping_address
+    area_level3 = (
+        _clean_value(shipping_address.address_line2 or "")
+        or _clean_value(shipping_address.city)
+        or _clean_value(shipping_address.state)
+    )
     payload = {
         "name": _recipient_name(order),
         "company": "Cliente Cult Classics",
@@ -89,7 +94,7 @@ def _destination_payload(order) -> dict:
         "postal_code": _clean_value(shipping_address.postal_code),
         "area_level1": _clean_value(shipping_address.state),
         "area_level2": _clean_value(shipping_address.city),
-        "area_level3": "",
+        "area_level3": area_level3,
         "country_code": _normalize_country_code(shipping_address.country),
     }
     _validate_payload(payload, "la dirección de destino")
