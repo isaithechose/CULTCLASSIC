@@ -87,7 +87,7 @@ def detalle_producto(request, producto_id):
 from django.contrib.auth.decorators import login_required
 
 
-def _build_order_from_cart(order, carrito):
+def _build_order_from_cart(order, carrito, reset_checkout_state=True):
     order.items.all().delete()
     for key, item in carrito.items():
         parts = key.split("-", 4)
@@ -104,29 +104,49 @@ def _build_order_from_cart(order, carrito):
             diseño_pecho=diseño_pecho or "",
             diseño_espalda=diseño_espalda or "",
         )
-    order.skydrop_quotation_id = None
-    order.skydrop_rate_id = None
-    order.skydrop_carrier = None
-    order.skydrop_service = None
-    order.skydrop_last_error = ""
-    order.skydrop_last_payload = None
-    order.shipping_quote_amount = None
-    order.shipping_quote_currency = "MXN"
-    order.stripe_session_id = None
-    order.save(
-        update_fields=[
-            "skydrop_quotation_id",
-            "skydrop_rate_id",
-            "skydrop_carrier",
-            "skydrop_service",
-            "skydrop_last_error",
-            "skydrop_last_payload",
-            "shipping_quote_amount",
-            "shipping_quote_currency",
-            "stripe_session_id",
-        ]
-    )
+    if reset_checkout_state:
+        order.skydrop_quotation_id = None
+        order.skydrop_rate_id = None
+        order.skydrop_carrier = None
+        order.skydrop_service = None
+        order.skydrop_last_error = ""
+        order.skydrop_last_payload = None
+        order.shipping_quote_amount = None
+        order.shipping_quote_currency = "MXN"
+        order.stripe_session_id = None
+        order.save(
+            update_fields=[
+                "skydrop_quotation_id",
+                "skydrop_rate_id",
+                "skydrop_carrier",
+                "skydrop_service",
+                "skydrop_last_error",
+                "skydrop_last_payload",
+                "shipping_quote_amount",
+                "shipping_quote_currency",
+                "stripe_session_id",
+            ]
+        )
     return order
+
+
+def _cart_matches_order(order, carrito):
+    expected_items = {}
+    for key, item in carrito.items():
+        expected_items[key] = {
+            "cantidad": int(item["cantidad"]),
+            "precio": str(item["precio"]),
+        }
+
+    current_items = {}
+    for item in order.items.select_related("product").all():
+        item_key = f"{item.product_id}-{item.talla or ''}-{item.color or ''}-{item.diseño_pecho or ''}-{item.diseño_espalda or ''}"
+        current_items[item_key] = {
+            "cantidad": int(item.quantity),
+            "precio": str(item.price),
+        }
+
+    return current_items == expected_items
 
 
 def _cart_stock_issues(carrito):
@@ -160,7 +180,8 @@ def _get_checkout_order(request):
             status="Pending",
         ).first()
         if existing_order:
-            _build_order_from_cart(existing_order, carrito)
+            if not _cart_matches_order(existing_order, carrito):
+                _build_order_from_cart(existing_order, carrito, reset_checkout_state=True)
             return existing_order
 
     order = Order.objects.create(customer=request.user)
