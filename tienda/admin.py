@@ -75,6 +75,7 @@ def marcar_pedidos_enviados(modeladmin, request, queryset):
 @admin.action(description="Cotizar envío con Skydrop")
 def cotizar_con_skydrop(modeladmin, request, queryset):
     procesados = 0
+    errores = 0
     for order in queryset:
         try:
             result = quote_order(order)
@@ -96,12 +97,21 @@ def cotizar_con_skydrop(modeladmin, request, queryset):
         except Exception as exc:
             order.skydrop_last_error = str(exc)
             order.save(update_fields=["skydrop_last_error"])
-    modeladmin.message_user(request, f"{procesados} pedidos cotizados en Skydrop.")
+            errores += 1
+    if procesados:
+        modeladmin.message_user(request, f"{procesados} pedidos cotizados en Skydrop.")
+    if errores:
+        modeladmin.message_user(
+            request,
+            f"{errores} pedidos fallaron al cotizar. Revisa el campo 'skydrop_last_error' en cada orden.",
+            level="error",
+        )
 
 
 @admin.action(description="Crear guía en Skydrop")
 def crear_guia_skydrop(modeladmin, request, queryset):
     procesados = 0
+    errores = 0
     for order in queryset:
         try:
             result = create_shipment(order, order.skydrop_rate_id)
@@ -125,15 +135,24 @@ def crear_guia_skydrop(modeladmin, request, queryset):
         except Exception as exc:
             order.skydrop_last_error = str(exc)
             order.save(update_fields=["skydrop_last_error"])
-    modeladmin.message_user(
-        request,
-        f"{procesados} guías creadas. Revisa el detalle del pedido para tracking o errores.",
-    )
+            errores += 1
+    if procesados:
+        modeladmin.message_user(
+            request,
+            f"{procesados} guías creadas. Revisa el detalle del pedido para tracking o errores.",
+        )
+    if errores:
+        modeladmin.message_user(
+            request,
+            f"{errores} pedidos fallaron al crear guía. Revisa 'skydrop_last_error'.",
+            level="error",
+        )
 
 
 @admin.action(description="Sincronizar tracking desde Skydrop")
 def sincronizar_skydrop(modeladmin, request, queryset):
     procesados = 0
+    errores = 0
     for order in queryset:
         try:
             result = sync_shipment(order)
@@ -156,7 +175,15 @@ def sincronizar_skydrop(modeladmin, request, queryset):
         except Exception as exc:
             order.skydrop_last_error = str(exc)
             order.save(update_fields=["skydrop_last_error"])
-    modeladmin.message_user(request, f"{procesados} pedidos sincronizados con Skydrop.")
+            errores += 1
+    if procesados:
+        modeladmin.message_user(request, f"{procesados} pedidos sincronizados con Skydrop.")
+    if errores:
+        modeladmin.message_user(
+            request,
+            f"{errores} pedidos fallaron al sincronizar. Revisa 'skydrop_last_error'.",
+            level="error",
+        )
 
 
 class SubcategoriaInline(admin.TabularInline):

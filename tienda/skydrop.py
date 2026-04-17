@@ -21,20 +21,31 @@ def _api_base_url() -> str:
     return getattr(settings, "SKYDROP_API_BASE_URL", "https://pro.skydropx.com").rstrip("/")
 
 
+def _clean_value(value) -> str:
+    return str(value or "").strip()
+
+
+def _normalize_country_code(value: str) -> str:
+    normalized = _clean_value(value).lower()
+    if normalized in {"mexico", "méxico", "mx", "mx."}:
+        return "MX"
+    return _clean_value(value).upper()
+
+
 def _origin_payload() -> dict:
     return {
-        "name": getattr(settings, "SKYDROP_ORIGIN_NAME", "Cult Classics"),
-        "company": getattr(settings, "SKYDROP_ORIGIN_COMPANY", "Cult Classics"),
-        "phone": getattr(settings, "SKYDROP_ORIGIN_PHONE", ""),
-        "email": getattr(settings, "SKYDROP_ORIGIN_EMAIL", ""),
-        "street1": getattr(settings, "SKYDROP_ORIGIN_STREET1", ""),
-        "street2": getattr(settings, "SKYDROP_ORIGIN_STREET2", ""),
-        "reference": getattr(settings, "SKYDROP_ORIGIN_REFERENCE", ""),
-        "postal_code": getattr(settings, "SKYDROP_ORIGIN_POSTAL_CODE", ""),
-        "area_level1": getattr(settings, "SKYDROP_ORIGIN_STATE", ""),
-        "area_level2": getattr(settings, "SKYDROP_ORIGIN_CITY", ""),
-        "area_level3": getattr(settings, "SKYDROP_ORIGIN_NEIGHBORHOOD", ""),
-        "country_code": getattr(settings, "SKYDROP_ORIGIN_COUNTRY_CODE", "MX"),
+        "name": _clean_value(getattr(settings, "SKYDROP_ORIGIN_NAME", "Cult Classics")),
+        "company": _clean_value(getattr(settings, "SKYDROP_ORIGIN_COMPANY", "Cult Classics")),
+        "phone": _clean_value(getattr(settings, "SKYDROP_ORIGIN_PHONE", "")),
+        "email": _clean_value(getattr(settings, "SKYDROP_ORIGIN_EMAIL", "")),
+        "street1": _clean_value(getattr(settings, "SKYDROP_ORIGIN_STREET1", "")),
+        "street2": _clean_value(getattr(settings, "SKYDROP_ORIGIN_STREET2", "")),
+        "reference": _clean_value(getattr(settings, "SKYDROP_ORIGIN_REFERENCE", "")),
+        "postal_code": _clean_value(getattr(settings, "SKYDROP_ORIGIN_POSTAL_CODE", "")),
+        "area_level1": _clean_value(getattr(settings, "SKYDROP_ORIGIN_STATE", "")),
+        "area_level2": _clean_value(getattr(settings, "SKYDROP_ORIGIN_CITY", "")),
+        "area_level3": _clean_value(getattr(settings, "SKYDROP_ORIGIN_NEIGHBORHOOD", "")),
+        "country_code": _normalize_country_code(getattr(settings, "SKYDROP_ORIGIN_COUNTRY_CODE", "MX")),
     }
 
 
@@ -48,32 +59,41 @@ def _recipient_name(order) -> str:
 
 def _recipient_email(order) -> str:
     customer = order.customer
-    return getattr(customer, "email", "") or getattr(settings, "SKYDROP_DEFAULT_EMAIL", "")
+    return _clean_value(getattr(customer, "email", "")) or _clean_value(getattr(settings, "SKYDROP_DEFAULT_EMAIL", ""))
 
 
 def _recipient_phone(order) -> str:
     shipping_address = getattr(order, "shipping_address", None)
     if shipping_address and shipping_address.phone:
-        return shipping_address.phone
-    return getattr(settings, "SKYDROP_DEFAULT_PHONE", "")
+        return _clean_value(shipping_address.phone)
+    return _clean_value(getattr(settings, "SKYDROP_DEFAULT_PHONE", ""))
+
+
+def _validate_payload(data: dict, label: str) -> None:
+    required_fields = ("name", "phone", "street1", "postal_code", "area_level1", "area_level2", "country_code")
+    missing = [field for field in required_fields if not _clean_value(data.get(field))]
+    if missing:
+        raise SkydropError(f"Faltan campos obligatorios en {label}: {', '.join(missing)}.")
 
 
 def _destination_payload(order) -> dict:
     shipping_address = order.shipping_address
-    return {
+    payload = {
         "name": _recipient_name(order),
         "company": "Cliente Cult Classics",
         "phone": _recipient_phone(order),
         "email": _recipient_email(order),
-        "street1": shipping_address.address_line1,
-        "street2": shipping_address.address_line2 or "",
-        "reference": shipping_address.address_line2 or "",
-        "postal_code": shipping_address.postal_code,
-        "area_level1": shipping_address.state,
-        "area_level2": shipping_address.city,
+        "street1": _clean_value(shipping_address.address_line1),
+        "street2": _clean_value(shipping_address.address_line2 or ""),
+        "reference": _clean_value(shipping_address.address_line2 or ""),
+        "postal_code": _clean_value(shipping_address.postal_code),
+        "area_level1": _clean_value(shipping_address.state),
+        "area_level2": _clean_value(shipping_address.city),
         "area_level3": "",
-        "country_code": "MX" if shipping_address.country.lower() in {"mexico", "méxico", "mx"} else shipping_address.country,
+        "country_code": _normalize_country_code(shipping_address.country),
     }
+    _validate_payload(payload, "la dirección de destino")
+    return payload
 
 
 def _parcel_payload(order) -> dict:
@@ -89,6 +109,12 @@ def _parcel_payload(order) -> dict:
     }
 
 
+def _validate_origin() -> dict:
+    payload = _origin_payload()
+    _validate_payload(payload, "la dirección de origen")
+    return payload
+
+
 def _token() -> str:
     response = requests.post(
         f"{_api_base_url()}/api/v1/oauth/token",
@@ -99,7 +125,11 @@ def _token() -> str:
         },
         timeout=20,
     )
-    response.raise_for_status()
+    try:
+        response.raise_for_status()
+    except requests.HTTPError as exc:
+        detail = response.text[:500]
+        raise SkydropError(f"Skydrop rechazó la autenticación: {detail}") from exc
     access_token = response.json().get("access_token")
     if not access_token:
         raise SkydropError("Skydrop no devolvió access_token.")
@@ -118,7 +148,11 @@ def _request(method: str, path: str, payload: dict | None = None) -> dict:
         },
         timeout=30,
     )
-    response.raise_for_status()
+    try:
+        response.raise_for_status()
+    except requests.HTTPError as exc:
+        detail = response.text[:800]
+        raise SkydropError(f"Skydrop devolvió un error en {path}: {detail}") from exc
     return response.json()
 
 
@@ -167,14 +201,17 @@ def quote_order(order) -> dict:
     if not hasattr(order, "shipping_address"):
         raise SkydropError("El pedido no tiene dirección de envío.")
 
+    origin_payload = _validate_origin()
+    destination_payload = _destination_payload(order)
+
     response = _request(
         "POST",
         "/api/v1/quotations",
         {
             "quotation": {
                 "order_id": str(order.id),
-                "address_from": _origin_payload(),
-                "address_to": _destination_payload(order),
+                "address_from": origin_payload,
+                "address_to": destination_payload,
                 "parcel": _parcel_payload(order),
             }
         },
@@ -198,6 +235,9 @@ def create_shipment(order, rate_id: str | None = None) -> dict:
     if not hasattr(order, "shipping_address"):
         raise SkydropError("El pedido no tiene dirección de envío.")
 
+    origin_payload = _validate_origin()
+    destination_payload = _destination_payload(order)
+
     if not rate_id:
         quotation = quote_order(order)
         rate_id = quotation["best_rate"]["id"]
@@ -209,8 +249,8 @@ def create_shipment(order, rate_id: str | None = None) -> dict:
             "shipment": {
                 "rate_id": rate_id,
                 "printing_format": getattr(settings, "SKYDROP_PRINTING_FORMAT", "standard"),
-                "address_from": _origin_payload(),
-                "address_to": _destination_payload(order),
+                "address_from": origin_payload,
+                "address_to": destination_payload,
                 "parcel": _parcel_payload(order),
             }
         },
@@ -218,12 +258,18 @@ def create_shipment(order, rate_id: str | None = None) -> dict:
     data = response.get("data", {}) if isinstance(response.get("data"), dict) else response
     attributes = data.get("attributes", {}) if isinstance(data, dict) else {}
     relationships = data.get("relationships", {}) if isinstance(data, dict) else {}
+    label_url = (
+        attributes.get("label_url")
+        or attributes.get("labelDownloadUrl")
+        or attributes.get("printable_label_url")
+        or relationships.get("label_url")
+    )
 
     return {
         "shipment_id": data.get("id"),
         "tracking_number": attributes.get("master_tracking_number") or attributes.get("tracking_number"),
         "tracking_url": attributes.get("tracking_url"),
-        "label_url": relationships.get("label_url") or attributes.get("label_url"),
+        "label_url": label_url,
         "carrier": attributes.get("provider_display_name") or attributes.get("carrier"),
         "service": attributes.get("provider_service_name") or attributes.get("service"),
         "payload": response,
