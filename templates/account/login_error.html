@@ -1,28 +1,44 @@
-{% load static %}
-<!DOCTYPE html>
-<html lang="es-mx">
-<head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
-    <meta name="description" content="Cult Calle - Streetwear Mexicano" />
-    <meta name="author" content="Cult Calle" />
-    <title>Cult Calle - Tienda</title>
-    <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}" />
-    <!-- Bootstrap icons -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.5.0/font/bootstrap-icons.css" rel="stylesheet" />
-    <!-- Core theme CSS (includes Bootstrap) -->
-    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
-</head>
-{% block content %}
-<section class="py-5">
+{% extends "tienda/base.html" %}
+
+{% block title %}Cult Clasiccs | Error de acceso{% endblock %}
+
+{% block hero %}
+<section class="page-hero page-hero--compact">
     <div class="container px-4 px-lg-5">
-        <div class="row justify-content-center">
-            <div class="col-lg-6">
-                <div class="alert alert-danger text-center">
-                    <h4 class="fw-bolder">Falló la autenticación</h4>
+        <div class="page-hero__inner">
+            <p class="page-eyebrow">Social login</p>
+            <h1 class="page-hero__title">No pudimos completar el acceso.</h1>
+            <p class="page-hero__copy">
+                La autenticación con terceros devolvió un error. Puedes volver a intentarlo o entrar con tu correo para seguir con tu compra.
+            </p>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block content %}
+<section class="auth-page">
+    <div class="container px-4 px-lg-5">
+        <div class="auth-shell">
+            <div class="auth-panel auth-panel--form">
+                <p class="auth-panel__eyebrow">Access blocked</p>
+                <h2 class="auth-panel__title">Falló la autenticación de terceros</h2>
+                <div class="auth-form__alert">
                     <p>Se produjo un error al intentar iniciar sesión con una cuenta de terceros.</p>
                 </div>
+                <div class="auth-socials">
+                    <a class="btn site-btn site-btn--accent auth-social" href="{% url 'account_login' %}">Volver a iniciar sesión</a>
+                    <a class="btn site-btn site-btn--ghost auth-social" href="{% url 'account_signup' %}">Crear cuenta con correo</a>
+                </div>
+            </div>
+
+            <div class="auth-panel auth-panel--aside">
+                <p class="auth-panel__eyebrow">Cult Clasiccs</p>
+                <h2 class="auth-panel__title">Tu checkout sigue aquí.</h2>
+                <p class="auth-panel__text">
+                    Si vienes del carrito o del pago, puedes volver a entrar con correo y retomar el flujo sin perder el ritmo.
+                </p>
+                <a class="btn site-btn site-btn--ghost" href="{% url 'tienda:carrito' %}">Volver al carrito</a>
             </div>
         </div>
     </div>

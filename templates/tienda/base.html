@@ -98,6 +98,19 @@
 
 <!-- Bloque de contenido -->
 <main>
+    {% if messages %}
+    <section class="site-messages">
+        <div class="container px-4 px-lg-5">
+            <div class="site-messages__stack">
+                {% for message in messages %}
+                    <div class="site-message site-message--{{ message.tags|default:'info' }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+    {% endif %}
     {% block content %}
     {% endblock %}
 </main>

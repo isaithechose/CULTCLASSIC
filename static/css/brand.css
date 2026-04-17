@@ -3,11 +3,13 @@
   --cc-bg-soft: #121214;
   --cc-panel: #17171a;
   --cc-ink: #f5f1ea;
+  --cc-text: #f5f1ea;
   --cc-muted: #b8afa3;
   --cc-line: rgba(245, 241, 234, 0.12);
   --cc-accent: #d6c3a1;
   --cc-accent-strong: #ead6b4;
   --cc-shadow: 0 26px 80px rgba(0, 0, 0, 0.28);
+  --cc-display: "Teko", sans-serif;
 }
 
 body.brand-page {
@@ -532,6 +534,47 @@ body.brand-page {
 .site-footer {
   border-top: 1px solid var(--cc-line);
   background: rgba(0, 0, 0, 0.24);
+}
+
+.site-messages {
+  padding-top: 1.25rem;
+}
+
+.site-messages__stack {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.site-message {
+  border: 1px solid var(--cc-line);
+  border-radius: 1rem;
+  padding: 0.95rem 1rem;
+  box-shadow: var(--cc-shadow);
+}
+
+.site-message--success {
+  background: rgba(67, 160, 71, 0.12);
+  border-color: rgba(67, 160, 71, 0.24);
+  color: #cce7cf;
+}
+
+.site-message--error,
+.site-message--danger {
+  background: rgba(176, 58, 46, 0.12);
+  border-color: rgba(176, 58, 46, 0.24);
+  color: #f2c5bd;
+}
+
+.site-message--warning {
+  background: rgba(214, 195, 161, 0.12);
+  border-color: rgba(214, 195, 161, 0.24);
+  color: #f2e4cb;
+}
+
+.site-message--info {
+  background: rgba(81, 127, 219, 0.12);
+  border-color: rgba(81, 127, 219, 0.24);
+  color: #d9e4ff;
 }
 
 .site-footer__inner {
@@ -1372,6 +1415,33 @@ body.brand-page {
 .profile-orders {
   display: grid;
   gap: 0.95rem;
+}
+
+.order-surface {
+  border: 1px solid var(--cc-line);
+  border-radius: 1.6rem;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.01));
+  box-shadow: var(--cc-shadow);
+  padding: 1.5rem;
+}
+
+.order-table {
+  color: var(--cc-ink);
+}
+
+.order-table th,
+.order-table td {
+  border-color: var(--cc-line);
+}
+
+.order-updates {
+  display: grid;
+  gap: 0.85rem;
+  padding-left: 1rem;
+}
+
+.order-updates li {
+  color: var(--cc-muted);
 }
 
 .profile-order {

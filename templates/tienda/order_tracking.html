@@ -2,7 +2,7 @@
 {% block content %}
 <section class="py-5">
     <div class="container px-4 px-lg-5">
-        <div class="mb-4">
+        <div class="order-surface mb-4">
             <p class="page-eyebrow mb-2">Tracking</p>
             <h2 class="mb-2">Seguimiento del pedido #{{ order.id }}</h2>
             <p class="text-muted mb-1"><strong>Pago:</strong> {{ order.status }}</p>
@@ -17,9 +17,10 @@
             <p><a href="{{ order.skydrop_tracking_url }}" target="_blank" rel="noopener">Abrir tracking de Skydrop</a></p>
         {% endif %}
 
+        <div class="order-surface">
         {% if updates %}
             <h4>Historial de Actualizaciones:</h4>
-            <ul>
+            <ul class="order-updates">
                 {% for update in updates %}
                     <li>
                         <strong>{{ update.updated_at|date:"SHORT_DATETIME_FORMAT" }}:</strong>
@@ -30,10 +31,11 @@
         {% else %}
             <p>Aún no hay actualizaciones de envío.</p>
         {% endif %}
+        </div>
 
         <div class="d-flex flex-wrap gap-2 mt-4">
-            <a href="{% url 'tienda:order_detail' order.id %}" class="btn btn-outline-secondary">Volver al detalle</a>
-            <a href="{% url 'tienda:my_orders' %}" class="btn btn-primary">Mis pedidos</a>
+            <a href="{% url 'tienda:order_detail' order.id %}" class="btn site-btn site-btn--ghost">Volver al detalle</a>
+            <a href="{% url 'tienda:my_orders' %}" class="btn site-btn site-btn--accent">Mis pedidos</a>
         </div>
     </div>
 </section>
