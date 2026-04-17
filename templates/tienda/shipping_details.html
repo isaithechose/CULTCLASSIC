@@ -20,6 +20,30 @@
 {% block content %}
 <section class="shipping-page">
     <div class="container px-4 px-lg-5">
+        <div class="shipping-progress">
+            <div class="shipping-progress__item shipping-progress__item--done">
+                <span>1</span>
+                <div>
+                    <strong>Carrito</strong>
+                    <small>Productos listos</small>
+                </div>
+            </div>
+            <div class="shipping-progress__item shipping-progress__item--active">
+                <span>2</span>
+                <div>
+                    <strong>Dirección</strong>
+                    <small>Guardar y cotizar</small>
+                </div>
+            </div>
+            <div class="shipping-progress__item">
+                <span>3</span>
+                <div>
+                    <strong>Pago</strong>
+                    <small>Confirmar pedido</small>
+                </div>
+            </div>
+        </div>
+
         <div class="shipping-layout">
             <div class="shipping-panel shipping-panel--form">
                 <div class="shipping-panel__header">
@@ -105,6 +129,16 @@
                     <div class="shipping-map-card__header">
                         <p class="shipping-panel__eyebrow">Order summary</p>
                         <h2 class="shipping-panel__title shipping-panel__title--small">Resumen antes del pago</h2>
+                    </div>
+
+                    <div class="shipping-quote-state">
+                        {% if order.shipping_quote_amount %}
+                            <span class="shipping-quote-state__badge shipping-quote-state__badge--ready">Envío listo</span>
+                            <p class="shipping-quote-state__copy">Ya puedes pasar al pago con el total completo.</p>
+                        {% else %}
+                            <span class="shipping-quote-state__badge">Pendiente</span>
+                            <p class="shipping-quote-state__copy">Primero guardamos la dirección y después calculamos el envío.</p>
+                        {% endif %}
                     </div>
 
                     <div class="shipping-map-card__address">

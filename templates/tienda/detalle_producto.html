@@ -361,6 +361,217 @@
         cursor: pointer;
     }
 
+    .detail-configurator {
+        display: grid;
+        gap: 1.5rem;
+        margin: 1.6rem 0 1.35rem;
+        padding-top: 1.3rem;
+        border-top: 1px solid var(--cc-line);
+    }
+
+    .detail-configurator__intro {
+        display: grid;
+        gap: 0.45rem;
+    }
+
+    .detail-configurator__eyebrow {
+        font-size: 0.75rem;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--cc-muted);
+    }
+
+    .detail-configurator__title {
+        margin: 0;
+        font-size: clamp(1.4rem, 2vw, 1.8rem);
+        color: var(--cc-ink);
+    }
+
+    .detail-configurator__copy {
+        margin: 0;
+        color: var(--cc-muted);
+        line-height: 1.65;
+        max-width: 34rem;
+    }
+
+    .detail-summary-panel {
+        display: grid;
+        gap: 0.85rem;
+        padding: 1rem 1.1rem;
+        border: 1px solid var(--cc-line);
+        border-radius: 1.4rem;
+        background: rgba(255, 255, 255, 0.03);
+    }
+
+    .detail-summary-panel__head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 1rem;
+    }
+
+    .detail-summary-panel__head strong {
+        color: var(--cc-ink);
+        font-size: 1rem;
+    }
+
+    .detail-summary-panel__head span {
+        font-size: 0.85rem;
+        color: var(--cc-muted);
+    }
+
+    .detail-summary-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.75rem 1rem;
+    }
+
+    .detail-summary-item {
+        display: grid;
+        gap: 0.15rem;
+    }
+
+    .detail-summary-item small {
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: var(--cc-muted);
+        font-size: 0.68rem;
+    }
+
+    .detail-summary-item span {
+        color: var(--cc-ink);
+        font-size: 0.95rem;
+    }
+
+    .detail-design-layout {
+        display: grid;
+        gap: 1rem;
+    }
+
+    .detail-design-columns {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1rem;
+    }
+
+    .detail-design-panel {
+        display: grid;
+        gap: 0.9rem;
+        padding: 1rem;
+        border: 1px solid var(--cc-line);
+        border-radius: 1.35rem;
+        background: rgba(255,255,255,0.02);
+    }
+
+    .detail-design-panel__top {
+        display: grid;
+        gap: 0.15rem;
+    }
+
+    .detail-design-panel__top strong {
+        color: var(--cc-ink);
+        font-size: 1rem;
+    }
+
+    .detail-design-panel__top span {
+        color: var(--cc-muted);
+        font-size: 0.9rem;
+        line-height: 1.5;
+    }
+
+    .detail-selected-chip {
+        display: inline-flex;
+        width: fit-content;
+        align-items: center;
+        gap: 0.45rem;
+        padding: 0.35rem 0.7rem;
+        border-radius: 999px;
+        background: rgba(214, 195, 161, 0.1);
+        color: var(--cc-accent);
+        font-size: 0.82rem;
+    }
+
+    .detail-design-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.8rem;
+        max-height: 27rem;
+        overflow: auto;
+        padding-right: 0.2rem;
+    }
+
+    .detail-design-card {
+        display: grid;
+        gap: 0.75rem;
+        padding: 0.8rem;
+        border-radius: 1rem;
+        border: 1px solid rgba(255,255,255,0.08);
+        background: rgba(255,255,255,0.03);
+    }
+
+    .detail-design-card img {
+        width: 100%;
+        aspect-ratio: 1 / 1;
+        object-fit: contain;
+        border-radius: 0.85rem;
+        background: rgba(255,255,255,0.06);
+        padding: 0.5rem;
+    }
+
+    .detail-design-card small {
+        color: var(--cc-muted);
+        line-height: 1.45;
+        min-height: 2.5em;
+        display: block;
+        word-break: break-word;
+    }
+
+    .detail-design-card .site-btn {
+        width: 100%;
+        justify-content: center;
+        background: rgba(255,255,255,0.08);
+        border-color: rgba(255,255,255,0.08);
+        color: var(--cc-ink);
+    }
+
+    .detail-design-card .site-btn:hover {
+        color: #ffffff;
+    }
+
+    .detail-design-personal {
+        display: grid;
+        gap: 0.9rem;
+        padding: 1rem;
+        border: 1px solid var(--cc-line);
+        border-radius: 1.35rem;
+        background: rgba(255,255,255,0.02);
+    }
+
+    .detail-design-personal__header {
+        display: grid;
+        gap: 0.15rem;
+    }
+
+    .detail-design-personal__header strong {
+        color: var(--cc-ink);
+    }
+
+    .detail-design-personal__header span {
+        color: var(--cc-muted);
+        font-size: 0.9rem;
+    }
+
+    .detail-design-personal__grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.7rem;
+    }
+
+    .detail-design-personal .miniatura-diseño.is-active {
+        outline: 2px solid var(--cc-accent);
+        outline-offset: 2px;
+    }
+
     @media (max-width: 639.98px) {
         .detail-size-grid {
             grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -379,6 +590,12 @@
         .detail-content-pane,
         .detail-info-compact {
             max-width: none;
+        }
+
+        .detail-summary-grid,
+        .detail-design-columns,
+        .detail-design-grid {
+            grid-template-columns: 1fr;
         }
     }
 
@@ -420,7 +637,7 @@
                 {% for color in colores_disponibles %}
                     <img src="/media/productos/{{ producto.slug_imagen }}_{{ color|lower }}_001.webp"
                          class="miniatura"
-                         onclick="cambiarImagen(this)">
+                         alt="{{ producto.nombre }} {{ color }}">
                 {% endfor %}
             </div>
         </div>
@@ -489,6 +706,31 @@
                           <button type="button" class="btn site-btn site-btn--ghost">Size Guide</button>
                       </div>
 
+                      <div class="detail-summary-panel">
+                          <div class="detail-summary-panel__head">
+                              <strong>Tu configuración</strong>
+                              <span>Se actualiza mientras eliges</span>
+                          </div>
+                          <div class="detail-summary-grid">
+                              <div class="detail-summary-item">
+                                  <small>Color</small>
+                                  <span id="summaryColor">Pendiente</span>
+                              </div>
+                              <div class="detail-summary-item">
+                                  <small>Talla</small>
+                                  <span id="summaryTalla">Pendiente</span>
+                              </div>
+                              <div class="detail-summary-item">
+                                  <small>Frente</small>
+                                  <span id="summaryPecho">Sin diseño</span>
+                              </div>
+                              <div class="detail-summary-item">
+                                  <small>Espalda</small>
+                                  <span id="summaryEspalda">Sin diseño</span>
+                              </div>
+                          </div>
+                      </div>
+
                       <div class="detail-order-actions">
                           <button type="submit" name="action" value="add_to_cart" class="btn site-btn site-btn--ghost">Agregar al carrito</button>
                           <button type="submit" name="action" value="buy_now" class="btn site-btn site-btn--accent">Comprar ahora</button>
@@ -499,74 +741,75 @@
                   <input type="hidden" name="diseño_pecho" id="diseñoPechoInput">
                   <input type="hidden" name="diseño_espalda" id="diseñoEspaldaInput">
 
-                  <div class="accordion detail-customizer" id="accordionDiseños">
-                    <!-- Pecho -->
-                    <div class="accordion-item">
-                      <h2 class="accordion-header" id="headingPecho">
-                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapsePecho">
-                          Diseño para Pecho
-                        </button>
-                      </h2>
-                      <div id="collapsePecho" class="accordion-collapse collapse" data-bs-parent="#accordionDiseños">
-                        <div class="accordion-body">
-                          {% for diseño in diseños_anime %}
-                            {% get_media_prefix as MEDIA_URL %}
-                            <div class="d-flex align-items-center mb-2 gap-3">
-                              <img src="{{ MEDIA_URL }}diseños_nuevos/{{ diseño|urlencode }}" style="width: 70px; height: 70px; object-fit: contain; border: 1px solid #ccc;">
-                              <div>
-                                <small>{{ diseño }}</small><br>
-                                <button type="button" onclick="seleccionarDiseñoLista('{{ diseño }}', 'pecho')" class="btn btn-sm btn-dark">Usar</button>
-                              </div>
-                            </div>
-                          {% empty %}
-                            <p>No hay diseños disponibles.</p>
-                          {% endfor %}
-                        </div>
+                  <section class="detail-configurator">
+                      <div class="detail-configurator__intro">
+                          <span class="detail-configurator__eyebrow">Arma tu pieza</span>
+                          <h3 class="detail-configurator__title">Personaliza tu playera</h3>
+                          <p class="detail-configurator__copy">Elige la base, agrega diseño al frente o a la espalda y revisa cómo va quedando antes de mandarla al carrito.</p>
                       </div>
-                    </div>
 
-                    <!-- Espalda -->
-                    <div class="accordion-item">
-                      <h2 class="accordion-header" id="headingEspalda">
-                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseEspalda">
-                          Diseño para Espalda
-                        </button>
-                      </h2>
-                      <div id="collapseEspalda" class="accordion-collapse collapse" data-bs-parent="#accordionDiseños">
-                        <div class="accordion-body">
-                          {% for diseño in diseños_anime %}
-                            {% get_media_prefix as MEDIA_URL %}
-                            <div class="d-flex align-items-center mb-2 gap-3">
-                              <img src="{{ MEDIA_URL }}diseños_nuevos/{{ diseño|urlencode }}" style="width: 70px; height: 70px; object-fit: contain; border: 1px solid #ccc;">
-                              <div>
-                                <small>{{ diseño }}</small><br>
-                                <button type="button" onclick="seleccionarDiseñoLista('{{ diseño }}', 'espalda')" class="btn btn-sm btn-secondary">Usar</button>
+                      <div class="detail-design-layout">
+                          <div class="detail-design-columns">
+                              <div class="detail-design-panel">
+                                  <div class="detail-design-panel__top">
+                                      <strong>Frente</strong>
+                                      <span>Usa un diseño al pecho si quieres una pieza más limpia o más gráfica.</span>
+                                  </div>
+                                  <span class="detail-selected-chip">Seleccionado: <span id="selectedPechoLabel">Sin diseño</span></span>
+                                  <div class="detail-design-grid">
+                                      {% for diseño in diseños_anime %}
+                                          {% get_media_prefix as MEDIA_URL %}
+                                          <div class="detail-design-card">
+                                              <img src="{{ MEDIA_URL }}diseños_nuevos/{{ diseño|urlencode }}" alt="{{ diseño }}">
+                                              <small>{{ diseño }}</small>
+                                              <button type="button" onclick="seleccionarDiseñoLista('{{ diseño|escapejs }}', 'pecho')" class="btn site-btn">Usar al frente</button>
+                                          </div>
+                                      {% empty %}
+                                          <p class="text-muted mb-0">No hay diseños disponibles.</p>
+                                      {% endfor %}
+                                  </div>
                               </div>
-                            </div>
-                          {% empty %}
-                            <p>No hay diseños disponibles.</p>
-                          {% endfor %}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
 
-                  <!-- Diseño Personalizado -->
-                  <div class="mb-3">
-                    <div class="detail-label-row">
-                        <strong>Diseño personalizado</strong>
-                    </div>
-                    <div class="d-flex flex-wrap gap-2 mt-2">
-                      {% for diseño in diseños_personalizados %}
-                        <img src="{{ MEDIA_URL }}diseños_propios/{{ diseño|urlencode }}"
-                             class="miniatura-diseño"
-                             onclick="seleccionarDiseño(this)"
-                             alt="{{ diseño }}">
-                      {% empty %}
-                        <p class="text-muted">No hay diseños disponibles.</p>
-                      {% endfor %}
-                    </div>
-                  </div>
+                              <div class="detail-design-panel">
+                                  <div class="detail-design-panel__top">
+                                      <strong>Espalda</strong>
+                                      <span>Deja la espalda limpia o arma una versión más cargada con diseño posterior.</span>
+                                  </div>
+                                  <span class="detail-selected-chip">Seleccionado: <span id="selectedEspaldaLabel">Sin diseño</span></span>
+                                  <div class="detail-design-grid">
+                                      {% for diseño in diseños_anime %}
+                                          {% get_media_prefix as MEDIA_URL %}
+                                          <div class="detail-design-card">
+                                              <img src="{{ MEDIA_URL }}diseños_nuevos/{{ diseño|urlencode }}" alt="{{ diseño }}">
+                                              <small>{{ diseño }}</small>
+                                              <button type="button" onclick="seleccionarDiseñoLista('{{ diseño|escapejs }}', 'espalda')" class="btn site-btn">Usar atrás</button>
+                                          </div>
+                                      {% empty %}
+                                          <p class="text-muted mb-0">No hay diseños disponibles.</p>
+                                      {% endfor %}
+                                  </div>
+                              </div>
+                          </div>
+
+                          <div class="detail-design-personal">
+                              <div class="detail-design-personal__header">
+                                  <strong>Diseños propios</strong>
+                                  <span>Si ya subiste uno, lo puedes usar directo al frente con un clic.</span>
+                              </div>
+                              <div class="detail-design-personal__grid">
+                                  {% for diseño in diseños_personalizados %}
+                                      {% get_media_prefix as MEDIA_URL %}
+                                      <img src="{{ MEDIA_URL }}diseños_propios/{{ diseño|urlencode }}"
+                                           class="miniatura-diseño"
+                                           onclick="seleccionarDiseño(this)"
+                                           alt="{{ diseño }}">
+                                  {% empty %}
+                                      <p class="text-muted mb-0">No hay diseños disponibles.</p>
+                                  {% endfor %}
+                              </div>
+                          </div>
+                      </div>
+                  </section>
 
                 </form>
 
@@ -623,10 +866,28 @@ document.addEventListener("DOMContentLoaded", function () {
     document.getElementById("precio-total").textContent = (precioBase + precioExtra).toFixed(2);
   }
 
+  function actualizarResumen() {
+    const color = document.getElementById("colorInput").value || "Pendiente";
+    const talla = document.getElementById("tallaInput").value || "Pendiente";
+    const pecho = document.getElementById("diseñoPechoInput").value || "Sin diseño";
+    const espalda = document.getElementById("diseñoEspaldaInput").value || "Sin diseño";
+
+    document.getElementById("summaryColor").textContent = color;
+    document.getElementById("summaryTalla").textContent = talla;
+    document.getElementById("summaryPecho").textContent = pecho;
+    document.getElementById("summaryEspalda").textContent = espalda;
+    document.getElementById("selectedPechoLabel").textContent = pecho;
+    document.getElementById("selectedEspaldaLabel").textContent = espalda;
+  }
+
   // Cambiar imagen principal con miniaturas
+  window.cambiarImagen = function(img) {
+    document.getElementById("imagen-principal").src = img.src;
+  };
+
   document.querySelectorAll('.miniatura').forEach(img => {
     img.addEventListener('click', () => {
-      document.getElementById("imagen-principal").src = img.src;
+      cambiarImagen(img);
     });
   });
 
@@ -643,6 +904,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
       document.querySelectorAll('.color-circle').forEach(c => c.classList.remove("is-active"));
       circle.classList.add("is-active");
+      actualizarResumen();
     });
   });
 
@@ -654,6 +916,7 @@ document.addEventListener("DOMContentLoaded", function () {
       document.getElementById("tallaLabel").textContent = talla;
       document.querySelectorAll('.btn-talla').forEach(b => b.classList.remove("active", "btn-dark"));
       btn.classList.add("active", "btn-dark");
+      actualizarResumen();
     });
   });
 
@@ -665,18 +928,13 @@ document.addEventListener("DOMContentLoaded", function () {
       document.getElementById('diseñoPechoInput').value = nombre;
       document.getElementById('diseño-overlay').src = ruta;
       precioPecho = PRECIO_DISENO;
-
-      const collapse = bootstrap.Collapse.getOrCreateInstance(document.getElementById('collapsePecho'));
-      collapse.hide();
     } else {
       document.getElementById('diseñoEspaldaInput').value = nombre;
       precioEspalda = PRECIO_DISENO;
-
-      const collapse = bootstrap.Collapse.getOrCreateInstance(document.getElementById('collapseEspalda'));
-      collapse.hide();
     }
 
     actualizarPrecio();
+    actualizarResumen();
   };
 
   // Seleccionar diseño personalizado para PECHO
@@ -687,10 +945,13 @@ document.addEventListener("DOMContentLoaded", function () {
 
     precioPecho = PRECIO_DISENO;
     actualizarPrecio();
+    actualizarResumen();
 
-    document.querySelectorAll('.miniatura-diseño').forEach(i => i.style.outline = "none");
-    img.style.outline = "3px solid black";
+    document.querySelectorAll('.miniatura-diseño').forEach(i => i.classList.remove("is-active"));
+    img.classList.add("is-active");
   };
+
+  actualizarResumen();
 });
 </script>
 
