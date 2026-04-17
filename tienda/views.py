@@ -131,11 +131,14 @@ def _build_order_from_cart(order, carrito, reset_checkout_state=True):
 
 
 def _cart_matches_order(order, carrito):
+    def _normalize_amount(value):
+        return Decimal(str(value)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
     expected_items = {}
     for key, item in carrito.items():
         expected_items[key] = {
             "cantidad": int(item["cantidad"]),
-            "precio": str(item["precio"]),
+            "precio": _normalize_amount(item["precio"]),
         }
 
     current_items = {}
@@ -143,7 +146,7 @@ def _cart_matches_order(order, carrito):
         item_key = f"{item.product_id}-{item.talla or ''}-{item.color or ''}-{item.diseño_pecho or ''}-{item.diseño_espalda or ''}"
         current_items[item_key] = {
             "cantidad": int(item.quantity),
-            "precio": str(item.price),
+            "precio": _normalize_amount(item.price),
         }
 
     return current_items == expected_items
