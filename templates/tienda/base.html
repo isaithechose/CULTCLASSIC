@@ -21,8 +21,44 @@
     <!-- Core theme CSS -->
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
     <link rel="stylesheet" href="{% static 'css/brand.css' %}">
+
+    {% if meta_pixel_id %}
+        {{ meta_pixel_events|json_script:"meta-pixel-events-data" }}
+        <script>
+            !function(f,b,e,v,n,t,s)
+            {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+            n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+            if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+            n.queue=[];t=b.createElement(e);t.async=!0;
+            t.src=v;s=b.getElementsByTagName(e)[0];
+            s.parentNode.insertBefore(t,s)}(window, document,'script',
+            'https://connect.facebook.net/en_US/fbevents.js');
+            fbq('init', '{{ meta_pixel_id }}');
+            fbq('track', 'PageView');
+
+            const metaPixelEventsNode = document.getElementById('meta-pixel-events-data');
+            if (metaPixelEventsNode) {
+                try {
+                    const metaPixelEvents = JSON.parse(metaPixelEventsNode.textContent);
+                    metaPixelEvents.forEach((eventItem) => {
+                        if (eventItem && eventItem.name) {
+                            fbq('track', eventItem.name, eventItem.payload || {});
+                        }
+                    });
+                } catch (error) {
+                    console.warn('Meta Pixel events could not be parsed.', error);
+                }
+            }
+        </script>
+    {% endif %}
 </head>
 <body class="{% block body_class %}brand-page{% endblock %}">
+{% if meta_pixel_id %}
+<noscript>
+    <img height="1" width="1" style="display:none"
+         src="https://www.facebook.com/tr?id={{ meta_pixel_id }}&ev=PageView&noscript=1"/>
+</noscript>
+{% endif %}
 <!-- Navigation -->
 <nav class="navbar navbar-expand-lg site-navbar">
     <div class="container px-4 px-lg-5">
@@ -40,11 +76,14 @@
                 <li class="nav-item">
                     <a class="nav-link" href="{% url 'tienda:archivo' %}">Archivo</a>
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'tienda:catalogo_diseños' %}">Diseños Anime</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'tienda:catalogo_diseños_propios' %}">Diseños Propios</a>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" id="navbarDesigns" href="#" role="button"
+                       data-bs-toggle="dropdown" aria-expanded="false">Diseños</a>
+                    <ul class="dropdown-menu" aria-labelledby="navbarDesigns">
+                        <li><a class="dropdown-item" href="{% url 'tienda:catalogo_diseños' %}">Diseños Anime</a></li>
+                        <li><a class="dropdown-item" href="{% url 'tienda:catalogo_diseños_propios' %}">Diseños Propios</a></li>
+                        <li><a class="dropdown-item" href="{% url 'tienda:design_creator' %}">Creador</a></li>
+                    </ul>
                 </li>
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" id="navbarDropdown" href="#" role="button"

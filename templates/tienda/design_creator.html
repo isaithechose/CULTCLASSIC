@@ -1,0 +1,909 @@
+{% extends "tienda/base.html" %}
+{% load static %}
+
+{% block title %}Creador de diseño | Cult Clasiccs{% endblock %}
+
+{% block hero %}
+<section class="page-hero page-hero--compact">
+    <div class="container px-4 px-lg-5">
+        <div class="page-hero__inner">
+            <p class="page-eyebrow">Creador</p>
+            <h1 class="page-hero__title">Sube y ajusta tu diseño.</h1>
+            <p class="page-hero__copy">
+                Carga tu archivo, acomódalo en el lienzo y guárdalo listo para usar en tus playeras.
+            </p>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block content %}
+<style>
+    .design-creator {
+        padding: 0 0 5rem;
+    }
+
+    .design-creator__layout {
+        display: grid;
+        grid-template-columns: minmax(320px, 0.95fr) minmax(360px, 1.05fr);
+        gap: 1.6rem;
+        align-items: start;
+    }
+
+    .design-creator__panel {
+        border: 1px solid var(--cc-line);
+        border-radius: 1.8rem;
+        background:
+            radial-gradient(circle at top right, rgba(214, 195, 161, 0.08), transparent 40%),
+            linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01));
+        box-shadow: var(--cc-shadow);
+        padding: 1.45rem;
+    }
+
+    .design-creator__eyebrow {
+        color: var(--cc-accent);
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        font-size: 0.76rem;
+        margin: 0 0 0.7rem;
+    }
+
+    .design-creator__title {
+        margin: 0;
+        font-family: var(--cc-display);
+        font-size: clamp(2rem, 4vw, 3rem);
+        line-height: 0.95;
+        text-transform: uppercase;
+    }
+
+    .design-creator__copy {
+        margin: 0.8rem 0 0;
+        color: var(--cc-muted);
+        line-height: 1.7;
+    }
+
+    .design-creator__form {
+        display: grid;
+        gap: 1rem;
+    }
+
+    .design-creator__toolbar {
+        display: grid;
+        gap: 0.9rem;
+        padding: 1rem;
+        border-radius: 1.25rem;
+        border: 1px solid rgba(214, 195, 161, 0.1);
+        background: rgba(255,255,255,0.025);
+    }
+
+    .design-creator__group {
+        display: grid;
+        gap: 0.45rem;
+    }
+
+    .design-creator__group label {
+        font-size: 0.76rem;
+        text-transform: uppercase;
+        letter-spacing: 0.13em;
+        color: var(--cc-muted);
+    }
+
+    .design-creator__group input[type="range"] {
+        width: 100%;
+        accent-color: var(--cc-accent);
+    }
+
+    .design-creator__actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.8rem;
+    }
+
+    .design-creator__actions .site-btn {
+        justify-content: center;
+    }
+
+    .design-creator__tool-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.75rem;
+    }
+
+    .design-creator__tool-group {
+        display: grid;
+        gap: 0.65rem;
+        padding: 0.9rem;
+        border-radius: 1rem;
+        border: 1px solid rgba(214, 195, 161, 0.08);
+        background: rgba(255,255,255,0.03);
+    }
+
+    .design-creator__tool-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 0.65rem;
+    }
+
+    .design-creator__tool-head strong {
+        color: var(--cc-ink);
+        font-size: 0.9rem;
+        letter-spacing: 0.02em;
+    }
+
+    .design-creator__tool-head span {
+        color: var(--cc-muted);
+        font-size: 0.82rem;
+    }
+
+    .design-creator__tool-actions {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.6rem;
+    }
+
+    .design-creator__tool-actions .site-btn {
+        width: 100%;
+    }
+
+    .design-creator__preview {
+        display: grid;
+        gap: 1rem;
+    }
+
+    .design-canvas {
+        position: relative;
+        min-height: 36rem;
+        border-radius: 2rem;
+        border: 1px solid rgba(214, 195, 161, 0.16);
+        background:
+            radial-gradient(circle at top, rgba(214, 195, 161, 0.08), transparent 35%),
+            linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.01)),
+            #111113;
+        overflow: hidden;
+    }
+
+    .design-canvas__shirt {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        pointer-events: none;
+    }
+
+    .design-canvas__shirt::before {
+        content: "";
+        width: min(88%, 31rem);
+        aspect-ratio: 0.82;
+        border-radius: 2.2rem;
+        background: #f1ede6;
+        box-shadow: inset 0 0 0 1px rgba(0,0,0,0.06);
+    }
+
+    .design-canvas__print-area {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: min(48%, 17rem);
+        aspect-ratio: 1;
+        transform: translate(-50%, -44%);
+        border: 1px dashed rgba(17, 17, 17, 0.22);
+        border-radius: 1rem;
+        background:
+            linear-gradient(180deg, rgba(255,255,255,0.2), rgba(255,255,255,0.12)),
+            repeating-linear-gradient(
+                0deg,
+                rgba(17,17,17,0.03) 0,
+                rgba(17,17,17,0.03) 1px,
+                transparent 1px,
+                transparent 24px
+            ),
+            repeating-linear-gradient(
+                90deg,
+                rgba(17,17,17,0.03) 0,
+                rgba(17,17,17,0.03) 1px,
+                transparent 1px,
+                transparent 24px
+            );
+        overflow: hidden;
+    }
+
+    .design-canvas__surface {
+        width: 100%;
+        height: 100%;
+        display: block;
+    }
+
+    .design-canvas__empty {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        color: rgba(17, 17, 17, 0.46);
+        font-size: 0.92rem;
+        text-align: center;
+        padding: 1rem;
+    }
+
+    .design-creator__hud {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 0.75rem;
+        margin-top: 1rem;
+    }
+
+    .design-creator__stat {
+        padding: 0.8rem 0.9rem;
+        border-radius: 1rem;
+        border: 1px solid rgba(214, 195, 161, 0.08);
+        background: rgba(255,255,255,0.03);
+    }
+
+    .design-creator__stat small {
+        display: block;
+        margin-bottom: 0.3rem;
+        color: var(--cc-muted);
+        font-size: 0.72rem;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+    }
+
+    .design-creator__stat strong {
+        color: var(--cc-ink);
+        font-size: 1rem;
+    }
+
+    .design-creator__saved {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+        gap: 0.8rem;
+    }
+
+    .design-creator__saved a {
+        display: grid;
+        gap: 0.55rem;
+        text-decoration: none;
+        color: inherit;
+        border: 1px solid var(--cc-line);
+        border-radius: 1rem;
+        padding: 0.7rem;
+        background: rgba(255,255,255,0.03);
+        transition: transform 0.22s ease, border-color 0.22s ease, background-color 0.22s ease;
+    }
+
+    .design-creator__saved a:hover,
+    .design-creator__saved a.is-active {
+        transform: translateY(-2px);
+        border-color: rgba(214, 195, 161, 0.28);
+        background: rgba(255,255,255,0.05);
+    }
+
+    .design-creator__saved img {
+        width: 100%;
+        aspect-ratio: 1;
+        object-fit: contain;
+        background: rgba(255,255,255,0.06);
+        border-radius: 0.8rem;
+        padding: 0.35rem;
+    }
+
+    .design-creator__saved span {
+        color: var(--cc-muted);
+        font-size: 0.83rem;
+        word-break: break-word;
+    }
+
+    .design-creator__handoff {
+        display: grid;
+        gap: 0.9rem;
+    }
+
+    @media (max-width: 991.98px) {
+        .design-creator__layout {
+            grid-template-columns: 1fr;
+        }
+
+        .design-canvas {
+            min-height: 30rem;
+        }
+    }
+
+    @media (max-width: 767.98px) {
+        .design-creator__tool-grid,
+        .design-creator__hud {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<section class="design-creator">
+    <div class="container px-4 px-lg-5">
+        <div class="design-creator__layout">
+            <div class="design-creator__panel">
+                <p class="design-creator__eyebrow">Herramienta</p>
+                <h2 class="design-creator__title">Tu diseño listo para usar</h2>
+                <p class="design-creator__copy">
+                    Puedes subir un PNG, JPG o WebP, moverlo dentro del área de impresión y guardarlo como una nueva versión lista para colocar en tus productos.
+                </p>
+
+                <form method="post" enctype="multipart/form-data" class="design-creator__form" id="design-creator-form">
+                    {% csrf_token %}
+                    {{ form.edited_image }}
+                    <input type="hidden" name="product_id" id="productIdInput" value="{{ selected_product_id }}">
+
+                    <div class="design-creator__toolbar">
+                        <div class="design-creator__group">
+                            <label for="{{ form.name.id_for_label }}">Nombre</label>
+                            {{ form.name }}
+                        </div>
+
+                        <div class="design-creator__group">
+                            <label for="{{ form.image.id_for_label }}">Archivo base</label>
+                            {{ form.image }}
+                        </div>
+
+                        <div class="design-creator__tool-grid">
+                            <div class="design-creator__tool-group">
+                                <div class="design-creator__tool-head">
+                                    <strong>Escala</strong>
+                                    <span id="scaleValue">100%</span>
+                                </div>
+                                <input type="range" min="20" max="260" value="100" id="scaleRange">
+                            </div>
+
+                            <div class="design-creator__tool-group">
+                                <div class="design-creator__tool-head">
+                                    <strong>Rotación</strong>
+                                    <span id="rotateValue">0°</span>
+                                </div>
+                                <input type="range" min="-180" max="180" value="0" id="rotateRange">
+                            </div>
+                        </div>
+
+                        <div class="design-creator__tool-grid">
+                            <div class="design-creator__tool-group">
+                                <div class="design-creator__tool-head">
+                                    <strong>Posición</strong>
+                                    <span>Rápido</span>
+                                </div>
+                                <div class="design-creator__tool-actions">
+                                    <button type="button" class="btn site-btn site-btn--ghost" id="centerButton">Centrar</button>
+                                    <button type="button" class="btn site-btn site-btn--ghost" id="fitButton">Ajustar</button>
+                                </div>
+                            </div>
+
+                            <div class="design-creator__tool-group">
+                                <div class="design-creator__tool-head">
+                                    <strong>Transformar</strong>
+                                    <span>Volteo</span>
+                                </div>
+                                <div class="design-creator__tool-actions">
+                                    <button type="button" class="btn site-btn site-btn--ghost" id="flipXButton">Flip X</button>
+                                    <button type="button" class="btn site-btn site-btn--ghost" id="flipYButton">Flip Y</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="design-creator__tool-group">
+                            <div class="design-creator__tool-head">
+                                <strong>Texto</strong>
+                                <span>Agregar y editar</span>
+                            </div>
+                            <div class="design-creator__group">
+                                <label for="textInput">Contenido</label>
+                                <input type="text" id="textInput" class="shipping-form__control" placeholder="Escribe tu texto">
+                            </div>
+                            <div class="design-creator__tool-grid">
+                                <div class="design-creator__group">
+                                    <label for="textFontSelect">Fuente</label>
+                                    <select id="textFontSelect" class="shipping-form__control">
+                                        <option value="Teko">Teko</option>
+                                        <option value="Manrope">Manrope</option>
+                                        <option value="Arial" selected>Arial</option>
+                                        <option value="Impact">Impact</option>
+                                        <option value="Georgia">Georgia</option>
+                                        <option value="'Courier New'">Courier New</option>
+                                    </select>
+                                </div>
+                                <div class="design-creator__group">
+                                    <label for="textSizeRange">Tamaño</label>
+                                    <input type="range" min="18" max="140" value="56" id="textSizeRange">
+                                </div>
+                            </div>
+                            <div class="design-creator__tool-grid">
+                                <div class="design-creator__group">
+                                    <label for="textColorInput">Color</label>
+                                    <input type="color" id="textColorInput" value="#111111" class="shipping-form__control">
+                                </div>
+                            </div>
+                            <div class="design-creator__tool-actions">
+                                <button type="button" class="btn site-btn site-btn--ghost" id="addTextButton">Agregar texto</button>
+                                <button type="button" class="btn site-btn site-btn--ghost" id="removeSelectedButton">Quitar seleccionado</button>
+                            </div>
+                        </div>
+
+                        <div class="design-creator__actions">
+                            <button type="button" class="btn site-btn site-btn--ghost" id="resetButton">Resetear</button>
+                            <button type="button" class="btn site-btn site-btn--ghost" id="removeButton">Quitar imagen</button>
+                            <button type="submit" class="btn site-btn site-btn--accent">Guardar diseño</button>
+                        </div>
+
+                        <div class="design-creator__handoff">
+                            <div class="design-creator__group">
+                                <label for="productSelect">Mandar a playera</label>
+                                <select id="productSelect" class="shipping-form__control">
+                                    <option value="">Solo guardar diseño</option>
+                                    {% for producto in customizable_products %}
+                                        <option value="{{ producto.id }}"{% if selected_product_id == producto.id|stringformat:"s" %} selected{% endif %}>{{ producto.nombre }} - ${{ producto.precio }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <small class="design-creator__copy">Si eliges una playera, al guardar te mandamos directo al producto con tu diseño ya cargado.</small>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <div class="design-creator__preview">
+                    <div class="design-creator__panel">
+                        <p class="design-creator__eyebrow">Preview</p>
+                        <div class="design-canvas" id="designCanvas">
+                            <div class="design-canvas__shirt"></div>
+                            <div class="design-canvas__print-area" id="printArea">
+                                <div class="design-canvas__empty" id="emptyState">Sube un diseño o abre uno guardado para empezar a editar.</div>
+                                <canvas id="designFabricCanvas" class="design-canvas__surface" width="720" height="720"></canvas>
+                            </div>
+                        </div>
+                        <div class="design-creator__hud">
+                            <div class="design-creator__stat">
+                                <small>Estado</small>
+                                <strong id="hudStatus">Sin diseño</strong>
+                            </div>
+                            <div class="design-creator__stat">
+                                <small>Tamaño</small>
+                                <strong id="hudScale">100%</strong>
+                            </div>
+                            <div class="design-creator__stat">
+                                <small>Rotación</small>
+                                <strong id="hudRotate">0°</strong>
+                            </div>
+                            <div class="design-creator__stat">
+                                <small>Capas</small>
+                                <strong id="hudLayers">0</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                {% if saved_designs %}
+                <div class="design-creator__panel">
+                    <p class="design-creator__eyebrow">Guardados</p>
+                    <div class="design-creator__saved">
+                        {% for design_name in saved_designs %}
+                            <a href="{% url 'tienda:design_creator' %}?file={{ design_name|urlencode }}"{% if selected_design_url and selected_design_url|urlencode == design_name|urlencode %} class="is-active"{% endif %}>
+                                <img src="{{ MEDIA_URL }}diseños_propios/{{ design_name|urlencode }}" alt="{{ design_name }}">
+                                <span>{{ design_name }}</span>
+                            </a>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if selected_design_url and customizable_products %}
+                <div class="design-creator__panel">
+                    <p class="design-creator__eyebrow">Compra</p>
+                    <h3 class="design-creator__title" style="font-size: clamp(1.6rem, 3vw, 2.2rem);">Mándalo a una playera</h3>
+                    <p class="design-creator__copy">Si este diseño ya está listo, puedes abrir una playera y seguir directo con talla, color y compra.</p>
+                    <div class="design-creator__handoff">
+                        <div class="design-creator__group">
+                            <label for="quickProductSelect">Elige la playera</label>
+                            <select id="quickProductSelect" class="shipping-form__control">
+                                {% for producto in customizable_products %}
+                                    <option value="{{ producto.id }}">{{ producto.nombre }} - ${{ producto.precio }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <button type="button" class="btn site-btn site-btn--accent" id="quickGoToProductButton">Abrir playera con este diseño</button>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/fabric@latest/dist/index.min.js"></script>
+<script>
+(() => {
+    if (!window.fabric) {
+        console.error("Fabric.js no cargó correctamente.");
+        return;
+    }
+
+    const form = document.getElementById("design-creator-form");
+    const fileInput = document.getElementById("{{ form.image.id_for_label }}");
+    const hiddenEditedImage = document.getElementById("id_edited_image");
+    const emptyState = document.getElementById("emptyState");
+    const scaleRange = document.getElementById("scaleRange");
+    const rotateRange = document.getElementById("rotateRange");
+    const scaleValue = document.getElementById("scaleValue");
+    const rotateValue = document.getElementById("rotateValue");
+    const centerButton = document.getElementById("centerButton");
+    const fitButton = document.getElementById("fitButton");
+    const flipXButton = document.getElementById("flipXButton");
+    const flipYButton = document.getElementById("flipYButton");
+    const removeButton = document.getElementById("removeButton");
+    const addTextButton = document.getElementById("addTextButton");
+    const removeSelectedButton = document.getElementById("removeSelectedButton");
+    const textInput = document.getElementById("textInput");
+    const textFontSelect = document.getElementById("textFontSelect");
+    const textSizeRange = document.getElementById("textSizeRange");
+    const textColorInput = document.getElementById("textColorInput");
+    const resetButton = document.getElementById("resetButton");
+    const hudStatus = document.getElementById("hudStatus");
+    const hudScale = document.getElementById("hudScale");
+    const hudRotate = document.getElementById("hudRotate");
+    const hudLayers = document.getElementById("hudLayers");
+    const selectedDesignUrl = "{% if selected_design_url %}{{ selected_design_url|escapejs }}{% endif %}";
+    const productSelect = document.getElementById("productSelect");
+    const productIdInput = document.getElementById("productIdInput");
+    const quickProductSelect = document.getElementById("quickProductSelect");
+    const quickGoToProductButton = document.getElementById("quickGoToProductButton");
+    const canvasElement = document.getElementById("designFabricCanvas");
+    const fabricCanvas = new fabric.Canvas(canvasElement, {
+        backgroundColor: "transparent",
+        selection: false,
+        preserveObjectStacking: true,
+        uniScaleTransform: true,
+    });
+
+    const state = {
+        artwork: null,
+        submitting: false,
+    };
+
+    function syncEmptyState() {
+        emptyState.hidden = Boolean(state.artwork);
+        hudStatus.textContent = state.artwork ? "Listo" : "Sin diseño";
+        hudLayers.textContent = String(fabricCanvas.getObjects().length);
+    }
+
+    function updateControlsFromArtwork() {
+        const activeObject = fabricCanvas.getActiveObject();
+        if (!activeObject) {
+            scaleRange.value = "100";
+            rotateRange.value = "0";
+            scaleValue.textContent = "100%";
+            rotateValue.textContent = "0°";
+            hudScale.textContent = "100%";
+            hudRotate.textContent = "0°";
+            return;
+        }
+        const scale = Math.round((activeObject.scaleX || 1) * 100);
+        const rotation = Math.round(activeObject.angle || 0);
+        scaleRange.value = String(scale);
+        rotateRange.value = String(rotation);
+        scaleValue.textContent = `${scale}%`;
+        rotateValue.textContent = `${rotation}°`;
+        hudScale.textContent = `${scale}%`;
+        hudRotate.textContent = `${rotation}°`;
+
+        if (activeObject.type === "textbox") {
+            textInput.value = activeObject.text || "";
+            textFontSelect.value = activeObject.fontFamily || "Arial";
+            textSizeRange.value = String(Math.round(activeObject.fontSize || 56));
+            textColorInput.value = activeObject.fill || "#111111";
+            hudStatus.textContent = "Texto activo";
+        } else if (activeObject === state.artwork) {
+            hudStatus.textContent = "Imagen activa";
+        }
+    }
+
+    function clampArtworkToArea() {
+        if (!state.artwork) return;
+        const bounds = state.artwork.getBoundingRect();
+        let nextLeft = state.artwork.left;
+        let nextTop = state.artwork.top;
+
+        if (bounds.left < 0) {
+            nextLeft += Math.abs(bounds.left);
+        }
+        if (bounds.top < 0) {
+            nextTop += Math.abs(bounds.top);
+        }
+        if (bounds.left + bounds.width > fabricCanvas.getWidth()) {
+            nextLeft -= (bounds.left + bounds.width - fabricCanvas.getWidth());
+        }
+        if (bounds.top + bounds.height > fabricCanvas.getHeight()) {
+            nextTop -= (bounds.top + bounds.height - fabricCanvas.getHeight());
+        }
+
+        state.artwork.set({ left: nextLeft, top: nextTop });
+        state.artwork.setCoords();
+    }
+
+    function fitArtwork() {
+        if (!state.artwork) return;
+        const maxWidth = fabricCanvas.getWidth() * 0.62;
+        const maxHeight = fabricCanvas.getHeight() * 0.62;
+        const widthRatio = maxWidth / state.artwork.width;
+        const heightRatio = maxHeight / state.artwork.height;
+        const scale = Math.min(widthRatio, heightRatio, 1);
+        state.artwork.set({
+            scaleX: scale,
+            scaleY: scale,
+            angle: 0,
+            flipX: false,
+            flipY: false,
+            left: fabricCanvas.getWidth() / 2,
+            top: fabricCanvas.getHeight() / 2,
+            originX: "center",
+            originY: "center",
+        });
+        state.artwork.setCoords();
+        fabricCanvas.setActiveObject(state.artwork);
+        fabricCanvas.requestRenderAll();
+        updateControlsFromArtwork();
+    }
+
+    function centerArtwork() {
+        if (!state.artwork) return;
+        state.artwork.set({
+            left: fabricCanvas.getWidth() / 2,
+            top: fabricCanvas.getHeight() / 2,
+            originX: "center",
+            originY: "center",
+        });
+        state.artwork.setCoords();
+        fabricCanvas.setActiveObject(state.artwork);
+        fabricCanvas.requestRenderAll();
+        updateControlsFromArtwork();
+    }
+
+    function removeArtwork() {
+        if (!state.artwork) return;
+        fabricCanvas.remove(state.artwork);
+        state.artwork = null;
+        hiddenEditedImage.value = "";
+        syncEmptyState();
+        updateControlsFromArtwork();
+        fabricCanvas.requestRenderAll();
+    }
+
+    function loadArtwork(src) {
+        if (!src) {
+            removeArtwork();
+            return;
+        }
+
+        const imageElement = new Image();
+        imageElement.onload = () => {
+            fabricCanvas.clear();
+            const artwork = new fabric.Image(imageElement, {
+                originX: "center",
+                originY: "center",
+                left: fabricCanvas.getWidth() / 2,
+                top: fabricCanvas.getHeight() / 2,
+                cornerStyle: "circle",
+                transparentCorners: false,
+                cornerColor: "#d6c3a1",
+                borderColor: "#d6c3a1",
+                padding: 8,
+                lockUniScaling: true,
+            });
+
+            fabricCanvas.add(artwork);
+            fabricCanvas.setActiveObject(artwork);
+            state.artwork = artwork;
+            fitArtwork();
+            syncEmptyState();
+        };
+        imageElement.src = src;
+    }
+
+    fabricCanvas.on("selection:created", updateControlsFromArtwork);
+    fabricCanvas.on("selection:updated", updateControlsFromArtwork);
+    fabricCanvas.on("object:modified", updateControlsFromArtwork);
+    fabricCanvas.on("object:moving", () => {
+        clampArtworkToArea();
+        updateControlsFromArtwork();
+    });
+    fabricCanvas.on("object:scaling", () => {
+        clampArtworkToArea();
+        updateControlsFromArtwork();
+    });
+    fabricCanvas.on("object:rotating", () => {
+        clampArtworkToArea();
+        updateControlsFromArtwork();
+    });
+
+    function applyScale() {
+        const activeObject = fabricCanvas.getActiveObject();
+        if (!activeObject) return;
+        const nextScale = Number(scaleRange.value) / 100;
+        activeObject.scaleX = nextScale;
+        activeObject.scaleY = nextScale;
+        if (activeObject === state.artwork) {
+            clampArtworkToArea();
+        } else {
+            activeObject.setCoords();
+        }
+        fabricCanvas.requestRenderAll();
+        updateControlsFromArtwork();
+    }
+
+    function applyRotation() {
+        const activeObject = fabricCanvas.getActiveObject();
+        if (!activeObject) return;
+        activeObject.rotate(Number(rotateRange.value));
+        if (activeObject === state.artwork) {
+            clampArtworkToArea();
+        } else {
+            activeObject.setCoords();
+        }
+        fabricCanvas.requestRenderAll();
+        updateControlsFromArtwork();
+    }
+
+    function addTextLayer() {
+        const value = (textInput.value || "").trim() || "Cult Clasiccs";
+        const textObject = new fabric.Textbox(value, {
+            left: fabricCanvas.getWidth() / 2,
+            top: fabricCanvas.getHeight() / 2,
+            originX: "center",
+            originY: "center",
+            fontFamily: textFontSelect.value || "Arial",
+            fontSize: Number(textSizeRange.value),
+            fill: textColorInput.value || "#111111",
+            fontWeight: 700,
+            textAlign: "center",
+            width: fabricCanvas.getWidth() * 0.62,
+            cornerStyle: "circle",
+            transparentCorners: false,
+            cornerColor: "#d6c3a1",
+            borderColor: "#d6c3a1",
+            padding: 8,
+        });
+        fabricCanvas.add(textObject);
+        fabricCanvas.setActiveObject(textObject);
+        fabricCanvas.requestRenderAll();
+        syncEmptyState();
+        updateControlsFromArtwork();
+    }
+
+    function removeSelectedObject() {
+        const activeObject = fabricCanvas.getActiveObject();
+        if (!activeObject) return;
+        if (activeObject === state.artwork) {
+            removeArtwork();
+            return;
+        }
+        fabricCanvas.remove(activeObject);
+        fabricCanvas.discardActiveObject();
+        fabricCanvas.requestRenderAll();
+        syncEmptyState();
+        updateControlsFromArtwork();
+    }
+
+    fileInput?.addEventListener("change", (event) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => loadArtwork(reader.result);
+        reader.readAsDataURL(file);
+    });
+
+    productSelect?.addEventListener("change", () => {
+        productIdInput.value = productSelect.value;
+    });
+
+    scaleRange?.addEventListener("input", applyScale);
+    rotateRange?.addEventListener("input", applyRotation);
+
+    centerButton?.addEventListener("click", () => {
+        centerArtwork();
+    });
+
+    fitButton?.addEventListener("click", () => {
+        fitArtwork();
+    });
+
+    flipXButton?.addEventListener("click", () => {
+        if (!state.artwork) return;
+        state.artwork.set("flipX", !state.artwork.flipX);
+        fabricCanvas.requestRenderAll();
+    });
+
+    flipYButton?.addEventListener("click", () => {
+        if (!state.artwork) return;
+        state.artwork.set("flipY", !state.artwork.flipY);
+        fabricCanvas.requestRenderAll();
+    });
+
+    resetButton?.addEventListener("click", () => {
+        if (!state.artwork) return;
+        fitArtwork();
+    });
+
+    removeButton?.addEventListener("click", () => {
+        removeArtwork();
+    });
+
+    addTextButton?.addEventListener("click", () => {
+        addTextLayer();
+    });
+
+    removeSelectedButton?.addEventListener("click", () => {
+        removeSelectedObject();
+    });
+
+    textInput?.addEventListener("input", () => {
+        const activeObject = fabricCanvas.getActiveObject();
+        if (!activeObject || activeObject.type !== "textbox") return;
+        activeObject.text = textInput.value;
+        fabricCanvas.requestRenderAll();
+    });
+
+    textFontSelect?.addEventListener("change", () => {
+        const activeObject = fabricCanvas.getActiveObject();
+        if (!activeObject || activeObject.type !== "textbox") return;
+        activeObject.set("fontFamily", textFontSelect.value);
+        activeObject.setCoords();
+        fabricCanvas.requestRenderAll();
+    });
+
+    textSizeRange?.addEventListener("input", () => {
+        const activeObject = fabricCanvas.getActiveObject();
+        if (!activeObject || activeObject.type !== "textbox") return;
+        activeObject.set("fontSize", Number(textSizeRange.value));
+        activeObject.setCoords();
+        fabricCanvas.requestRenderAll();
+    });
+
+    textColorInput?.addEventListener("input", () => {
+        const activeObject = fabricCanvas.getActiveObject();
+        if (!activeObject || activeObject.type !== "textbox") return;
+        activeObject.set("fill", textColorInput.value);
+        fabricCanvas.requestRenderAll();
+    });
+
+    window.addEventListener("keydown", (event) => {
+        const activeTag = document.activeElement?.tagName;
+        if (activeTag === "INPUT" || activeTag === "TEXTAREA") return;
+        if (event.key === "Delete" || event.key === "Backspace") {
+            removeSelectedObject();
+        }
+    });
+
+    form?.addEventListener("submit", (event) => {
+        if (!state.artwork || state.submitting) {
+            return;
+        }
+
+        event.preventDefault();
+        state.submitting = true;
+        fabricCanvas.discardActiveObject();
+        fabricCanvas.requestRenderAll();
+        hiddenEditedImage.value = fabricCanvas.toDataURL({
+            format: "png",
+            multiplier: 2,
+            enableRetinaScaling: true,
+        });
+        form.submit();
+    });
+
+    if (selectedDesignUrl) {
+        loadArtwork(selectedDesignUrl);
+    } else {
+        syncEmptyState();
+        updateControlsFromArtwork();
+    }
+
+    quickGoToProductButton?.addEventListener("click", () => {
+        if (!quickProductSelect?.value || !selectedDesignUrl) return;
+        const selectedDesignFile = selectedDesignUrl.split("/").pop();
+        if (!selectedDesignFile) return;
+        window.location.href = `/producto/${quickProductSelect.value}/?diseño=${encodeURIComponent(selectedDesignFile)}`;
+    });
+})();
+</script>
+{% endblock %}

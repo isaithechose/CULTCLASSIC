@@ -42,6 +42,7 @@ urlpatterns = [
     path('diseños/', views.catalogo_diseños, name='catalogo_diseños'),
     path('diseños-propios/', views.catalogo_diseños_propios, name='catalogo_diseños_propios'),
     path('subir_diseno_personalizado/', views.subir_diseño_personalizado, name='subir_diseño_personalizado'),
+    path('creador-diseno/', views.design_creator, name='design_creator'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -123,6 +123,7 @@ SOCIALACCOUNT_PROVIDERS = {
 # =========================
 STRIPE_PUBLIC_KEY = config("STRIPE_PUBLIC_KEY", default="")
 STRIPE_SECRET_KEY = config("STRIPE_SECRET_KEY", default="")
+META_PIXEL_ID = config("META_PIXEL_ID", default="")
 stripe.api_key = STRIPE_SECRET_KEY
 
 
@@ -170,6 +171,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "tienda.context_processors.meta_pixel",
             ],
         },
     },
@@ -284,6 +286,11 @@ JAZZMIN_SETTINGS = {
             "name": "Productos sin stock",
             "url": "/admin/tienda/producto/?stock__exact=0",
             "icon": "fas fa-triangle-exclamation",
+            "permissions": ["tienda.view_producto"],
+        }, {
+            "name": "Dashboard inventario",
+            "url": "/admin/tienda/producto/inventory-dashboard/",
+            "icon": "fas fa-boxes-stacked",
             "permissions": ["tienda.view_producto"],
         }]
     },

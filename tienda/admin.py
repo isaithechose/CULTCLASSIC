@@ -1,8 +1,10 @@
 from django.conf import settings
 from django.contrib import admin
 from django.contrib import messages
+from django import forms
 from django.db.models import Count, Sum
 from django.http import HttpResponseRedirect
+from django.template.response import TemplateResponse
 from django.urls import path, reverse
 from django.utils.html import format_html
 
@@ -13,10 +15,13 @@ from .models import (
     Order,
     OrderItem,
     Producto,
+    ProductVariant,
+    InventoryMovement,
     Reseña,
     ShippingAddress,
     ShippingUpdate,
     Subcategoria,
+    record_inventory_movement,
 )
 
 import os
@@ -217,6 +222,22 @@ class ShippingAddressInline(admin.StackedInline):
     can_delete = False
 
 
+class ProductVariantInline(admin.TabularInline):
+    model = ProductVariant
+    extra = 0
+    fields = ("sku", "talla", "color", "stock", "costo", "precio_override", "activo")
+    autocomplete_fields = ()
+
+
+class InventoryMovementInline(admin.TabularInline):
+    model = InventoryMovement
+    extra = 0
+    fields = ("created_at", "movement_type", "variant", "quantity_change", "stock_before", "stock_after", "note")
+    readonly_fields = ("created_at", "movement_type", "variant", "quantity_change", "stock_before", "stock_after", "note")
+    can_delete = False
+    show_change_link = True
+
+
 @admin.register(Categoria)
 class CategoriaAdmin(admin.ModelAdmin):
     list_display = ("nombre", "descripcion_corta", "total_subcategorias", "total_productos")
@@ -267,7 +288,9 @@ class ProductoAdmin(admin.ModelAdmin):
         "categoria",
         "subcategoria",
         "precio",
+        "inventory_mode",
         "stock",
+        "variant_stock_summary",
         "disponible",
         "fecha_actualizacion",
     )
@@ -276,7 +299,8 @@ class ProductoAdmin(admin.ModelAdmin):
     autocomplete_fields = ("categoria", "subcategoria")
     actions = [importar_disenos, marcar_disponibles, marcar_no_disponibles]
     list_editable = ("precio", "stock", "disponible")
-    readonly_fields = ("fecha_creacion", "fecha_actualizacion", "imagen_preview_large")
+    readonly_fields = ("fecha_creacion", "fecha_actualizacion", "imagen_preview_large", "inventory_snapshot")
+    inlines = [ProductVariantInline, InventoryMovementInline]
     fieldsets = (
         ("Identidad", {
             "fields": ("nombre", "slug_imagen", "descripcion")
@@ -285,7 +309,7 @@ class ProductoAdmin(admin.ModelAdmin):
             "fields": ("categoria", "subcategoria", "precio", "stock", "disponible")
         }),
         ("Variantes", {
-            "fields": ("tallas_disponibles", "colores_disponibles")
+            "fields": ("tallas_disponibles", "colores_disponibles", "inventory_snapshot")
         }),
         ("Media", {
             "fields": ("imagen", "imagen_preview_large")
@@ -294,6 +318,17 @@ class ProductoAdmin(admin.ModelAdmin):
             "fields": ("fecha_creacion", "fecha_actualizacion")
         }),
     )
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path(
+                "inventory-dashboard/",
+                self.admin_site.admin_view(self.inventory_dashboard_view),
+                name="tienda_producto_inventory_dashboard",
+            ),
+        ]
+        return custom_urls + urls
 
     @admin.display(description="Imagen")
     def preview_imagen(self, obj):
@@ -312,6 +347,85 @@ class ProductoAdmin(admin.ModelAdmin):
                 obj.imagen.url,
             )
         return "Sin imagen"
+
+    @admin.display(description="Inventario")
+    def inventory_mode(self, obj):
+        if obj.uses_variant_inventory():
+            return format_html('<strong style="color:#2f67b0;">Por variantes</strong>')
+        return format_html('<span style="color:#888;">General</span>')
+
+    @admin.display(description="Stock variantes")
+    def variant_stock_summary(self, obj):
+        variants = obj.variants.filter(activo=True)
+        if not variants.exists():
+            return "-"
+        return ", ".join(f"{variant.color}/{variant.talla}: {variant.stock}" for variant in variants[:6])
+
+    @admin.display(description="Resumen de inventario")
+    def inventory_snapshot(self, obj):
+        variants = list(obj.variants.filter(activo=True))
+        if not variants:
+            return "Este producto todavía usa stock general. Si quieres controlar talla y color por separado, agrega variantes abajo."
+        rows = [
+            "<div style='display:flex;flex-wrap:wrap;gap:0.45rem;'>"
+        ]
+        for variant in variants:
+            rows.append(
+                f"<span style='padding:0.3rem 0.6rem;border-radius:999px;background:#2f67b022;color:#2f67b0;font-weight:700;'>{variant.color} / {variant.talla}: {variant.stock}</span>"
+            )
+        rows.append("</div>")
+        rows.append(f"<p style='margin-top:0.8rem;'><strong>Total sincronizado:</strong> {obj.stock}</p>")
+        return format_html("".join(rows))
+
+    def inventory_dashboard_view(self, request):
+        active_products = Producto.objects.filter(disponible=True)
+        active_variants = ProductVariant.objects.filter(activo=True, product__disponible=True).select_related("product")
+        low_stock_variants = list(active_variants.filter(stock__lte=3).order_by("stock", "product__nombre", "color", "talla")[:12])
+        out_of_stock_variants = list(active_variants.filter(stock=0).order_by("product__nombre", "color", "talla")[:12])
+        general_products = list(
+            active_products.filter(variants__isnull=True).order_by("stock", "nombre")[:12]
+        )
+        recent_movements = list(
+            InventoryMovement.objects.select_related("product", "variant", "created_by")
+            .order_by("-created_at")[:14]
+        )
+
+        total_units = 0
+        total_inventory_value = 0
+        products_using_variants = 0
+        products_using_general_stock = 0
+
+        for product in active_products.prefetch_related("variants"):
+            variants = [variant for variant in product.variants.all() if variant.activo]
+            if variants:
+                products_using_variants += 1
+                total_units += sum(variant.stock for variant in variants)
+                total_inventory_value += sum(
+                    (variant.costo or product.precio) * variant.stock
+                    for variant in variants
+                )
+            else:
+                products_using_general_stock += 1
+                total_units += product.stock
+                total_inventory_value += product.precio * product.stock
+
+        context = dict(
+            self.admin_site.each_context(request),
+            title="Dashboard de inventario",
+            subtitle="Resumen operativo del stock actual",
+            total_products=active_products.count(),
+            total_variants=active_variants.count(),
+            total_units=total_units,
+            total_inventory_value=total_inventory_value,
+            products_using_variants=products_using_variants,
+            products_using_general_stock=products_using_general_stock,
+            low_stock_variants=low_stock_variants,
+            out_of_stock_variants=out_of_stock_variants,
+            general_products=general_products,
+            recent_movements=recent_movements,
+            opts=self.model._meta,
+        )
+        return TemplateResponse(request, "admin/tienda/inventory_dashboard.html", context)
 
 
 @admin.register(Order)
@@ -610,6 +724,107 @@ class OrderAdmin(admin.ModelAdmin):
             order.save(update_fields=["skydrop_last_error"])
             self.message_user(request, str(exc), level=messages.ERROR)
         return self._redirect_to_change(order_id)
+
+
+class InventoryMovementAdminForm(forms.ModelForm):
+    class Meta:
+        model = InventoryMovement
+        fields = ("product", "variant", "movement_type", "quantity_change", "order", "note", "created_by")
+
+    def clean(self):
+        cleaned = super().clean()
+        product = cleaned.get("product")
+        variant = cleaned.get("variant")
+        quantity_change = cleaned.get("quantity_change")
+
+        if variant and product and variant.product_id != product.id:
+            raise forms.ValidationError("La variante elegida no pertenece al producto seleccionado.")
+
+        if quantity_change == 0:
+            raise forms.ValidationError("El movimiento debe cambiar el inventario con una cantidad distinta de cero.")
+
+        return cleaned
+
+
+@admin.register(ProductVariant)
+class ProductVariantAdmin(admin.ModelAdmin):
+    list_display = ("product", "sku", "color", "talla", "stock", "costo", "activo", "updated_at")
+    list_filter = ("activo", "color", "talla", "product__categoria")
+    search_fields = ("product__nombre", "sku", "color", "talla")
+    autocomplete_fields = ("product",)
+    list_editable = ("activo",)
+    readonly_fields = ("updated_at", "created_at")
+    fieldsets = (
+        ("Variante", {
+            "fields": ("product", "sku", "color", "talla", "activo")
+        }),
+        ("Inventario", {
+            "fields": ("stock", "costo", "precio_override")
+        }),
+        ("Control", {
+            "fields": ("created_at", "updated_at")
+        }),
+    )
+
+
+@admin.register(InventoryMovement)
+class InventoryMovementAdmin(admin.ModelAdmin):
+    form = InventoryMovementAdminForm
+    list_display = (
+        "created_at",
+        "product",
+        "variant",
+        "movement_type",
+        "quantity_change",
+        "stock_before",
+        "stock_after",
+        "created_by",
+    )
+    list_filter = ("movement_type", "created_at", "product__categoria")
+    search_fields = ("product__nombre", "variant__sku", "variant__color", "variant__talla", "note")
+    autocomplete_fields = ("product", "variant", "order", "created_by")
+    readonly_fields = ("stock_before", "stock_after", "created_at")
+
+    def get_readonly_fields(self, request, obj=None):
+        if obj:
+            return (
+                "product",
+                "variant",
+                "order",
+                "movement_type",
+                "quantity_change",
+                "note",
+                "created_by",
+                "metadata",
+                "stock_before",
+                "stock_after",
+                "created_at",
+            )
+        return self.readonly_fields
+
+    def has_change_permission(self, request, obj=None):
+        if obj:
+            return False
+        return super().has_change_permission(request, obj)
+
+    def save_model(self, request, obj, form, change):
+        if change:
+            return
+
+        created = record_inventory_movement(
+            product=form.cleaned_data["product"],
+            variant=form.cleaned_data.get("variant"),
+            order=form.cleaned_data.get("order"),
+            movement_type=form.cleaned_data["movement_type"],
+            quantity_change=form.cleaned_data["quantity_change"],
+            note=form.cleaned_data.get("note", ""),
+            created_by=form.cleaned_data.get("created_by") or request.user,
+            metadata=obj.metadata,
+        )
+        obj.pk = created.pk
+        obj.stock_before = created.stock_before
+        obj.stock_after = created.stock_after
+        obj.created_at = created.created_at
 
 
 @admin.register(OrderItem)

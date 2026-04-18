@@ -1,6 +1,11 @@
-from django.db import models
+from django.db import models, transaction
 from django.contrib.auth.models import User
 from decimal import Decimal
+
+
+def _normalize_variant_value(value):
+    cleaned = str(value or "").strip().lower().replace("_", " ")
+    return " ".join(cleaned.split())
 
 class Categoria(models.Model):
     nombre = models.CharField(max_length=50)
@@ -34,6 +39,19 @@ class Producto(models.Model):
 
     def __str__(self):
         return self.nombre
+
+    def uses_variant_inventory(self):
+        return self.variants.filter(activo=True).exists()
+
+    def variant_stock_total(self):
+        return sum(variant.stock for variant in self.variants.filter(activo=True))
+
+    def sync_stock_from_variants(self, save=True):
+        total = self.variant_stock_total()
+        self.stock = total
+        if save:
+            self.save(update_fields=["stock", "fecha_actualizacion"])
+        return total
 
 class Order(models.Model):
     customer = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
@@ -72,6 +90,72 @@ class Order(models.Model):
 
     def __str__(self):
         return f"Orden {self.id} de {self.customer}"
+
+
+class ProductVariant(models.Model):
+    product = models.ForeignKey(Producto, on_delete=models.CASCADE, related_name="variants")
+    sku = models.CharField(max_length=80, blank=True, null=True)
+    talla = models.CharField(max_length=10)
+    color = models.CharField(max_length=40)
+    stock = models.PositiveIntegerField(default=0)
+    costo = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    precio_override = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    activo = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["product", "talla", "color"], name="unique_product_variant"),
+        ]
+        ordering = ["product__nombre", "color", "talla"]
+
+    def __str__(self):
+        return f"{self.product.nombre} / {self.color} / {self.talla}"
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        self.product.sync_stock_from_variants()
+
+    def delete(self, *args, **kwargs):
+        product = self.product
+        super().delete(*args, **kwargs)
+        product.sync_stock_from_variants()
+
+
+class InventoryMovement(models.Model):
+    MOVEMENT_CHOICES = [
+        ("purchase", "Compra"),
+        ("sale", "Venta"),
+        ("return", "Devolución"),
+        ("adjustment", "Ajuste"),
+        ("manual_in", "Entrada manual"),
+        ("manual_out", "Salida manual"),
+    ]
+
+    product = models.ForeignKey(Producto, on_delete=models.CASCADE, related_name="inventory_movements")
+    variant = models.ForeignKey(
+        ProductVariant,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="inventory_movements",
+    )
+    order = models.ForeignKey("Order", on_delete=models.SET_NULL, null=True, blank=True, related_name="inventory_movements")
+    movement_type = models.CharField(max_length=20, choices=MOVEMENT_CHOICES)
+    quantity_change = models.IntegerField()
+    stock_before = models.IntegerField(blank=True, null=True)
+    stock_after = models.IntegerField(blank=True, null=True)
+    note = models.CharField(max_length=255, blank=True)
+    metadata = models.JSONField(blank=True, null=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at", "-id"]
+
+    def __str__(self):
+        return f"{self.product.nombre} ({self.get_movement_type_display()}: {self.quantity_change:+})"
 
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="items")
@@ -131,3 +215,69 @@ class ShippingUpdate(models.Model):
 
     def __str__(self):
         return f"Orden {self.order.id} - {self.updated_at:%Y-%m-%d %H:%M}"
+
+
+def find_variant_for_selection(product, talla=None, color=None):
+    variants = list(product.variants.filter(activo=True))
+    if not variants:
+        return None
+
+    talla_key = _normalize_variant_value(talla)
+    color_key = _normalize_variant_value(color)
+
+    for variant in variants:
+        if (
+            _normalize_variant_value(variant.talla) == talla_key
+            and _normalize_variant_value(variant.color) == color_key
+        ):
+            return variant
+
+    return None
+
+
+def available_stock_for_selection(product, talla=None, color=None):
+    variant = find_variant_for_selection(product, talla=talla, color=color)
+    if variant:
+        return variant.stock
+    return product.stock
+
+
+def record_inventory_movement(
+    *,
+    product,
+    movement_type,
+    quantity_change,
+    variant=None,
+    order=None,
+    note="",
+    created_by=None,
+    metadata=None,
+):
+    with transaction.atomic():
+        if variant:
+            stock_before = variant.stock
+            stock_after = stock_before + quantity_change
+            if stock_after < 0:
+                raise ValueError(f"La variante {variant} no tiene stock suficiente.")
+            variant.stock = stock_after
+            variant.save(update_fields=["stock", "updated_at"])
+        else:
+            stock_before = product.stock
+            stock_after = stock_before + quantity_change
+            if stock_after < 0:
+                raise ValueError(f"{product.nombre} no tiene stock suficiente.")
+            product.stock = stock_after
+            product.save(update_fields=["stock", "fecha_actualizacion"])
+
+        return InventoryMovement.objects.create(
+            product=product,
+            variant=variant,
+            order=order,
+            movement_type=movement_type,
+            quantity_change=quantity_change,
+            stock_before=stock_before,
+            stock_after=stock_after,
+            note=note,
+            metadata=metadata,
+            created_by=created_by,
+        )

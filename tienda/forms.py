@@ -3,6 +3,30 @@ from .models import Reseña
 from .models import ShippingAddress
 from django.contrib.auth.models import User
 
+
+class CustomDesignUploadForm(forms.Form):
+    name = forms.CharField(
+        max_length=120,
+        label="Nombre del diseño",
+        widget=forms.TextInput(
+            attrs={
+                "placeholder": "Ej. dragon-rojo",
+                "class": "shipping-form__control",
+            }
+        ),
+    )
+    image = forms.ImageField(
+        label="Archivo base",
+        widget=forms.ClearableFileInput(
+            attrs={
+                "accept": "image/png,image/jpeg,image/webp",
+                "class": "shipping-form__control",
+            }
+        ),
+        required=False,
+    )
+    edited_image = forms.CharField(widget=forms.HiddenInput(), required=False)
+
 class ShippingAddressForm(forms.ModelForm):
     base_input_class = "shipping-form__control"
 

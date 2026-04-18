@@ -1,20 +1,31 @@
 import json
 import logging
+import base64
 from collections import defaultdict
 from decimal import Decimal, ROUND_HALF_UP
+from pathlib import Path
 
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import Producto, OrderItem, ShippingAddress
+from .models import (
+    Producto,
+    OrderItem,
+    ShippingAddress,
+    Order,
+    ProductVariant,
+    find_variant_for_selection,
+    available_stock_for_selection,
+    record_inventory_movement,
+)
 from .forms import (
     SeleccionarTallaColorForm,
     ReseñaForm,
     UserProfileForm,
     ShippingAddressForm,
+    CustomDesignUploadForm,
 )
 import stripe
 from django.conf import settings
 from django.urls import reverse
-from .models import Order
 from django.core.mail import send_mail
 from tienda.utils.importador_diseños import importar_diseños_desde_carpeta, importar_diseños_propios
 import os
@@ -25,20 +36,157 @@ from django.core.files.storage import FileSystemStorage
 from django.contrib import messages
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth.decorators import login_required
+from django.utils.text import slugify
 
 from .skydrop import SkydropError, quote_order, sync_shipment
 
 logger = logging.getLogger(__name__)
 
+
+def _track_meta_pixel_event(request, event_name, payload=None, persist=False):
+    event = {
+        "name": event_name,
+        "payload": payload or {},
+    }
+    if persist:
+        events = request.session.get("meta_pixel_events", [])
+        events.append(event)
+        request.session["meta_pixel_events"] = events
+        return
+
+    if not hasattr(request, "_meta_pixel_events"):
+        request._meta_pixel_events = []
+    request._meta_pixel_events.append(event)
+
+
+def _custom_designs_dir():
+    return Path(settings.MEDIA_ROOT) / "diseños_propios"
+
+
+def _save_custom_design(user, design_name, uploaded_file=None, edited_image_data=None):
+    designs_dir = _custom_designs_dir()
+    designs_dir.mkdir(parents=True, exist_ok=True)
+
+    base_name = slugify(design_name) or "diseno"
+    owner_prefix = slugify(getattr(user, "username", "") or "cliente")
+    filename_base = f"{owner_prefix}-{base_name}"
+
+    if edited_image_data:
+        header, _, encoded = edited_image_data.partition(",")
+        if ";base64" not in header or not encoded:
+            raise ValueError("La imagen editada no llegó en un formato válido.")
+        decoded = base64.b64decode(encoded)
+        final_name = f"{filename_base}.png"
+        file_path = designs_dir / final_name
+        counter = 1
+        while file_path.exists():
+            final_name = f"{filename_base}-{counter}.png"
+            file_path = designs_dir / final_name
+            counter += 1
+        file_path.write_bytes(decoded)
+        return final_name
+
+    if uploaded_file:
+        extension = Path(uploaded_file.name).suffix.lower() or ".png"
+        final_name = f"{filename_base}{extension}"
+        file_path = designs_dir / final_name
+        counter = 1
+        while file_path.exists():
+            final_name = f"{filename_base}-{counter}{extension}"
+            file_path = designs_dir / final_name
+            counter += 1
+        fs = FileSystemStorage(location=str(designs_dir))
+        return fs.save(final_name, uploaded_file)
+
+    raise ValueError("Necesitamos una imagen para guardar el diseño.")
+
+@login_required
 def subir_diseño_personalizado(request):
-    if request.method == 'POST' and request.FILES.get('imagen'):
-        imagen = request.FILES['imagen']
-        fs = FileSystemStorage(location=os.path.join(settings.MEDIA_ROOT, 'diseños_propios'))
-        filename = fs.save(imagen.name, imagen)
-        messages.success(request, "¡Diseño subido correctamente!")
+    if request.method != 'POST':
+        return redirect(request.META.get('HTTP_REFERER', 'tienda:detalle_producto'))
+
+    design_name = request.POST.get("name", "").strip() or request.POST.get("nombre", "").strip() or "diseno"
+    edited_image = request.POST.get("edited_image", "").strip()
+    imagen = request.FILES.get('imagen') or request.FILES.get("image")
+    redirect_to = request.POST.get("redirect_to", "").strip()
+    product_id = request.POST.get("product_id", "").strip()
+    try:
+        saved_name = _save_custom_design(
+            request.user if getattr(request, "user", None) and request.user.is_authenticated else None,
+            design_name,
+            uploaded_file=imagen,
+            edited_image_data=edited_image,
+        )
+    except Exception as exc:
+        messages.error(request, f"No pudimos guardar tu diseño: {exc}")
+        return redirect(redirect_to or request.META.get('HTTP_REFERER', 'tienda:detalle_producto'))
+
+    messages.success(request, "Tu diseño quedó guardado y listo para usar.")
+    if product_id:
+        return redirect(f"{reverse('tienda:detalle_producto', args=[product_id])}?diseño={saved_name}")
+    if redirect_to:
+        return redirect(redirect_to)
+    return redirect(f"{reverse('tienda:design_creator')}?file={saved_name}")
+
+
+@login_required
+def design_creator(request):
+    designs_dir = _custom_designs_dir()
+    designs_dir.mkdir(parents=True, exist_ok=True)
+
+    selected_file = request.GET.get("file", "").strip()
+    selected_product_id = request.GET.get("product_id", "").strip()
+    selected_design_name = ""
+    selected_design_url = ""
+
+    customizable_products = Producto.objects.filter(disponible=True, stock__gt=0).order_by("nombre")
+
+    if selected_file:
+        safe_name = Path(selected_file).name
+        selected_path = designs_dir / safe_name
+        if selected_path.exists():
+            selected_design_name = Path(safe_name).stem
+            selected_design_url = f"{settings.MEDIA_URL}diseños_propios/{safe_name}"
+
+    if request.method == "POST":
+        form = CustomDesignUploadForm(request.POST, request.FILES)
+        selected_product_id = request.POST.get("product_id", "").strip()
+        if form.is_valid():
+            try:
+                saved_name = _save_custom_design(
+                    request.user,
+                    form.cleaned_data["name"],
+                    uploaded_file=form.cleaned_data.get("image"),
+                    edited_image_data=form.cleaned_data.get("edited_image"),
+                )
+            except ValueError as exc:
+                messages.error(request, str(exc))
+            else:
+                messages.success(request, "Tu diseño quedó guardado y listo para usar.")
+                if selected_product_id and Producto.objects.filter(id=selected_product_id, disponible=True).exists():
+                    return redirect(f"{reverse('tienda:detalle_producto', args=[selected_product_id])}?diseño={saved_name}")
+                return redirect(f"{reverse('tienda:design_creator')}?file={saved_name}")
+        else:
+            messages.error(request, "Revisa el nombre o la imagen e inténtalo de nuevo.")
     else:
-        messages.error(request, "Error al subir el diseño.")
-    return redirect(request.META.get('HTTP_REFERER', 'tienda:detalle_producto'))
+        form = CustomDesignUploadForm(initial={"name": selected_design_name})
+
+    own_designs = sorted(
+        [path.name for path in designs_dir.iterdir() if path.is_file()],
+        key=lambda file_name: (designs_dir / file_name).stat().st_mtime,
+        reverse=True,
+    )[:18]
+
+    context = {
+        "form": form,
+        "selected_design_name": selected_design_name,
+        "selected_design_url": selected_design_url,
+        "saved_designs": own_designs,
+        "selected_product_id": selected_product_id,
+        "customizable_products": customizable_products,
+    }
+    return render(request, "tienda/design_creator.html", context)
 
 from urllib.parse import unquote as urlunquote
 
@@ -48,7 +196,6 @@ def detalle_producto(request, producto_id):
     colores_disponibles = producto.colores_disponibles.split(",") if producto.colores_disponibles else []
 
     diseño_seleccionado = request.GET.get("diseño")
-
     diseños_anime = []
     diseños_personalizados = []
 
@@ -60,6 +207,10 @@ def detalle_producto(request, producto_id):
         diseños_personalizados = os.listdir(ruta_personalizados)
     except FileNotFoundError:
         pass
+
+    selected_custom_design = ""
+    if diseño_seleccionado and diseño_seleccionado in diseños_personalizados:
+        selected_custom_design = diseño_seleccionado
 
     # Paginación de diseños anime
     page_anime = request.GET.get("page_anime", 1)
@@ -73,20 +224,27 @@ def detalle_producto(request, producto_id):
 
     # ...
 
+    _track_meta_pixel_event(
+        request,
+        "ViewContent",
+        {
+            "content_ids": [str(producto.id)],
+            "content_name": producto.nombre,
+            "content_type": "product",
+            "value": float(producto.precio),
+            "currency": "MXN",
+        },
+    )
+
     return render(request, 'tienda/detalle_producto.html', {
         'producto': producto,
         'tallas_disponibles': tallas_disponibles,
         'colores_disponibles': colores_disponibles,
         'diseños_anime': anime_page,
         'diseños_personalizados': personalizado_page,
+        'selected_custom_design': selected_custom_design,
         'reseña_form': ReseñaForm(),
     })
-
-
-
-from django.contrib.auth.decorators import login_required
-
-
 def _build_order_from_cart(order, carrito, reset_checkout_state=True):
     order.items.all().delete()
     for key, item in carrito.items():
@@ -153,12 +311,32 @@ def _cart_matches_order(order, carrito):
 
 
 def _cart_stock_issues(carrito):
+    quantities_by_variant = defaultdict(int)
     quantities_by_product = defaultdict(int)
     for key, item in carrito.items():
-        product_id = key.split("-", 1)[0]
-        quantities_by_product[int(product_id)] += int(item["cantidad"])
+        parts = key.split("-", 4)
+        if len(parts) != 5:
+            continue
+        product_id, talla, color, _, _ = parts
+        product = get_object_or_404(Producto, id=int(product_id))
+        variant = find_variant_for_selection(product, talla=talla, color=color)
+        if variant:
+            quantities_by_variant[variant.id] += int(item["cantidad"])
+        else:
+            quantities_by_product[int(product_id)] += int(item["cantidad"])
 
     issues = []
+    for variant_id, requested_qty in quantities_by_variant.items():
+        variant = get_object_or_404(ProductVariant, id=variant_id)
+        if variant.stock < requested_qty:
+            issues.append(
+                (
+                    f"{variant.product.nombre} ({variant.color} / {variant.talla})",
+                    variant.stock,
+                    requested_qty,
+                )
+            )
+
     for product_id, requested_qty in quantities_by_product.items():
         producto = get_object_or_404(Producto, id=product_id)
         if producto.stock < requested_qty:
@@ -305,6 +483,17 @@ def checkout(request):
     if order is None:
         messages.error(request, "No pudimos preparar tu compra. Revisa tu carrito e inténtalo de nuevo.")
         return redirect("tienda:carrito")
+    _track_meta_pixel_event(
+        request,
+        "InitiateCheckout",
+        {
+            "content_type": "product",
+            "num_items": sum(item.quantity for item in order.items.all()),
+            "value": float(order.subtotal_price),
+            "currency": "MXN",
+        },
+        persist=True,
+    )
     return redirect("tienda:shipping_details")
 
 
@@ -365,6 +554,17 @@ def shipping_details(request):
 
             order.shipping_updates.create(
                 status_message=shipping_note
+            )
+            _track_meta_pixel_event(
+                request,
+                "AddPaymentInfo",
+                {
+                    "content_type": "product",
+                    "num_items": sum(item.quantity for item in order.items.all()),
+                    "value": float(order.total_price),
+                    "currency": order.shipping_quote_currency or "MXN",
+                },
+                persist=True,
             )
             request.session['order_id'] = order.id
             return redirect('tienda:shipping_details')
@@ -430,6 +630,15 @@ def agregar_al_carrito(request, producto_id):
             messages.error(request, "Selecciona una talla y un color antes de continuar.")
             return redirect('tienda:detalle_producto', producto_id=producto.id)
 
+        variant = find_variant_for_selection(producto, talla=talla, color=color)
+        available_stock = available_stock_for_selection(producto, talla=talla, color=color)
+        if producto.uses_variant_inventory() and not variant:
+            messages.error(request, "Esa combinación de talla y color todavía no está configurada en inventario.")
+            return redirect('tienda:detalle_producto', producto_id=producto.id)
+        if available_stock <= 0:
+            messages.error(request, "Esa combinación ya no tiene stock disponible.")
+            return redirect('tienda:detalle_producto', producto_id=producto.id)
+
         carrito = request.session.get('carrito', {})
         item_key = f"{producto_id}-{talla}-{color}-{diseño_pecho}-{diseño_espalda}"
 
@@ -440,6 +649,12 @@ def agregar_al_carrito(request, producto_id):
         precio_total = float(producto.precio) + precio_pecho + precio_espalda
 
         if item_key in carrito:
+            if carrito[item_key]['cantidad'] + 1 > available_stock:
+                messages.error(
+                    request,
+                    f"Solo quedan {available_stock} piezas disponibles para {producto.nombre} en {color} / {talla}."
+                )
+                return redirect('tienda:detalle_producto', producto_id=producto.id)
             carrito[item_key]['cantidad'] += 1
         else:
             carrito[item_key] = {
@@ -453,6 +668,18 @@ def agregar_al_carrito(request, producto_id):
             }
 
         request.session['carrito'] = carrito
+        _track_meta_pixel_event(
+            request,
+            "AddToCart",
+            {
+                "content_ids": [str(producto.id)],
+                "content_name": producto.nombre,
+                "content_type": "product",
+                "value": float(precio_total),
+                "currency": "MXN",
+            },
+            persist=True,
+        )
         if action == 'buy_now':
             if request.user.is_authenticated:
                 return redirect('tienda:checkout')
@@ -699,8 +926,11 @@ def payment_success(request):
     if order.status != "Completed":
         stock_issues = []
         for item in order.items.select_related("product"):
-            if item.product.stock < item.quantity:
-                stock_issues.append((item.product.nombre, item.product.stock, item.quantity))
+            variant = find_variant_for_selection(item.product, talla=item.talla, color=item.color)
+            available_stock = variant.stock if variant else item.product.stock
+            item_label = item.product.nombre if not variant else f"{item.product.nombre} ({item.color} / {item.talla})"
+            if available_stock < item.quantity:
+                stock_issues.append((item_label, available_stock, item.quantity))
 
         if stock_issues:
             for nombre, stock, requested_qty in stock_issues:
@@ -711,8 +941,21 @@ def payment_success(request):
             return redirect("tienda:carrito")
 
         for item in order.items.select_related("product"):
-            item.product.stock -= item.quantity
-            item.product.save(update_fields=["stock"])
+            variant = find_variant_for_selection(item.product, talla=item.talla, color=item.color)
+            record_inventory_movement(
+                product=item.product,
+                variant=variant,
+                order=order,
+                movement_type="sale",
+                quantity_change=-int(item.quantity),
+                note=f"Descuento automático al completar el pedido #{order.id}.",
+                created_by=request.user,
+                metadata={
+                    "talla": item.talla,
+                    "color": item.color,
+                    "precio": str(item.price),
+                },
+            )
 
         order.status = "Completed"
         order.save(update_fields=["status"])
@@ -732,6 +975,18 @@ def payment_success(request):
 
     request.session['carrito'] = {}
     request.session["last_completed_order_id"] = order.id
+    _track_meta_pixel_event(
+        request,
+        "Purchase",
+        {
+            "content_ids": [str(item.product_id) for item in order.items.all()],
+            "content_type": "product",
+            "num_items": sum(item.quantity for item in order.items.all()),
+            "value": float(order.total_price),
+            "currency": order.shipping_quote_currency or "MXN",
+        },
+        persist=True,
+    )
     return redirect('tienda:payment_success_done')
 
 
@@ -931,12 +1186,3 @@ def catalogo_diseños_propios(request):
         'nuevos': nuevos,
 
     })
-def subir_diseño_personalizado(request):
-    if request.method == 'POST' and request.FILES.get('imagen'):
-        imagen = request.FILES['imagen']
-        fs = FileSystemStorage(location=os.path.join(settings.MEDIA_ROOT, 'diseños_propios'))
-        filename = fs.save(imagen.name, imagen)
-        messages.success(request, "¡Diseño subido correctamente!")
-    else:
-        messages.error(request, "Error al subir el diseño.")
-    return redirect(request.META.get('HTTP_REFERER', 'tienda:detalle_producto'))
