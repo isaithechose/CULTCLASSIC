@@ -193,6 +193,10 @@ def _get_checkout_order(request):
     return order
 
 
+def _customer_visible_orders(user):
+    return Order.objects.filter(customer=user, status="Completed").order_by("-created_at")
+
+
 def _has_skydrop_credentials():
     return bool(getattr(settings, "SKYDROP_CLIENT_ID", "")) and bool(getattr(settings, "SKYDROP_CLIENT_SECRET", ""))
 
@@ -259,10 +263,11 @@ def _apply_skydrop_quote(order):
 
 @login_required
 def profile_view(request):
-    orders = Order.objects.filter(customer=request.user).order_by("-created_at")
-    recent_orders = orders[:3]
-    completed_orders = orders.filter(status="Completed").count()
-    pending_orders = orders.filter(status="Pending").count()
+    all_orders = Order.objects.filter(customer=request.user).order_by("-created_at")
+    visible_orders = _customer_visible_orders(request.user)
+    recent_orders = visible_orders[:3]
+    completed_orders = visible_orders.count()
+    pending_orders = all_orders.filter(status="Pending").count()
 
     if request.method == "POST":
         form = UserProfileForm(request.POST, instance=request.user)
@@ -548,7 +553,7 @@ def proceso_compra(request):
 
 @login_required
 def my_orders(request):
-    orders_list = Order.objects.filter(customer=request.user).order_by('-created_at')
+    orders_list = _customer_visible_orders(request.user)
     paginator = Paginator(orders_list, 10)  # 10 pedidos por página
     page_number = request.GET.get('page')
     orders = paginator.get_page(page_number)
@@ -766,7 +771,7 @@ def order_tracking(request, order_id):
 
 @login_required
 def tracking_view(request):
-    orders = Order.objects.filter(customer=request.user)
+    orders = _customer_visible_orders(request.user)
     return render(request, 'tienda/tracking.html', {'orders': orders})
 
 
