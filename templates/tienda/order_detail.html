@@ -4,88 +4,109 @@
 <section class="py-5">
   <div class="container px-4 px-lg-5">
     <div class="order-surface mb-4">
-      <p class="page-eyebrow mb-2">Order #{{ order.id }}</p>
+      <p class="page-eyebrow mb-2">Pedido #{{ order.id }}</p>
       <h1 class="mb-2">Detalle del pedido</h1>
       <p class="text-muted mb-1">Fecha: {{ order.created_at|date:"d/m/Y H:i" }}</p>
-      <p class="text-muted mb-0">Estado: {{ order.status }}{% if order.shipping_status %} | Envío: {{ order.shipping_status }}{% endif %}</p>
+      <p class="text-muted mb-0">Estado del pedido: {{ order.status }}{% if order.shipping_status %} | Envío: {{ order.shipping_status }}{% endif %}</p>
     </div>
 
-    <div class="order-surface">
-    <h3>Productos</h3>
-    <table class="table order-table">
-      <thead>
-        <tr>
-          <th>Producto</th>
-          <th>Talla</th>
-          <th>Color</th>
-          <th>Cantidad</th>
-          <th>Precio</th>
-          <th>Subtotal</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for item in order.items.all %}
-        <tr>
-          <td>{{ item.product.nombre }}</td>
-          <td>{{ item.talla|default:"-" }}</td>
-          <td>{{ item.color|default:"-" }}</td>
-          <td>{{ item.quantity }}</td>
-          <td>${{ item.price|floatformat:2 }}</td>
-          <td>${{ item.subtotal|floatformat:2 }}</td>
-        </tr>
-        {% if item.diseño_pecho or item.diseño_espalda %}
-        <tr>
-          <td colspan="6">
-            {% if item.diseño_pecho %}<strong>Pecho:</strong> {{ item.diseño_pecho }}{% endif %}
-            {% if item.diseño_pecho and item.diseño_espalda %} | {% endif %}
-            {% if item.diseño_espalda %}<strong>Espalda:</strong> {{ item.diseño_espalda }}{% endif %}
-          </td>
-        </tr>
-        {% endif %}
-        {% endfor %}
-      </tbody>
-    </table>
-    <div class="mt-3">
-      <p class="mb-1">Subtotal productos: ${{ order.subtotal_price|floatformat:2 }}</p>
-      <p class="mb-1">Envío: ${{ order.shipping_total|floatformat:2 }}</p>
-      <h4>Total: ${{ order.total_price|floatformat:2 }}</h4>
-    </div>
-    </div>
+    <div class="shipping-layout">
+      <div class="order-surface">
+        <h3 class="mb-4">Productos</h3>
+        <table class="table order-table">
+          <thead>
+            <tr>
+              <th>Producto</th>
+              <th>Talla</th>
+              <th>Color</th>
+              <th>Cantidad</th>
+              <th>Precio</th>
+              <th>Subtotal</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in order.items.all %}
+            <tr>
+              <td>{{ item.product.nombre }}</td>
+              <td>{{ item.talla|default:"-" }}</td>
+              <td>{{ item.color|default:"-" }}</td>
+              <td>{{ item.quantity }}</td>
+              <td>${{ item.price|floatformat:2 }}</td>
+              <td>${{ item.subtotal|floatformat:2 }}</td>
+            </tr>
+            {% if item.diseño_pecho or item.diseño_espalda %}
+            <tr>
+              <td colspan="6">
+                {% if item.diseño_pecho %}<strong>Frente:</strong> {{ item.diseño_pecho }}{% endif %}
+                {% if item.diseño_pecho and item.diseño_espalda %} | {% endif %}
+                {% if item.diseño_espalda %}<strong>Espalda:</strong> {{ item.diseño_espalda }}{% endif %}
+              </td>
+            </tr>
+            {% endif %}
+            {% endfor %}
+          </tbody>
+        </table>
 
-    {% if order.shipping_address %}
-      <div class="order-surface mt-4">
-      <h3>Dirección de Envío</h3>
-      {% if order.shipping_address.phone %}
-        <p>Teléfono: {{ order.shipping_address.phone }}</p>
-      {% endif %}
-      <p>{{ order.shipping_address.address_line1 }}</p>
-      {% if order.shipping_address.address_line2 %}
-        <p>{{ order.shipping_address.address_line2 }}</p>
-      {% endif %}
-      <p>{{ order.shipping_address.city }}, {{ order.shipping_address.state }}</p>
-      <p>{{ order.shipping_address.postal_code }}, {{ order.shipping_address.country }}</p>
+        <div class="shipping-map-card__address mt-3">
+          <div><strong>Subtotal productos:</strong> ${{ order.subtotal_price|floatformat:2 }}</div>
+          <div><strong>Envío:</strong> ${{ order.shipping_total|floatformat:2 }}</div>
+          <div><strong>Total final:</strong> ${{ order.total_price|floatformat:2 }}</div>
+        </div>
       </div>
-    {% endif %}
 
-    {% if order.tracking_number %}
-      <div class="order-surface mt-4">
-      <h3>Tracking</h3>
-      <p>Número de seguimiento: {{ order.tracking_number }}</p>
-      </div>
-    {% endif %}
+      <aside class="shipping-panel shipping-panel--map">
+        <div class="shipping-map-card shipping-map-card--summary">
+          <div class="shipping-map-card__header">
+            <p class="shipping-panel__eyebrow">Pedido y envío</p>
+            <h2 class="shipping-panel__title shipping-panel__title--small">Resumen rápido</h2>
+          </div>
 
-    {% if order.skydrop_label_url %}
-      <p><a href="{{ order.skydrop_label_url }}" target="_blank" rel="noopener">Abrir guía Skydrop</a></p>
-    {% endif %}
+          <div class="shipping-quote-state">
+            {% if order.tracking_number %}
+              <span class="shipping-quote-state__badge shipping-quote-state__badge--ready">Tracking activo</span>
+              <p class="shipping-quote-state__copy">Tu pedido ya tiene seguimiento disponible.</p>
+            {% else %}
+              <span class="shipping-quote-state__badge">Preparando envío</span>
+              <p class="shipping-quote-state__copy">El pedido está guardado y seguiremos actualizando el estado aquí.</p>
+            {% endif %}
+          </div>
 
-    {% if order.skydrop_tracking_url %}
-      <p><a href="{{ order.skydrop_tracking_url }}" target="_blank" rel="noopener">Abrir tracking Skydrop</a></p>
-    {% endif %}
+          {% if order.shipping_address %}
+            <div class="shipping-map-card__address">
+              <div><strong>Dirección:</strong> {{ order.shipping_address.address_line1 }}</div>
+              {% if order.shipping_address.address_line2 %}
+                <div><strong>Referencia:</strong> {{ order.shipping_address.address_line2 }}</div>
+              {% endif %}
+              <div><strong>Destino:</strong> {{ order.shipping_address.city }}, {{ order.shipping_address.state }}</div>
+              <div><strong>CP:</strong> {{ order.shipping_address.postal_code }}</div>
+              {% if order.shipping_address.phone %}
+                <div><strong>Teléfono:</strong> {{ order.shipping_address.phone }}</div>
+              {% endif %}
+            </div>
+          {% endif %}
 
-    <div class="d-flex flex-wrap gap-2 mt-4">
-      <a href="{% url 'tienda:my_orders' %}" class="btn site-btn site-btn--ghost">Volver a mis pedidos</a>
-      <a href="{% url 'tienda:order_tracking' order.id %}" class="btn site-btn site-btn--accent">Seguir pedido</a>
-      <a href="{% url 'tienda:sync_skydrop_order' order.id %}" class="btn site-btn site-btn--ghost">Sincronizar con Skydrop</a>
+          {% if order.tracking_number %}
+            <div class="shipping-map-card__address">
+              <div><strong>Tracking:</strong> {{ order.tracking_number }}</div>
+              {% if order.skydrop_carrier or order.skydrop_service %}
+                <div><strong>Servicio:</strong> {{ order.skydrop_carrier|default:"Skydrop" }}{% if order.skydrop_service %} / {{ order.skydrop_service }}{% endif %}</div>
+              {% endif %}
+            </div>
+          {% endif %}
+
+          <div class="d-grid gap-2 px-2 pb-2">
+            {% if order.skydrop_label_url %}
+              <a href="{{ order.skydrop_label_url }}" target="_blank" rel="noopener" class="btn site-btn site-btn--ghost shipping-form__submit">Abrir guía</a>
+            {% endif %}
+            {% if order.skydrop_tracking_url %}
+              <a href="{{ order.skydrop_tracking_url }}" target="_blank" rel="noopener" class="btn site-btn site-btn--ghost shipping-form__submit">Abrir tracking</a>
+            {% endif %}
+            <a href="{% url 'tienda:order_tracking' order.id %}" class="btn site-btn site-btn--accent shipping-form__submit">Seguir pedido</a>
+            <a href="{% url 'tienda:my_orders' %}" class="btn site-btn site-btn--ghost shipping-form__submit">Volver a mis pedidos</a>
+            <a href="{% url 'tienda:sync_skydrop_order' order.id %}" class="btn site-btn site-btn--ghost shipping-form__submit">Sincronizar con Skydrop</a>
+          </div>
+        </div>
+      </aside>
     </div>
   </div>
 </section>

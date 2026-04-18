@@ -1,6 +1,9 @@
 from django.conf import settings
 from django.contrib import admin
+from django.contrib import messages
 from django.db.models import Count, Sum
+from django.http import HttpResponseRedirect
+from django.urls import path, reverse
 from django.utils.html import format_html
 
 from .skydrop import SkydropError, create_shipment, quote_order, sync_shipment
@@ -84,6 +87,8 @@ def cotizar_con_skydrop(modeladmin, request, queryset):
             order.skydrop_rate_id = best_rate["id"]
             order.skydrop_carrier = best_rate["carrier"]
             order.skydrop_service = best_rate["service"]
+            order.shipping_quote_amount = best_rate["amount"]
+            order.shipping_quote_currency = "MXN"
             order.skydrop_last_payload = result["payload"]
             order.skydrop_last_error = ""
             order.save()
@@ -326,6 +331,9 @@ class OrderAdmin(admin.ModelAdmin):
     readonly_fields = (
         "created_at",
         "total_amount",
+        "shipping_address_preview",
+        "skydrop_readiness",
+        "skydrop_actions_panel",
         "skydrop_summary",
     )
     autocomplete_fields = ("customer",)
@@ -341,8 +349,13 @@ class OrderAdmin(admin.ModelAdmin):
         ("Pedido", {
             "fields": ("customer", "status", "shipping_status", "tracking_number", "created_at")
         }),
+        ("Direccion", {
+            "fields": ("shipping_address_preview",)
+        }),
         ("Skydrop", {
             "fields": (
+                "skydrop_readiness",
+                "skydrop_actions_panel",
                 "skydrop_summary",
                 "skydrop_quotation_id",
                 "skydrop_rate_id",
@@ -357,6 +370,27 @@ class OrderAdmin(admin.ModelAdmin):
             )
         }),
     )
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path(
+                "<int:order_id>/skydrop/quote/",
+                self.admin_site.admin_view(self.quote_order_view),
+                name="tienda_order_skydrop_quote",
+            ),
+            path(
+                "<int:order_id>/skydrop/shipment/",
+                self.admin_site.admin_view(self.create_shipment_view),
+                name="tienda_order_skydrop_shipment",
+            ),
+            path(
+                "<int:order_id>/skydrop/sync/",
+                self.admin_site.admin_view(self.sync_shipment_view),
+                name="tienda_order_skydrop_sync",
+            ),
+        ]
+        return custom_urls + urls
 
     def get_queryset(self, request):
         queryset = super().get_queryset(request)
@@ -415,11 +449,69 @@ class OrderAdmin(admin.ModelAdmin):
             '<span style="padding:0.25rem 0.55rem;border-radius:999px;background:#66666622;color:#888;font-weight:700;">Sin conectar</span>'
         )
 
+    @admin.display(description="Direccion guardada")
+    def shipping_address_preview(self, obj):
+        address = getattr(obj, "shipping_address", None)
+        if not address:
+            return "El pedido todavia no tiene direccion de envio."
+        lines = [
+            f"<strong>{address.address_line1}</strong>",
+        ]
+        if address.address_line2:
+            lines.append(address.address_line2)
+        lines.append(f"{address.city}, {address.state}, {address.postal_code}")
+        lines.append(address.country)
+        if address.phone:
+            lines.append(f"Tel: {address.phone}")
+        return format_html("<br>".join(lines))
+
+    @admin.display(description="Checklist Skydrop")
+    def skydrop_readiness(self, obj):
+        address = getattr(obj, "shipping_address", None)
+        checks = [
+            ("Direccion", bool(address)),
+            ("Telefono", bool(address and address.phone)),
+            ("Items", obj.items.exists()),
+            ("Cotizacion", bool(obj.shipping_quote_amount)),
+            ("Guia", bool(obj.skydrop_shipment_id)),
+        ]
+        chips = []
+        for label, ok in checks:
+            color = "#2d8a4b" if ok else "#a38b5d"
+            bg = "#2d8a4b22" if ok else "#a38b5d22"
+            text = "Listo" if ok else "Pendiente"
+            chips.append(
+                f'<span style="display:inline-flex;margin:0 0.45rem 0.45rem 0;padding:0.3rem 0.6rem;border-radius:999px;background:{bg};color:{color};font-weight:700;">{label}: {text}</span>'
+            )
+        return format_html("".join(chips))
+
+    @admin.display(description="Acciones Skydrop")
+    def skydrop_actions_panel(self, obj):
+        if not obj.pk:
+            return "Guarda el pedido para usar acciones de Skydrop."
+        quote_url = reverse("admin:tienda_order_skydrop_quote", args=[obj.pk])
+        shipment_url = reverse("admin:tienda_order_skydrop_shipment", args=[obj.pk])
+        sync_url = reverse("admin:tienda_order_skydrop_sync", args=[obj.pk])
+        return format_html(
+            '''
+            <div style="display:flex;flex-wrap:wrap;gap:0.6rem;">
+                <a class="button" href="{}">Cotizar envio</a>
+                <a class="button" href="{}">Crear guia</a>
+                <a class="button" href="{}">Sincronizar tracking</a>
+            </div>
+            ''',
+            quote_url,
+            shipment_url,
+            sync_url,
+        )
+
     @admin.display(description="Resumen Skydrop")
     def skydrop_summary(self, obj):
         rows = []
         if obj.skydrop_carrier or obj.skydrop_service:
             rows.append(f"{obj.skydrop_carrier or '-'} / {obj.skydrop_service or '-'}")
+        if obj.shipping_quote_amount:
+            rows.append(f"Cotizacion: ${obj.shipping_quote_amount} {obj.shipping_quote_currency or 'MXN'}")
         if obj.tracking_number:
             rows.append(f"Tracking: {obj.tracking_number}")
         if obj.skydrop_label_url:
@@ -429,6 +521,95 @@ class OrderAdmin(admin.ModelAdmin):
         if obj.skydrop_last_error:
             rows.append(f'<span style="color:#d46b6b;">{obj.skydrop_last_error}</span>')
         return format_html("<br>".join(rows) if rows else "Sin datos de Skydrop.")
+
+    def _redirect_to_change(self, order_id):
+        return HttpResponseRedirect(reverse("admin:tienda_order_change", args=[order_id]))
+
+    def quote_order_view(self, request, order_id):
+        order = self.get_object(request, order_id)
+        if not order:
+            self.message_user(request, "No encontramos ese pedido.", level=messages.ERROR)
+            return self._redirect_to_change(order_id)
+        try:
+            result = quote_order(order)
+            best_rate = result["best_rate"]
+            order.skydrop_quotation_id = result["quotation_id"]
+            order.skydrop_rate_id = best_rate["id"]
+            order.skydrop_carrier = best_rate["carrier"]
+            order.skydrop_service = best_rate["service"]
+            order.shipping_quote_amount = best_rate["amount"]
+            order.shipping_quote_currency = "MXN"
+            order.skydrop_last_payload = result["payload"]
+            order.skydrop_last_error = ""
+            order.save()
+            order.shipping_updates.create(
+                status_message=(
+                    f"Cotizacion Skydrop lista. "
+                    f"{best_rate['carrier']} / {best_rate['service']} - ${best_rate['amount']} MXN."
+                )
+            )
+            self.message_user(request, "Cotizacion lista y guardada en el pedido.")
+        except Exception as exc:
+            order.skydrop_last_error = str(exc)
+            order.save(update_fields=["skydrop_last_error"])
+            self.message_user(request, str(exc), level=messages.ERROR)
+        return self._redirect_to_change(order_id)
+
+    def create_shipment_view(self, request, order_id):
+        order = self.get_object(request, order_id)
+        if not order:
+            self.message_user(request, "No encontramos ese pedido.", level=messages.ERROR)
+            return self._redirect_to_change(order_id)
+        try:
+            result = create_shipment(order, order.skydrop_rate_id)
+            order.skydrop_shipment_id = result["shipment_id"]
+            order.skydrop_label_url = result["label_url"]
+            order.skydrop_tracking_url = result["tracking_url"]
+            order.tracking_number = result["tracking_number"]
+            order.skydrop_carrier = result["carrier"] or order.skydrop_carrier
+            order.skydrop_service = result["service"] or order.skydrop_service
+            order.skydrop_last_payload = result["payload"]
+            order.skydrop_last_error = ""
+            order.shipping_status = "Shipped" if result["tracking_number"] else order.shipping_status
+            order.save()
+            order.shipping_updates.create(
+                status_message=f"Guia creada en Skydrop. Tracking: {result['tracking_number'] or 'pendiente'}."
+            )
+            self.message_user(request, "Guia creada y tracking actualizado.")
+        except Exception as exc:
+            order.skydrop_last_error = str(exc)
+            order.save(update_fields=["skydrop_last_error"])
+            self.message_user(request, str(exc), level=messages.ERROR)
+        return self._redirect_to_change(order_id)
+
+    def sync_shipment_view(self, request, order_id):
+        order = self.get_object(request, order_id)
+        if not order:
+            self.message_user(request, "No encontramos ese pedido.", level=messages.ERROR)
+            return self._redirect_to_change(order_id)
+        try:
+            result = sync_shipment(order)
+            order.tracking_number = result.get("tracking_number") or order.tracking_number
+            order.skydrop_tracking_url = result.get("tracking_url") or order.skydrop_tracking_url
+            order.skydrop_carrier = result.get("carrier") or order.skydrop_carrier
+            order.skydrop_service = result.get("service") or order.skydrop_service
+            if result.get("status"):
+                normalized = result["status"].lower()
+                if "deliver" in normalized:
+                    order.shipping_status = "Delivered"
+                elif any(token in normalized for token in ["transit", "ship", "pickup", "label"]):
+                    order.shipping_status = "Shipped"
+                else:
+                    order.shipping_status = "Processing"
+            order.skydrop_last_payload = result.get("payload")
+            order.skydrop_last_error = ""
+            order.save()
+            self.message_user(request, "Tracking sincronizado.")
+        except Exception as exc:
+            order.skydrop_last_error = str(exc)
+            order.save(update_fields=["skydrop_last_error"])
+            self.message_user(request, str(exc), level=messages.ERROR)
+        return self._redirect_to_change(order_id)
 
 
 @admin.register(OrderItem)

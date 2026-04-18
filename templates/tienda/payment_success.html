@@ -1,7 +1,114 @@
-{% extends 'tienda/index.html' %}
+{% extends "tienda/base.html" %}
+
+{% block hero %}
+<section class="page-hero page-hero--compact">
+    <div class="container px-4 px-lg-5">
+        <div class="page-hero__inner">
+            <p class="page-eyebrow">Compra confirmada</p>
+            <h1 class="page-hero__title">Tu pedido ya quedó pagado.</h1>
+            <p class="page-hero__copy">
+                Guardamos tu compra, tu dirección y el total final. Desde aquí ya puedes revisar el pedido o seguir su avance.
+            </p>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
 {% block content %}
-<div class="container my-5">
-    <h1>¡Gracias por tu compra!</h1>
-    <p>Tu pago se ha procesado exitosamente.</p>
-</div>
+<section class="py-5">
+    <div class="container px-4 px-lg-5">
+        <div class="order-surface mb-4">
+            <p class="page-eyebrow mb-2">Pedido #{{ order.id }}</p>
+            <h2 class="mb-3">Gracias por tu compra</h2>
+            <p class="text-muted mb-0">
+                Te llevas un total de ${{ order.total_price|floatformat:2 }} MXN. Si ya hay guía o tracking, también los verás aquí.
+            </p>
+        </div>
+
+        <div class="shipping-progress mb-4">
+            <div class="shipping-progress__item shipping-progress__item--done">
+                <span>1</span>
+                <div>
+                    <strong>Carrito</strong>
+                    <small>Confirmado</small>
+                </div>
+            </div>
+            <div class="shipping-progress__item shipping-progress__item--done">
+                <span>2</span>
+                <div>
+                    <strong>Pago</strong>
+                    <small>Recibido</small>
+                </div>
+            </div>
+            <div class="shipping-progress__item {% if order.tracking_number or order.shipping_status == 'Shipped' or order.shipping_status == 'Delivered' %}shipping-progress__item--active{% endif %}">
+                <span>3</span>
+                <div>
+                    <strong>Seguimiento</strong>
+                    <small>{{ order.shipping_status }}</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="shipping-layout">
+            <div class="order-surface">
+                <h3 class="mb-4">Resumen de compra</h3>
+                <div class="shipping-map-card__address">
+                    <div><strong>Estado del pedido:</strong> {{ order.status }}</div>
+                    <div><strong>Estado de envío:</strong> {{ order.shipping_status }}</div>
+                    <div><strong>Productos:</strong> ${{ order.subtotal_price|floatformat:2 }} MXN</div>
+                    <div><strong>Envío:</strong> ${{ order.shipping_total|floatformat:2 }} MXN</div>
+                    <div><strong>Total final:</strong> ${{ order.total_price|floatformat:2 }} MXN</div>
+                </div>
+
+                {% if order.shipping_address %}
+                    <div class="order-surface mt-4">
+                        <h4 class="mb-3">Dirección guardada</h4>
+                        {% if order.shipping_address.phone %}
+                            <p class="mb-1">Teléfono: {{ order.shipping_address.phone }}</p>
+                        {% endif %}
+                        <p class="mb-1">{{ order.shipping_address.address_line1 }}</p>
+                        {% if order.shipping_address.address_line2 %}
+                            <p class="mb-1">{{ order.shipping_address.address_line2 }}</p>
+                        {% endif %}
+                        <p class="mb-0">{{ order.shipping_address.city }}, {{ order.shipping_address.state }}, {{ order.shipping_address.postal_code }}, {{ order.shipping_address.country }}</p>
+                    </div>
+                {% endif %}
+            </div>
+
+            <aside class="shipping-panel shipping-panel--map">
+                <div class="shipping-map-card shipping-map-card--summary">
+                    <div class="shipping-map-card__header">
+                        <p class="shipping-panel__eyebrow">Siguiente paso</p>
+                        <h2 class="shipping-panel__title shipping-panel__title--small">Sigue tu pedido cuando quieras</h2>
+                    </div>
+
+                    <div class="shipping-quote-state">
+                        {% if order.tracking_number %}
+                            <span class="shipping-quote-state__badge shipping-quote-state__badge--ready">Tracking listo</span>
+                            <p class="shipping-quote-state__copy">Ya puedes revisar el avance de tu envío.</p>
+                        {% else %}
+                            <span class="shipping-quote-state__badge">Preparando envío</span>
+                            <p class="shipping-quote-state__copy">Tu pedido ya quedó pagado. El tracking aparecerá aquí en cuanto esté disponible.</p>
+                        {% endif %}
+                    </div>
+
+                    {% if order.tracking_number %}
+                        <div class="shipping-map-card__address">
+                            <div><strong>Tracking:</strong> {{ order.tracking_number }}</div>
+                            {% if order.skydrop_carrier or order.skydrop_service %}
+                                <div><strong>Servicio:</strong> {{ order.skydrop_carrier|default:"Skydrop" }}{% if order.skydrop_service %} / {{ order.skydrop_service }}{% endif %}</div>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+
+                    <div class="d-grid gap-2 px-2 pb-2">
+                        <a href="{% url 'tienda:order_detail' order.id %}" class="btn site-btn site-btn--accent shipping-form__submit">Ver detalle del pedido</a>
+                        <a href="{% url 'tienda:order_tracking' order.id %}" class="btn site-btn site-btn--ghost shipping-form__submit">Seguir pedido</a>
+                        <a href="{% url 'tienda:my_orders' %}" class="btn site-btn site-btn--ghost shipping-form__submit">Ir a mis pedidos</a>
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </div>
+</section>
 {% endblock %}

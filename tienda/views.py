@@ -726,7 +726,8 @@ def payment_success(request):
         send_mail(subject, message, from_email, recipient_list)
 
     request.session['carrito'] = {}
-    return redirect('tienda:order_detail', order_id=order.id)
+    request.session["last_completed_order_id"] = order.id
+    return redirect('tienda:payment_success_done')
 
 
 def payment_cancel(request):
@@ -734,6 +735,23 @@ def payment_cancel(request):
     if request.session.get("order_id"):
         return redirect("tienda:shipping_details")
     return render(request, 'tienda/payment_cancel.html')
+
+
+@login_required
+def payment_success_done(request):
+    order_id = request.session.get("last_completed_order_id")
+    if not order_id:
+        messages.warning(request, "No encontramos una compra reciente para mostrarte.")
+        return redirect("tienda:my_orders")
+
+    order = get_object_or_404(Order, id=order_id, customer=request.user)
+    return render(
+        request,
+        "tienda/payment_success.html",
+        {
+            "order": order,
+        },
+    )
 from .forms import ShippingAddressForm
 
 

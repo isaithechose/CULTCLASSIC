@@ -1,6 +1,14 @@
 from django.urls import path, include
 from . import views
-from .views import my_orders, order_detail, stripe_checkout, payment_success, payment_cancel, shipping_details
+from .views import (
+    my_orders,
+    order_detail,
+    stripe_checkout,
+    payment_success,
+    payment_success_done,
+    payment_cancel,
+    shipping_details,
+)
 from django.conf import settings
 from django.conf.urls.static import static
 
@@ -24,6 +32,7 @@ urlpatterns = [
     # Rutas para Stripe Checkout
     path('stripe_checkout/', stripe_checkout, name='stripe_checkout'),
     path('payment_success/', payment_success, name='payment_success'),
+    path('payment_success/done/', payment_success_done, name='payment_success_done'),
     path('payment_cancel/', payment_cancel, name='payment_cancel'),
     path('shipping/', shipping_details, name='shipping_details'),
     path('order/<int:order_id>/tracking/', views.order_tracking, name='order_tracking'),
