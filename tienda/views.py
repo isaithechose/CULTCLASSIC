@@ -779,10 +779,72 @@ def _map_skydrop_status(raw_status):
     return "Processing"
 
 
+def _webhook_secret_is_valid(request):
+    expected = getattr(settings, "SKYDROP_WEBHOOK_SECRET", "")
+    if not expected:
+        return True
+
+    candidates = [
+        request.headers.get("X-Webhook-Secret", ""),
+        request.headers.get("X-Skydrop-Secret", ""),
+    ]
+    authorization = request.headers.get("Authorization", "")
+    if authorization.startswith("Bearer "):
+        candidates.append(authorization.removeprefix("Bearer ").strip())
+
+    return any(candidate == expected for candidate in candidates if candidate)
+
+
+def _register_shipping_update(order, message):
+    last_update = order.shipping_updates.order_by("-updated_at").first()
+    if not last_update or last_update.status_message != message:
+        order.shipping_updates.create(status_message=message)
+
+
+def _apply_skydrop_sync(order, payload, source_label="Skydrop"):
+    tracking_number = payload.get("tracking_number") or order.tracking_number
+    tracking_url = payload.get("tracking_url") or order.skydrop_tracking_url
+    carrier = payload.get("carrier") or order.skydrop_carrier
+    service = payload.get("service") or order.skydrop_service
+    raw_status = payload.get("status")
+    shipment_id = payload.get("shipment_id") or order.skydrop_shipment_id
+
+    previous_status = order.shipping_status
+    previous_tracking = order.tracking_number
+
+    order.tracking_number = tracking_number
+    order.skydrop_tracking_url = tracking_url
+    order.skydrop_carrier = carrier
+    order.skydrop_service = service
+    order.skydrop_shipment_id = shipment_id
+    if raw_status:
+        order.shipping_status = _map_skydrop_status(raw_status)
+    order.skydrop_last_payload = payload.get("payload") or payload
+    order.skydrop_last_error = ""
+    order.save()
+
+    changes = []
+    if raw_status and order.shipping_status != previous_status:
+        changes.append(f"estado: {order.shipping_status}")
+    if tracking_number and tracking_number != previous_tracking:
+        changes.append(f"tracking: {tracking_number}")
+    if carrier or service:
+        changes.append(f"servicio: {carrier or 'Skydrop'}{f' / {service}' if service else ''}")
+
+    if changes:
+        message = f"{source_label} actualizó " + ", ".join(changes) + "."
+    else:
+        message = f"{source_label} sincronizó el envío sin cambios nuevos visibles."
+    _register_shipping_update(order, message)
+    return order
+
+
 @csrf_exempt
 def skydrop_webhook(request):
     if request.method != "POST":
         return JsonResponse({"ok": False, "error": "method_not_allowed"}, status=405)
+    if not _webhook_secret_is_valid(request):
+        return JsonResponse({"ok": False, "error": "invalid_secret"}, status=403)
 
     try:
         payload = json.loads(request.body.decode("utf-8") or "{}")
@@ -804,27 +866,24 @@ def skydrop_webhook(request):
         order = Order.objects.filter(skydrop_shipment_id=shipment_id).first()
     if order is None and tracking_number:
         order = Order.objects.filter(tracking_number=tracking_number).first()
+    if order is None and data.get("relationships"):
+        relation_data = data.get("relationships", {})
+        quotation_id = relation_data.get("quotation", {}).get("data", {}).get("id") if isinstance(relation_data.get("quotation"), dict) else None
+        if quotation_id:
+            order = Order.objects.filter(skydrop_quotation_id=quotation_id).first()
     if order is None:
         return JsonResponse({"ok": True, "ignored": True})
 
-    order.skydrop_last_payload = payload
-    if shipment_id:
-        order.skydrop_shipment_id = shipment_id
-    if tracking_number:
-        order.tracking_number = tracking_number
-    if raw_status:
-        order.shipping_status = _map_skydrop_status(raw_status)
-    order.save(update_fields=[
-        "skydrop_last_payload",
-        "skydrop_shipment_id",
-        "tracking_number",
-        "shipping_status",
-    ])
-
-    status_message = f"Skydrop actualizo el envío a: {raw_status or order.shipping_status}."
-    if tracking_number:
-        status_message += f" Tracking: {tracking_number}."
-    order.shipping_updates.create(status_message=status_message)
+    sync_payload = {
+        "payload": payload,
+        "shipment_id": shipment_id,
+        "tracking_number": tracking_number,
+        "tracking_url": attributes.get("tracking_url") or payload.get("tracking_url"),
+        "status": raw_status,
+        "carrier": attributes.get("provider_display_name") or payload.get("carrier"),
+        "service": attributes.get("provider_service_name") or payload.get("service"),
+    }
+    _apply_skydrop_sync(order, sync_payload, source_label="Webhook Skydrop")
     return JsonResponse({"ok": True})
 
 
@@ -840,14 +899,7 @@ def sync_skydrop_order(request, order_id):
         messages.error(request, "No pudimos sincronizar este envío con Skydrop.")
         return redirect("tienda:order_detail", order_id=order.id)
 
-    order.tracking_number = payload.get("tracking_number") or order.tracking_number
-    order.skydrop_tracking_url = payload.get("tracking_url") or order.skydrop_tracking_url
-    order.skydrop_carrier = payload.get("carrier") or order.skydrop_carrier
-    order.skydrop_service = payload.get("service") or order.skydrop_service
-    if payload.get("status"):
-        order.shipping_status = _map_skydrop_status(payload["status"])
-    order.skydrop_last_payload = payload.get("payload")
-    order.save()
+    _apply_skydrop_sync(order, payload, source_label="Sincronización manual")
     messages.success(request, "Actualizamos el tracking desde Skydrop.")
     return redirect("tienda:order_detail", order_id=order.id)
 

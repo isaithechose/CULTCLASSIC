@@ -9,33 +9,68 @@
             <p class="text-muted mb-0"><strong>Envío:</strong> {{ order.shipping_status }}</p>
         </div>
 
-        {% if order.tracking_number %}
-            <p><strong>Número de seguimiento:</strong> {{ order.tracking_number }}</p>
-        {% endif %}
+        <div class="shipping-layout">
+            <div class="order-surface">
+                <h3 class="mb-4">Estado del envío</h3>
 
-        {% if order.skydrop_tracking_url %}
-            <p><a href="{{ order.skydrop_tracking_url }}" target="_blank" rel="noopener">Abrir tracking de Skydrop</a></p>
-        {% endif %}
+                <div class="shipping-quote-state mb-4">
+                    {% if order.tracking_number %}
+                        <span class="shipping-quote-state__badge shipping-quote-state__badge--ready">Tracking activo</span>
+                        <p class="shipping-quote-state__copy">Tu pedido ya tiene seguimiento. Si hubo cambios recientes, aparecerán en el historial.</p>
+                    {% else %}
+                        <span class="shipping-quote-state__badge">Esperando tracking</span>
+                        <p class="shipping-quote-state__copy">Todavía no hay número de seguimiento. Puedes volver después o sincronizar manualmente.</p>
+                    {% endif %}
+                </div>
 
-        <div class="order-surface">
-        {% if updates %}
-            <h4>Historial de Actualizaciones:</h4>
-            <ul class="order-updates">
-                {% for update in updates %}
-                    <li>
-                        <strong>{{ update.updated_at|date:"SHORT_DATETIME_FORMAT" }}:</strong>
-                        {{ update.status_message }}
-                    </li>
-                {% endfor %}
-            </ul>
-        {% else %}
-            <p>Aún no hay actualizaciones de envío.</p>
-        {% endif %}
-        </div>
+                <div class="shipping-map-card__address">
+                    <div><strong>Pedido:</strong> #{{ order.id }}</div>
+                    <div><strong>Pago:</strong> {{ order.status }}</div>
+                    <div><strong>Envío:</strong> {{ order.shipping_status }}</div>
+                    {% if order.tracking_number %}
+                        <div><strong>Tracking:</strong> {{ order.tracking_number }}</div>
+                    {% endif %}
+                    {% if order.skydrop_carrier or order.skydrop_service %}
+                        <div><strong>Servicio:</strong> {{ order.skydrop_carrier|default:"Skydrop" }}{% if order.skydrop_service %} / {{ order.skydrop_service }}{% endif %}</div>
+                    {% endif %}
+                </div>
 
-        <div class="d-flex flex-wrap gap-2 mt-4">
-            <a href="{% url 'tienda:order_detail' order.id %}" class="btn site-btn site-btn--ghost">Volver al detalle</a>
-            <a href="{% url 'tienda:my_orders' %}" class="btn site-btn site-btn--accent">Mis pedidos</a>
+                <div class="d-flex flex-wrap gap-2 mt-4">
+                    {% if order.skydrop_tracking_url %}
+                        <a href="{{ order.skydrop_tracking_url }}" target="_blank" rel="noopener" class="btn site-btn site-btn--ghost">Abrir tracking</a>
+                    {% endif %}
+                    <a href="{% url 'tienda:sync_skydrop_order' order.id %}" class="btn site-btn site-btn--accent">Sincronizar ahora</a>
+                </div>
+            </div>
+
+            <aside class="shipping-panel shipping-panel--map">
+                <div class="shipping-map-card shipping-map-card--summary">
+                    <div class="shipping-map-card__header">
+                        <p class="shipping-panel__eyebrow">Historial</p>
+                        <h2 class="shipping-panel__title shipping-panel__title--small">Actualizaciones del pedido</h2>
+                    </div>
+
+                    <div class="order-surface">
+                        {% if updates %}
+                            <ul class="order-updates">
+                                {% for update in updates %}
+                                    <li>
+                                        <strong>{{ update.updated_at|date:"SHORT_DATETIME_FORMAT" }}:</strong>
+                                        {{ update.status_message }}
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        {% else %}
+                            <p class="mb-0">Aún no hay actualizaciones de envío.</p>
+                        {% endif %}
+                    </div>
+
+                    <div class="d-grid gap-2 px-2 pb-2">
+                        <a href="{% url 'tienda:order_detail' order.id %}" class="btn site-btn site-btn--ghost shipping-form__submit">Volver al detalle</a>
+                        <a href="{% url 'tienda:my_orders' %}" class="btn site-btn site-btn--ghost shipping-form__submit">Mis pedidos</a>
+                    </div>
+                </div>
+            </aside>
         </div>
     </div>
 </section>
