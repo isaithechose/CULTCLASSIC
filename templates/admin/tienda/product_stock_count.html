@@ -1,0 +1,138 @@
+{% extends "admin/base_site.html" %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+  .count-layout {
+    max-width: 980px;
+  }
+  .count-card {
+    background: #fff;
+    border: 1px solid #e8e8ef;
+    border-radius: 18px;
+    box-shadow: 0 12px 30px rgba(16, 24, 40, 0.06);
+    padding: 1.2rem;
+    margin-bottom: 1rem;
+  }
+  .count-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+  }
+  .count-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .count-table th,
+  .count-table td {
+    padding: 0.8rem 0.7rem;
+    border-bottom: 1px solid #ececf3;
+    text-align: left;
+  }
+  .count-table th {
+    color: #6b7280;
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .count-input input {
+    width: 110px;
+    padding: 0.55rem 0.65rem;
+    border: 1px solid #d7d7e2;
+    border-radius: 10px;
+  }
+  .count-note {
+    width: 100%;
+    min-height: 90px;
+    padding: 0.8rem 0.9rem;
+    border: 1px solid #d7d7e2;
+    border-radius: 12px;
+    resize: vertical;
+  }
+  .count-actions {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    margin-top: 1rem;
+  }
+  .count-muted {
+    color: #6b7280;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="count-layout">
+  <div class="count-card">
+    <div class="count-header">
+      <div>
+        <h1 style="margin:0 0 0.35rem;">{{ product.nombre }}</h1>
+        <p class="count-muted" style="margin:0;">Captura tu conteo físico de hoy. Si una cifra cambia, el sistema crea un ajuste de inventario automáticamente.</p>
+      </div>
+      <a class="button" href="{% url 'admin:tienda_producto_change' product.pk %}">Volver al producto</a>
+    </div>
+
+    <form method="post">
+      {% csrf_token %}
+
+      {% if has_variants %}
+        {{ formset.management_form }}
+        <table class="count-table">
+          <thead>
+            <tr>
+              <th>Variante</th>
+              <th>Stock actual</th>
+              <th>Conteo real</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in rows %}
+              <tr>
+                <td>
+                  <strong>{{ row.label }}</strong>
+                  {{ row.form.variant_id }}
+                  {{ row.form.label }}
+                  {{ row.form.current_stock }}
+                </td>
+                <td>{{ row.current_stock }}</td>
+                <td class="count-input">{{ row.form.counted_stock }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <table class="count-table">
+          <thead>
+            <tr>
+              <th>Producto</th>
+              <th>Stock actual</th>
+              <th>Conteo real</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>{{ product.nombre }}</strong></td>
+              <td>{{ product.stock }}</td>
+              <td class="count-input">
+                <input type="number" name="general_counted_stock" min="0" value="{{ product.stock }}">
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      {% endif %}
+
+      <div style="margin-top:1rem;">
+        <label for="id_note" style="display:block;font-weight:700;margin-bottom:0.45rem;">Nota del conteo</label>
+        <textarea id="id_note" name="note" class="count-note" placeholder="Ej. Conteo físico del sábado, revisión de rack y almacén.">Conteo físico desde admin.</textarea>
+      </div>
+
+      <div class="count-actions">
+        <button type="submit" class="default">Guardar conteo</button>
+        <span class="count-muted">Solo se crean movimientos si hay diferencia contra el stock actual.</span>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

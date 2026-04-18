@@ -3,6 +3,7 @@ from django.contrib import admin
 from django.contrib import messages
 from django import forms
 from django.db.models import Count, Sum
+from django.forms import formset_factory
 from django.http import HttpResponseRedirect
 from django.template.response import TemplateResponse
 from django.urls import path, reverse
@@ -25,6 +26,10 @@ from .models import (
 )
 
 import os
+
+
+def _split_variant_values(raw_value):
+    return [value.strip() for value in (raw_value or "").split(",") if value.strip()]
 
 
 @admin.action(description="Importar imagenes desde /media/diseños_nuevos/")
@@ -66,6 +71,28 @@ def marcar_disponibles(modeladmin, request, queryset):
 def marcar_no_disponibles(modeladmin, request, queryset):
     updated = queryset.update(disponible=False)
     modeladmin.message_user(request, f"{updated} productos marcados como no disponibles.")
+
+
+@admin.action(description="Generar variantes faltantes desde tallas y colores")
+def generar_variantes_faltantes(modeladmin, request, queryset):
+    total_created = 0
+    total_products = 0
+    for product in queryset:
+        created_count = modeladmin._create_missing_variants_for_product(product)
+        total_created += created_count
+        total_products += 1
+    if total_created:
+        modeladmin.message_user(
+            request,
+            f"Se generaron {total_created} variantes nuevas en {total_products} productos.",
+            level=messages.SUCCESS,
+        )
+    else:
+        modeladmin.message_user(
+            request,
+            "No había variantes faltantes por crear. Revisa que tallas y colores estén separados por comas.",
+            level=messages.INFO,
+        )
 
 
 @admin.action(description="Marcar pedidos como completados")
@@ -297,9 +324,16 @@ class ProductoAdmin(admin.ModelAdmin):
     list_filter = ("disponible", "categoria", "subcategoria", "fecha_creacion", "fecha_actualizacion")
     search_fields = ("nombre", "descripcion", "slug_imagen")
     autocomplete_fields = ("categoria", "subcategoria")
-    actions = [importar_disenos, marcar_disponibles, marcar_no_disponibles]
+    actions = [importar_disenos, marcar_disponibles, marcar_no_disponibles, generar_variantes_faltantes]
     list_editable = ("precio", "stock", "disponible")
-    readonly_fields = ("fecha_creacion", "fecha_actualizacion", "imagen_preview_large", "inventory_snapshot")
+    readonly_fields = (
+        "fecha_creacion",
+        "fecha_actualizacion",
+        "imagen_preview_large",
+        "inventory_snapshot",
+        "variant_generation_panel",
+        "stock_count_panel",
+    )
     inlines = [ProductVariantInline, InventoryMovementInline]
     fieldsets = (
         ("Identidad", {
@@ -309,7 +343,13 @@ class ProductoAdmin(admin.ModelAdmin):
             "fields": ("categoria", "subcategoria", "precio", "stock", "disponible")
         }),
         ("Variantes", {
-            "fields": ("tallas_disponibles", "colores_disponibles", "inventory_snapshot")
+            "fields": (
+                "tallas_disponibles",
+                "colores_disponibles",
+                "variant_generation_panel",
+                "stock_count_panel",
+                "inventory_snapshot",
+            )
         }),
         ("Media", {
             "fields": ("imagen", "imagen_preview_large")
@@ -326,6 +366,16 @@ class ProductoAdmin(admin.ModelAdmin):
                 "inventory-dashboard/",
                 self.admin_site.admin_view(self.inventory_dashboard_view),
                 name="tienda_producto_inventory_dashboard",
+            ),
+            path(
+                "<int:product_id>/generate-variants/",
+                self.admin_site.admin_view(self.generate_variants_view),
+                name="tienda_producto_generate_variants",
+            ),
+            path(
+                "<int:product_id>/stock-count/",
+                self.admin_site.admin_view(self.stock_count_view),
+                name="tienda_producto_stock_count",
             ),
         ]
         return custom_urls + urls
@@ -376,6 +426,186 @@ class ProductoAdmin(admin.ModelAdmin):
         rows.append("</div>")
         rows.append(f"<p style='margin-top:0.8rem;'><strong>Total sincronizado:</strong> {obj.stock}</p>")
         return format_html("".join(rows))
+
+    @admin.display(description="Crear variantes")
+    def variant_generation_panel(self, obj):
+        if not obj.pk:
+            return "Guarda el producto primero para poder generar variantes."
+        if not obj.tallas_disponibles or not obj.colores_disponibles:
+            return "Agrega tallas y colores separados por comas para generar combinaciones."
+        generate_url = reverse("admin:tienda_producto_generate_variants", args=[obj.pk])
+        sizes = ", ".join(_split_variant_values(obj.tallas_disponibles))
+        colors = ", ".join(_split_variant_values(obj.colores_disponibles))
+        return format_html(
+            """
+            <p style="margin-bottom:0.6rem;"><strong>Tallas:</strong> {}</p>
+            <p style="margin-bottom:0.9rem;"><strong>Colores:</strong> {}</p>
+            <a class="button" href="{}">Generar variantes faltantes</a>
+            """,
+            sizes or "-",
+            colors or "-",
+            generate_url,
+        )
+
+    @admin.display(description="Inventario físico")
+    def stock_count_panel(self, obj):
+        if not obj.pk:
+            return "Guarda el producto primero para capturar inventario físico."
+        count_url = reverse("admin:tienda_producto_stock_count", args=[obj.pk])
+        return format_html(
+            """
+            <p style="margin-bottom:0.9rem;">Captura tu conteo real y el sistema ajusta las diferencias como movimientos de inventario.</p>
+            <a class="button" href="{}">Capturar inventario físico</a>
+            """,
+            count_url,
+        )
+
+    def _create_missing_variants_for_product(self, product):
+        sizes = _split_variant_values(product.tallas_disponibles)
+        colors = _split_variant_values(product.colores_disponibles)
+        created_count = 0
+        for color in colors:
+            for size in sizes:
+                _, created = ProductVariant.objects.get_or_create(
+                    product=product,
+                    talla=size,
+                    color=color,
+                    defaults={
+                        "stock": 0,
+                        "costo": product.precio,
+                        "precio_override": None,
+                        "activo": True,
+                    },
+                )
+                if created:
+                    created_count += 1
+        product.sync_stock_from_variants()
+        return created_count
+
+    def generate_variants_view(self, request, product_id):
+        product = self.get_object(request, product_id)
+        if not product:
+            self.message_user(request, "No encontramos ese producto.", level=messages.ERROR)
+            return HttpResponseRedirect(reverse("admin:tienda_producto_changelist"))
+
+        created_count = self._create_missing_variants_for_product(product)
+        if created_count:
+            self.message_user(
+                request,
+                f"Se generaron {created_count} variantes faltantes para {product.nombre}.",
+                level=messages.SUCCESS,
+            )
+        else:
+            self.message_user(
+                request,
+                "No había variantes nuevas por crear para este producto.",
+                level=messages.INFO,
+            )
+        return HttpResponseRedirect(reverse("admin:tienda_producto_change", args=[product.pk]))
+
+    def stock_count_view(self, request, product_id):
+        product = self.get_object(request, product_id)
+        if not product:
+            self.message_user(request, "No encontramos ese producto.", level=messages.ERROR)
+            return HttpResponseRedirect(reverse("admin:tienda_producto_changelist"))
+
+        variants = list(product.variants.filter(activo=True).order_by("color", "talla"))
+
+        class StockCountLineForm(forms.Form):
+            variant_id = forms.IntegerField(widget=forms.HiddenInput, required=False)
+            label = forms.CharField(required=False, widget=forms.HiddenInput)
+            current_stock = forms.IntegerField(required=False, widget=forms.HiddenInput)
+            counted_stock = forms.IntegerField(min_value=0, label="Conteo real")
+
+        StockCountFormSet = formset_factory(StockCountLineForm, extra=0)
+
+        if request.method == "POST":
+            formset = StockCountFormSet(request.POST, prefix="count")
+            note = request.POST.get("note", "").strip() or "Conteo físico desde admin."
+            if formset.is_valid():
+                adjustments = 0
+                if variants:
+                    variant_map = {variant.id: variant for variant in variants}
+                    for form in formset:
+                        variant_id = form.cleaned_data.get("variant_id")
+                        counted_stock = form.cleaned_data.get("counted_stock")
+                        variant = variant_map.get(variant_id)
+                        if variant is None or counted_stock is None:
+                            continue
+                        difference = int(counted_stock) - int(variant.stock)
+                        if difference != 0:
+                            record_inventory_movement(
+                                product=product,
+                                variant=variant,
+                                movement_type="adjustment",
+                                quantity_change=difference,
+                                note=note,
+                                created_by=request.user,
+                                metadata={"counted_stock": counted_stock},
+                            )
+                            adjustments += 1
+                else:
+                    counted_stock = request.POST.get("general_counted_stock")
+                    if counted_stock not in (None, ""):
+                        counted_stock = int(counted_stock)
+                        difference = counted_stock - int(product.stock)
+                        if difference != 0:
+                            record_inventory_movement(
+                                product=product,
+                                movement_type="adjustment",
+                                quantity_change=difference,
+                                note=note,
+                                created_by=request.user,
+                                metadata={"counted_stock": counted_stock},
+                            )
+                            adjustments += 1
+
+                if adjustments:
+                    self.message_user(
+                        request,
+                        f"Conteo guardado. Se registraron {adjustments} ajustes para {product.nombre}.",
+                        level=messages.SUCCESS,
+                    )
+                else:
+                    self.message_user(
+                        request,
+                        "Conteo guardado sin diferencias. No hizo falta ajustar inventario.",
+                        level=messages.INFO,
+                    )
+                return HttpResponseRedirect(reverse("admin:tienda_producto_change", args=[product.pk]))
+        else:
+            initial = []
+            for variant in variants:
+                initial.append(
+                    {
+                        "variant_id": variant.id,
+                        "label": f"{variant.color} / {variant.talla}",
+                        "current_stock": variant.stock,
+                        "counted_stock": variant.stock,
+                    }
+                )
+            formset = StockCountFormSet(initial=initial, prefix="count")
+
+        rows = []
+        for form in formset:
+            rows.append(
+                {
+                    "form": form,
+                    "label": form.initial.get("label", ""),
+                    "current_stock": form.initial.get("current_stock", 0),
+                }
+            )
+
+        context = dict(
+            self.admin_site.each_context(request),
+            title=f"Conteo físico: {product.nombre}",
+            product=product,
+            rows=rows,
+            formset=formset,
+            opts=self.model._meta,
+            has_variants=bool(variants),
+        )
+        return TemplateResponse(request, "admin/tienda/product_stock_count.html", context)
 
     def inventory_dashboard_view(self, request):
         active_products = Producto.objects.filter(disponible=True)
