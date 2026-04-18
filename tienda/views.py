@@ -281,7 +281,7 @@ def profile_view(request):
 
     context = {
         "form": form,
-        "orders_count": orders.count(),
+        "orders_count": all_orders.count(),
         "completed_orders": completed_orders,
         "pending_orders": pending_orders,
         "recent_orders": recent_orders,
