@@ -1,0 +1,111 @@
+{% extends "admin/base_site.html" %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+  .bulk-count-wrap {
+    max-width: 1200px;
+  }
+  .bulk-count-card {
+    background: #fff;
+    border: 1px solid #e8e8ef;
+    border-radius: 18px;
+    box-shadow: 0 12px 30px rgba(16, 24, 40, 0.06);
+    padding: 1.2rem;
+  }
+  .bulk-count-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+  }
+  .bulk-count-table th,
+  .bulk-count-table td {
+    padding: 0.75rem 0.7rem;
+    border-bottom: 1px solid #ececf3;
+    text-align: left;
+    vertical-align: middle;
+  }
+  .bulk-count-table th {
+    color: #6b7280;
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .bulk-count-input input {
+    width: 96px;
+    padding: 0.5rem 0.65rem;
+    border: 1px solid #d7d7e2;
+    border-radius: 10px;
+  }
+  .bulk-count-note {
+    width: 100%;
+    min-height: 90px;
+    padding: 0.8rem 0.9rem;
+    border: 1px solid #d7d7e2;
+    border-radius: 12px;
+    resize: vertical;
+    margin-top: 1rem;
+  }
+  .bulk-count-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 1rem;
+  }
+  .bulk-muted {
+    color: #6b7280;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="bulk-count-wrap">
+  <div class="bulk-count-card">
+    <div style="display:flex;justify-content:space-between;gap:1rem;align-items:flex-start;">
+      <div>
+        <h1 style="margin:0 0 0.35rem;">Conteo físico masivo</h1>
+        <p class="bulk-muted" style="margin:0;">Captura varias variantes en una sola vuelta. Solo se ajustan las que cambian.</p>
+      </div>
+      <a class="button" href="{% url 'admin:tienda_producto_inventory_dashboard' %}">Volver al dashboard</a>
+    </div>
+
+    <form method="post">
+      {% csrf_token %}
+      {{ formset.management_form }}
+
+      <table class="bulk-count-table">
+        <thead>
+          <tr>
+            <th>Producto</th>
+            <th>Color</th>
+            <th>Talla</th>
+            <th>Stock actual</th>
+            <th>Conteo real</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in rows %}
+            <tr>
+              <td>
+                <strong>{{ row.variant.product.nombre }}</strong>
+                {{ row.form.variant_id }}
+              </td>
+              <td>{{ row.variant.color }}</td>
+              <td>{{ row.variant.talla }}</td>
+              <td>{{ row.variant.stock }}</td>
+              <td class="bulk-count-input">{{ row.form.counted_stock }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <textarea name="note" class="bulk-count-note" placeholder="Ej. Conteo general del almacén y rack principal.">Conteo físico masivo desde admin.</textarea>
+
+      <div class="bulk-count-actions">
+        <button type="submit" class="default">Guardar conteo masivo</button>
+        <span class="bulk-muted">Ideal para tu inventario físico de hoy.</span>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

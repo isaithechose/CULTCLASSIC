@@ -131,7 +131,7 @@ JAZZMIN_SETTINGS = {
     "site_logo_classes": "img-circle",
     "welcome_sign": "Panel de control para catalogo, pedidos y operacion diaria.",
     "copyright": "Cult Clasiccs",
-    "search_model": ["tienda.Producto", "tienda.Order", "auth.User"],
+    "search_model": ["tienda.Producto", "tienda.ProductVariant", "tienda.Order", "tienda.Expense", "auth.User"],
     "topmenu_links": [
         {"name": "Inicio", "url": "/", "permissions": ["auth.view_user"]},
         {"model": "tienda.Producto"},
@@ -150,6 +150,10 @@ JAZZMIN_SETTINGS = {
         "tienda.Categoria": "fas fa-layer-group",
         "tienda.Subcategoria": "fas fa-sitemap",
         "tienda.Producto": "fas fa-shirt",
+        "tienda.ProductVariant": "fas fa-tags",
+        "tienda.InventoryMovement": "fas fa-boxes-stacked",
+        "tienda.ExpenseCategory": "fas fa-folder-tree",
+        "tienda.Expense": "fas fa-wallet",
         "tienda.Order": "fas fa-bag-shopping",
         "tienda.OrderItem": "fas fa-box-open",
         "tienda.Carrito": "fas fa-cart-shopping",
@@ -165,6 +169,10 @@ JAZZMIN_SETTINGS = {
         "tienda.Categoria",
         "tienda.Subcategoria",
         "tienda.Producto",
+        "tienda.ProductVariant",
+        "tienda.InventoryMovement",
+        "tienda.ExpenseCategory",
+        "tienda.Expense",
         "tienda.Order",
         "tienda.Carrito",
         "tienda.Reseña",
@@ -187,6 +195,26 @@ JAZZMIN_SETTINGS = {
             "url": "/admin/tienda/producto/inventory-dashboard/",
             "icon": "fas fa-boxes-stacked",
             "permissions": ["tienda.view_producto"],
+        }, {
+            "name": "Variantes",
+            "url": "/admin/tienda/productvariant/",
+            "icon": "fas fa-tags",
+            "permissions": ["tienda.view_productvariant"],
+        }, {
+            "name": "Movimientos inventario",
+            "url": "/admin/tienda/inventorymovement/",
+            "icon": "fas fa-right-left",
+            "permissions": ["tienda.view_inventorymovement"],
+        }, {
+            "name": "Dashboard contable",
+            "url": "/admin/tienda/expense/accounting-dashboard/",
+            "icon": "fas fa-chart-line",
+            "permissions": ["tienda.view_expense"],
+        }, {
+            "name": "Gastos",
+            "url": "/admin/tienda/expense/",
+            "icon": "fas fa-wallet",
+            "permissions": ["tienda.view_expense"],
         }]
     },
 }

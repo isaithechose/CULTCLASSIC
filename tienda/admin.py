@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.contrib import admin
 from django.contrib import messages
+from django.contrib.admin.sites import AdminSite
 from django import forms
 from django.db.models import Count, Sum
 from django.forms import formset_factory
@@ -18,6 +19,8 @@ from .models import (
     Producto,
     ProductVariant,
     InventoryMovement,
+    ExpenseCategory,
+    Expense,
     Reseña,
     ShippingAddress,
     ShippingUpdate,
@@ -26,10 +29,108 @@ from .models import (
 )
 
 import os
+import types
+
+from django.utils import timezone
 
 
 def _split_variant_values(raw_value):
     return [value.strip() for value in (raw_value or "").split(",") if value.strip()]
+
+
+def _admin_overview_context():
+    today = timezone.localdate()
+    month_start = today.replace(day=1)
+    pending_orders = Order.objects.filter(status="Pending").count()
+    orders_to_ship = Order.objects.filter(status="Completed", shipping_status="Processing").count()
+    low_stock_products = Producto.objects.filter(disponible=True, stock__lte=3).count()
+    active_variants = ProductVariant.objects.filter(activo=True)
+    low_stock_variants = active_variants.filter(stock__lte=3).count()
+    out_of_stock_variants = active_variants.filter(stock=0).count()
+    recent_movements = InventoryMovement.objects.filter(created_at__date=today).count()
+    monthly_expenses = Expense.objects.filter(fecha__gte=month_start, fecha__lte=today).aggregate(total=Sum("monto"))["total"] or 0
+    completed_orders = Order.objects.filter(status="Completed")
+    monthly_sales = sum(order.total_price for order in completed_orders.filter(created_at__date__gte=month_start, created_at__date__lte=today))
+
+    return {
+        "admin_overview_cards": [
+            {
+                "label": "Pedidos pendientes",
+                "value": pending_orders,
+                "url": "/admin/tienda/order/?status__exact=Pending",
+                "tone": "warn",
+            },
+            {
+                "label": "Pedidos por enviar",
+                "value": orders_to_ship,
+                "url": "/admin/tienda/order/?status__exact=Completed&shipping_status__exact=Processing",
+                "tone": "info",
+            },
+            {
+                "label": "Productos en alerta",
+                "value": low_stock_products,
+                "url": "/admin/tienda/producto/?stock__lte=3",
+                "tone": "danger",
+            },
+            {
+                "label": "Variantes activas",
+                "value": active_variants.count(),
+                "url": "/admin/tienda/productvariant/",
+                "tone": "ok",
+            },
+            {
+                "label": "Variantes con stock bajo",
+                "value": low_stock_variants,
+                "url": "/admin/tienda/productvariant/?stock__lte=3",
+                "tone": "warn",
+            },
+            {
+                "label": "Movimientos hoy",
+                "value": recent_movements,
+                "url": "/admin/tienda/inventorymovement/",
+                "tone": "neutral",
+            },
+            {
+                "label": "Gastos del mes",
+                "value": f"${monthly_expenses:.2f}",
+                "url": "/admin/tienda/expense/",
+                "tone": "danger",
+            },
+            {
+                "label": "Ventas del mes",
+                "value": f"${monthly_sales:.2f}",
+                "url": "/admin/tienda/order/?status__exact=Completed",
+                "tone": "ok",
+            },
+        ],
+        "admin_quick_links": [
+            {"label": "Dashboard inventario", "url": "/admin/tienda/producto/inventory-dashboard/"},
+            {"label": "Dashboard contable", "url": "/admin/tienda/expense/accounting-dashboard/"},
+            {"label": "Productos", "url": "/admin/tienda/producto/"},
+            {"label": "Variantes", "url": "/admin/tienda/productvariant/"},
+            {"label": "Movimientos", "url": "/admin/tienda/inventorymovement/"},
+            {"label": "Gastos", "url": "/admin/tienda/expense/"},
+            {"label": "Pedidos", "url": "/admin/tienda/order/"},
+            {"label": "Ver tienda", "url": "/"},
+        ],
+        "admin_watchlist": [
+            {
+                "label": "Variantes agotadas",
+                "value": out_of_stock_variants,
+                "url": "/admin/tienda/productvariant/?stock__exact=0",
+            },
+            {
+                "label": "Conteo físico",
+                "value": "Usa cada producto",
+                "url": "/admin/tienda/producto/",
+            },
+            {
+                "label": "Skydrop",
+                "value": "Cotiza y crea guías",
+                "url": "/admin/tienda/order/",
+            },
+        ],
+    }
 
 
 @admin.action(description="Importar imagenes desde /media/diseños_nuevos/")
@@ -368,6 +469,11 @@ class ProductoAdmin(admin.ModelAdmin):
                 name="tienda_producto_inventory_dashboard",
             ),
             path(
+                "stock-count-bulk/",
+                self.admin_site.admin_view(self.stock_count_bulk_view),
+                name="tienda_producto_stock_count_bulk",
+            ),
+            path(
                 "<int:product_id>/generate-variants/",
                 self.admin_site.admin_view(self.generate_variants_view),
                 name="tienda_producto_generate_variants",
@@ -653,9 +759,89 @@ class ProductoAdmin(admin.ModelAdmin):
             out_of_stock_variants=out_of_stock_variants,
             general_products=general_products,
             recent_movements=recent_movements,
+            stock_count_bulk_url=reverse("admin:tienda_producto_stock_count_bulk"),
             opts=self.model._meta,
         )
         return TemplateResponse(request, "admin/tienda/inventory_dashboard.html", context)
+
+    def stock_count_bulk_view(self, request):
+        variants = list(
+            ProductVariant.objects.filter(activo=True, product__disponible=True)
+            .select_related("product")
+            .order_by("product__nombre", "color", "talla")
+        )
+
+        class BulkStockCountLineForm(forms.Form):
+            variant_id = forms.IntegerField(widget=forms.HiddenInput)
+            counted_stock = forms.IntegerField(min_value=0, label="Conteo real")
+
+        BulkStockCountFormSet = formset_factory(BulkStockCountLineForm, extra=0)
+
+        if request.method == "POST":
+            formset = BulkStockCountFormSet(request.POST, prefix="bulk")
+            note = request.POST.get("note", "").strip() or "Conteo físico masivo desde admin."
+            if formset.is_valid():
+                variant_map = {variant.id: variant for variant in variants}
+                adjustments = 0
+                for form in formset:
+                    variant_id = form.cleaned_data.get("variant_id")
+                    counted_stock = form.cleaned_data.get("counted_stock")
+                    variant = variant_map.get(variant_id)
+                    if variant is None or counted_stock is None:
+                        continue
+                    difference = int(counted_stock) - int(variant.stock)
+                    if difference != 0:
+                        record_inventory_movement(
+                            product=variant.product,
+                            variant=variant,
+                            movement_type="adjustment",
+                            quantity_change=difference,
+                            note=note,
+                            created_by=request.user,
+                            metadata={"counted_stock": counted_stock, "mode": "bulk"},
+                        )
+                        adjustments += 1
+
+                if adjustments:
+                    self.message_user(
+                        request,
+                        f"Conteo masivo guardado. Se registraron {adjustments} ajustes.",
+                        level=messages.SUCCESS,
+                    )
+                else:
+                    self.message_user(
+                        request,
+                        "Conteo masivo guardado sin diferencias.",
+                        level=messages.INFO,
+                    )
+                return HttpResponseRedirect(reverse("admin:tienda_producto_inventory_dashboard"))
+        else:
+            initial = [
+                {
+                    "variant_id": variant.id,
+                    "counted_stock": variant.stock,
+                }
+                for variant in variants
+            ]
+            formset = BulkStockCountFormSet(initial=initial, prefix="bulk")
+
+        rows = []
+        for variant, form in zip(variants, formset.forms):
+            rows.append(
+                {
+                    "variant": variant,
+                    "form": form,
+                }
+            )
+
+        context = dict(
+            self.admin_site.each_context(request),
+            title="Conteo físico masivo",
+            rows=rows,
+            formset=formset,
+            opts=self.model._meta,
+        )
+        return TemplateResponse(request, "admin/tienda/product_stock_count_bulk.html", context)
 
 
 @admin.register(Order)
@@ -1055,6 +1241,121 @@ class InventoryMovementAdmin(admin.ModelAdmin):
         obj.stock_before = created.stock_before
         obj.stock_after = created.stock_after
         obj.created_at = created.created_at
+
+
+@admin.register(ExpenseCategory)
+class ExpenseCategoryAdmin(admin.ModelAdmin):
+    list_display = ("nombre", "activo", "descripcion_corta")
+    list_filter = ("activo",)
+    search_fields = ("nombre", "descripcion")
+    list_editable = ("activo",)
+
+    @admin.display(description="Descripción")
+    def descripcion_corta(self, obj):
+        if not obj.descripcion:
+            return "-"
+        return (obj.descripcion[:60] + "...") if len(obj.descripcion) > 60 else obj.descripcion
+
+
+@admin.register(Expense)
+class ExpenseAdmin(admin.ModelAdmin):
+    list_display = ("fecha", "concepto", "categoria", "monto", "metodo_pago", "proveedor", "created_by")
+    list_filter = ("fecha", "categoria", "metodo_pago")
+    search_fields = ("concepto", "proveedor", "nota")
+    autocomplete_fields = ("categoria", "created_by")
+    readonly_fields = ("created_at",)
+    date_hierarchy = "fecha"
+    fieldsets = (
+        ("Gasto", {
+            "fields": ("fecha", "categoria", "concepto", "monto", "metodo_pago", "proveedor")
+        }),
+        ("Detalle", {
+            "fields": ("nota", "created_by", "created_at")
+        }),
+    )
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path(
+                "accounting-dashboard/",
+                self.admin_site.admin_view(self.accounting_dashboard_view),
+                name="tienda_expense_accounting_dashboard",
+            ),
+        ]
+        return custom_urls + urls
+
+    def save_model(self, request, obj, form, change):
+        if not obj.created_by:
+            obj.created_by = request.user
+        super().save_model(request, obj, form, change)
+
+    def accounting_dashboard_view(self, request):
+        today = timezone.localdate()
+        month_start = today.replace(day=1)
+        completed_orders = list(Order.objects.filter(status="Completed").prefetch_related("items__product"))
+        month_orders = [order for order in completed_orders if month_start <= order.created_at.date() <= today]
+
+        month_sales = sum(order.total_price for order in month_orders)
+        month_expenses = Expense.objects.filter(fecha__gte=month_start, fecha__lte=today)
+        total_expenses = month_expenses.aggregate(total=Sum("monto"))["total"] or 0
+
+        estimated_cogs = 0
+        for order in month_orders:
+            for item in order.items.all():
+                variant = find_variant_for_selection(item.product, talla=item.talla, color=item.color)
+                unit_cost = None
+                if variant and variant.costo is not None:
+                    unit_cost = variant.costo
+                estimated_cogs += (unit_cost or item.product.precio) * item.quantity
+
+        gross_profit = month_sales - estimated_cogs
+        net_profit = gross_profit - total_expenses
+
+        top_expenses = list(month_expenses.select_related("categoria").order_by("-monto")[:10])
+        recent_orders = month_orders[-10:][::-1]
+
+        expense_breakdown = []
+        category_totals = (
+            month_expenses.values("categoria__nombre")
+            .annotate(total=Sum("monto"))
+            .order_by("-total")
+        )
+        for item in category_totals:
+            expense_breakdown.append(
+                {
+                    "label": item["categoria__nombre"] or "Sin categoría",
+                    "total": item["total"],
+                }
+            )
+
+        context = dict(
+            self.admin_site.each_context(request),
+            title="Dashboard contable",
+            subtitle="Ventas, gastos y utilidad estimada del mes",
+            month_sales=month_sales,
+            total_expenses=total_expenses,
+            estimated_cogs=estimated_cogs,
+            gross_profit=gross_profit,
+            net_profit=net_profit,
+            month_orders_count=len(month_orders),
+            month_expenses_count=month_expenses.count(),
+            top_expenses=top_expenses,
+            recent_orders=recent_orders,
+            expense_breakdown=expense_breakdown,
+            opts=self.model._meta,
+        )
+        return TemplateResponse(request, "admin/tienda/accounting_dashboard.html", context)
+
+
+def _enhanced_admin_index(self, request, extra_context=None):
+    context = extra_context or {}
+    context.update(_admin_overview_context())
+    return AdminSite.index(self, request, extra_context=context)
+
+
+admin.site.index_template = "admin/index.html"
+admin.site.index = types.MethodType(_enhanced_admin_index, admin.site)
 
 
 @admin.register(OrderItem)

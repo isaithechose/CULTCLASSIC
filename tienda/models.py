@@ -157,6 +157,47 @@ class InventoryMovement(models.Model):
     def __str__(self):
         return f"{self.product.nombre} ({self.get_movement_type_display()}: {self.quantity_change:+})"
 
+
+class ExpenseCategory(models.Model):
+    nombre = models.CharField(max_length=80, unique=True)
+    descripcion = models.TextField(blank=True, null=True)
+    activo = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["nombre"]
+        verbose_name = "Categoría de gasto"
+        verbose_name_plural = "Categorías de gasto"
+
+    def __str__(self):
+        return self.nombre
+
+
+class Expense(models.Model):
+    PAYMENT_METHOD_CHOICES = [
+        ("cash", "Efectivo"),
+        ("card", "Tarjeta"),
+        ("transfer", "Transferencia"),
+        ("other", "Otro"),
+    ]
+
+    fecha = models.DateField()
+    categoria = models.ForeignKey(ExpenseCategory, on_delete=models.SET_NULL, null=True, blank=True, related_name="expenses")
+    concepto = models.CharField(max_length=140)
+    monto = models.DecimalField(max_digits=10, decimal_places=2)
+    metodo_pago = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES, default="transfer")
+    proveedor = models.CharField(max_length=120, blank=True, null=True)
+    nota = models.TextField(blank=True, null=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-fecha", "-id"]
+        verbose_name = "Gasto"
+        verbose_name_plural = "Gastos"
+
+    def __str__(self):
+        return f"{self.concepto} - ${self.monto}"
+
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="items")
     product = models.ForeignKey(Producto, on_delete=models.CASCADE)

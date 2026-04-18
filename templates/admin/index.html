@@ -1,0 +1,139 @@
+{% extends "admin/base_site.html" %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+  .admin-home-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 1rem;
+    margin: 1rem 0 1.4rem;
+  }
+  .admin-home-card,
+  .admin-home-panel {
+    background: #fff;
+    border: 1px solid #e8e8ef;
+    border-radius: 18px;
+    box-shadow: 0 12px 30px rgba(16, 24, 40, 0.06);
+  }
+  .admin-home-card {
+    padding: 1rem 1.05rem;
+    text-decoration: none;
+  }
+  .admin-home-card:hover {
+    text-decoration: none;
+    transform: translateY(-1px);
+  }
+  .admin-home-card__label {
+    color: #6b7280;
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.45rem;
+  }
+  .admin-home-card__value {
+    font-size: 2rem;
+    line-height: 1;
+    font-weight: 800;
+    color: #111827;
+  }
+  .admin-home-card--warn .admin-home-card__value { color: #9a6700; }
+  .admin-home-card--danger .admin-home-card__value { color: #b42318; }
+  .admin-home-card--info .admin-home-card__value { color: #175cd3; }
+  .admin-home-card--ok .admin-home-card__value { color: #05603a; }
+  .admin-home-panels {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1.4rem;
+  }
+  .admin-home-panel {
+    padding: 1rem 1.1rem;
+  }
+  .admin-home-panel h3 {
+    margin: 0 0 0.9rem;
+  }
+  .admin-home-links,
+  .admin-home-watchlist {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+  .admin-home-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.55rem 0.8rem;
+    border-radius: 999px;
+    background: #f8f8fb;
+    border: 1px solid #ececf3;
+    color: #111827;
+    text-decoration: none;
+    font-weight: 700;
+  }
+  .admin-home-watch {
+    display: block;
+    width: 100%;
+    padding: 0.75rem 0.85rem;
+    border-radius: 14px;
+    background: #f8f8fb;
+    border: 1px solid #ececf3;
+    color: inherit;
+    text-decoration: none;
+  }
+  .admin-home-watch strong {
+    display: block;
+    color: #111827;
+    margin-bottom: 0.2rem;
+  }
+  .admin-home-watch span {
+    color: #6b7280;
+  }
+  .admin-home-apps {
+    margin-top: 1.2rem;
+  }
+  @media (max-width: 980px) {
+    .admin-home-panels {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="admin-home-grid">
+  {% for card in admin_overview_cards %}
+    <a class="admin-home-card admin-home-card--{{ card.tone }}" href="{{ card.url }}">
+      <div class="admin-home-card__label">{{ card.label }}</div>
+      <div class="admin-home-card__value">{{ card.value }}</div>
+    </a>
+  {% endfor %}
+</div>
+
+<div class="admin-home-panels">
+  <div class="admin-home-panel">
+    <h3>Accesos rápidos</h3>
+    <div class="admin-home-links">
+      {% for link in admin_quick_links %}
+        <a class="admin-home-pill" href="{{ link.url }}">{{ link.label }}</a>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="admin-home-panel">
+    <h3>En qué fijarte hoy</h3>
+    <div class="admin-home-watchlist">
+      {% for item in admin_watchlist %}
+        <a class="admin-home-watch" href="{{ item.url }}">
+          <strong>{{ item.label }}</strong>
+          <span>{{ item.value }}</span>
+        </a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<div class="admin-home-apps">
+  {% include "admin/app_list.html" with app_list=app_list show_changelinks=True %}
+</div>
+{% endblock %}

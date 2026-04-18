@@ -130,6 +130,7 @@
   <a class="button" href="{% url 'admin:tienda_producto_changelist' %}">Ver productos</a>
   <a class="button" href="{% url 'admin:tienda_productvariant_changelist' %}">Ver variantes</a>
   <a class="button" href="{% url 'admin:tienda_inventorymovement_changelist' %}">Ver movimientos</a>
+  <a class="button default" href="{{ stock_count_bulk_url }}">Conteo físico masivo</a>
 </div>
 
 <div class="inventory-grid">
