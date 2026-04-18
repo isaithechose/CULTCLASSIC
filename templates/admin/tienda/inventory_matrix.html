@@ -54,6 +54,10 @@
   .matrix-muted {
     color: #6b7280;
   }
+  .matrix-empty {
+    padding: 1rem 0;
+    color: #6b7280;
+  }
 </style>
 {% endblock %}
 
@@ -68,55 +72,61 @@
       <a class="button" href="{% url 'admin:tienda_producto_inventory_dashboard' %}">Volver al dashboard</a>
     </div>
 
-    <form method="post">
-      {% csrf_token %}
-      {{ formset.management_form }}
+    <div class="matrix-actions">
+      <a class="button" href="{% url 'admin:tienda_productvariant_changelist' %}">Ver variantes</a>
+      <a class="button" href="{% url 'admin:tienda_inventorymovement_changelist' %}">Ver movimientos</a>
+      <a class="button" href="{% url 'admin:tienda_producto_stock_count_bulk' %}">Conteo físico masivo</a>
+    </div>
 
-      <div class="matrix-actions">
-        <a class="button" href="{% url 'admin:tienda_productvariant_changelist' %}">Ver variantes</a>
-        <a class="button" href="{% url 'admin:tienda_inventorymovement_changelist' %}">Ver movimientos</a>
-        <a class="button" href="{% url 'admin:tienda_producto_stock_count_bulk' %}">Conteo físico masivo</a>
-      </div>
+    {% if rows %}
+      <form method="post">
+        {% csrf_token %}
+        {{ formset.management_form }}
 
-      <table class="matrix-table">
-        <thead>
-          <tr>
-            <th>Producto</th>
-            <th>Categoría</th>
-            <th>Color</th>
-            <th>Talla</th>
-            <th>SKU</th>
-            <th>Stock actual</th>
-            <th>Nuevo stock</th>
-            <th>Costo</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for row in rows %}
+        <table class="matrix-table">
+          <thead>
             <tr>
-              <td>
-                <strong>{{ row.variant.product.nombre }}</strong>
-                {{ row.form.variant_id }}
-              </td>
-              <td>{{ row.variant.product.categoria|default:"-" }}</td>
-              <td>{{ row.variant.color }}</td>
-              <td>{{ row.variant.talla }}</td>
-              <td>{{ row.variant.sku|default:"-" }}</td>
-              <td>{{ row.variant.stock }}</td>
-              <td class="matrix-input">{{ row.form.stock }}</td>
-              <td>${{ row.variant.costo|default:row.variant.product.precio|floatformat:2 }}</td>
+              <th>Producto</th>
+              <th>Categoría</th>
+              <th>Color</th>
+              <th>Talla</th>
+              <th>SKU</th>
+              <th>Stock actual</th>
+              <th>Nuevo stock</th>
+              <th>Costo</th>
             </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {% for row in rows %}
+              <tr>
+                <td>
+                  <strong>{{ row.variant.product.nombre }}</strong>
+                  {{ row.form.variant_id }}
+                </td>
+                <td>{{ row.variant.product.categoria|default:"-" }}</td>
+                <td>{{ row.variant.color }}</td>
+                <td>{{ row.variant.talla }}</td>
+                <td>{{ row.variant.sku|default:"-" }}</td>
+                <td>{{ row.variant.stock }}</td>
+                <td class="matrix-input">{{ row.form.stock }}</td>
+                <td>${{ row.variant.costo|default:row.variant.product.precio|floatformat:2 }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
 
-      <textarea name="note" class="matrix-note" placeholder="Ej. Ajuste general de rack y bodega.">Ajuste desde mesa de inventario.</textarea>
+        <textarea name="note" class="matrix-note" placeholder="Ej. Ajuste general de rack y bodega.">Ajuste desde mesa de inventario.</textarea>
 
-      <div style="display:flex;gap:0.8rem;align-items:center;margin-top:1rem;">
-        <button type="submit" class="default">Guardar cambios de inventario</button>
-        <span class="matrix-muted">Solo se registran movimientos donde el stock cambia.</span>
+        <div style="display:flex;gap:0.8rem;align-items:center;margin-top:1rem;">
+          <button type="submit" class="default">Guardar cambios de inventario</button>
+          <span class="matrix-muted">Solo se registran movimientos donde el stock cambia.</span>
+        </div>
+      </form>
+    {% else %}
+      <div class="matrix-empty">
+        Todavía no hay variantes activas para mostrar aquí. Primero genera variantes en tus productos o crea algunas desde el admin de variantes.
       </div>
-    </form>
+    {% endif %}
   </div>
 </div>
 {% endblock %}

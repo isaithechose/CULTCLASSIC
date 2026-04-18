@@ -131,7 +131,7 @@ JAZZMIN_SETTINGS = {
     "site_logo_classes": "img-circle",
     "welcome_sign": "Panel de control para catalogo, pedidos y operacion diaria.",
     "copyright": "Cult Clasiccs",
-    "search_model": ["tienda.Producto", "tienda.ProductVariant", "tienda.Order", "tienda.Expense", "auth.User"],
+    "search_model": ["tienda.Producto", "tienda.Order", "auth.User"],
     "topmenu_links": [
         {"name": "Inicio", "url": "/", "permissions": ["auth.view_user"]},
         {"model": "tienda.Producto"},
