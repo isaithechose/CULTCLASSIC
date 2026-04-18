@@ -30,6 +30,7 @@ from .models import (
 
 import os
 import types
+from decimal import Decimal
 
 from django.utils import timezone
 
@@ -105,13 +106,9 @@ def _admin_overview_context():
         ],
         "admin_quick_links": [
             {"label": "Dashboard inventario", "url": "/admin/tienda/producto/inventory-dashboard/"},
+            {"label": "Recepción de compra", "url": "/admin/tienda/inventorymovement/receive-purchase/"},
             {"label": "Dashboard contable", "url": "/admin/tienda/expense/accounting-dashboard/"},
-            {"label": "Productos", "url": "/admin/tienda/producto/"},
-            {"label": "Variantes", "url": "/admin/tienda/productvariant/"},
-            {"label": "Movimientos", "url": "/admin/tienda/inventorymovement/"},
-            {"label": "Gastos", "url": "/admin/tienda/expense/"},
-            {"label": "Pedidos", "url": "/admin/tienda/order/"},
-            {"label": "Ver tienda", "url": "/"},
+            {"label": "Conteo físico masivo", "url": "/admin/tienda/producto/stock-count-bulk/"},
         ],
         "admin_watchlist": [
             {
@@ -464,6 +461,11 @@ class ProductoAdmin(admin.ModelAdmin):
         urls = super().get_urls()
         custom_urls = [
             path(
+                "inventory-matrix/",
+                self.admin_site.admin_view(self.inventory_matrix_view),
+                name="tienda_producto_inventory_matrix",
+            ),
+            path(
                 "inventory-dashboard/",
                 self.admin_site.admin_view(self.inventory_dashboard_view),
                 name="tienda_producto_inventory_dashboard",
@@ -760,9 +762,89 @@ class ProductoAdmin(admin.ModelAdmin):
             general_products=general_products,
             recent_movements=recent_movements,
             stock_count_bulk_url=reverse("admin:tienda_producto_stock_count_bulk"),
+            inventory_matrix_url=reverse("admin:tienda_producto_inventory_matrix"),
             opts=self.model._meta,
         )
         return TemplateResponse(request, "admin/tienda/inventory_dashboard.html", context)
+
+    def inventory_matrix_view(self, request):
+        variants = list(
+            ProductVariant.objects.filter(activo=True, product__disponible=True)
+            .select_related("product", "product__categoria")
+            .order_by("product__nombre", "color", "talla")
+        )
+
+        class InventoryMatrixLineForm(forms.Form):
+            variant_id = forms.IntegerField(widget=forms.HiddenInput)
+            stock = forms.IntegerField(min_value=0, label="Stock")
+
+        InventoryMatrixFormSet = formset_factory(InventoryMatrixLineForm, extra=0)
+
+        if request.method == "POST":
+            formset = InventoryMatrixFormSet(request.POST, prefix="matrix")
+            note = request.POST.get("note", "").strip() or "Ajuste desde mesa de inventario."
+            if formset.is_valid():
+                variant_map = {variant.id: variant for variant in variants}
+                adjustments = 0
+                for form in formset:
+                    variant_id = form.cleaned_data.get("variant_id")
+                    new_stock = form.cleaned_data.get("stock")
+                    variant = variant_map.get(variant_id)
+                    if variant is None or new_stock is None:
+                        continue
+                    difference = int(new_stock) - int(variant.stock)
+                    if difference != 0:
+                        record_inventory_movement(
+                            product=variant.product,
+                            variant=variant,
+                            movement_type="adjustment",
+                            quantity_change=difference,
+                            note=note,
+                            created_by=request.user,
+                            metadata={"target_stock": new_stock, "mode": "inventory_matrix"},
+                        )
+                        adjustments += 1
+
+                if adjustments:
+                    self.message_user(
+                        request,
+                        f"Mesa de inventario guardada. Se registraron {adjustments} ajustes.",
+                        level=messages.SUCCESS,
+                    )
+                else:
+                    self.message_user(
+                        request,
+                        "No hubo cambios de stock que guardar.",
+                        level=messages.INFO,
+                    )
+                return HttpResponseRedirect(reverse("admin:tienda_producto_inventory_matrix"))
+        else:
+            initial = [
+                {
+                    "variant_id": variant.id,
+                    "stock": variant.stock,
+                }
+                for variant in variants
+            ]
+            formset = InventoryMatrixFormSet(initial=initial, prefix="matrix")
+
+        rows = []
+        for variant, form in zip(variants, formset.forms):
+            rows.append(
+                {
+                    "variant": variant,
+                    "form": form,
+                }
+            )
+
+        context = dict(
+            self.admin_site.each_context(request),
+            title="Inventario por variantes",
+            rows=rows,
+            formset=formset,
+            opts=self.model._meta,
+        )
+        return TemplateResponse(request, "admin/tienda/inventory_matrix.html", context)
 
     def stock_count_bulk_view(self, request):
         variants = list(
@@ -1201,6 +1283,22 @@ class InventoryMovementAdmin(admin.ModelAdmin):
     autocomplete_fields = ("product", "variant", "order", "created_by")
     readonly_fields = ("stock_before", "stock_after", "created_at")
 
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path(
+                "receive-purchase/",
+                self.admin_site.admin_view(self.receive_purchase_view),
+                name="tienda_inventorymovement_receive_purchase",
+            ),
+            path(
+                "receive-purchase/<int:variant_id>/",
+                self.admin_site.admin_view(self.receive_purchase_view),
+                name="tienda_inventorymovement_receive_purchase_variant",
+            ),
+        ]
+        return custom_urls + urls
+
     def get_readonly_fields(self, request, obj=None):
         if obj:
             return (
@@ -1241,6 +1339,124 @@ class InventoryMovementAdmin(admin.ModelAdmin):
         obj.stock_before = created.stock_before
         obj.stock_after = created.stock_after
         obj.created_at = created.created_at
+
+    def _purchase_expense_category(self):
+        category, _ = ExpenseCategory.objects.get_or_create(
+            nombre="Compras inventario",
+            defaults={"descripcion": "Compra de mercancía para inventario."},
+        )
+        return category
+
+    def receive_purchase_view(self, request, variant_id=None):
+        variants = list(
+            ProductVariant.objects.filter(activo=True, product__disponible=True)
+            .select_related("product")
+            .order_by("product__nombre", "color", "talla")
+        )
+        selected_variant = None
+        if variant_id:
+            selected_variant = next((variant for variant in variants if variant.id == variant_id), None)
+
+        class PurchaseReceiptLineForm(forms.Form):
+            variant_id = forms.IntegerField(widget=forms.HiddenInput)
+            quantity = forms.IntegerField(min_value=0, required=False, initial=0, label="Cantidad")
+            unit_cost = forms.DecimalField(min_value=0, decimal_places=2, max_digits=10, required=False, label="Costo")
+
+        PurchaseReceiptFormSet = formset_factory(PurchaseReceiptLineForm, extra=0)
+
+        if request.method == "POST":
+            formset = PurchaseReceiptFormSet(request.POST, prefix="receipt")
+            supplier = request.POST.get("supplier", "").strip()
+            note = request.POST.get("note", "").strip() or "Recepción de compra desde admin."
+            create_expense = request.POST.get("create_expense") == "on"
+            receipt_date = request.POST.get("receipt_date", "").strip() or str(timezone.localdate())
+
+            if formset.is_valid():
+                variant_map = {variant.id: variant for variant in variants}
+                movements = 0
+                total_purchase_amount = Decimal("0.00")
+
+                for form in formset:
+                    current_variant_id = form.cleaned_data.get("variant_id")
+                    quantity = form.cleaned_data.get("quantity") or 0
+                    unit_cost = form.cleaned_data.get("unit_cost")
+                    variant = variant_map.get(current_variant_id)
+                    if variant is None or quantity <= 0:
+                        continue
+
+                    if unit_cost is not None:
+                        variant.costo = unit_cost
+                        variant.save(update_fields=["costo", "updated_at"])
+                    unit_cost = unit_cost if unit_cost is not None else (variant.costo or variant.product.precio)
+
+                    record_inventory_movement(
+                        product=variant.product,
+                        variant=variant,
+                        movement_type="purchase",
+                        quantity_change=int(quantity),
+                        note=note,
+                        created_by=request.user,
+                        metadata={
+                            "supplier": supplier,
+                            "unit_cost": str(unit_cost),
+                            "receipt_date": receipt_date,
+                        },
+                    )
+                    total_purchase_amount += Decimal(str(unit_cost)) * Decimal(str(quantity))
+                    movements += 1
+
+                if create_expense and total_purchase_amount > 0:
+                    Expense.objects.create(
+                        fecha=receipt_date,
+                        categoria=self._purchase_expense_category(),
+                        concepto=f"Recepción de compra ({movements} variantes)",
+                        monto=total_purchase_amount,
+                        metodo_pago="transfer",
+                        proveedor=supplier or "",
+                        nota=note,
+                        created_by=request.user,
+                    )
+
+                if movements:
+                    self.message_user(
+                        request,
+                        f"Compra registrada. Se cargaron {movements} variantes y ${total_purchase_amount:.2f} de costo total.",
+                        level=messages.SUCCESS,
+                    )
+                else:
+                    self.message_user(
+                        request,
+                        "No capturaste cantidades mayores a cero.",
+                        level=messages.INFO,
+                    )
+                return HttpResponseRedirect(reverse("admin:tienda_inventorymovement_changelist"))
+        else:
+            initial = [
+                {
+                    "variant_id": variant.id,
+                    "quantity": 0,
+                    "unit_cost": variant.costo or "",
+                }
+                for variant in variants
+            ]
+            formset = PurchaseReceiptFormSet(initial=initial, prefix="receipt")
+
+        rows = []
+        for variant, form in zip(variants, formset.forms):
+            if selected_variant and variant.id != selected_variant.id:
+                continue
+            rows.append({"variant": variant, "form": form})
+
+        context = dict(
+            self.admin_site.each_context(request),
+            title="Recepción de compra",
+            rows=rows,
+            formset=formset,
+            selected_variant=selected_variant,
+            today=str(timezone.localdate()),
+            opts=self.model._meta,
+        )
+        return TemplateResponse(request, "admin/tienda/receive_purchase.html", context)
 
 
 @admin.register(ExpenseCategory)

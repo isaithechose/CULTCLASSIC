@@ -1,0 +1,152 @@
+{% extends "admin/base_site.html" %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+  .purchase-wrap {
+    max-width: 1200px;
+  }
+  .purchase-card {
+    background: #fff;
+    border: 1px solid #e8e8ef;
+    border-radius: 18px;
+    box-shadow: 0 12px 30px rgba(16, 24, 40, 0.06);
+    padding: 1.2rem;
+  }
+  .purchase-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 0.9rem;
+    margin: 1rem 0;
+  }
+  .purchase-grid label {
+    display: block;
+    font-weight: 700;
+    margin-bottom: 0.35rem;
+  }
+  .purchase-grid input[type="text"],
+  .purchase-grid input[type="date"],
+  .purchase-grid textarea {
+    width: 100%;
+    padding: 0.7rem 0.8rem;
+    border: 1px solid #d7d7e2;
+    border-radius: 12px;
+  }
+  .purchase-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .purchase-table th,
+  .purchase-table td {
+    padding: 0.75rem 0.7rem;
+    border-bottom: 1px solid #ececf3;
+    text-align: left;
+  }
+  .purchase-table th {
+    color: #6b7280;
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .purchase-input input {
+    width: 95px;
+    padding: 0.5rem 0.6rem;
+    border: 1px solid #d7d7e2;
+    border-radius: 10px;
+  }
+  .purchase-note {
+    width: 100%;
+    min-height: 92px;
+    padding: 0.8rem 0.9rem;
+    border: 1px solid #d7d7e2;
+    border-radius: 12px;
+    margin-top: 1rem;
+    resize: vertical;
+  }
+  .purchase-actions {
+    display: flex;
+    gap: 0.8rem;
+    align-items: center;
+    margin-top: 1rem;
+  }
+  .purchase-muted {
+    color: #6b7280;
+  }
+  @media (max-width: 980px) {
+    .purchase-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="purchase-wrap">
+  <div class="purchase-card">
+    <div style="display:flex;justify-content:space-between;gap:1rem;align-items:flex-start;">
+      <div>
+        <h1 style="margin:0 0 0.35rem;">Recepción de compra</h1>
+        <p class="purchase-muted" style="margin:0;">Captura mercancía nueva y convierte la entrada en movimientos reales de inventario.</p>
+      </div>
+      <a class="button" href="{% url 'admin:tienda_inventorymovement_changelist' %}">Volver a movimientos</a>
+    </div>
+
+    <form method="post">
+      {% csrf_token %}
+      {{ formset.management_form }}
+
+      <div class="purchase-grid">
+        <div>
+          <label for="id_receipt_date">Fecha</label>
+          <input id="id_receipt_date" type="date" name="receipt_date" value="{{ today }}">
+        </div>
+        <div>
+          <label for="id_supplier">Proveedor</label>
+          <input id="id_supplier" type="text" name="supplier" placeholder="Ej. Blank Supplier / importador">
+        </div>
+        <div style="display:flex;align-items:flex-end;">
+          <label style="display:flex;align-items:center;gap:0.55rem;font-weight:700;">
+            <input type="checkbox" name="create_expense">
+            Registrar también como gasto
+          </label>
+        </div>
+      </div>
+
+      <table class="purchase-table">
+        <thead>
+          <tr>
+            <th>Producto</th>
+            <th>Color</th>
+            <th>Talla</th>
+            <th>Stock actual</th>
+            <th>Cantidad recibida</th>
+            <th>Costo unitario</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in rows %}
+            <tr>
+              <td>
+                <strong>{{ row.variant.product.nombre }}</strong>
+                {{ row.form.variant_id }}
+              </td>
+              <td>{{ row.variant.color }}</td>
+              <td>{{ row.variant.talla }}</td>
+              <td>{{ row.variant.stock }}</td>
+              <td class="purchase-input">{{ row.form.quantity }}</td>
+              <td class="purchase-input">{{ row.form.unit_cost }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <textarea name="note" class="purchase-note" placeholder="Ej. Recepción de proveedor abril, cajas revisadas y contadas.">Recepción de compra desde admin.</textarea>
+
+      <div class="purchase-actions">
+        <button type="submit" class="default">Guardar recepción</button>
+        <span class="purchase-muted">Solo se registran filas con cantidad mayor a cero.</span>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -128,9 +128,11 @@
 {% block content %}
 <div class="inventory-actions">
   <a class="button" href="{% url 'admin:tienda_producto_changelist' %}">Ver productos</a>
+  <a class="button default" href="{{ inventory_matrix_url }}">Mesa de inventario</a>
   <a class="button" href="{% url 'admin:tienda_productvariant_changelist' %}">Ver variantes</a>
   <a class="button" href="{% url 'admin:tienda_inventorymovement_changelist' %}">Ver movimientos</a>
-  <a class="button default" href="{{ stock_count_bulk_url }}">Conteo físico masivo</a>
+  <a class="button" href="{% url 'admin:tienda_inventorymovement_receive_purchase' %}">Recepción de compra</a>
+  <a class="button" href="{{ stock_count_bulk_url }}">Conteo físico masivo</a>
 </div>
 
 <div class="inventory-grid">

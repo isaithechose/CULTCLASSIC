@@ -191,8 +191,8 @@ JAZZMIN_SETTINGS = {
             "icon": "fas fa-triangle-exclamation",
             "permissions": ["tienda.view_producto"],
         }, {
-            "name": "Dashboard inventario",
-            "url": "/admin/tienda/producto/inventory-dashboard/",
+            "name": "Inventario",
+            "url": "/admin/tienda/producto/inventory-matrix/",
             "icon": "fas fa-boxes-stacked",
             "permissions": ["tienda.view_producto"],
         }, {
