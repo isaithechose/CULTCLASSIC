@@ -503,7 +503,7 @@ class ShippingAddressInline(admin.StackedInline):
 class ProductVariantInline(admin.TabularInline):
     model = ProductVariant
     extra = 0
-    fields = ("sku", "talla", "color", "stock", "costo", "precio_override", "activo")
+    fields = ("sku", "talla", "color", "imagen", "stock", "costo", "precio_override", "activo")
     autocomplete_fields = ()
 
 
@@ -1399,7 +1399,7 @@ class InventoryMovementAdminForm(forms.ModelForm):
 
 @admin.register(ProductVariant)
 class ProductVariantAdmin(admin.ModelAdmin):
-    list_display = ("product", "sku", "color", "talla", "stock", "costo", "activo", "updated_at")
+    list_display = ("preview_imagen", "product", "sku", "color", "talla", "stock", "costo", "activo", "updated_at")
     list_filter = ("activo", "color", "talla", "product__categoria")
     search_fields = ("product__nombre", "sku", "color", "talla")
     autocomplete_fields = ("product",)
@@ -1407,7 +1407,7 @@ class ProductVariantAdmin(admin.ModelAdmin):
     readonly_fields = ("updated_at", "created_at")
     fieldsets = (
         ("Variante", {
-            "fields": ("product", "sku", "color", "talla", "activo")
+            "fields": ("product", "sku", "color", "talla", "imagen", "activo")
         }),
         ("Inventario", {
             "fields": ("stock", "costo", "precio_override")
@@ -1416,6 +1416,16 @@ class ProductVariantAdmin(admin.ModelAdmin):
             "fields": ("created_at", "updated_at")
         }),
     )
+
+    @admin.display(description="Imagen")
+    def preview_imagen(self, obj):
+        image = obj.imagen or obj.product.imagen
+        if image:
+            return format_html(
+                '<img src="{}" style="width:42px;height:42px;object-fit:cover;border-radius:8px;" />',
+                image.url,
+            )
+        return "-"
 
 
 @admin.register(InventoryMovement)

@@ -97,6 +97,7 @@ class ProductVariant(models.Model):
     sku = models.CharField(max_length=80, blank=True, null=True)
     talla = models.CharField(max_length=10)
     color = models.CharField(max_length=40)
+    imagen = models.ImageField(upload_to="productos/variantes/", blank=True, null=True)
     stock = models.PositiveIntegerField(default=0)
     costo = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
     precio_override = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
