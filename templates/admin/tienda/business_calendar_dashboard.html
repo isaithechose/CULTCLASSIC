@@ -1,0 +1,313 @@
+{% extends "admin/base_site.html" %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+  .business-actions,
+  .business-filters,
+  .business-summary,
+  .business-panels {
+    display: flex;
+    gap: 0.85rem;
+    flex-wrap: wrap;
+  }
+  .business-actions,
+  .business-filters {
+    margin-bottom: 1rem;
+  }
+  .business-summary {
+    margin: 1rem 0 1.25rem;
+  }
+  .business-card,
+  .business-panel,
+  .business-calendar {
+    background: #fff;
+    border: 1px solid #e8e8ef;
+    border-radius: 18px;
+    box-shadow: 0 12px 30px rgba(16, 24, 40, 0.06);
+  }
+  .business-card {
+    flex: 1 1 220px;
+    padding: 1rem 1.1rem;
+  }
+  .business-card__label {
+    color: #6b7280;
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.4rem;
+  }
+  .business-card__value {
+    font-size: 1.8rem;
+    font-weight: 800;
+    line-height: 1;
+    color: #111827;
+  }
+  .business-card__meta {
+    margin-top: 0.45rem;
+    color: #6b7280;
+  }
+  .business-calendar {
+    padding: 1rem 1rem 0.8rem;
+    margin-bottom: 1rem;
+  }
+  .business-calendar__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+  .business-calendar__title {
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: #111827;
+  }
+  .business-calendar__nav {
+    display: flex;
+    gap: 0.65rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .business-calendar__grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+  .business-calendar__weekday {
+    color: #6b7280;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 0 0.4rem 0.35rem;
+  }
+  .business-day {
+    min-height: 132px;
+    border: 1px solid #ececf3;
+    border-radius: 16px;
+    padding: 0.7rem;
+    background: #fbfbfd;
+  }
+  .business-day--muted {
+    opacity: 0.45;
+  }
+  .business-day--today {
+    border-color: #111827;
+    box-shadow: inset 0 0 0 1px #111827;
+  }
+  .business-day__number {
+    font-weight: 800;
+    color: #111827;
+    margin-bottom: 0.55rem;
+  }
+  .business-day__events {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+  }
+  .business-event {
+    border-radius: 12px;
+    padding: 0.45rem 0.55rem;
+    font-size: 0.88rem;
+    line-height: 1.25;
+  }
+  .business-event strong {
+    display: block;
+    font-weight: 800;
+  }
+  .business-event--ok {
+    background: #d1fadf;
+    color: #05603a;
+  }
+  .business-event--danger {
+    background: #fee4e2;
+    color: #b42318;
+  }
+  .business-event--warn {
+    background: #fff4d6;
+    color: #9a6700;
+  }
+  .business-event--neutral {
+    background: #ececf3;
+    color: #4b5563;
+  }
+  .business-panels {
+    align-items: flex-start;
+  }
+  .business-panel {
+    flex: 1 1 320px;
+    padding: 1rem 1.1rem;
+  }
+  .business-panel h3 {
+    margin: 0 0 0.9rem;
+    font-size: 1rem;
+  }
+  .business-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+  }
+  .business-item {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.7rem 0.8rem;
+    border-radius: 12px;
+    background: #f8f8fb;
+  }
+  .business-item strong {
+    display: block;
+    color: #111827;
+  }
+  .business-item span {
+    color: #6b7280;
+    font-size: 0.92rem;
+  }
+  @media (max-width: 1120px) {
+    .business-calendar__grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .business-calendar__weekday {
+      display: none;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="business-actions">
+  <a class="button default" href="{% url 'admin:tienda_businesspayment_business_calendar' %}">Calendario</a>
+  <a class="button" href="{% url 'admin:tienda_businesspayment_changelist' %}">Pagos programados</a>
+  <a class="button" href="{% url 'admin:tienda_expense_accounting_dashboard' %}">Dashboard contable</a>
+  <a class="button" href="{% url 'admin:tienda_producto_inventory_dashboard' %}">Dashboard inventario</a>
+</div>
+
+<form class="business-filters" method="get">
+  <input type="month" name="month" value="{{ current_month_value }}">
+  <button type="submit" class="button">Ver mes</button>
+</form>
+
+<div class="business-summary">
+  <div class="business-card">
+    <div class="business-card__label">Ventas del mes</div>
+    <div class="business-card__value">${{ month_sales_total|floatformat:2 }}</div>
+    <div class="business-card__meta">Promedio diario actual: ${{ daily_average_sales|floatformat:2 }}</div>
+  </div>
+  <div class="business-card">
+    <div class="business-card__label">Gastos del mes</div>
+    <div class="business-card__value">${{ month_expenses_total|floatformat:2 }}</div>
+    <div class="business-card__meta">Pagos pendientes del mes: {{ pending_payments_count }}</div>
+  </div>
+  <div class="business-card">
+    <div class="business-card__label">Pagos pendientes</div>
+    <div class="business-card__value">${{ pending_payments_total|floatformat:2 }}</div>
+    <div class="business-card__meta">Programados y todavía no pagados.</div>
+  </div>
+  <div class="business-card">
+    <div class="business-card__label">Proyección cierre de mes</div>
+    <div class="business-card__value">${{ projected_month_sales|floatformat:2 }}</div>
+    <div class="business-card__meta">Siguiente ventana de 30 días: ${{ projected_next_30_days|floatformat:2 }}</div>
+  </div>
+  <div class="business-card">
+    <div class="business-card__label">Inventario en alerta</div>
+    <div class="business-card__value">{{ low_stock_variants }}</div>
+    <div class="business-card__meta">{{ out_of_stock_variants }} agotadas · {{ total_units }} piezas totales</div>
+  </div>
+  <div class="business-card">
+    <div class="business-card__label">Valor estimado inventario</div>
+    <div class="business-card__value">${{ total_inventory_value|floatformat:2 }}</div>
+    <div class="business-card__meta">Sirve como respaldo para compras y reposición.</div>
+  </div>
+</div>
+
+<div class="business-calendar">
+  <div class="business-calendar__header">
+    <div class="business-calendar__title">{{ calendar_label }}</div>
+    <div class="business-calendar__nav">
+      <a class="button" href="?month={{ previous_month }}">Mes anterior</a>
+      <a class="button" href="?month={{ next_month }}">Mes siguiente</a>
+    </div>
+  </div>
+
+  <div class="business-calendar__grid">
+    <div class="business-calendar__weekday">Lun</div>
+    <div class="business-calendar__weekday">Mar</div>
+    <div class="business-calendar__weekday">Mié</div>
+    <div class="business-calendar__weekday">Jue</div>
+    <div class="business-calendar__weekday">Vie</div>
+    <div class="business-calendar__weekday">Sáb</div>
+    <div class="business-calendar__weekday">Dom</div>
+
+    {% for week in calendar_weeks %}
+      {% for day in week %}
+        <div class="business-day {% if not day.in_month %}business-day--muted{% endif %} {% if day.is_today %}business-day--today{% endif %}">
+          <div class="business-day__number">{{ day.date|date:"j" }}</div>
+          <div class="business-day__events">
+            {% for event in day.events %}
+              <div class="business-event business-event--{{ event.tone }}">
+                <strong>{{ event.label }}</strong>
+                {{ event.count }} · ${{ event.total|floatformat:2 }}
+              </div>
+            {% empty %}
+              <div class="business-event business-event--neutral">Sin movimientos</div>
+            {% endfor %}
+          </div>
+        </div>
+      {% endfor %}
+    {% endfor %}
+  </div>
+</div>
+
+<div class="business-panels">
+  <div class="business-panel">
+    <h3>Pagos próximos</h3>
+    <div class="business-list">
+      {% for payment in upcoming_payments %}
+        <div class="business-item">
+          <div>
+            <strong>{{ payment.concepto }}</strong>
+            <span>{{ payment.get_categoria_display }} · {{ payment.fecha_programada|date:"Y-m-d" }}</span>
+          </div>
+          <strong>${{ payment.monto|floatformat:2 }}</strong>
+        </div>
+      {% empty %}
+        <p>No hay pagos pendientes en este mes.</p>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="business-panel">
+    <h3>Ventas recientes</h3>
+    <div class="business-list">
+      {% for order in recent_sales %}
+        <div class="business-item">
+          <div>
+            <strong>Pedido #{{ order.id }}</strong>
+            <span>{{ order.customer|default:"Sin cliente" }} · {{ order.created_at|date:"Y-m-d H:i" }}</span>
+          </div>
+          <strong>${{ order.total_price|floatformat:2 }}</strong>
+        </div>
+      {% empty %}
+        <p>No hay ventas completadas en este mes.</p>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="business-panel">
+    <h3>Gastos recientes</h3>
+    <div class="business-list">
+      {% for expense in recent_expenses %}
+        <div class="business-item">
+          <div>
+            <strong>{{ expense.concepto }}</strong>
+            <span>{{ expense.categoria|default:"Sin categoría" }} · {{ expense.fecha|date:"Y-m-d" }}</span>
+          </div>
+          <strong>${{ expense.monto|floatformat:2 }}</strong>
+        </div>
+      {% empty %}
+        <p>No hay gastos registrados en este mes.</p>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

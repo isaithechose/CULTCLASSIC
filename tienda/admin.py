@@ -9,9 +9,12 @@ from django.http import HttpResponseRedirect
 from django.template.response import TemplateResponse
 from django.urls import path, reverse
 from django.utils.html import format_html
+import calendar
+from datetime import date, timedelta
 
 from .skydrop import SkydropError, create_shipment, quote_order, sync_shipment
 from .models import (
+    BusinessPayment,
     Carrito,
     Categoria,
     Order,
@@ -25,6 +28,7 @@ from .models import (
     ShippingAddress,
     ShippingUpdate,
     Subcategoria,
+    find_variant_for_selection,
     record_inventory_movement,
 )
 
@@ -105,6 +109,7 @@ def _admin_overview_context():
             },
         ],
         "admin_quick_links": [
+            {"label": "Calendario negocio", "url": "/admin/tienda/businesspayment/business-calendar/"},
             {"label": "Dashboard inventario", "url": "/admin/tienda/producto/inventory-dashboard/"},
             {"label": "Recepción de compra", "url": "/admin/tienda/inventorymovement/receive-purchase/"},
             {"label": "Dashboard contable", "url": "/admin/tienda/expense/accounting-dashboard/"},
@@ -127,6 +132,154 @@ def _admin_overview_context():
                 "url": "/admin/tienda/order/",
             },
         ],
+    }
+
+
+def _inventory_snapshot_metrics():
+    active_variants = ProductVariant.objects.filter(activo=True)
+    low_stock_variants = active_variants.filter(stock__lte=3).count()
+    out_of_stock_variants = active_variants.filter(stock=0).count()
+    total_units = (active_variants.aggregate(total=Sum("stock"))["total"] or 0) + (
+        Producto.objects.filter(disponible=True).exclude(variants__activo=True).aggregate(total=Sum("stock"))["total"] or 0
+    )
+
+    total_inventory_value = Decimal("0.00")
+    for variant in active_variants.select_related("product"):
+        unit_cost = variant.costo if variant.costo is not None else variant.product.precio
+        total_inventory_value += Decimal(str(unit_cost)) * Decimal(str(variant.stock))
+
+    return {
+        "low_stock_variants": low_stock_variants,
+        "out_of_stock_variants": out_of_stock_variants,
+        "total_units": total_units,
+        "total_inventory_value": total_inventory_value,
+    }
+
+
+def _sales_projection_metrics(today):
+    window_start = today - timedelta(days=29)
+    completed_orders = [order for order in Order.objects.filter(status="Completed") if window_start <= order.created_at.date() <= today]
+    trailing_sales = sum(order.total_price for order in completed_orders)
+    daily_average = (Decimal(str(trailing_sales)) / Decimal("30")) if completed_orders or trailing_sales else Decimal("0.00")
+
+    month_start = today.replace(day=1)
+    _, month_days = calendar.monthrange(today.year, today.month)
+    elapsed_days = max((today - month_start).days + 1, 1)
+    month_sales = sum(
+        order.total_price for order in Order.objects.filter(status="Completed")
+        if month_start <= order.created_at.date() <= today
+    )
+    current_daily_average = Decimal(str(month_sales)) / Decimal(str(elapsed_days))
+    projected_month_sales = current_daily_average * Decimal(str(month_days))
+    projected_next_30_days = daily_average * Decimal("30")
+
+    return {
+        "trailing_30_sales": trailing_sales,
+        "daily_average_sales": daily_average.quantize(Decimal("0.01")),
+        "projected_month_sales": projected_month_sales.quantize(Decimal("0.01")),
+        "projected_next_30_days": projected_next_30_days.quantize(Decimal("0.01")),
+    }
+
+
+def _coerce_month(month_value, today):
+    try:
+        year_str, month_str = (month_value or "").split("-")
+        year = int(year_str)
+        month = int(month_str)
+        if 1 <= month <= 12:
+            return year, month
+    except (TypeError, ValueError):
+        pass
+    return today.year, today.month
+
+
+def _build_business_calendar_context(year, month):
+    first_day = date(year, month, 1)
+    _, month_days = calendar.monthrange(year, month)
+    last_day = first_day.replace(day=month_days)
+    month_weeks = calendar.Calendar(firstweekday=0).monthdatescalendar(year, month)
+    today = timezone.localdate()
+
+    orders = [order for order in Order.objects.filter(status="Completed").prefetch_related("items__product") if first_day <= order.created_at.date() <= last_day]
+    expenses = list(Expense.objects.filter(fecha__gte=first_day, fecha__lte=last_day).select_related("categoria"))
+    payments = list(BusinessPayment.objects.filter(fecha_programada__gte=first_day, fecha_programada__lte=last_day))
+
+    sales_by_day = {}
+    for order in orders:
+        day = order.created_at.date()
+        bucket = sales_by_day.setdefault(day, {"count": 0, "total": Decimal("0.00")})
+        bucket["count"] += 1
+        bucket["total"] += order.total_price
+
+    expenses_by_day = {}
+    for expense in expenses:
+        bucket = expenses_by_day.setdefault(expense.fecha, {"count": 0, "total": Decimal("0.00")})
+        bucket["count"] += 1
+        bucket["total"] += expense.monto
+
+    payments_by_day = {}
+    for payment in payments:
+        bucket = payments_by_day.setdefault(payment.fecha_programada, {"count": 0, "total": Decimal("0.00"), "pending": 0})
+        bucket["count"] += 1
+        bucket["total"] += payment.monto
+        if payment.estado == "pending":
+            bucket["pending"] += 1
+
+    calendar_weeks = []
+    for week in month_weeks:
+        days = []
+        for day in week:
+            events = []
+            sales = sales_by_day.get(day)
+            if sales:
+                events.append({"label": "Ventas", "count": sales["count"], "total": sales["total"], "tone": "ok"})
+            expense = expenses_by_day.get(day)
+            if expense:
+                events.append({"label": "Gastos", "count": expense["count"], "total": expense["total"], "tone": "danger"})
+            payment = payments_by_day.get(day)
+            if payment:
+                events.append({
+                    "label": "Pagos",
+                    "count": payment["count"],
+                    "total": payment["total"],
+                    "tone": "warn" if payment["pending"] else "neutral",
+                })
+
+            days.append(
+                {
+                    "date": day,
+                    "in_month": day.month == month,
+                    "is_today": day == today,
+                    "events": events,
+                }
+            )
+        calendar_weeks.append(days)
+
+    previous_month = (first_day - timedelta(days=1)).strftime("%Y-%m")
+    next_month = (last_day + timedelta(days=1)).strftime("%Y-%m")
+    inventory_metrics = _inventory_snapshot_metrics()
+    projection_metrics = _sales_projection_metrics(today)
+
+    total_sales = sum(item["total"] for item in sales_by_day.values()) if sales_by_day else Decimal("0.00")
+    total_expenses = sum(item["total"] for item in expenses_by_day.values()) if expenses_by_day else Decimal("0.00")
+    pending_payments = [payment for payment in payments if payment.estado == "pending"]
+    total_pending_payments = sum(payment.monto for payment in pending_payments) if pending_payments else Decimal("0.00")
+
+    return {
+        "calendar_weeks": calendar_weeks,
+        "calendar_label": first_day.strftime("%B %Y").capitalize(),
+        "current_month_value": first_day.strftime("%Y-%m"),
+        "previous_month": previous_month,
+        "next_month": next_month,
+        "month_sales_total": total_sales,
+        "month_expenses_total": total_expenses,
+        "pending_payments_total": total_pending_payments,
+        "pending_payments_count": len(pending_payments),
+        "upcoming_payments": sorted(pending_payments, key=lambda payment: (payment.fecha_programada, payment.id))[:8],
+        "recent_sales": sorted(orders, key=lambda order: order.created_at, reverse=True)[:8],
+        "recent_expenses": sorted(expenses, key=lambda expense: (expense.fecha, expense.id), reverse=True)[:8],
+        **inventory_metrics,
+        **projection_metrics,
     }
 
 
@@ -1562,6 +1715,88 @@ class ExpenseAdmin(admin.ModelAdmin):
             opts=self.model._meta,
         )
         return TemplateResponse(request, "admin/tienda/accounting_dashboard.html", context)
+
+
+@admin.action(description="Marcar pagos como pagados")
+def marcar_pagos_pagados(modeladmin, request, queryset):
+    today = timezone.localdate()
+    updated = queryset.exclude(estado="paid").update(estado="paid", fecha_pagado=today)
+    modeladmin.message_user(request, f"{updated} pagos marcados como pagados.", level=messages.SUCCESS)
+
+
+@admin.action(description="Marcar pagos como pendientes")
+def marcar_pagos_pendientes(modeladmin, request, queryset):
+    updated = queryset.exclude(estado="pending").update(estado="pending", fecha_pagado=None)
+    modeladmin.message_user(request, f"{updated} pagos regresaron a pendiente.", level=messages.SUCCESS)
+
+
+@admin.register(BusinessPayment)
+class BusinessPaymentAdmin(admin.ModelAdmin):
+    list_display = ("fecha_programada", "concepto", "categoria", "estado_badge", "monto", "proveedor", "fecha_pagado")
+    list_filter = ("estado", "categoria", "fecha_programada", "metodo_pago")
+    search_fields = ("concepto", "proveedor", "nota")
+    autocomplete_fields = ("created_by",)
+    readonly_fields = ("created_at",)
+    date_hierarchy = "fecha_programada"
+    actions = [marcar_pagos_pagados, marcar_pagos_pendientes]
+    fieldsets = (
+        ("Pago programado", {
+            "fields": ("fecha_programada", "concepto", "monto", "categoria", "estado")
+        }),
+        ("Seguimiento", {
+            "fields": ("fecha_pagado", "metodo_pago", "proveedor", "nota")
+        }),
+        ("Control", {
+            "fields": ("created_by", "created_at")
+        }),
+    )
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path(
+                "business-calendar/",
+                self.admin_site.admin_view(self.business_calendar_view),
+                name="tienda_businesspayment_business_calendar",
+            ),
+        ]
+        return custom_urls + urls
+
+    @admin.display(description="Estado")
+    def estado_badge(self, obj):
+        tones = {
+            "pending": ("#9a6700", "#fff4d6"),
+            "paid": ("#05603a", "#d1fadf"),
+            "canceled": ("#6b7280", "#ececf3"),
+        }
+        color, bg = tones.get(obj.estado, ("#6b7280", "#ececf3"))
+        return format_html(
+            '<span style="display:inline-block;padding:0.28rem 0.65rem;border-radius:999px;background:{};color:{};font-weight:700;">{}</span>',
+            bg,
+            color,
+            obj.get_estado_display(),
+        )
+
+    def save_model(self, request, obj, form, change):
+        if not obj.created_by:
+            obj.created_by = request.user
+        if obj.estado == "paid" and not obj.fecha_pagado:
+            obj.fecha_pagado = timezone.localdate()
+        if obj.estado != "paid":
+            obj.fecha_pagado = None
+        super().save_model(request, obj, form, change)
+
+    def business_calendar_view(self, request):
+        today = timezone.localdate()
+        year, month = _coerce_month(request.GET.get("month"), today)
+        context = dict(
+            self.admin_site.each_context(request),
+            title="Calendario del negocio",
+            subtitle="Ventas, gastos, pagos e inventario desde una sola vista",
+            opts=self.model._meta,
+            **_build_business_calendar_context(year, month),
+        )
+        return TemplateResponse(request, "admin/tienda/business_calendar_dashboard.html", context)
 
 
 def _enhanced_admin_index(self, request, extra_context=None):

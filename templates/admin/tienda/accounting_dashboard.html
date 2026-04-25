@@ -81,6 +81,8 @@
 
 {% block content %}
 <div class="accounting-actions">
+  <a class="button default" href="{% url 'admin:tienda_businesspayment_business_calendar' %}">Calendario negocio</a>
+  <a class="button" href="{% url 'admin:tienda_businesspayment_changelist' %}">Pagos programados</a>
   <a class="button" href="{% url 'admin:tienda_expense_changelist' %}">Ver gastos</a>
   <a class="button" href="{% url 'admin:tienda_order_changelist' %}?status__exact=Completed">Ver ventas</a>
   <a class="button" href="{% url 'admin:tienda_inventorymovement_changelist' %}">Ver movimientos</a>

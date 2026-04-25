@@ -154,6 +154,7 @@ JAZZMIN_SETTINGS = {
         "tienda.InventoryMovement": "fas fa-boxes-stacked",
         "tienda.ExpenseCategory": "fas fa-folder-tree",
         "tienda.Expense": "fas fa-wallet",
+        "tienda.BusinessPayment": "fas fa-calendar-check",
         "tienda.Order": "fas fa-bag-shopping",
         "tienda.OrderItem": "fas fa-box-open",
         "tienda.Carrito": "fas fa-cart-shopping",
@@ -173,6 +174,7 @@ JAZZMIN_SETTINGS = {
         "tienda.InventoryMovement",
         "tienda.ExpenseCategory",
         "tienda.Expense",
+        "tienda.BusinessPayment",
         "tienda.Order",
         "tienda.Carrito",
         "tienda.Reseña",
@@ -191,6 +193,11 @@ JAZZMIN_SETTINGS = {
             "icon": "fas fa-triangle-exclamation",
             "permissions": ["tienda.view_producto"],
         }, {
+            "name": "Calendario negocio",
+            "url": "/admin/tienda/businesspayment/business-calendar/",
+            "icon": "fas fa-calendar-days",
+            "permissions": ["tienda.view_businesspayment"],
+        }, {
             "name": "Inventario",
             "url": "/admin/tienda/producto/inventory-matrix/",
             "icon": "fas fa-boxes-stacked",
@@ -205,6 +212,11 @@ JAZZMIN_SETTINGS = {
             "url": "/admin/tienda/inventorymovement/",
             "icon": "fas fa-right-left",
             "permissions": ["tienda.view_inventorymovement"],
+        }, {
+            "name": "Pagos programados",
+            "url": "/admin/tienda/businesspayment/",
+            "icon": "fas fa-calendar-check",
+            "permissions": ["tienda.view_businesspayment"],
         }, {
             "name": "Dashboard contable",
             "url": "/admin/tienda/expense/accounting-dashboard/",

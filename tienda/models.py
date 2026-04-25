@@ -198,6 +198,52 @@ class Expense(models.Model):
     def __str__(self):
         return f"{self.concepto} - ${self.monto}"
 
+
+class BusinessPayment(models.Model):
+    STATUS_CHOICES = [
+        ("pending", "Pendiente"),
+        ("paid", "Pagado"),
+        ("canceled", "Cancelado"),
+    ]
+
+    CATEGORY_CHOICES = [
+        ("rent", "Renta"),
+        ("payroll", "Nomina"),
+        ("supplier", "Proveedor"),
+        ("tax", "Impuestos"),
+        ("services", "Servicios"),
+        ("marketing", "Marketing"),
+        ("logistics", "Logistica"),
+        ("other", "Otro"),
+    ]
+
+    PAYMENT_METHOD_CHOICES = [
+        ("cash", "Efectivo"),
+        ("card", "Tarjeta"),
+        ("transfer", "Transferencia"),
+        ("other", "Otro"),
+    ]
+
+    fecha_programada = models.DateField()
+    concepto = models.CharField(max_length=140)
+    monto = models.DecimalField(max_digits=10, decimal_places=2)
+    categoria = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default="other")
+    estado = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
+    fecha_pagado = models.DateField(blank=True, null=True)
+    metodo_pago = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES, default="transfer")
+    proveedor = models.CharField(max_length=120, blank=True, null=True)
+    nota = models.TextField(blank=True, null=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["fecha_programada", "estado", "id"]
+        verbose_name = "Pago programado"
+        verbose_name_plural = "Pagos programados"
+
+    def __str__(self):
+        return f"{self.concepto} - ${self.monto} ({self.get_estado_display()})"
+
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="items")
     product = models.ForeignKey(Producto, on_delete=models.CASCADE)
