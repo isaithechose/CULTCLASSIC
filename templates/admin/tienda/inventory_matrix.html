@@ -135,7 +135,13 @@
               <tr>
                 <td>
                   <div class="matrix-product">
-                    {% if row.variant.product.imagen %}
+                    {% if row.variant.imagen %}
+                      <img
+                        src="{{ row.variant.imagen.url }}"
+                        alt="{{ row.variant.product.nombre }} {{ row.variant.color }}"
+                        class="matrix-product__thumb"
+                      >
+                    {% elif row.variant.product.imagen %}
                       <img
                         src="{{ row.variant.product.imagen.url }}"
                         alt="{{ row.variant.product.nombre }}"
