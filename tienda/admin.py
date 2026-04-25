@@ -38,6 +38,8 @@ from decimal import Decimal
 
 from django.utils import timezone
 
+from .utils.variant_image_assignment import find_best_image_for_variant
+
 
 def _split_variant_values(raw_value):
     return [value.strip() for value in (raw_value or "").split(",") if value.strip()]
@@ -343,6 +345,38 @@ def generar_variantes_faltantes(modeladmin, request, queryset):
             request,
             "No había variantes faltantes por crear. Revisa que tallas y colores estén separados por comas.",
             level=messages.INFO,
+        )
+
+
+@admin.action(description="Asignar imágenes de variante desde media/productos")
+def asignar_imagenes_variantes(modeladmin, request, queryset):
+    assigned = 0
+    missing = 0
+
+    for variant in queryset.select_related("product"):
+        image_name = find_best_image_for_variant(variant)
+        if not image_name:
+            missing += 1
+            continue
+
+        if variant.imagen.name == image_name:
+            continue
+
+        variant.imagen.name = image_name
+        variant.save(update_fields=["imagen", "updated_at"])
+        assigned += 1
+
+    if assigned:
+        modeladmin.message_user(
+            request,
+            f"Se asignaron {assigned} imágenes de variante.",
+            level=messages.SUCCESS,
+        )
+    if missing:
+        modeladmin.message_user(
+            request,
+            f"{missing} variantes no encontraron imagen compatible en media/productos.",
+            level=messages.WARNING,
         )
 
 
@@ -1404,6 +1438,7 @@ class ProductVariantAdmin(admin.ModelAdmin):
     search_fields = ("product__nombre", "sku", "color", "talla")
     autocomplete_fields = ("product",)
     list_editable = ("activo",)
+    actions = [asignar_imagenes_variantes]
     readonly_fields = ("updated_at", "created_at")
     fieldsets = (
         ("Variante", {
