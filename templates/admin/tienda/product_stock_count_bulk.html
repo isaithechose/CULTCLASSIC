@@ -31,6 +31,40 @@
     text-transform: uppercase;
     letter-spacing: 0.06em;
   }
+  .bulk-product {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    min-width: 240px;
+  }
+  .bulk-product__thumb,
+  .bulk-product__fallback {
+    width: 56px;
+    height: 56px;
+    border-radius: 12px;
+    flex: 0 0 56px;
+  }
+  .bulk-product__thumb {
+    object-fit: cover;
+    border: 1px solid #e5e7eb;
+    background: #f8f8fb;
+  }
+  .bulk-product__fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px dashed #d1d5db;
+    color: #9ca3af;
+    background: #f8f8fb;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .bulk-product__meta strong {
+    display: block;
+    margin-bottom: 0.18rem;
+  }
   .bulk-count-input input {
     width: 96px;
     padding: 0.5rem 0.65rem;
@@ -75,9 +109,9 @@
 
       <table class="bulk-count-table">
         <thead>
-          <tr>
-            <th>Producto</th>
-            <th>Color</th>
+            <tr>
+              <th>Producto</th>
+              <th>Color</th>
             <th>Talla</th>
             <th>Stock actual</th>
             <th>Conteo real</th>
@@ -87,7 +121,27 @@
           {% for row in rows %}
             <tr>
               <td>
-                <strong>{{ row.variant.product.nombre }}</strong>
+                <div class="bulk-product">
+                  {% if row.variant.imagen %}
+                    <img
+                      src="{{ row.variant.imagen.url }}"
+                      alt="{{ row.variant.product.nombre }} {{ row.variant.color }}"
+                      class="bulk-product__thumb"
+                    >
+                  {% elif row.variant.product.imagen %}
+                    <img
+                      src="{{ row.variant.product.imagen.url }}"
+                      alt="{{ row.variant.product.nombre }}"
+                      class="bulk-product__thumb"
+                    >
+                  {% else %}
+                    <div class="bulk-product__fallback">Sin img</div>
+                  {% endif %}
+                  <div class="bulk-product__meta">
+                    <strong>{{ row.variant.product.nombre }}</strong>
+                    <span class="bulk-muted">{{ row.variant.product.subcategoria|default:"Sin subcategoría" }}</span>
+                  </div>
+                </div>
                 {{ row.form.variant_id }}
               </td>
               <td>{{ row.variant.color }}</td>
