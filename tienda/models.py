@@ -26,6 +26,7 @@ class Subcategoria(models.Model):
 class Producto(models.Model):
     nombre = models.CharField(max_length=100)
     descripcion = models.TextField()
+    costo = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     precio = models.DecimalField(max_digits=10, decimal_places=2)
     stock = models.PositiveIntegerField()
     categoria = models.ForeignKey(Categoria, on_delete=models.SET_NULL, null=True, blank=True)
