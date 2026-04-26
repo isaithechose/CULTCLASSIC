@@ -48,6 +48,29 @@ def _split_variant_values(raw_value):
     return [value.strip() for value in (raw_value or "").split(",") if value.strip()]
 
 
+def _money(value):
+    return Decimal(str(value or 0))
+
+
+def _variant_unit_cost(variant):
+    return _money(variant.costo if variant.costo is not None else variant.product.precio)
+
+
+def _variant_sale_price(variant):
+    return _money(variant.precio_override if variant.precio_override is not None else variant.product.precio)
+
+
+def _variant_profit(variant):
+    return _variant_sale_price(variant) - _variant_unit_cost(variant)
+
+
+def _variant_margin(variant):
+    sale_price = _variant_sale_price(variant)
+    if sale_price <= 0:
+        return Decimal("0.00")
+    return (_variant_profit(variant) / sale_price) * Decimal("100")
+
+
 def _admin_overview_context():
     today = timezone.localdate()
     month_start = today.replace(day=1)
@@ -147,16 +170,20 @@ def _inventory_snapshot_metrics():
         Producto.objects.filter(disponible=True).exclude(variants__activo=True).aggregate(total=Sum("stock"))["total"] or 0
     )
 
-    total_inventory_value = Decimal("0.00")
+    total_inventory_cost_value = Decimal("0.00")
+    total_inventory_sale_value = Decimal("0.00")
     for variant in active_variants.select_related("product"):
-        unit_cost = variant.costo if variant.costo is not None else variant.product.precio
-        total_inventory_value += Decimal(str(unit_cost)) * Decimal(str(variant.stock))
+        total_inventory_cost_value += _variant_unit_cost(variant) * Decimal(str(variant.stock))
+        total_inventory_sale_value += _variant_sale_price(variant) * Decimal(str(variant.stock))
 
     return {
         "low_stock_variants": low_stock_variants,
         "out_of_stock_variants": out_of_stock_variants,
         "total_units": total_units,
-        "total_inventory_value": total_inventory_value,
+        "total_inventory_value": total_inventory_cost_value,
+        "total_inventory_cost_value": total_inventory_cost_value,
+        "total_inventory_sale_value": total_inventory_sale_value,
+        "total_inventory_profit_value": total_inventory_sale_value - total_inventory_cost_value,
     }
 
 
@@ -565,10 +592,51 @@ class ShippingAddressInline(admin.StackedInline):
 class ProductVariantInline(admin.TabularInline):
     model = ProductVariant
     extra = 0
-    fields = ("sku", "talla", "color", "imagen", "stock", "costo", "precio_override", "activo")
+    fields = (
+        "sku",
+        "talla",
+        "color",
+        "imagen",
+        "stock",
+        "costo",
+        "precio_override",
+        "precio_venta_display",
+        "utilidad_display",
+        "margen_display",
+        "activo",
+    )
+    readonly_fields = ("precio_venta_display", "utilidad_display", "margen_display")
     autocomplete_fields = ()
     verbose_name = "Variante real"
     verbose_name_plural = "Variantes reales de inventario (color + talla)"
+
+    def formfield_for_dbfield(self, db_field, request, **kwargs):
+        formfield = super().formfield_for_dbfield(db_field, request, **kwargs)
+        labels = {
+            "costo": "Costo unitario",
+            "precio_override": "Precio venta especial",
+        }
+        if db_field.name in labels and formfield:
+            formfield.label = labels[db_field.name]
+        return formfield
+
+    @admin.display(description="Precio venta")
+    def precio_venta_display(self, obj):
+        if not obj or not obj.pk:
+            return "-"
+        return f"${_variant_sale_price(obj):.2f}"
+
+    @admin.display(description="Utilidad")
+    def utilidad_display(self, obj):
+        if not obj or not obj.pk:
+            return "-"
+        return f"${_variant_profit(obj):.2f}"
+
+    @admin.display(description="Margen")
+    def margen_display(self, obj):
+        if not obj or not obj.pk:
+            return "-"
+        return f"{_variant_margin(obj):.1f}%"
 
 
 class InventoryMovementInline(admin.TabularInline):
@@ -631,10 +699,11 @@ class ProductoAdmin(admin.ModelAdmin):
         "nombre",
         "categoria",
         "subcategoria",
-        "precio",
+        "precio_venta_base",
         "inventory_mode",
         "stock",
         "variant_stock_summary",
+        "inventory_value_summary",
         "disponible",
         "fecha_actualizacion",
     )
@@ -642,7 +711,7 @@ class ProductoAdmin(admin.ModelAdmin):
     search_fields = ("nombre", "descripcion", "slug_imagen")
     autocomplete_fields = ("categoria", "subcategoria")
     actions = [importar_disenos, marcar_disponibles, marcar_no_disponibles, generar_variantes_faltantes]
-    list_editable = ("precio", "stock", "disponible")
+    list_editable = ("stock", "disponible")
     readonly_fields = (
         "fecha_creacion",
         "fecha_actualizacion",
@@ -709,6 +778,13 @@ class ProductoAdmin(admin.ModelAdmin):
         ]
         return custom_urls + urls
 
+    def formfield_for_dbfield(self, db_field, request, **kwargs):
+        formfield = super().formfield_for_dbfield(db_field, request, **kwargs)
+        if db_field.name == "precio" and formfield:
+            formfield.label = "Precio venta base"
+            formfield.help_text = "Precio que ve el cliente cuando la variante no tiene precio especial."
+        return formfield
+
     @admin.display(description="Imagen")
     def preview_imagen(self, obj):
         if obj.imagen:
@@ -726,6 +802,10 @@ class ProductoAdmin(admin.ModelAdmin):
                 obj.imagen.url,
             )
         return "Sin imagen"
+
+    @admin.display(description="Precio venta base", ordering="precio")
+    def precio_venta_base(self, obj):
+        return f"${obj.precio:.2f}"
 
     @admin.display(description="Inventario")
     def inventory_mode(self, obj):
@@ -768,14 +848,21 @@ class ProductoAdmin(admin.ModelAdmin):
     def inventory_snapshot(self, obj):
         variants = list(obj.variants.filter(activo=True))
         if not variants:
+            sale_value = _money(obj.precio) * Decimal(str(obj.stock))
             return format_html(
                 """
                 <div style="padding:0.85rem 1rem;border-radius:12px;background:#f8fafc;border:1px solid #e2e8f0;">
                   <strong>Modo actual:</strong> stock general.<br>
                   Si quieres controlar talla y color por separado, primero genera variantes abajo y luego captura el inventario en la mesa o en el conteo físico.
+                  <div style="margin-top:0.7rem;"><strong>Valor potencial venta:</strong> ${}</div>
                 </div>
-                """
+                """,
+                f"{sale_value:.2f}",
             )
+        total_units = sum(variant.stock for variant in variants)
+        cost_value = sum(_variant_unit_cost(variant) * Decimal(str(variant.stock)) for variant in variants)
+        sale_value = sum(_variant_sale_price(variant) * Decimal(str(variant.stock)) for variant in variants)
+        profit_value = sale_value - cost_value
         rows = [
             "<div style='display:flex;flex-wrap:wrap;gap:0.45rem;'>"
         ]
@@ -786,9 +873,28 @@ class ProductoAdmin(admin.ModelAdmin):
         rows.append("</div>")
         rows.append(
             f"<p style='margin-top:0.8rem;'><strong>Total sincronizado:</strong> {obj.stock}</p>"
+            f"<p style='margin-top:0.35rem;'><strong>Valor al costo:</strong> ${cost_value:.2f} &nbsp; <strong>Valor venta:</strong> ${sale_value:.2f} &nbsp; <strong>Utilidad potencial:</strong> ${profit_value:.2f}</p>"
             "<p style='margin-top:0.35rem;color:#475569;'>Este total se recalcula desde las variantes activas.</p>"
         )
         return format_html("".join(rows))
+
+    @admin.display(description="Valor inventario")
+    def inventory_value_summary(self, obj):
+        variants = list(obj.variants.filter(activo=True))
+        if variants:
+            cost_value = sum(_variant_unit_cost(variant) * Decimal(str(variant.stock)) for variant in variants)
+            sale_value = sum(_variant_sale_price(variant) * Decimal(str(variant.stock)) for variant in variants)
+        else:
+            cost_value = _money(obj.precio) * Decimal(str(obj.stock))
+            sale_value = cost_value
+        profit_value = sale_value - cost_value
+        return format_html(
+            "<span title='Costo: ${} | Venta: ${} | Utilidad potencial: ${}'>${}</span>",
+            f"{cost_value:.2f}",
+            f"{sale_value:.2f}",
+            f"{profit_value:.2f}",
+            f"{sale_value:.2f}",
+        )
 
     @admin.display(description="Crear variantes")
     def variant_generation_panel(self, obj):
@@ -985,7 +1091,8 @@ class ProductoAdmin(admin.ModelAdmin):
         )
 
         total_units = 0
-        total_inventory_value = 0
+        total_inventory_cost_value = Decimal("0.00")
+        total_inventory_sale_value = Decimal("0.00")
         products_using_variants = 0
         products_using_general_stock = 0
 
@@ -994,14 +1101,14 @@ class ProductoAdmin(admin.ModelAdmin):
             if variants:
                 products_using_variants += 1
                 total_units += sum(variant.stock for variant in variants)
-                total_inventory_value += sum(
-                    (variant.costo or product.precio) * variant.stock
-                    for variant in variants
-                )
+                total_inventory_cost_value += sum(_variant_unit_cost(variant) * Decimal(str(variant.stock)) for variant in variants)
+                total_inventory_sale_value += sum(_variant_sale_price(variant) * Decimal(str(variant.stock)) for variant in variants)
             else:
                 products_using_general_stock += 1
                 total_units += product.stock
-                total_inventory_value += product.precio * product.stock
+                fallback_value = _money(product.precio) * Decimal(str(product.stock))
+                total_inventory_cost_value += fallback_value
+                total_inventory_sale_value += fallback_value
 
         context = dict(
             self.admin_site.each_context(request),
@@ -1010,7 +1117,10 @@ class ProductoAdmin(admin.ModelAdmin):
             total_products=active_products.count(),
             total_variants=active_variants.count(),
             total_units=total_units,
-            total_inventory_value=total_inventory_value,
+            total_inventory_value=total_inventory_cost_value,
+            total_inventory_cost_value=total_inventory_cost_value,
+            total_inventory_sale_value=total_inventory_sale_value,
+            total_inventory_profit_value=total_inventory_sale_value - total_inventory_cost_value,
             products_using_variants=products_using_variants,
             products_using_general_stock=products_using_general_stock,
             low_stock_variants=low_stock_variants,
@@ -1510,7 +1620,10 @@ class ProductVariantAdmin(admin.ModelAdmin):
         "talla",
         "imagen_status",
         "stock",
-        "costo",
+        "costo_unitario_display",
+        "precio_venta_display",
+        "utilidad_display",
+        "margen_display",
         "activo",
         "updated_at",
     )
@@ -1519,18 +1632,36 @@ class ProductVariantAdmin(admin.ModelAdmin):
     autocomplete_fields = ("product",)
     list_editable = ("activo",)
     actions = [asignar_imagenes_variantes, validar_imagenes_variantes]
-    readonly_fields = ("updated_at", "created_at", "imagen_preview_large", "variant_role_help")
+    readonly_fields = (
+        "updated_at",
+        "created_at",
+        "imagen_preview_large",
+        "precio_venta_display",
+        "utilidad_display",
+        "margen_display",
+        "variant_role_help",
+    )
     fieldsets = (
         ("Variante", {
             "fields": ("product", "sku", "color", "talla", "imagen", "activo", "imagen_preview_large", "variant_role_help")
         }),
         ("Inventario", {
-            "fields": ("stock", "costo", "precio_override")
+            "fields": ("stock", "costo", "precio_override", "precio_venta_display", "utilidad_display", "margen_display")
         }),
         ("Control", {
             "fields": ("created_at", "updated_at")
         }),
     )
+
+    def formfield_for_dbfield(self, db_field, request, **kwargs):
+        formfield = super().formfield_for_dbfield(db_field, request, **kwargs)
+        labels = {
+            "costo": "Costo unitario",
+            "precio_override": "Precio venta especial",
+        }
+        if db_field.name in labels and formfield:
+            formfield.label = labels[db_field.name]
+        return formfield
 
     @admin.display(description="Imagen")
     def preview_imagen(self, obj):
@@ -1568,6 +1699,36 @@ class ProductVariantAdmin(admin.ModelAdmin):
             '<img src="{}" loading="lazy" decoding="async" style="width:220px;height:280px;object-fit:cover;border-radius:8px;border:1px solid #e5e7eb;" />',
             image_url,
         )
+
+    @admin.display(description="Costo")
+    def costo_unitario_display(self, obj):
+        return f"${_variant_unit_cost(obj):.2f}"
+
+    @admin.display(description="Precio venta")
+    def precio_venta_display(self, obj):
+        if not obj or not obj.pk:
+            return "-"
+        return f"${_variant_sale_price(obj):.2f}"
+
+    @admin.display(description="Utilidad")
+    def utilidad_display(self, obj):
+        if not obj or not obj.pk:
+            return "-"
+        profit = _variant_profit(obj)
+        color = "#166534" if profit >= 0 else "#991b1b"
+        bg = "#dcfce7" if profit >= 0 else "#fee2e2"
+        return format_html(
+            '<span style="display:inline-block;padding:0.24rem 0.55rem;border-radius:999px;background:{};color:{};font-weight:700;">${}</span>',
+            bg,
+            color,
+            f"{profit:.2f}",
+        )
+
+    @admin.display(description="Margen")
+    def margen_display(self, obj):
+        if not obj or not obj.pk:
+            return "-"
+        return f"{_variant_margin(obj):.1f}%"
 
     @admin.display(description="Qué controla esta variante")
     def variant_role_help(self, obj):

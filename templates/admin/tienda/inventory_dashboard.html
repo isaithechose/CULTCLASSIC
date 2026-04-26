@@ -169,9 +169,19 @@
     <div class="inventory-subvalue">Suma de productos generales y variantes activas.</div>
   </div>
   <div class="inventory-card">
-    <div class="inventory-label">Valor estimado</div>
-    <div class="inventory-value">${{ total_inventory_value|floatformat:2 }}</div>
-    <div class="inventory-subvalue">Calculado con costo de variante o precio del producto como respaldo.</div>
+    <div class="inventory-label">Valor al costo</div>
+    <div class="inventory-value">${{ total_inventory_cost_value|floatformat:2 }}</div>
+    <div class="inventory-subvalue">Lo invertido en inventario. Usa costo de variante; si falta, usa precio base.</div>
+  </div>
+  <div class="inventory-card">
+    <div class="inventory-label">Valor potencial venta</div>
+    <div class="inventory-value">${{ total_inventory_sale_value|floatformat:2 }}</div>
+    <div class="inventory-subvalue">Lo que podrías vender con el stock actual.</div>
+  </div>
+  <div class="inventory-card">
+    <div class="inventory-label">Utilidad potencial</div>
+    <div class="inventory-value">${{ total_inventory_profit_value|floatformat:2 }}</div>
+    <div class="inventory-subvalue">Venta potencial menos valor al costo.</div>
   </div>
 </div>
 
