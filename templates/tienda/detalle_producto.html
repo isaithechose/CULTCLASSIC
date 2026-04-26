@@ -113,6 +113,11 @@
             linear-gradient(135deg, #7b8b41 0%, #b8ba66 35%, #55622d 70%, #1f2918 100%);
     }
     .color-circle[data-color="coral"]      { background-color: coral; }
+    .color-circle[data-color="concrete"]   { background-color: #b6b6b6; }
+    .color-circle[data-color="darknavy"]   { background-color: #1f2d6a; }
+    .color-circle[data-color="desertbeige"] { background-color: #dcc7a0; }
+    .color-circle[data-color="offblack"]   { background-color: #2f2f31; }
+    .color-circle[data-color="utilitygreen"] { background-color: #929678; }
 
     .color-circle:hover,
     .color-circle.is-active {
@@ -633,7 +638,7 @@
                      ">
                 </div>
 
-            <div class="detail-thumbs mt-3">
+            <div class="detail-thumbs mt-3" id="detailThumbs">
                 {% for color in colores_disponibles %}
                     <img src="/media/productos/{{ producto.slug_imagen }}_{{ color|lower }}_001.webp"
                          class="miniatura"
@@ -850,8 +855,72 @@ document.addEventListener("DOMContentLoaded", function () {
     'darkgrey': 'darkgrey',
     'shadow': 'shadow',
     'mocha': 'mocha',
-    'camo': 'camo'
+    'camo': 'camo',
+    'concrete': 'concrete',
+    'darknavy': 'darknavy',
+    'desertbeige': 'desertbeige',
+    'offblack': 'offblack',
+    'utilitygreen': 'utilitygreen'
   };
+
+
+
+  const thumbsContainer = document.getElementById("detailThumbs");
+  const variantGalleryByColor = {
+    concrete: [
+      "OversizedTee_concrete_002.webp",
+      "OversizedTee_Concrete_003.webp",
+      "OversizedTee_Concrete_004.webp",
+      "OversizedTee_Concrete_004-1.webp"
+    ],
+    darknavy: [
+      "OversizedTee_DarkNavy_002.webp",
+      "OversizedTee_DarkNavy_003.webp",
+      "OversizedTee_DarkNavy_004.webp",
+      "OversizedTee_DarkNavy_005.webp"
+    ],
+    desertbeige: [
+      "OversizedTee_DesertBeige_002.webp",
+      "OversizedTee_DesertBeige_003.webp",
+      "OversizedTee_DesertBeige_004.webp",
+      "OversizedTee_DesertBeige_005.webp"
+    ],
+    offblack: [
+      "OversizedTee_OffBlack_002.webp",
+      "OversizedTee_OffBlack_003.webp",
+      "OversizedTee_OffBlack_004.webp",
+      "OversizedTee_OffBlack_005.webp"
+    ],
+    utilitygreen: [
+      "OversizedTee_UtilityGreen_002.webp",
+      "OversizedTee_UtilityGreen_003.webp",
+      "OversizedTee_UtilityGreen_004.webp",
+      "OversizedTee_UtilityGreen_005.webp"
+    ]
+  };
+
+  function renderThumbs(colorKey) {
+    if (!thumbsContainer) return;
+    const files = variantGalleryByColor[colorKey];
+    if (!files || !files.length) {
+      return;
+    }
+
+    thumbsContainer.innerHTML = "";
+    files.forEach((filename, idx) => {
+      const img = document.createElement("img");
+      img.src = `/media/productos/${filename}`;
+      img.className = "miniatura";
+      img.alt = `${colorKey} ${idx + 1}`;
+      img.addEventListener("click", () => cambiarImagen(img));
+      thumbsContainer.appendChild(img);
+    });
+
+    const principal = document.getElementById("imagen-principal");
+    if (principal && files[0]) {
+      principal.src = `/media/productos/${files[0]}`;
+    }
+  }
 
   const precioBase = parseFloat("{{ producto.precio }}");
   const PRECIO_DISENO = 200; // Precio fijo por diseño
@@ -896,7 +965,10 @@ document.addEventListener("DOMContentLoaded", function () {
       const colorEng = colorMap[colorEsp] || colorEsp;
       const nombreBase = "{{ producto.slug_imagen }}";
       const nuevaUrl = `/media/productos/${nombreBase}_${colorEng}_001.webp`;
-      document.getElementById("imagen-principal").src = nuevaUrl;
+      renderThumbs(colorEng);
+      if (!variantGalleryByColor[colorEng]) {
+        document.getElementById("imagen-principal").src = nuevaUrl;
+      }
       document.getElementById("colorInput").value = colorEsp;
       document.getElementById("colorLabel").textContent = colorEsp;
 
@@ -950,6 +1022,11 @@ document.addEventListener("DOMContentLoaded", function () {
   };
 
   actualizarResumen();
+
+  const firstColorCircle = document.querySelector('.color-circle');
+  if (firstColorCircle) {
+    firstColorCircle.click();
+  }
 });
 </script>
 
