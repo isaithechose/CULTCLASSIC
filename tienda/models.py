@@ -197,6 +197,13 @@ class Expense(models.Model):
         ("other", "Otro"),
     ]
 
+    RECURRENCE_CHOICES = [
+        ("none", "No recurrente"),
+        ("weekly", "Semanal"),
+        ("monthly", "Mensual"),
+        ("yearly", "Anual"),
+    ]
+
     fecha = models.DateField()
     categoria = models.ForeignKey(ExpenseCategory, on_delete=models.SET_NULL, null=True, blank=True, related_name="expenses")
     concepto = models.CharField(max_length=140)
@@ -204,6 +211,16 @@ class Expense(models.Model):
     metodo_pago = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES, default="transfer")
     proveedor = models.CharField(max_length=120, blank=True, null=True)
     nota = models.TextField(blank=True, null=True)
+    recurrencia = models.CharField(max_length=20, choices=RECURRENCE_CHOICES, default="none")
+    recurrencia_activa = models.BooleanField(default=False)
+    recurrencia_fin = models.DateField(blank=True, null=True)
+    gasto_origen = models.ForeignKey(
+        "self",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="gastos_generados",
+    )
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 

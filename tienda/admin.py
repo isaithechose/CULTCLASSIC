@@ -227,6 +227,24 @@ def _coerce_month(month_value, today):
     return today.year, today.month
 
 
+def _add_months(current_date, months):
+    month_index = current_date.month - 1 + months
+    year = current_date.year + month_index // 12
+    month = month_index % 12 + 1
+    day = min(current_date.day, calendar.monthrange(year, month)[1])
+    return current_date.replace(year=year, month=month, day=day)
+
+
+def _next_expense_recurrence_date(expense):
+    if expense.recurrencia == "weekly":
+        return expense.fecha + timedelta(days=7)
+    if expense.recurrencia == "monthly":
+        return _add_months(expense.fecha, 1)
+    if expense.recurrencia == "yearly":
+        return _add_months(expense.fecha, 12)
+    return None
+
+
 def _build_business_calendar_context(year, month):
     first_day = date(year, month, 1)
     _, month_days = calendar.monthrange(year, month)
@@ -1976,17 +1994,85 @@ class ExpenseCategoryAdmin(admin.ModelAdmin):
         return (obj.descripcion[:60] + "...") if len(obj.descripcion) > 60 else obj.descripcion
 
 
+@admin.action(description="Generar siguiente gasto recurrente")
+def generar_siguiente_gasto_recurrente(modeladmin, request, queryset):
+    created = 0
+    skipped = 0
+
+    for expense in queryset.select_related("gasto_origen", "categoria", "created_by"):
+        next_date = _next_expense_recurrence_date(expense)
+        if not expense.recurrencia_activa or not next_date:
+            skipped += 1
+            continue
+        if expense.recurrencia_fin and next_date > expense.recurrencia_fin:
+            skipped += 1
+            continue
+
+        origin = expense.gasto_origen or expense
+        duplicate_exists = Expense.objects.filter(
+            gasto_origen=origin,
+            fecha=next_date,
+            concepto=expense.concepto,
+            monto=expense.monto,
+        ).exists()
+        if duplicate_exists:
+            skipped += 1
+            continue
+
+        Expense.objects.create(
+            fecha=next_date,
+            categoria=expense.categoria,
+            concepto=expense.concepto,
+            monto=expense.monto,
+            metodo_pago=expense.metodo_pago,
+            proveedor=expense.proveedor,
+            nota=expense.nota,
+            recurrencia=expense.recurrencia,
+            recurrencia_activa=expense.recurrencia_activa,
+            recurrencia_fin=expense.recurrencia_fin,
+            gasto_origen=origin,
+            created_by=expense.created_by or request.user,
+        )
+        created += 1
+
+    if created:
+        modeladmin.message_user(
+            request,
+            f"Se generaron {created} gastos recurrentes.",
+            level=messages.SUCCESS,
+        )
+    if skipped:
+        modeladmin.message_user(
+            request,
+            f"Se omitieron {skipped} gastos porque no estaban activos, ya existían o terminaron.",
+            level=messages.WARNING,
+        )
+
+
 @admin.register(Expense)
 class ExpenseAdmin(admin.ModelAdmin):
-    list_display = ("fecha", "concepto", "categoria", "monto", "metodo_pago", "proveedor", "created_by")
-    list_filter = ("fecha", "categoria", "metodo_pago")
+    list_display = (
+        "fecha",
+        "concepto",
+        "categoria",
+        "monto",
+        "metodo_pago",
+        "proveedor",
+        "recurrencia_badge",
+        "created_by",
+    )
+    list_filter = ("fecha", "categoria", "metodo_pago", "recurrencia", "recurrencia_activa")
     search_fields = ("concepto", "proveedor", "nota")
-    autocomplete_fields = ("categoria", "created_by")
-    readonly_fields = ("created_at",)
+    autocomplete_fields = ("categoria", "created_by", "gasto_origen")
+    readonly_fields = ("created_at", "generated_count")
     date_hierarchy = "fecha"
+    actions = [generar_siguiente_gasto_recurrente]
     fieldsets = (
         ("Gasto", {
             "fields": ("fecha", "categoria", "concepto", "monto", "metodo_pago", "proveedor")
+        }),
+        ("Recurrencia", {
+            "fields": ("recurrencia", "recurrencia_activa", "recurrencia_fin", "gasto_origen", "generated_count")
         }),
         ("Detalle", {
             "fields": ("nota", "created_by", "created_at")
@@ -2008,6 +2094,27 @@ class ExpenseAdmin(admin.ModelAdmin):
         if not obj.created_by:
             obj.created_by = request.user
         super().save_model(request, obj, form, change)
+
+    @admin.display(description="Recurrencia")
+    def recurrencia_badge(self, obj):
+        if obj.recurrencia == "none":
+            return "-"
+        color = "#166534" if obj.recurrencia_activa else "#6b7280"
+        bg = "#dcfce7" if obj.recurrencia_activa else "#ececf3"
+        suffix = "activa" if obj.recurrencia_activa else "inactiva"
+        return format_html(
+            '<span style="display:inline-block;padding:0.28rem 0.65rem;border-radius:999px;background:{};color:{};font-weight:700;">{} ({})</span>',
+            bg,
+            color,
+            obj.get_recurrencia_display(),
+            suffix,
+        )
+
+    @admin.display(description="Gastos generados")
+    def generated_count(self, obj):
+        if not obj or not obj.pk:
+            return 0
+        return obj.gastos_generados.count()
 
     def accounting_dashboard_view(self, request):
         today = timezone.localdate()
