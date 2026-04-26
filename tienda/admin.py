@@ -38,7 +38,10 @@ from decimal import Decimal
 
 from django.utils import timezone
 
-from .utils.variant_image_assignment import find_best_image_for_variant
+from .utils.variant_image_assignment import (
+    existing_thumbnail_or_image_name,
+    find_best_image_for_variant,
+)
 
 
 def _split_variant_values(raw_value):
@@ -376,6 +379,32 @@ def asignar_imagenes_variantes(modeladmin, request, queryset):
             request,
             f"{missing} variantes no encontraron imagen compatible en media/productos.",
             level=messages.WARNING,
+        )
+
+
+@admin.action(description="Marcar variantes sin imagen compatible")
+def validar_imagenes_variantes(modeladmin, request, queryset):
+    missing = []
+    checked = 0
+
+    for variant in queryset.select_related("product"):
+        checked += 1
+        if not (variant.imagen.name or find_best_image_for_variant(variant)):
+            missing.append(str(variant))
+
+    if missing:
+        preview = ", ".join(missing[:8])
+        extra = "" if len(missing) <= 8 else f" y {len(missing) - 8} más"
+        modeladmin.message_user(
+            request,
+            f"{len(missing)} de {checked} variantes no tienen imagen compatible: {preview}{extra}.",
+            level=messages.WARNING,
+        )
+    else:
+        modeladmin.message_user(
+            request,
+            f"Todas las {checked} variantes revisadas tienen imagen compatible.",
+            level=messages.SUCCESS,
         )
 
 
@@ -1473,16 +1502,27 @@ class InventoryMovementAdminForm(forms.ModelForm):
 
 @admin.register(ProductVariant)
 class ProductVariantAdmin(admin.ModelAdmin):
-    list_display = ("preview_imagen", "product", "sku", "color", "talla", "stock", "costo", "activo", "updated_at")
+    list_display = (
+        "preview_imagen",
+        "product",
+        "sku",
+        "color",
+        "talla",
+        "imagen_status",
+        "stock",
+        "costo",
+        "activo",
+        "updated_at",
+    )
     list_filter = ("activo", "color", "talla", "product__categoria")
     search_fields = ("product__nombre", "sku", "color", "talla")
     autocomplete_fields = ("product",)
     list_editable = ("activo",)
-    actions = [asignar_imagenes_variantes]
-    readonly_fields = ("updated_at", "created_at", "variant_role_help")
+    actions = [asignar_imagenes_variantes, validar_imagenes_variantes]
+    readonly_fields = ("updated_at", "created_at", "imagen_preview_large", "variant_role_help")
     fieldsets = (
         ("Variante", {
-            "fields": ("product", "sku", "color", "talla", "imagen", "activo", "variant_role_help")
+            "fields": ("product", "sku", "color", "talla", "imagen", "activo", "imagen_preview_large", "variant_role_help")
         }),
         ("Inventario", {
             "fields": ("stock", "costo", "precio_override")
@@ -1494,13 +1534,40 @@ class ProductVariantAdmin(admin.ModelAdmin):
 
     @admin.display(description="Imagen")
     def preview_imagen(self, obj):
-        image_url = obj.display_image_url
-        if image_url:
+        image_name = existing_thumbnail_or_image_name(obj.display_image_name)
+        if image_name:
             return format_html(
-                '<img src="{}" style="width:42px;height:42px;object-fit:cover;border-radius:8px;" />',
-                image_url,
+                '<img src="{}" loading="lazy" decoding="async" style="width:42px;height:42px;object-fit:cover;border-radius:8px;" />',
+                f"{settings.MEDIA_URL.rstrip('/')}/{image_name.lstrip('/')}",
             )
         return "-"
+
+    @admin.display(description="Imagen color")
+    def imagen_status(self, obj):
+        image_name = obj.display_image_name
+        if not image_name:
+            return format_html(
+                '<span style="display:inline-block;padding:0.24rem 0.55rem;border-radius:999px;background:#fee2e2;color:#991b1b;font-weight:700;">Falta</span>'
+            )
+
+        source = "Manual" if obj.imagen else "Auto"
+        return format_html(
+            '<span title="{}" style="display:inline-block;padding:0.24rem 0.55rem;border-radius:999px;background:#dcfce7;color:#166534;font-weight:700;">{}</span>',
+            image_name,
+            source,
+        )
+
+    @admin.display(description="Vista previa")
+    def imagen_preview_large(self, obj):
+        if not obj:
+            return "-"
+        image_url = obj.display_image_url
+        if not image_url:
+            return "-"
+        return format_html(
+            '<img src="{}" loading="lazy" decoding="async" style="width:220px;height:280px;object-fit:cover;border-radius:8px;border:1px solid #e5e7eb;" />',
+            image_url,
+        )
 
     @admin.display(description="Qué controla esta variante")
     def variant_role_help(self, obj):

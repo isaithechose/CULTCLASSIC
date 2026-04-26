@@ -32,11 +32,20 @@ FRONTEND_COLOR_MAP = {
     "black": "black",
     "white": "white",
     "burgundy": "burgundy",
+    "concrete": "concrete",
+    "darknavy": "darknavy",
+    "dark navy": "darknavy",
+    "desertbeige": "desertbeige",
+    "desert beige": "desertbeige",
+    "offblack": "offblack",
+    "off black": "off_black",
+    "utilitygreen": "utilitygreen",
+    "utility green": "utilitygreen",
 }
 
 
 COLOR_ALIASES = {
-    "black": ["black"],
+    "black": ["black", "oversizedtee black"],
     "white": ["white"],
     "off black": ["off black", "off_black", "offblack"],
     "offblack": ["off black", "off_black", "offblack"],
@@ -44,19 +53,55 @@ COLOR_ALIASES = {
     "offwhite": ["off white", "off_white", "offwhite"],
     "slate blue": ["slate blue", "slate_blue"],
     "slate_blue": ["slate blue", "slate_blue"],
-    "burgundy": ["burgundy", "guinda"],
+    "burgundy": ["burgundy", "guinda", "dark burgundy", "dark_burgundy"],
     "cream": ["cream"],
     "camo": ["camo"],
     "mocha": ["mocha"],
     "shadow": ["shadow"],
     "latte": ["latte", "desert beige", "desert_beige"],
+    "desertbeige": ["desertbeige", "desert beige", "desert_beige"],
+    "desert beige": ["desertbeige", "desert beige", "desert_beige"],
     "brown": ["brown"],
     "coral": ["coral"],
     "grey": ["grey", "gray"],
     "gray": ["grey", "gray"],
     "darkgrey": ["darkgrey", "dark grey", "dark_grey"],
     "dark grey": ["darkgrey", "dark grey", "dark_grey"],
+    "darknavy": ["darknavy", "dark navy", "dark_navy"],
+    "dark navy": ["darknavy", "dark navy", "dark_navy"],
     "tan": ["tan"],
+    "concrete": ["concrete"],
+    "utilitygreen": ["utilitygreen", "utility green", "utility_green"],
+    "utility green": ["utilitygreen", "utility green", "utility_green"],
+}
+
+SUPPORTED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
+
+
+EXACT_VARIANT_IMAGE_CANDIDATES = {
+    "max_overweight_oversized": {
+        "black": [
+            "OversizedTee_Black_002.webp",
+            "max_overweight_oversized_black_001.webp",
+        ],
+        "burgundy": [
+            "OversizedTee_DarkBurgundy_002.webp",
+            "max_overweight_oversized_burgundy_001.webp",
+        ],
+        "concrete": ["OversizedTee_concrete_002.webp"],
+        "darknavy": ["OversizedTee_DarkNavy_002.webp"],
+        "desertbeige": ["OversizedTee_DesertBeige_002.webp"],
+        "offblack": ["OversizedTee_OffBlack_002.webp"],
+        "off_black": [
+            "OversizedTee_OffBlack_002.webp",
+            "max_overweight_oversized_off_black_001.webp",
+        ],
+        "utilitygreen": ["OversizedTee_UtilityGreen_002.webp"],
+        "white": ["max_overweight_oversized_white_001.webp"],
+        "offwhite": ["max_overweight_oversized_offwhite_001.webp"],
+        "latte": ["max_overweight_oversized_latte_001.webp"],
+        "slate_blue": ["max_overweight_oversized_slate_blue_001.webp"],
+    }
 }
 
 
@@ -94,6 +139,50 @@ def _color_candidates(color_value):
     return {candidate for candidate in candidates if candidate}
 
 
+def _canonical_color_key(color_value):
+    normalized = _normalize_text(color_value)
+    mapped = FRONTEND_COLOR_MAP.get(normalized, normalized.replace(" ", "_"))
+    return mapped
+
+
+def _exact_variant_image(variant):
+    media_root = Path(settings.MEDIA_ROOT)
+    products_dir = media_root / "productos"
+    if not products_dir.exists():
+        return None
+
+    slug_base = _normalize_text(getattr(variant.product, "slug_imagen", "")).replace(" ", "_")
+    color_key = _canonical_color_key(variant.color)
+    filenames = EXACT_VARIANT_IMAGE_CANDIDATES.get(slug_base, {}).get(color_key, [])
+
+    for filename in filenames:
+        candidate = products_dir / filename
+        if candidate.exists():
+            return str(candidate.relative_to(media_root)).replace("\\", "/")
+
+    return None
+
+
+def thumbnail_name_for_image(image_name):
+    if not image_name:
+        return None
+
+    image_path = Path(str(image_name))
+    return str(image_path.with_name(f"{image_path.stem}_thumb.webp")).replace("\\", "/")
+
+
+def existing_thumbnail_or_image_name(image_name):
+    if not image_name:
+        return None
+
+    media_root = Path(settings.MEDIA_ROOT)
+    thumb_name = thumbnail_name_for_image(image_name)
+    if thumb_name and (media_root / thumb_name).exists():
+        return thumb_name
+
+    return str(image_name).replace("\\", "/")
+
+
 def _variant_image_from_frontend_pattern(variant):
     media_root = Path(settings.MEDIA_ROOT)
     products_dir = media_root / "productos"
@@ -105,7 +194,7 @@ def _variant_image_from_frontend_pattern(variant):
         return None
 
     normalized_color = _normalize_text(variant.color)
-    mapped_color = FRONTEND_COLOR_MAP.get(normalized_color, normalized_color.replace(" ", "_"))
+    mapped_color = _canonical_color_key(normalized_color)
 
     candidates = [
         products_dir / f"{slug_base}_{mapped_color}_001.webp",
@@ -127,6 +216,10 @@ def get_variant_display_image_name(variant):
         except Exception:
             pass
 
+    exact_match = _exact_variant_image(variant)
+    if exact_match:
+        return exact_match
+
     direct_match = _variant_image_from_frontend_pattern(variant)
     if direct_match:
         return direct_match
@@ -142,6 +235,10 @@ def get_variant_display_image_name(variant):
 
 
 def find_best_image_for_variant(variant):
+    exact_match = _exact_variant_image(variant)
+    if exact_match:
+        return exact_match
+
     direct_match = _variant_image_from_frontend_pattern(variant)
     if direct_match:
         return direct_match
@@ -157,7 +254,7 @@ def find_best_image_for_variant(variant):
     best_score = -1
 
     for image_path in products_dir.iterdir():
-        if image_path.suffix.lower() not in {".jpg", ".jpeg", ".png", ".webp"}:
+        if image_path.suffix.lower() not in SUPPORTED_IMAGE_EXTENSIONS:
             continue
 
         normalized_name = _normalize_text(image_path.stem)

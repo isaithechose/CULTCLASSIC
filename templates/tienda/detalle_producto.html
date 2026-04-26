@@ -619,9 +619,9 @@
             <div class="product-gallery position-relative">
                 <div class="position-relative">
                 {% if producto.imagen %}
-                    <img id="imagen-principal" src="{{ producto.imagen.url }}" class="img-fluid mb-3" alt="{{ producto.nombre }}">
+                    <img id="imagen-principal" src="{{ producto.imagen.url }}" class="img-fluid mb-3" alt="{{ producto.nombre }}" loading="eager" decoding="async" fetchpriority="high">
                 {% else %}
-                    <img id="imagen-principal" src="https://via.placeholder.com/450x300?text=Sin+imagen" class="img-fluid mb-3" alt="Sin imagen">
+                    <img id="imagen-principal" src="https://via.placeholder.com/450x300?text=Sin+imagen" class="img-fluid mb-3" alt="Sin imagen" loading="eager" decoding="async">
                 {% endif %}
 
                 <!-- Capa del diseño sobre la imagen -->
@@ -642,6 +642,8 @@
                 {% for color in colores_disponibles %}
                     <img src="/media/productos/{{ producto.slug_imagen }}_{{ color|lower }}_001.webp"
                          class="miniatura"
+                         loading="lazy"
+                         decoding="async"
                          alt="{{ producto.nombre }} {{ color }}">
                 {% endfor %}
             </div>
@@ -866,7 +868,17 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
   const thumbsContainer = document.getElementById("detailThumbs");
-  const variantGalleryByColor = {
+  const exactGalleryByColor = {
+    black: [
+      "OversizedTee_Black_002.webp",
+      "OversizedTee_Black_003.webp",
+      "OversizedTee_Black_004.webp",
+      "OversizedTee_Black_005.webp"
+    ],
+    burgundy: [
+      "OversizedTee_DarkBurgundy_002.webp",
+      "OversizedTee_DarkBurgundy_003.webp"
+    ],
     concrete: [
       "OversizedTee_concrete_002.webp",
       "OversizedTee_Concrete_003.webp",
@@ -891,6 +903,12 @@ document.addEventListener("DOMContentLoaded", function () {
       "OversizedTee_OffBlack_004.webp",
       "OversizedTee_OffBlack_005.webp"
     ],
+    off_black: [
+      "OversizedTee_OffBlack_002.webp",
+      "OversizedTee_OffBlack_003.webp",
+      "OversizedTee_OffBlack_004.webp",
+      "OversizedTee_OffBlack_005.webp"
+    ],
     utilitygreen: [
       "OversizedTee_UtilityGreen_002.webp",
       "OversizedTee_UtilityGreen_003.webp",
@@ -898,27 +916,129 @@ document.addEventListener("DOMContentLoaded", function () {
       "OversizedTee_UtilityGreen_005.webp"
     ]
   };
+  const imageExtensions = ["webp", "png", "jpg", "jpeg"];
+  const colorFilenameTokens = {
+    black: ["black", "Black"],
+    burgundy: ["burgundy", "Burgundy", "DarkBurgundy", "dark_burgundy"],
+    concrete: ["concrete", "Concrete"],
+    darknavy: ["darknavy", "DarkNavy", "dark_navy"],
+    desertbeige: ["desertbeige", "DesertBeige", "desert_beige"],
+    offblack: ["offblack", "OffBlack", "off_black"],
+    off_black: ["off_black", "OffBlack", "offblack"],
+    utilitygreen: ["utilitygreen", "UtilityGreen", "utility_green"]
+  };
+  const galleryShotsByColor = {
+    concrete: [2, 3, 4, "004-1"],
+    darknavy: [2, 3, 4, 5],
+    desertbeige: [2, 3, 4, 5],
+    offblack: [2, 3, 4, 5],
+    off_black: [1, 2, 3, 4, 5],
+    utilitygreen: [2, 3, 4, 5]
+  };
+  const productFilenameAliases = {
+    max_overweight_oversized: ["max_overweight_oversized", "OversizedTee"]
+  };
 
-  function renderThumbs(colorKey) {
+  function uniqueList(items) {
+    return [...new Set(items.filter(Boolean))];
+  }
+
+  function filenameCandidates(baseName, colorKey, shot) {
+    const shotLabel = String(shot).padStart(3, "0");
+    const bases = uniqueList([baseName, ...(productFilenameAliases[baseName] || [])]);
+    const colorTokens = uniqueList([colorKey, colorKey.toLowerCase(), ...(colorFilenameTokens[colorKey] || [])]);
+    const candidates = [];
+
+    bases.forEach(base => {
+      colorTokens.forEach(token => {
+        imageExtensions.forEach(ext => {
+          candidates.push(`${base}_${token}_${shotLabel}.${ext}`);
+        });
+      });
+    });
+
+    return uniqueList(candidates);
+  }
+
+  function applyFallbackImage(img, candidates, onMissing) {
+    let index = 0;
+    const loadNext = () => {
+      if (index >= candidates.length) {
+        if (onMissing) onMissing();
+        return;
+      }
+      img.src = `/media/productos/${candidates[index]}`;
+      index += 1;
+    };
+
+    img.onerror = loadNext;
+    loadNext();
+  }
+
+  function productImageUrl(filename) {
+    return `/media/productos/${filename}`;
+  }
+
+  function thumbnailFilename(filename) {
+    return filename.replace(/\.[^.]+$/, "_thumb.webp");
+  }
+
+  function renderThumbs(baseName, colorKey) {
     if (!thumbsContainer) return;
-    const files = variantGalleryByColor[colorKey];
-    if (!files || !files.length) {
+    thumbsContainer.innerHTML = "";
+    const exactGallery = exactGalleryByColor[colorKey];
+    const principal = document.getElementById("imagen-principal");
+
+    if (exactGallery) {
+      exactGallery.forEach((filename, idx) => {
+        const img = document.createElement("img");
+        img.src = productImageUrl(thumbnailFilename(filename));
+        img.dataset.fullSrc = productImageUrl(filename);
+        img.className = "miniatura";
+        img.alt = `${colorKey} ${idx + 1}`;
+        img.loading = "lazy";
+        img.decoding = "async";
+        img.onerror = () => {
+          img.onerror = null;
+          img.src = productImageUrl(filename);
+        };
+        img.addEventListener("click", () => cambiarImagen(img));
+        thumbsContainer.appendChild(img);
+      });
+
+      if (principal && exactGallery[0]) {
+        principal.onerror = null;
+        principal.decoding = "async";
+        principal.src = productImageUrl(exactGallery[0]);
+      }
       return;
     }
 
-    thumbsContainer.innerHTML = "";
-    files.forEach((filename, idx) => {
+    const shots = galleryShotsByColor[colorKey] || [1, 2, 3, 4, 5];
+
+    shots.forEach((shot, idx) => {
       const img = document.createElement("img");
-      img.src = `/media/productos/${filename}`;
       img.className = "miniatura";
       img.alt = `${colorKey} ${idx + 1}`;
+      img.loading = "lazy";
+      img.decoding = "async";
       img.addEventListener("click", () => cambiarImagen(img));
       thumbsContainer.appendChild(img);
+      const fullCandidates = filenameCandidates(baseName, colorKey, shot);
+      const thumbCandidates = fullCandidates.map(thumbnailFilename);
+      applyFallbackImage(img, thumbCandidates, () => {
+        applyFallbackImage(img, fullCandidates, () => img.remove());
+      });
+      img.addEventListener("load", () => {
+        const currentFile = img.src.split("/").pop();
+        const currentFull = fullCandidates.find(filename => thumbnailFilename(filename) === currentFile) || currentFile;
+        img.dataset.fullSrc = productImageUrl(currentFull);
+      });
     });
 
-    const principal = document.getElementById("imagen-principal");
-    if (principal && files[0]) {
-      principal.src = `/media/productos/${files[0]}`;
+    if (principal) {
+      principal.decoding = "async";
+      applyFallbackImage(principal, filenameCandidates(baseName, colorKey, shots[0]));
     }
   }
 
@@ -949,7 +1069,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Cambiar imagen principal con miniaturas
   window.cambiarImagen = function(img) {
-    document.getElementById("imagen-principal").src = img.src;
+    document.getElementById("imagen-principal").src = img.dataset.fullSrc || img.src;
   };
 
   document.querySelectorAll('.miniatura').forEach(img => {
@@ -964,11 +1084,7 @@ document.addEventListener("DOMContentLoaded", function () {
       const colorEsp = circle.dataset.color;
       const colorEng = colorMap[colorEsp] || colorEsp;
       const nombreBase = "{{ producto.slug_imagen }}";
-      const nuevaUrl = `/media/productos/${nombreBase}_${colorEng}_001.webp`;
-      renderThumbs(colorEng);
-      if (!variantGalleryByColor[colorEng]) {
-        document.getElementById("imagen-principal").src = nuevaUrl;
-      }
+      renderThumbs(nombreBase, colorEng);
       document.getElementById("colorInput").value = colorEsp;
       document.getElementById("colorLabel").textContent = colorEsp;
 
