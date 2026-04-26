@@ -57,7 +57,7 @@ def _variant_unit_cost(variant):
 
 
 def _variant_sale_price(variant):
-    return _money(variant.precio_override if variant.precio_override is not None else variant.product.precio)
+    return _money(variant.product.precio)
 
 
 def _variant_profit(variant):
@@ -599,7 +599,6 @@ class ProductVariantInline(admin.TabularInline):
         "imagen",
         "stock",
         "costo",
-        "precio_override",
         "precio_venta_display",
         "utilidad_display",
         "margen_display",
@@ -614,7 +613,6 @@ class ProductVariantInline(admin.TabularInline):
         formfield = super().formfield_for_dbfield(db_field, request, **kwargs)
         labels = {
             "costo": "Costo unitario",
-            "precio_override": "Precio venta especial",
         }
         if db_field.name in labels and formfield:
             formfield.label = labels[db_field.name]
@@ -782,7 +780,7 @@ class ProductoAdmin(admin.ModelAdmin):
         formfield = super().formfield_for_dbfield(db_field, request, **kwargs)
         if db_field.name == "precio" and formfield:
             formfield.label = "Precio venta base"
-            formfield.help_text = "Precio que ve el cliente cuando la variante no tiene precio especial."
+            formfield.help_text = "Precio de venta del producto. Todas sus variantes usan este mismo precio."
         return formfield
 
     @admin.display(description="Imagen")
@@ -943,7 +941,6 @@ class ProductoAdmin(admin.ModelAdmin):
                     defaults={
                         "stock": 0,
                         "costo": product.precio,
-                        "precio_override": None,
                         "activo": True,
                     },
                 )
@@ -1646,7 +1643,7 @@ class ProductVariantAdmin(admin.ModelAdmin):
             "fields": ("product", "sku", "color", "talla", "imagen", "activo", "imagen_preview_large", "variant_role_help")
         }),
         ("Inventario", {
-            "fields": ("stock", "costo", "precio_override", "precio_venta_display", "utilidad_display", "margen_display")
+            "fields": ("stock", "costo", "precio_venta_display", "utilidad_display", "margen_display")
         }),
         ("Control", {
             "fields": ("created_at", "updated_at")
@@ -1657,7 +1654,6 @@ class ProductVariantAdmin(admin.ModelAdmin):
         formfield = super().formfield_for_dbfield(db_field, request, **kwargs)
         labels = {
             "costo": "Costo unitario",
-            "precio_override": "Precio venta especial",
         }
         if db_field.name in labels and formfield:
             formfield.label = labels[db_field.name]
