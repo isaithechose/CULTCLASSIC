@@ -1643,6 +1643,7 @@ class ProductVariantAdmin(admin.ModelAdmin):
         "updated_at",
         "created_at",
         "imagen_preview_large",
+        "costo_producto_display",
         "precio_venta_display",
         "utilidad_display",
         "margen_display",
