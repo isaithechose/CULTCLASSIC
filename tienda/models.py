@@ -1,5 +1,6 @@
 from django.db import models, transaction
 from django.contrib.auth.models import User
+from django.conf import settings
 from decimal import Decimal
 
 
@@ -113,6 +114,20 @@ class ProductVariant(models.Model):
 
     def __str__(self):
         return f"{self.product.nombre} / {self.color} / {self.talla}"
+
+    @property
+    def display_image_name(self):
+        from .utils.variant_image_assignment import get_variant_display_image_name
+
+        return get_variant_display_image_name(self)
+
+    @property
+    def display_image_url(self):
+        image_name = self.display_image_name
+        if not image_name:
+            return None
+        media_url = settings.MEDIA_URL.rstrip("/")
+        return f"{media_url}/{image_name.lstrip('/')}"
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)

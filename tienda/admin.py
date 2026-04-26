@@ -111,11 +111,10 @@ def _admin_overview_context():
             },
         ],
         "admin_quick_links": [
-            {"label": "Calendario negocio", "url": "/admin/tienda/businesspayment/business-calendar/"},
-            {"label": "Dashboard inventario", "url": "/admin/tienda/producto/inventory-dashboard/"},
+            {"label": "Inventario", "url": "/admin/tienda/producto/inventory-dashboard/"},
             {"label": "Recepción de compra", "url": "/admin/tienda/inventorymovement/receive-purchase/"},
+            {"label": "Calendario negocio", "url": "/admin/tienda/businesspayment/business-calendar/"},
             {"label": "Dashboard contable", "url": "/admin/tienda/expense/accounting-dashboard/"},
-            {"label": "Conteo físico masivo", "url": "/admin/tienda/producto/stock-count-bulk/"},
         ],
         "admin_watchlist": [
             {
@@ -124,13 +123,13 @@ def _admin_overview_context():
                 "url": "/admin/tienda/productvariant/?stock__exact=0",
             },
             {
-                "label": "Conteo físico",
-                "value": "Usa cada producto",
-                "url": "/admin/tienda/producto/",
+                "label": "Stock bajo",
+                "value": low_stock_variants,
+                "url": "/admin/tienda/productvariant/?stock__lte=3",
             },
             {
-                "label": "Skydrop",
-                "value": "Cotiza y crea guías",
+                "label": "Pedidos pendientes",
+                "value": pending_orders,
                 "url": "/admin/tienda/order/",
             },
         ],
@@ -539,6 +538,8 @@ class ProductVariantInline(admin.TabularInline):
     extra = 0
     fields = ("sku", "talla", "color", "imagen", "stock", "costo", "precio_override", "activo")
     autocomplete_fields = ()
+    verbose_name = "Variante real"
+    verbose_name_plural = "Variantes reales de inventario (color + talla)"
 
 
 class InventoryMovementInline(admin.TabularInline):
@@ -548,6 +549,8 @@ class InventoryMovementInline(admin.TabularInline):
     readonly_fields = ("created_at", "movement_type", "variant", "quantity_change", "stock_before", "stock_after", "note")
     can_delete = False
     show_change_link = True
+    verbose_name = "Movimiento de inventario"
+    verbose_name_plural = "Historial de movimientos de inventario"
 
 
 @admin.register(Categoria)
@@ -615,20 +618,22 @@ class ProductoAdmin(admin.ModelAdmin):
         "fecha_creacion",
         "fecha_actualizacion",
         "imagen_preview_large",
+        "inventory_guide",
         "inventory_snapshot",
         "variant_generation_panel",
         "stock_count_panel",
     )
     inlines = [ProductVariantInline, InventoryMovementInline]
     fieldsets = (
-        ("Identidad", {
+        ("Base del producto", {
             "fields": ("nombre", "slug_imagen", "descripcion")
         }),
-        ("Catalogo", {
+        ("Venta general", {
             "fields": ("categoria", "subcategoria", "precio", "stock", "disponible")
         }),
-        ("Variantes", {
+        ("Inventario y variantes", {
             "fields": (
+                "inventory_guide",
                 "tallas_disponibles",
                 "colores_disponibles",
                 "variant_generation_panel",
@@ -636,7 +641,7 @@ class ProductoAdmin(admin.ModelAdmin):
                 "inventory_snapshot",
             )
         }),
-        ("Media", {
+        ("Imagen general del producto", {
             "fields": ("imagen", "imagen_preview_large")
         }),
         ("Control", {
@@ -696,8 +701,32 @@ class ProductoAdmin(admin.ModelAdmin):
     @admin.display(description="Inventario")
     def inventory_mode(self, obj):
         if obj.uses_variant_inventory():
-            return format_html('<strong style="color:#2f67b0;">Por variantes</strong>')
-        return format_html('<span style="color:#888;">General</span>')
+            return format_html('<strong style="color:#2f67b0;">Variantes mandan</strong>')
+        return format_html('<span style="color:#888;">Stock general manda</span>')
+
+    @admin.display(description="Cómo funciona este inventario")
+    def inventory_guide(self, obj):
+        if obj.uses_variant_inventory():
+            return format_html(
+                """
+                <div style="padding:0.9rem 1rem;border-radius:14px;background:#eff6ff;border:1px solid #bfdbfe;">
+                  <strong style="display:block;margin-bottom:0.35rem;color:#1d4ed8;">Este producto ya trabaja por variantes.</strong>
+                  <div style="color:#334155;">
+                    El stock real vive en cada combinación de <strong>color + talla</strong>. El campo <strong>stock</strong> del producto solo refleja la suma y no deberías capturarlo manualmente.
+                  </div>
+                </div>
+                """
+            )
+        return format_html(
+            """
+            <div style="padding:0.9rem 1rem;border-radius:14px;background:#fff7ed;border:1px solid #fed7aa;">
+              <strong style="display:block;margin-bottom:0.35rem;color:#c2410c;">Este producto todavía usa stock general.</strong>
+              <div style="color:#7c2d12;">
+                Si vendes por talla y color, genera variantes. Mientras no existan variantes activas, el campo <strong>stock</strong> del producto es el que manda en ventas.
+              </div>
+            </div>
+            """
+        )
 
     @admin.display(description="Stock variantes")
     def variant_stock_summary(self, obj):
@@ -710,7 +739,14 @@ class ProductoAdmin(admin.ModelAdmin):
     def inventory_snapshot(self, obj):
         variants = list(obj.variants.filter(activo=True))
         if not variants:
-            return "Este producto todavía usa stock general. Si quieres controlar talla y color por separado, agrega variantes abajo."
+            return format_html(
+                """
+                <div style="padding:0.85rem 1rem;border-radius:12px;background:#f8fafc;border:1px solid #e2e8f0;">
+                  <strong>Modo actual:</strong> stock general.<br>
+                  Si quieres controlar talla y color por separado, primero genera variantes abajo y luego captura el inventario en la mesa o en el conteo físico.
+                </div>
+                """
+            )
         rows = [
             "<div style='display:flex;flex-wrap:wrap;gap:0.45rem;'>"
         ]
@@ -719,7 +755,10 @@ class ProductoAdmin(admin.ModelAdmin):
                 f"<span style='padding:0.3rem 0.6rem;border-radius:999px;background:#2f67b022;color:#2f67b0;font-weight:700;'>{variant.color} / {variant.talla}: {variant.stock}</span>"
             )
         rows.append("</div>")
-        rows.append(f"<p style='margin-top:0.8rem;'><strong>Total sincronizado:</strong> {obj.stock}</p>")
+        rows.append(
+            f"<p style='margin-top:0.8rem;'><strong>Total sincronizado:</strong> {obj.stock}</p>"
+            "<p style='margin-top:0.35rem;color:#475569;'>Este total se recalcula desde las variantes activas.</p>"
+        )
         return format_html("".join(rows))
 
     @admin.display(description="Crear variantes")
@@ -733,8 +772,9 @@ class ProductoAdmin(admin.ModelAdmin):
         colors = ", ".join(_split_variant_values(obj.colores_disponibles))
         return format_html(
             """
-            <p style="margin-bottom:0.6rem;"><strong>Tallas:</strong> {}</p>
-            <p style="margin-bottom:0.9rem;"><strong>Colores:</strong> {}</p>
+            <p style="margin-bottom:0.6rem;color:#475569;">Aquí defines las combinaciones que después se convierten en variantes editables.</p>
+            <p style="margin-bottom:0.6rem;"><strong>Tallas base:</strong> {}</p>
+            <p style="margin-bottom:0.9rem;"><strong>Colores base:</strong> {}</p>
             <a class="button" href="{}">Generar variantes faltantes</a>
             """,
             sizes or "-",
@@ -749,7 +789,7 @@ class ProductoAdmin(admin.ModelAdmin):
         count_url = reverse("admin:tienda_producto_stock_count", args=[obj.pk])
         return format_html(
             """
-            <p style="margin-bottom:0.9rem;">Captura tu conteo real y el sistema ajusta las diferencias como movimientos de inventario.</p>
+            <p style="margin-bottom:0.9rem;">Si ya hay variantes, aquí cuentas cada color/talla. Si no hay variantes, ajustas el stock general del producto.</p>
             <a class="button" href="{}">Capturar inventario físico</a>
             """,
             count_url,
@@ -1439,10 +1479,10 @@ class ProductVariantAdmin(admin.ModelAdmin):
     autocomplete_fields = ("product",)
     list_editable = ("activo",)
     actions = [asignar_imagenes_variantes]
-    readonly_fields = ("updated_at", "created_at")
+    readonly_fields = ("updated_at", "created_at", "variant_role_help")
     fieldsets = (
         ("Variante", {
-            "fields": ("product", "sku", "color", "talla", "imagen", "activo")
+            "fields": ("product", "sku", "color", "talla", "imagen", "activo", "variant_role_help")
         }),
         ("Inventario", {
             "fields": ("stock", "costo", "precio_override")
@@ -1454,13 +1494,28 @@ class ProductVariantAdmin(admin.ModelAdmin):
 
     @admin.display(description="Imagen")
     def preview_imagen(self, obj):
-        image = obj.imagen or obj.product.imagen
-        if image:
+        image_url = obj.display_image_url
+        if image_url:
             return format_html(
                 '<img src="{}" style="width:42px;height:42px;object-fit:cover;border-radius:8px;" />',
-                image.url,
+                image_url,
             )
         return "-"
+
+    @admin.display(description="Qué controla esta variante")
+    def variant_role_help(self, obj):
+        return format_html(
+            """
+            <div style="padding:0.85rem 1rem;border-radius:12px;background:#eff6ff;border:1px solid #bfdbfe;">
+              <strong style="display:block;margin-bottom:0.35rem;color:#1d4ed8;">Esta fila es la existencia real vendible.</strong>
+              <div style="color:#334155;">
+                Cuando el cliente elige <strong>{color}</strong> y <strong>{talla}</strong>, este es el stock que se descuenta. La imagen aquí debe corresponder al color de esta variante.
+              </div>
+            </div>
+            """,
+            color=obj.color or "-",
+            talla=obj.talla or "-",
+        )
 
 
 @admin.register(InventoryMovement)
@@ -1479,7 +1534,7 @@ class InventoryMovementAdmin(admin.ModelAdmin):
     list_filter = ("movement_type", "created_at", "product__categoria")
     search_fields = ("product__nombre", "variant__sku", "variant__color", "variant__talla", "note")
     autocomplete_fields = ("product", "variant", "order", "created_by")
-    readonly_fields = ("stock_before", "stock_after", "created_at")
+    readonly_fields = ("stock_before", "stock_after", "created_at", "movement_guide")
 
     def get_urls(self):
         urls = super().get_urls()
@@ -1511,8 +1566,28 @@ class InventoryMovementAdmin(admin.ModelAdmin):
                 "stock_before",
                 "stock_after",
                 "created_at",
+                "movement_guide",
             )
         return self.readonly_fields
+
+    fieldsets = (
+        ("Movimiento", {
+            "fields": ("movement_guide", "product", "variant", "movement_type", "quantity_change", "order", "note", "created_by")
+        }),
+        ("Resultado", {
+            "fields": ("stock_before", "stock_after", "created_at")
+        }),
+    )
+
+    @admin.display(description="Cómo usar movimientos")
+    def movement_guide(self, obj=None):
+        return format_html(
+            """
+            <div style="padding:0.85rem 1rem;border-radius:12px;background:#f8fafc;border:1px solid #e2e8f0;">
+              Usa <strong>Movimientos</strong> para dejar historial. Si solo editas el stock de una variante, cambias la existencia pero no el motivo. Aquí registras compras, ventas, ajustes y entradas/salidas manuales.
+            </div>
+            """
+        )
 
     def has_change_permission(self, request, obj=None):
         if obj:

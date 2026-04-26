@@ -57,6 +57,13 @@
     align-items: center;
     margin-top: 1rem;
   }
+  .count-guide {
+    margin: 0 0 1rem;
+    padding: 1rem 1.1rem;
+    border-radius: 16px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+  }
   .count-muted {
     color: #6b7280;
   }
@@ -72,6 +79,20 @@
         <p class="count-muted" style="margin:0;">Captura tu conteo físico de hoy. Si una cifra cambia, el sistema crea un ajuste de inventario automáticamente.</p>
       </div>
       <a class="button" href="{% url 'admin:tienda_producto_change' product.pk %}">Volver al producto</a>
+    </div>
+
+    <div class="count-guide">
+      {% if has_variants %}
+        <strong style="display:block;margin-bottom:0.35rem;color:#111827;">Este producto ya trabaja por variantes</strong>
+        <div class="count-muted">
+          El stock real vive en cada combinación de <strong>color + talla</strong>. Aquí debes contar cada variante por separado. El stock general del producto solo refleja la suma y no es el campo que manda.
+        </div>
+      {% else %}
+        <strong style="display:block;margin-bottom:0.35rem;color:#111827;">Este producto todavía usa stock general</strong>
+        <div class="count-muted">
+          Como todavía no hay variantes activas, el número que captures aquí ajusta el stock general del producto. Si después quieres separar por talla y color, primero genera variantes.
+        </div>
+      {% endif %}
     </div>
 
     <form method="post">

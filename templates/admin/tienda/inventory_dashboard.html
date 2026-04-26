@@ -113,6 +113,18 @@
     gap: 0.75rem;
     margin: 0 0 1.2rem;
   }
+  .inventory-guide {
+    margin: 0 0 1.2rem;
+    padding: 1rem 1.1rem;
+    border-radius: 16px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+  }
+  .inventory-guide strong {
+    display: block;
+    margin-bottom: 0.35rem;
+    color: #111827;
+  }
   .inventory-empty {
     color: #6b7280;
     margin: 0;
@@ -127,13 +139,17 @@
 
 {% block content %}
 <div class="inventory-actions">
-  <a class="button" href="{% url 'admin:tienda_businesspayment_business_calendar' %}">Calendario negocio</a>
-  <a class="button" href="{% url 'admin:tienda_producto_changelist' %}">Ver productos</a>
   <a class="button default" href="{{ inventory_matrix_url }}">Mesa de inventario</a>
-  <a class="button" href="{% url 'admin:tienda_productvariant_changelist' %}">Ver variantes</a>
-  <a class="button" href="{% url 'admin:tienda_inventorymovement_changelist' %}">Ver movimientos</a>
   <a class="button" href="{% url 'admin:tienda_inventorymovement_receive_purchase' %}">Recepción de compra</a>
   <a class="button" href="{{ stock_count_bulk_url }}">Conteo físico masivo</a>
+  <a class="button" href="{% url 'admin:tienda_businesspayment_business_calendar' %}">Calendario negocio</a>
+</div>
+
+<div class="inventory-guide">
+  <strong>Cómo leer este inventario</strong>
+  <div>
+    <strong>Producto</strong> define la prenda base. <strong>Variante</strong> define cada combinación real de color y talla. Si un producto ya tiene variantes activas, el stock que manda está en las variantes. La mesa y los conteos físicos trabajan sobre variantes; movimientos guarda el historial.
+  </div>
 </div>
 
 <div class="inventory-grid">

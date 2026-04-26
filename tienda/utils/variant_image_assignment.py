@@ -119,6 +119,28 @@ def _variant_image_from_frontend_pattern(variant):
     return None
 
 
+def get_variant_display_image_name(variant):
+    if getattr(variant, "imagen", None):
+        try:
+            if variant.imagen.name:
+                return variant.imagen.name
+        except Exception:
+            pass
+
+    direct_match = _variant_image_from_frontend_pattern(variant)
+    if direct_match:
+        return direct_match
+
+    if getattr(variant.product, "imagen", None):
+        try:
+            if variant.product.imagen.name:
+                return variant.product.imagen.name
+        except Exception:
+            pass
+
+    return None
+
+
 def find_best_image_for_variant(variant):
     direct_match = _variant_image_from_frontend_pattern(variant)
     if direct_match:

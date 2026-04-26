@@ -86,6 +86,13 @@
     gap: 0.75rem;
     margin-top: 1rem;
   }
+  .bulk-guide {
+    margin: 1rem 0 1.2rem;
+    padding: 1rem 1.1rem;
+    border-radius: 16px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+  }
   .bulk-muted {
     color: #6b7280;
   }
@@ -101,6 +108,13 @@
         <p class="bulk-muted" style="margin:0;">Captura varias variantes en una sola vuelta. Solo se ajustan las que cambian.</p>
       </div>
       <a class="button" href="{% url 'admin:tienda_producto_inventory_dashboard' %}">Volver al dashboard</a>
+    </div>
+
+    <div class="bulk-guide">
+      <strong style="display:block;margin-bottom:0.35rem;color:#111827;">Qué cuenta esta pantalla</strong>
+      <div class="bulk-muted">
+        Aquí no cuentas productos generales: aquí cuentas <strong>variantes reales</strong>. Cada fila es una combinación vendible de <strong>producto + color + talla</strong>. El número que captures reemplaza el stock actual de esa variante y deja un movimiento de ajuste.
+      </div>
     </div>
 
     <form method="post">
@@ -122,16 +136,10 @@
             <tr>
               <td>
                 <div class="bulk-product">
-                  {% if row.variant.imagen %}
+                  {% if row.variant.display_image_url %}
                     <img
-                      src="{{ row.variant.imagen.url }}"
+                      src="{{ row.variant.display_image_url }}"
                       alt="{{ row.variant.product.nombre }} {{ row.variant.color }}"
-                      class="bulk-product__thumb"
-                    >
-                  {% elif row.variant.product.imagen %}
-                    <img
-                      src="{{ row.variant.product.imagen.url }}"
-                      alt="{{ row.variant.product.nombre }}"
                       class="bulk-product__thumb"
                     >
                   {% else %}

@@ -88,6 +88,13 @@
   .matrix-muted {
     color: #6b7280;
   }
+  .matrix-guide {
+    margin: 1rem 0 1.2rem;
+    padding: 1rem 1.1rem;
+    border-radius: 16px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+  }
   .matrix-empty {
     padding: 1rem 0;
     color: #6b7280;
@@ -107,9 +114,15 @@
     </div>
 
     <div class="matrix-actions">
-      <a class="button" href="{% url 'admin:tienda_productvariant_changelist' %}">Ver variantes</a>
       <a class="button" href="{% url 'admin:tienda_inventorymovement_changelist' %}">Ver movimientos</a>
       <a class="button" href="{% url 'admin:tienda_producto_stock_count_bulk' %}">Conteo físico masivo</a>
+    </div>
+
+    <div class="matrix-guide">
+      <strong>Qué cambia aquí</strong>
+      <div class="matrix-muted">
+        Esta mesa edita el stock real de cada <strong>variante</strong> (producto + color + talla). Si un producto todavía usa stock general y no tiene variantes, no aparece aquí. Cada cambio guardado genera un movimiento de ajuste.
+      </div>
     </div>
 
     {% if rows %}
@@ -135,16 +148,10 @@
               <tr>
                 <td>
                   <div class="matrix-product">
-                    {% if row.variant.imagen %}
+                    {% if row.variant.display_image_url %}
                       <img
-                        src="{{ row.variant.imagen.url }}"
+                        src="{{ row.variant.display_image_url }}"
                         alt="{{ row.variant.product.nombre }} {{ row.variant.color }}"
-                        class="matrix-product__thumb"
-                      >
-                    {% elif row.variant.product.imagen %}
-                      <img
-                        src="{{ row.variant.product.imagen.url }}"
-                        alt="{{ row.variant.product.nombre }}"
                         class="matrix-product__thumb"
                       >
                     {% else %}

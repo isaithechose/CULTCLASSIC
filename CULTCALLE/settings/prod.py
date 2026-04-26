@@ -288,35 +288,20 @@ JAZZMIN_SETTINGS = {
     "hide_apps": [],
     "custom_links": {
         "tienda": [{
-            "name": "Pedidos pendientes",
-            "url": "/admin/tienda/order/?status__exact=Pending",
-            "icon": "fas fa-clock",
-            "permissions": ["tienda.view_order"],
-        }, {
-            "name": "Productos sin stock",
-            "url": "/admin/tienda/producto/?stock__exact=0",
-            "icon": "fas fa-triangle-exclamation",
-            "permissions": ["tienda.view_producto"],
-        }, {
-            "name": "Calendario negocio",
-            "url": "/admin/tienda/businesspayment/business-calendar/",
-            "icon": "fas fa-calendar-days",
-            "permissions": ["tienda.view_businesspayment"],
-        }, {
             "name": "Inventario",
             "url": "/admin/tienda/producto/inventory-matrix/",
             "icon": "fas fa-boxes-stacked",
             "permissions": ["tienda.view_producto"],
         }, {
-            "name": "Variantes",
-            "url": "/admin/tienda/productvariant/",
-            "icon": "fas fa-tags",
-            "permissions": ["tienda.view_productvariant"],
-        }, {
-            "name": "Movimientos inventario",
-            "url": "/admin/tienda/inventorymovement/",
-            "icon": "fas fa-right-left",
+            "name": "Recepción de compra",
+            "url": "/admin/tienda/inventorymovement/receive-purchase/",
+            "icon": "fas fa-truck-ramp-box",
             "permissions": ["tienda.view_inventorymovement"],
+        }, {
+            "name": "Pedidos pendientes",
+            "url": "/admin/tienda/order/?status__exact=Pending",
+            "icon": "fas fa-clock",
+            "permissions": ["tienda.view_order"],
         }, {
             "name": "Pagos programados",
             "url": "/admin/tienda/businesspayment/",
