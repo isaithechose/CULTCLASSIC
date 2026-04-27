@@ -2118,24 +2118,50 @@ class ExpenseAdmin(admin.ModelAdmin):
 
     def accounting_dashboard_view(self, request):
         today = timezone.localdate()
-        month_start = today.replace(day=1)
+        year, month = _coerce_month(request.GET.get("month"), today)
+        month_start = date(year, month, 1)
+        _, month_days = calendar.monthrange(year, month)
+        month_end = month_start.replace(day=month_days)
+        previous_month = (month_start - timedelta(days=1)).strftime("%Y-%m")
+        next_month = (month_end + timedelta(days=1)).strftime("%Y-%m")
         completed_orders = list(Order.objects.filter(status="Completed").prefetch_related("items__product"))
-        month_orders = [order for order in completed_orders if month_start <= order.created_at.date() <= today]
+        month_orders = [order for order in completed_orders if month_start <= order.created_at.date() <= month_end]
 
-        month_sales = sum(order.total_price for order in month_orders)
-        month_expenses = Expense.objects.filter(fecha__gte=month_start, fecha__lte=today)
+        product_sales = sum(order.subtotal_price for order in month_orders)
+        shipping_income = sum(order.shipping_total for order in month_orders)
+        total_revenue = product_sales + shipping_income
+        month_expenses = Expense.objects.filter(fecha__gte=month_start, fecha__lte=month_end)
+        recurring_expenses = month_expenses.exclude(recurrencia="none")
+        one_time_expenses = month_expenses.filter(recurrencia="none")
         total_expenses = month_expenses.aggregate(total=Sum("monto"))["total"] or 0
+        total_recurring_expenses = recurring_expenses.aggregate(total=Sum("monto"))["total"] or 0
+        total_one_time_expenses = one_time_expenses.aggregate(total=Sum("monto"))["total"] or 0
 
         estimated_cogs = 0
         for order in month_orders:
             for item in order.items.all():
                 estimated_cogs += _product_unit_cost(item.product) * item.quantity
 
-        gross_profit = month_sales - estimated_cogs
+        gross_profit = product_sales - estimated_cogs
         net_profit = gross_profit - total_expenses
+        gross_margin = (gross_profit / product_sales * 100) if product_sales else Decimal("0.00")
+        net_margin = (net_profit / product_sales * 100) if product_sales else Decimal("0.00")
 
         top_expenses = list(month_expenses.select_related("categoria").order_by("-monto")[:10])
         recent_orders = month_orders[-10:][::-1]
+        active_recurring_expenses = []
+        for expense in Expense.objects.filter(recurrencia_activa=True).exclude(recurrencia="none").select_related("categoria").order_by("fecha", "id"):
+            next_date = _next_expense_recurrence_date(expense)
+            if expense.recurrencia_fin and next_date and next_date > expense.recurrencia_fin:
+                continue
+            active_recurring_expenses.append(
+                {
+                    "expense": expense,
+                    "next_date": next_date,
+                }
+            )
+            if len(active_recurring_expenses) >= 8:
+                break
 
         expense_breakdown = []
         category_totals = (
@@ -2151,20 +2177,43 @@ class ExpenseAdmin(admin.ModelAdmin):
                 }
             )
 
+        income_statement = [
+            {"label": "Ventas de producto", "amount": product_sales, "tone": "ok"},
+            {"label": "Costo de producto vendido", "amount": -estimated_cogs, "tone": "warn"},
+            {"label": "Utilidad bruta", "amount": gross_profit, "tone": "ok" if gross_profit >= 0 else "danger"},
+            {"label": "Gastos únicos", "amount": -total_one_time_expenses, "tone": "danger"},
+            {"label": "Gastos recurrentes", "amount": -total_recurring_expenses, "tone": "danger"},
+            {"label": "Utilidad neta estimada", "amount": net_profit, "tone": "ok" if net_profit >= 0 else "danger"},
+        ]
+
         context = dict(
             self.admin_site.each_context(request),
             title="Dashboard contable",
-            subtitle="Ventas, gastos y utilidad estimada del mes",
-            month_sales=month_sales,
+            subtitle="Ventas, costos, gastos y utilidad estimada del mes",
+            month_label=month_start.strftime("%B %Y").capitalize(),
+            current_month_value=month_start.strftime("%Y-%m"),
+            previous_month=previous_month,
+            next_month=next_month,
+            product_sales=product_sales,
+            shipping_income=shipping_income,
+            total_revenue=total_revenue,
             total_expenses=total_expenses,
+            total_recurring_expenses=total_recurring_expenses,
+            total_one_time_expenses=total_one_time_expenses,
             estimated_cogs=estimated_cogs,
             gross_profit=gross_profit,
             net_profit=net_profit,
+            gross_margin=gross_margin,
+            net_margin=net_margin,
             month_orders_count=len(month_orders),
             month_expenses_count=month_expenses.count(),
+            recurring_expenses_count=recurring_expenses.count(),
+            one_time_expenses_count=one_time_expenses.count(),
             top_expenses=top_expenses,
             recent_orders=recent_orders,
+            active_recurring_expenses=active_recurring_expenses,
             expense_breakdown=expense_breakdown,
+            income_statement=income_statement,
             opts=self.model._meta,
         )
         return TemplateResponse(request, "admin/tienda/accounting_dashboard.html", context)

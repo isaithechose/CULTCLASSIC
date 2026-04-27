@@ -70,10 +70,66 @@
     gap: 0.75rem;
     flex-wrap: wrap;
     margin-bottom: 1rem;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .accounting-actions__links,
+  .accounting-month-nav {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .accounting-month-nav strong {
+    color: #111827;
+    font-size: 1.05rem;
+    min-width: 8.5rem;
+    text-align: center;
+  }
+  .accounting-section-title {
+    margin: 1.1rem 0 0.2rem;
+    color: #111827;
+  }
+  .accounting-statement {
+    margin-bottom: 1.3rem;
+    overflow: hidden;
+  }
+  .accounting-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 1rem;
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid #edf0f5;
+    align-items: center;
+  }
+  .accounting-row:last-child {
+    border-bottom: 0;
+  }
+  .accounting-row--total {
+    background: #f8fafc;
+    font-weight: 800;
+  }
+  .accounting-amount {
+    font-weight: 800;
+    color: #111827;
+  }
+  .accounting-amount--danger { color: #b42318; }
+  .accounting-amount--ok { color: #05603a; }
+  .accounting-amount--warn { color: #9a6700; }
+  .accounting-note {
+    color: #6b7280;
+    font-size: 0.92rem;
+    margin-top: 0.35rem;
   }
   @media (max-width: 980px) {
     .accounting-panels {
       grid-template-columns: 1fr;
+    }
+    .accounting-actions {
+      justify-content: flex-start;
+    }
+    .accounting-month-nav strong {
+      text-align: left;
     }
   }
 </style>
@@ -81,34 +137,56 @@
 
 {% block content %}
 <div class="accounting-actions">
-  <a class="button default" href="{% url 'admin:tienda_businesspayment_business_calendar' %}">Calendario negocio</a>
-  <a class="button" href="{% url 'admin:tienda_businesspayment_changelist' %}">Pagos programados</a>
-  <a class="button" href="{% url 'admin:tienda_expense_changelist' %}">Ver gastos</a>
-  <a class="button" href="{% url 'admin:tienda_order_changelist' %}?status__exact=Completed">Ver ventas</a>
-  <a class="button" href="{% url 'admin:tienda_inventorymovement_changelist' %}">Ver movimientos</a>
+  <div class="accounting-actions__links">
+    <a class="button default" href="{% url 'admin:tienda_businesspayment_business_calendar' %}">Calendario negocio</a>
+    <a class="button" href="{% url 'admin:tienda_businesspayment_changelist' %}">Pagos programados</a>
+    <a class="button" href="{% url 'admin:tienda_expense_changelist' %}">Ver gastos</a>
+    <a class="button" href="{% url 'admin:tienda_order_changelist' %}?status__exact=Completed">Ver ventas</a>
+    <a class="button" href="{% url 'admin:tienda_inventorymovement_changelist' %}">Ver movimientos</a>
+  </div>
+  <div class="accounting-month-nav">
+    <a class="button" href="?month={{ previous_month }}">Anterior</a>
+    <strong>{{ month_label }}</strong>
+    <a class="button" href="?month={{ next_month }}">Siguiente</a>
+  </div>
 </div>
 
 <div class="accounting-grid">
   <div class="accounting-card">
-    <div class="accounting-label">Ventas del mes</div>
-    <div class="accounting-value accounting-value--ok">${{ month_sales|floatformat:2 }}</div>
+    <div class="accounting-label">Ventas de producto</div>
+    <div class="accounting-value accounting-value--ok">${{ product_sales|floatformat:2 }}</div>
     <div>{{ month_orders_count }} pedidos completados</div>
   </div>
   <div class="accounting-card">
-    <div class="accounting-label">Gastos del mes</div>
+    <div class="accounting-label">Gastos totales</div>
     <div class="accounting-value accounting-value--danger">${{ total_expenses|floatformat:2 }}</div>
-    <div>{{ month_expenses_count }} gastos registrados</div>
+    <div>{{ one_time_expenses_count }} únicos · {{ recurring_expenses_count }} recurrentes</div>
   </div>
   <div class="accounting-card">
-    <div class="accounting-label">Costo estimado de ventas</div>
+    <div class="accounting-label">Costo producto vendido</div>
     <div class="accounting-value accounting-value--warn">${{ estimated_cogs|floatformat:2 }}</div>
-    <div>Usa costo de variante o precio base como respaldo.</div>
+    <div>Margen bruto: {{ gross_margin|floatformat:1 }}%</div>
   </div>
   <div class="accounting-card">
     <div class="accounting-label">Utilidad neta estimada</div>
     <div class="accounting-value {% if net_profit >= 0 %}accounting-value--ok{% else %}accounting-value--danger{% endif %}">${{ net_profit|floatformat:2 }}</div>
-    <div>Utilidad bruta: ${{ gross_profit|floatformat:2 }}</div>
+    <div>Margen neto: {{ net_margin|floatformat:1 }}%</div>
   </div>
+</div>
+
+<h2 class="accounting-section-title">Estado de resultados</h2>
+<div class="accounting-panel accounting-statement">
+  {% for row in income_statement %}
+    <div class="accounting-row {% if forloop.last %}accounting-row--total{% endif %}">
+      <div>
+        <strong>{{ row.label }}</strong>
+        {% if row.label == "Ventas de producto" and shipping_income %}
+          <div class="accounting-note">Envío cobrado aparte: ${{ shipping_income|floatformat:2 }}</div>
+        {% endif %}
+      </div>
+      <div class="accounting-amount accounting-amount--{{ row.tone }}">${{ row.amount|floatformat:2 }}</div>
+    </div>
+  {% endfor %}
 </div>
 
 <div class="accounting-panels">
@@ -130,6 +208,25 @@
   </div>
 
   <div class="accounting-panel">
+    <h3>Gastos recurrentes activos</h3>
+    <div class="accounting-list">
+      {% for item in active_recurring_expenses %}
+        <div class="accounting-item">
+          <div>
+            <strong>{{ item.expense.concepto }}</strong>
+            <span>{{ item.expense.get_recurrencia_display }} · siguiente {{ item.next_date|date:"Y-m-d" }}</span>
+          </div>
+          <strong>${{ item.expense.monto|floatformat:2 }}</strong>
+        </div>
+      {% empty %}
+        <p>No hay gastos recurrentes activos.</p>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<div class="accounting-panels">
+  <div class="accounting-panel">
     <h3>Desglose por categoría</h3>
     <div class="accounting-list">
       {% for item in expense_breakdown %}
@@ -144,22 +241,22 @@
       {% endfor %}
     </div>
   </div>
-</div>
 
-<div class="accounting-panel">
-  <h3>Ventas recientes del mes</h3>
-  <div class="accounting-list">
-    {% for order in recent_orders %}
-      <div class="accounting-item">
-        <div>
-          <strong>Pedido #{{ order.id }}</strong>
-          <span>{{ order.customer|default:"Sin cliente" }} · {{ order.created_at|date:"Y-m-d H:i" }}</span>
+  <div class="accounting-panel">
+    <h3>Ventas recientes del mes</h3>
+    <div class="accounting-list">
+      {% for order in recent_orders %}
+        <div class="accounting-item">
+          <div>
+            <strong>Pedido #{{ order.id }}</strong>
+            <span>{{ order.customer|default:"Sin cliente" }} · {{ order.created_at|date:"Y-m-d H:i" }}</span>
+          </div>
+          <strong>${{ order.subtotal_price|floatformat:2 }}</strong>
         </div>
-        <strong>${{ order.total_price|floatformat:2 }}</strong>
-      </div>
-    {% empty %}
-      <p>No hay ventas completadas este mes.</p>
-    {% endfor %}
+      {% empty %}
+        <p>No hay ventas completadas este mes.</p>
+      {% endfor %}
+    </div>
   </div>
 </div>
 {% endblock %}
