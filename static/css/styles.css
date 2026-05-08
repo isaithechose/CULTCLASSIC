@@ -402,13 +402,15 @@ body.brand-page {
 
 .brand-strip,
 .product-showcase,
+.custom-drop,
 .brand-story,
 .final-cta {
   padding: 2.5rem 0 5rem;
 }
 
 .brand-strip__grid,
-.brand-story__layout {
+.brand-story__layout,
+.custom-drop__layout {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1.5rem;
@@ -416,7 +418,9 @@ body.brand-page {
 
 .brand-strip__grid > div,
 .brand-story__details,
-.brand-story__intro {
+.brand-story__intro,
+.custom-drop__copy,
+.custom-drop__step {
   padding-top: 1.5rem;
   border-top: 1px solid var(--cc-line);
   position: relative;
@@ -424,7 +428,9 @@ body.brand-page {
 
 .brand-strip__grid > div::before,
 .brand-story__details::before,
-.brand-story__intro::before {
+.brand-story__intro::before,
+.custom-drop__copy::before,
+.custom-drop__step::before {
   content: "";
   position: absolute;
   top: -1px;
@@ -435,7 +441,9 @@ body.brand-page {
 }
 
 .brand-strip__text,
-.brand-story__details p {
+.brand-story__details p,
+.custom-drop__text,
+.custom-drop__step p {
   color: var(--cc-muted);
   margin-bottom: 0;
 }
@@ -535,6 +543,54 @@ body.brand-page {
   color: var(--cc-muted);
 }
 
+.custom-drop__layout {
+  align-items: stretch;
+}
+
+.custom-drop__copy {
+  grid-column: span 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 1.5rem;
+}
+
+.custom-drop__steps {
+  grid-column: span 2;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.custom-drop__step {
+  min-height: 16rem;
+  padding: 1.5rem;
+  border: 1px solid var(--cc-line);
+  border-radius: 1.5rem;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.012)),
+    #111111;
+}
+
+.custom-drop__number {
+  display: inline-flex;
+  margin-bottom: 2rem;
+  color: var(--cc-accent);
+  font-family: "Teko", sans-serif;
+  font-size: 2.2rem;
+  line-height: 1;
+  letter-spacing: 0.06em;
+}
+
+.custom-drop__step h3 {
+  margin-bottom: 0.85rem;
+  color: var(--cc-ink);
+  font-family: "Teko", sans-serif;
+  font-size: 2rem;
+  line-height: 0.95;
+  text-transform: uppercase;
+}
+
 .brand-story__intro {
   grid-column: span 1;
 }
@@ -605,6 +661,8 @@ body.brand-page {
   .brand-strip__grid,
   .brand-story__layout,
   .brand-story__details,
+  .custom-drop__layout,
+  .custom-drop__steps,
   .product-grid,
   .section-heading__row,
   .site-footer__inner {
@@ -626,7 +684,9 @@ body.brand-page {
   }
 
   .brand-story__intro,
-  .brand-story__details {
+  .brand-story__details,
+  .custom-drop__copy,
+  .custom-drop__steps {
     grid-column: auto;
   }
 
@@ -639,6 +699,7 @@ body.brand-page {
   .page-hero,
   .brand-strip,
   .product-showcase,
+  .custom-drop,
   .brand-story,
   .final-cta {
     padding: 2rem 0 3.5rem;

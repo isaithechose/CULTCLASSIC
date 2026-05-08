@@ -28,8 +28,18 @@ cd CULTCLASSIC
 ```bash
 python3 -m venv venv
 source venv/bin/activate
-pip install --upgrade pip
+pip install --upgrade pip setuptools wheel
 pip install -r requirements.txt
+```
+
+Si te aparece `ModuleNotFoundError: No module named 'cryptography'`, normalmente significa que las dependencias no se instalaron dentro del entorno virtual correcto. Vuelve a ejecutar estos comandos desde la carpeta del proyecto:
+
+```bash
+cd /var/www/CULTCLASSIC
+source venv/bin/activate
+python -m pip install --upgrade pip setuptools wheel
+python -m pip install -r requirements.txt
+python manage.py check
 ```
 
 ## 5. Crear archivo `.env`

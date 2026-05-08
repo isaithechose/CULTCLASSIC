@@ -107,6 +107,41 @@
     </div>
 </section>
 
+<section class="custom-drop">
+    <div class="container px-4 px-lg-5">
+        <div class="custom-drop__layout">
+            <div class="custom-drop__copy">
+                <p class="section-heading__eyebrow">Crea tu pieza</p>
+                <h2 class="section-heading__title">Sube tu diseño y conviértelo en una playera lista para pedir.</h2>
+                <p class="custom-drop__text">
+                    Usa el creador para guardar tu imagen, elegir una prenda compatible y llevarla al carrito con talla, color y ubicación del diseño.
+                </p>
+                <div class="hero-editorial__actions">
+                    <a class="btn site-btn site-btn--accent" href="{% url 'tienda:design_creator' %}">Abrir creador</a>
+                    <a class="btn site-btn site-btn--ghost" href="{% url 'tienda:catalogo_diseños_propios' %}">Ver diseños propios</a>
+                </div>
+            </div>
+            <div class="custom-drop__steps" aria-label="Pasos para crear una pieza personalizada">
+                <article class="custom-drop__step">
+                    <span class="custom-drop__number">01</span>
+                    <h3>Sube tu archivo</h3>
+                    <p>Guarda una imagen desde el creador y revisa cómo se verá antes de avanzar.</p>
+                </article>
+                <article class="custom-drop__step">
+                    <span class="custom-drop__number">02</span>
+                    <h3>Elige prenda</h3>
+                    <p>Selecciona producto, talla y color disponible para armar la combinación correcta.</p>
+                </article>
+                <article class="custom-drop__step">
+                    <span class="custom-drop__number">03</span>
+                    <h3>Pide con seguimiento</h3>
+                    <p>Termina la compra y revisa el estado del pedido desde tu cuenta.</p>
+                </article>
+            </div>
+        </div>
+    </div>
+</section>
+
 <section class="brand-story">
     <div class="container px-4 px-lg-5">
         <div class="brand-story__layout">

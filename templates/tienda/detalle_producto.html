@@ -246,6 +246,7 @@
 
     .detail-secondary-actions {
         display: flex;
+        flex-wrap: wrap;
         gap: 0.8rem;
         margin-bottom: 1rem;
     }
@@ -255,6 +256,63 @@
         border-color: rgba(255,255,255,0.08);
         color: var(--cc-ink);
         padding-inline: 1.2rem;
+    }
+
+    .detail-size-guide {
+        margin-bottom: 1rem;
+        padding: 1rem;
+        border: 1px solid var(--cc-line);
+        border-radius: 1.25rem;
+        background: rgba(255, 255, 255, 0.025);
+    }
+
+    .detail-size-guide__title {
+        margin-bottom: 0.75rem;
+        color: var(--cc-ink);
+        font-size: 0.78rem;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+    }
+
+    .detail-size-guide table {
+        width: 100%;
+        margin-bottom: 0.75rem;
+        color: var(--cc-muted);
+        font-size: 0.9rem;
+    }
+
+    .detail-size-guide th,
+    .detail-size-guide td {
+        padding: 0.55rem 0.35rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        text-align: left;
+    }
+
+    .detail-size-guide th {
+        color: var(--cc-ink);
+        font-weight: 700;
+    }
+
+    .detail-size-guide__note,
+    .detail-validation-note {
+        margin: 0;
+        color: var(--cc-muted);
+        font-size: 0.88rem;
+        line-height: 1.55;
+    }
+
+    .detail-validation-note {
+        padding: 0.9rem 1rem;
+        border: 1px solid rgba(214, 195, 161, 0.2);
+        border-radius: 1rem;
+        background: rgba(214, 195, 161, 0.07);
+        color: var(--cc-accent);
+    }
+
+    .detail-order-actions .site-btn:disabled {
+        cursor: not-allowed;
+        opacity: 0.48;
+        transform: none;
     }
 
     .detail-order-actions {
@@ -453,6 +511,18 @@
         gap: 1rem;
     }
 
+    .detail-design-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .detail-design-actions .site-btn {
+        padding: 0.65rem 1rem;
+    }
+
     .detail-design-columns {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -602,6 +672,10 @@
         .detail-design-grid {
             grid-template-columns: 1fr;
         }
+
+        .detail-size-guide {
+            overflow-x: auto;
+        }
     }
 
     @media (max-width: 479.98px) {
@@ -682,7 +756,7 @@
                   {% csrf_token %}
                   <div class="detail-info-compact">
                       <!-- COLOR -->
-                      <input type="hidden" name="color" id="colorInput">
+                      <input type="hidden" name="color" id="colorInput" required>
                       <div>
                         <div class="detail-label-row">
                           <strong>Color</strong>
@@ -696,7 +770,7 @@
                       </div>
 
                       <!-- TALLA -->
-                      <input type="hidden" name="talla" id="tallaInput">
+                      <input type="hidden" name="talla" id="tallaInput" required>
                       <div>
                         <div class="detail-label-row">
                           <strong>Talla</strong>
@@ -710,7 +784,29 @@
                       </div>
 
                       <div class="detail-secondary-actions">
-                          <button type="button" class="btn site-btn site-btn--ghost">Size Guide</button>
+                          <button type="button" class="btn site-btn site-btn--ghost" data-bs-toggle="collapse" data-bs-target="#detailSizeGuide" aria-expanded="false" aria-controls="detailSizeGuide">Guía de tallas</button>
+                          <a class="btn site-btn site-btn--ghost" href="{% url 'tienda:design_creator' %}?product_id={{ producto.id }}">Subir mi diseño</a>
+                      </div>
+
+                      <div class="collapse detail-size-guide" id="detailSizeGuide">
+                          <p class="detail-size-guide__title">Referencia de talla</p>
+                          <table aria-label="Guía de tallas Cult Clasiccs">
+                              <thead>
+                                  <tr>
+                                      <th>Talla</th>
+                                      <th>Pecho</th>
+                                      <th>Largo</th>
+                                      <th>Fit</th>
+                                  </tr>
+                              </thead>
+                              <tbody>
+                                  <tr><td>S</td><td>51 cm</td><td>68 cm</td><td>Regular</td></tr>
+                                  <tr><td>M</td><td>54 cm</td><td>71 cm</td><td>Regular</td></tr>
+                                  <tr><td>L</td><td>57 cm</td><td>74 cm</td><td>Amplio</td></tr>
+                                  <tr><td>XL</td><td>60 cm</td><td>77 cm</td><td>Amplio</td></tr>
+                              </tbody>
+                          </table>
+                          <p class="detail-size-guide__note">Medidas aproximadas de la prenda en plano. Si dudas entre dos tallas, elige la más grande para un fit más relajado.</p>
                       </div>
 
                       <div class="detail-summary-panel">
@@ -735,12 +831,22 @@
                                   <small>Espalda</small>
                                   <span id="summaryEspalda">Sin diseño</span>
                               </div>
+                              <div class="detail-summary-item">
+                                  <small>Personalización</small>
+                                  <span id="summaryExtra">$0.00</span>
+                              </div>
+                              <div class="detail-summary-item">
+                                  <small>Total estimado</small>
+                                  <span>$<span id="summaryTotal">{{ producto.precio }}</span></span>
+                              </div>
                           </div>
                       </div>
 
+                      <p class="detail-validation-note" id="detailValidationNote">Selecciona color y talla para activar la compra.</p>
+
                       <div class="detail-order-actions">
-                          <button type="submit" name="action" value="add_to_cart" class="btn site-btn site-btn--ghost">Agregar al carrito</button>
-                          <button type="submit" name="action" value="buy_now" class="btn site-btn site-btn--accent">Comprar ahora</button>
+                          <button id="addToCartBtn" type="submit" name="action" value="add_to_cart" class="btn site-btn site-btn--ghost" disabled>Agregar al carrito</button>
+                          <button id="buyNowBtn" type="submit" name="action" value="buy_now" class="btn site-btn site-btn--accent" disabled>Comprar ahora</button>
                       </div>
                   </div>
 
@@ -752,7 +858,12 @@
                       <div class="detail-configurator__intro">
                           <span class="detail-configurator__eyebrow">Arma tu pieza</span>
                           <h3 class="detail-configurator__title">Personaliza tu playera</h3>
-                          <p class="detail-configurator__copy">Elige la base, agrega diseño al frente o a la espalda y revisa cómo va quedando antes de mandarla al carrito.</p>
+                          <p class="detail-configurator__copy">Elige la base, agrega diseño al frente o a la espalda y revisa cómo va quedando antes de mandarla al carrito. Cada diseño agrega $200 MXN al total.</p>
+                      </div>
+
+                      <div class="detail-design-actions">
+                          <span class="detail-selected-chip">Diseño extra: $200 MXN por lado</span>
+                          <button type="button" class="btn site-btn site-btn--ghost" onclick="limpiarDisenos()">Limpiar diseños</button>
                       </div>
 
                       <div class="detail-design-layout">
@@ -811,7 +922,10 @@
                                            onclick="seleccionarDiseño(this)"
                                            alt="{{ diseño }}">
                                   {% empty %}
-                                      <p class="text-muted mb-0">No hay diseños disponibles.</p>
+                                      <div class="detail-design-personal__empty">
+                                          <p class="text-muted mb-2">Todavía no tienes diseños propios guardados.</p>
+                                          <a class="btn site-btn site-btn--accent" href="{% url 'tienda:design_creator' %}?product_id={{ producto.id }}">Crear diseño propio</a>
+                                      </div>
                                   {% endfor %}
                               </div>
                           </div>
@@ -1049,8 +1163,26 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function actualizarPrecio() {
     const precioExtra = precioPecho + precioEspalda;
+    const total = precioBase + precioExtra;
     document.getElementById("precio-extra").textContent = precioExtra.toFixed(2);
-    document.getElementById("precio-total").textContent = (precioBase + precioExtra).toFixed(2);
+    document.getElementById("precio-total").textContent = total.toFixed(2);
+    document.getElementById("summaryExtra").textContent = `$${precioExtra.toFixed(2)}`;
+    document.getElementById("summaryTotal").textContent = total.toFixed(2);
+  }
+
+  function actualizarEstadoCompra() {
+    const tieneColor = Boolean(document.getElementById("colorInput").value);
+    const tieneTalla = Boolean(document.getElementById("tallaInput").value);
+    const puedeComprar = tieneColor && tieneTalla;
+    const addToCartBtn = document.getElementById("addToCartBtn");
+    const buyNowBtn = document.getElementById("buyNowBtn");
+    const validationNote = document.getElementById("detailValidationNote");
+
+    addToCartBtn.disabled = !puedeComprar;
+    buyNowBtn.disabled = !puedeComprar;
+    validationNote.textContent = puedeComprar
+      ? "Listo: puedes agregar esta configuración al carrito."
+      : "Selecciona color y talla para activar la compra.";
   }
 
   function actualizarResumen() {
@@ -1065,6 +1197,7 @@ document.addEventListener("DOMContentLoaded", function () {
     document.getElementById("summaryEspalda").textContent = espalda;
     document.getElementById("selectedPechoLabel").textContent = pecho;
     document.getElementById("selectedEspaldaLabel").textContent = espalda;
+    actualizarEstadoCompra();
   }
 
   // Cambiar imagen principal con miniaturas
@@ -1123,6 +1256,17 @@ document.addEventListener("DOMContentLoaded", function () {
     actualizarResumen();
   };
 
+  window.limpiarDisenos = function() {
+    document.getElementById('diseñoPechoInput').value = "";
+    document.getElementById('diseñoEspaldaInput').value = "";
+    document.getElementById('diseño-overlay').src = "";
+    precioPecho = 0;
+    precioEspalda = 0;
+    document.querySelectorAll('.miniatura-diseño').forEach(i => i.classList.remove("is-active"));
+    actualizarPrecio();
+    actualizarResumen();
+  };
+
   // Seleccionar diseño personalizado para PECHO
   window.seleccionarDiseño = function(img) {
     const nombre = img.src.split('/').pop();
@@ -1137,6 +1281,7 @@ document.addEventListener("DOMContentLoaded", function () {
     img.classList.add("is-active");
   };
 
+  actualizarPrecio();
   actualizarResumen();
 
   const firstColorCircle = document.querySelector('.color-circle');
