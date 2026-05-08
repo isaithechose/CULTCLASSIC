@@ -4,6 +4,7 @@ django-jazzmin==3.0.1
 mercadopago==2.2.3
 Pillow==11.0.0
 PyJWT==2.10.1
+cryptography>=44.0.0
 python-decouple==3.8
 requests==2.32.3
 stripe==11.6.0
