@@ -56,11 +56,30 @@ class Producto(models.Model):
         return total
 
 class Order(models.Model):
+    SALES_CHANNEL_CHOICES = [
+        ("online", "Tienda online"),
+        ("pos", "Punto de venta"),
+        ("manual", "Manual"),
+    ]
+
+    PAYMENT_METHOD_CHOICES = [
+        ("cash", "Efectivo"),
+        ("card", "Tarjeta"),
+        ("transfer", "Transferencia"),
+        ("stripe", "Stripe"),
+        ("other", "Otro"),
+    ]
+
     customer = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=20, choices=[
         ('Pending', 'Pending'), ('Completed', 'Completed'), ('Canceled', 'Canceled')
     ], default='Pending')
+    sales_channel = models.CharField(max_length=20, choices=SALES_CHANNEL_CHOICES, default="online")
+    payment_method = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES, default="stripe")
+    discount_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    internal_note = models.TextField(blank=True, null=True)
+    cashier = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="pos_orders")
     shipping_status = models.CharField(max_length=20, choices=[
         ('Processing', 'Processing'), ('Shipped', 'Shipped'), ('Delivered', 'Delivered')
     ], default='Processing')
@@ -88,7 +107,8 @@ class Order(models.Model):
 
     @property
     def total_price(self):
-        return self.subtotal_price + self.shipping_total
+        total = self.subtotal_price + self.shipping_total - (self.discount_amount or Decimal("0.00"))
+        return max(total, Decimal("0.00"))
 
     def __str__(self):
         return f"Orden {self.id} de {self.customer}"

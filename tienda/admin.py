@@ -3,6 +3,7 @@ from django.contrib import admin
 from django.contrib import messages
 from django.contrib.admin.sites import AdminSite
 from django import forms
+from django.db import transaction
 from django.db.models import Count, Sum
 from django.forms import formset_factory
 from django.http import HttpResponseRedirect
@@ -141,6 +142,7 @@ def _admin_overview_context():
         ],
         "admin_quick_links": [
             {"label": "Inventario", "url": "/admin/tienda/producto/inventory-dashboard/"},
+            {"label": "Punto de venta", "url": "/admin/tienda/order/point-of-sale/"},
             {"label": "Recepción de compra", "url": "/admin/tienda/inventorymovement/receive-purchase/"},
             {"label": "Calendario negocio", "url": "/admin/tienda/businesspayment/business-calendar/"},
             {"label": "Dashboard contable", "url": "/admin/tienda/expense/accounting-dashboard/"},
@@ -608,6 +610,27 @@ class ShippingAddressInline(admin.StackedInline):
     model = ShippingAddress
     extra = 0
     can_delete = False
+
+
+class PointOfSaleHeaderForm(forms.Form):
+    payment_method = forms.ChoiceField(
+        choices=Order.PAYMENT_METHOD_CHOICES,
+        initial="cash",
+        label="Método de pago",
+    )
+    discount_amount = forms.DecimalField(
+        min_value=0,
+        decimal_places=2,
+        max_digits=10,
+        required=False,
+        initial=0,
+        label="Descuento",
+    )
+    internal_note = forms.CharField(
+        widget=forms.Textarea(attrs={"rows": 2}),
+        required=False,
+        label="Nota interna",
+    )
 
 
 class ProductVariantInline(admin.TabularInline):
@@ -1322,6 +1345,8 @@ class OrderAdmin(admin.ModelAdmin):
     list_display = (
         "id",
         "customer",
+        "sales_channel_badge",
+        "payment_method",
         "status_badge",
         "shipping_badge",
         "total_items",
@@ -1329,7 +1354,7 @@ class OrderAdmin(admin.ModelAdmin):
         "skydrop_badge",
         "created_at",
     )
-    list_filter = ("status", "shipping_status", "created_at")
+    list_filter = ("status", "shipping_status", "sales_channel", "payment_method", "created_at")
     search_fields = ("id", "customer__username", "customer__email", "tracking_number")
     readonly_fields = (
         "created_at",
@@ -1339,7 +1364,7 @@ class OrderAdmin(admin.ModelAdmin):
         "skydrop_actions_panel",
         "skydrop_summary",
     )
-    autocomplete_fields = ("customer",)
+    autocomplete_fields = ("customer", "cashier")
     inlines = [OrderItemInline, ShippingAddressInline, ShippingUpdateInline]
     actions = [
         marcar_pedidos_completados,
@@ -1350,7 +1375,18 @@ class OrderAdmin(admin.ModelAdmin):
     ]
     fieldsets = (
         ("Pedido", {
-            "fields": ("customer", "status", "shipping_status", "tracking_number", "created_at")
+            "fields": (
+                "customer",
+                "cashier",
+                "sales_channel",
+                "payment_method",
+                "discount_amount",
+                "status",
+                "shipping_status",
+                "tracking_number",
+                "internal_note",
+                "created_at",
+            )
         }),
         ("Direccion", {
             "fields": ("shipping_address_preview",)
@@ -1377,6 +1413,11 @@ class OrderAdmin(admin.ModelAdmin):
     def get_urls(self):
         urls = super().get_urls()
         custom_urls = [
+            path(
+                "point-of-sale/",
+                self.admin_site.admin_view(self.point_of_sale_view),
+                name="tienda_order_point_of_sale",
+            ),
             path(
                 "<int:order_id>/skydrop/quote/",
                 self.admin_site.admin_view(self.quote_order_view),
@@ -1414,6 +1455,21 @@ class OrderAdmin(admin.ModelAdmin):
             colors.get(obj.status, "#666"),
             colors.get(obj.status, "#666"),
             obj.status,
+        )
+
+    @admin.display(ordering="sales_channel", description="Canal")
+    def sales_channel_badge(self, obj):
+        colors = {
+            "online": ("#1d4ed8", "#dbeafe"),
+            "pos": ("#05603a", "#d1fadf"),
+            "manual": ("#6b7280", "#ececf3"),
+        }
+        color, bg = colors.get(obj.sales_channel, ("#6b7280", "#ececf3"))
+        return format_html(
+            '<span style="display:inline-block;padding:0.25rem 0.55rem;border-radius:999px;background:{};color:{};font-weight:700;">{}</span>',
+            bg,
+            color,
+            obj.get_sales_channel_display(),
         )
 
     @admin.display(ordering="shipping_status", description="Envio")
@@ -1527,6 +1583,170 @@ class OrderAdmin(admin.ModelAdmin):
 
     def _redirect_to_change(self, order_id):
         return HttpResponseRedirect(reverse("admin:tienda_order_change", args=[order_id]))
+
+    def point_of_sale_view(self, request):
+        variants = list(
+            ProductVariant.objects.filter(activo=True, product__disponible=True)
+            .select_related("product")
+            .order_by("product__nombre", "color", "talla")
+        )
+        general_products = list(
+            Producto.objects.filter(disponible=True, variants__isnull=True)
+            .order_by("nombre")
+        )
+
+        class POSLineForm(forms.Form):
+            item_key = forms.CharField(widget=forms.HiddenInput)
+            quantity = forms.IntegerField(min_value=0, required=False, initial=0, label="Cantidad")
+            unit_price = forms.DecimalField(min_value=0, decimal_places=2, max_digits=10, required=False, label="Precio")
+
+        POSLineFormSet = formset_factory(POSLineForm, extra=0)
+        catalog_rows = []
+        initial = []
+
+        for variant in variants:
+            key = f"v:{variant.id}"
+            initial.append({"item_key": key, "quantity": 0, "unit_price": variant.product.precio})
+            catalog_rows.append(
+                {
+                    "key": key,
+                    "label": variant.product.nombre,
+                    "detail": f"{variant.color} / {variant.talla}",
+                    "stock": variant.stock,
+                    "unit_cost": _variant_unit_cost(variant),
+                    "unit_price": _variant_sale_price(variant),
+                }
+            )
+
+        for product in general_products:
+            key = f"p:{product.id}"
+            initial.append({"item_key": key, "quantity": 0, "unit_price": product.precio})
+            catalog_rows.append(
+                {
+                    "key": key,
+                    "label": product.nombre,
+                    "detail": "Stock general",
+                    "stock": product.stock,
+                    "unit_cost": _product_unit_cost(product),
+                    "unit_price": _money(product.precio),
+                }
+            )
+
+        if request.method == "POST":
+            header_form = PointOfSaleHeaderForm(request.POST)
+            formset = POSLineFormSet(request.POST, prefix="pos")
+            if header_form.is_valid() and formset.is_valid():
+                variant_map = {f"v:{variant.id}": variant for variant in variants}
+                product_map = {f"p:{product.id}": product for product in general_products}
+                lines = []
+
+                for form in formset:
+                    item_key = form.cleaned_data.get("item_key")
+                    quantity = form.cleaned_data.get("quantity") or 0
+                    unit_price = form.cleaned_data.get("unit_price")
+                    if quantity <= 0:
+                        continue
+
+                    if item_key in variant_map:
+                        variant = variant_map[item_key]
+                        if quantity > variant.stock:
+                            form.add_error("quantity", f"Solo hay {variant.stock} piezas.")
+                            continue
+                        lines.append(
+                            {
+                                "product": variant.product,
+                                "variant": variant,
+                                "quantity": int(quantity),
+                                "unit_price": unit_price if unit_price is not None else _variant_sale_price(variant),
+                                "talla": variant.talla,
+                                "color": variant.color,
+                            }
+                        )
+                    elif item_key in product_map:
+                        product = product_map[item_key]
+                        if quantity > product.stock:
+                            form.add_error("quantity", f"Solo hay {product.stock} piezas.")
+                            continue
+                        lines.append(
+                            {
+                                "product": product,
+                                "variant": None,
+                                "quantity": int(quantity),
+                                "unit_price": unit_price if unit_price is not None else _money(product.precio),
+                                "talla": "",
+                                "color": "",
+                            }
+                        )
+
+                line_errors = any(form.errors for form in formset)
+                if line_errors:
+                    self.message_user(request, "Revisa cantidades: alguna línea excede el stock.", level=messages.ERROR)
+                elif not lines:
+                    self.message_user(request, "Captura al menos una cantidad para vender.", level=messages.WARNING)
+                else:
+                    try:
+                        with transaction.atomic():
+                            order = Order.objects.create(
+                                customer=None,
+                                status="Completed",
+                                shipping_status="Delivered",
+                                sales_channel="pos",
+                                payment_method=header_form.cleaned_data["payment_method"],
+                                discount_amount=header_form.cleaned_data.get("discount_amount") or Decimal("0.00"),
+                                internal_note=header_form.cleaned_data.get("internal_note", ""),
+                                cashier=request.user if request.user.is_authenticated else None,
+                            )
+                            for line in lines:
+                                OrderItem.objects.create(
+                                    order=order,
+                                    product=line["product"],
+                                    quantity=line["quantity"],
+                                    price=line["unit_price"],
+                                    talla=line["talla"],
+                                    color=line["color"],
+                                )
+                                record_inventory_movement(
+                                    product=line["product"],
+                                    variant=line["variant"],
+                                    order=order,
+                                    movement_type="sale",
+                                    quantity_change=-line["quantity"],
+                                    note="Venta registrada desde punto de venta.",
+                                    created_by=request.user if request.user.is_authenticated else None,
+                                    metadata={
+                                        "sales_channel": "pos",
+                                        "payment_method": header_form.cleaned_data["payment_method"],
+                                        "unit_price": str(line["unit_price"]),
+                                    },
+                                )
+                    except ValueError as exc:
+                        self.message_user(request, str(exc), level=messages.ERROR)
+                    else:
+                        self.message_user(
+                            request,
+                            f"Venta POS registrada. Pedido #{order.id} por ${order.total_price:.2f}.",
+                            level=messages.SUCCESS,
+                        )
+                        return HttpResponseRedirect(reverse("admin:tienda_order_change", args=[order.id]))
+        else:
+            header_form = PointOfSaleHeaderForm()
+            formset = POSLineFormSet(initial=initial, prefix="pos")
+
+        rows = []
+        for row, form in zip(catalog_rows, formset.forms):
+            row["form"] = form
+            rows.append(row)
+
+        context = dict(
+            self.admin_site.each_context(request),
+            title="Punto de venta",
+            subtitle="Venta rápida con descuento de inventario y pedido completado",
+            header_form=header_form,
+            formset=formset,
+            rows=rows,
+            opts=self.model._meta,
+        )
+        return TemplateResponse(request, "admin/tienda/point_of_sale.html", context)
 
     def quote_order_view(self, request, order_id):
         order = self.get_object(request, order_id)

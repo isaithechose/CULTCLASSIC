@@ -1,0 +1,205 @@
+{% extends "admin/base_site.html" %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+  .pos-actions {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+  }
+  .pos-panel {
+    background: #fff;
+    border: 1px solid #e8e8ef;
+    border-radius: 14px;
+    box-shadow: 0 12px 30px rgba(16, 24, 40, 0.06);
+    margin-bottom: 1rem;
+    padding: 1rem;
+  }
+  .pos-header-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem;
+  }
+  .pos-header-grid textarea,
+  .pos-header-grid select,
+  .pos-header-grid input {
+    width: 100%;
+  }
+  .pos-note {
+    color: #6b7280;
+    margin: 0.35rem 0 0;
+  }
+  .pos-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .pos-table th,
+  .pos-table td {
+    border-bottom: 1px solid #edf0f5;
+    padding: 0.75rem;
+    text-align: left;
+    vertical-align: middle;
+  }
+  .pos-table th {
+    color: #6b7280;
+    font-size: 0.78rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .pos-product strong {
+    display: block;
+    color: #111827;
+  }
+  .pos-product span {
+    color: #6b7280;
+    font-size: 0.92rem;
+  }
+  .pos-number input {
+    max-width: 7rem;
+  }
+  .pos-total-bar {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    align-items: center;
+    margin-top: 1rem;
+    padding: 1rem;
+    border-radius: 12px;
+    background: #f8fafc;
+  }
+  .pos-total {
+    color: #05603a;
+    font-size: 1.7rem;
+    font-weight: 800;
+  }
+  @media (max-width: 900px) {
+    .pos-header-grid {
+      grid-template-columns: 1fr;
+    }
+    .pos-table {
+      display: block;
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pos-actions">
+  <a class="button" href="{% url 'admin:tienda_order_changelist' %}">Ver pedidos</a>
+  <a class="button" href="{% url 'admin:tienda_producto_inventory_dashboard' %}">Inventario</a>
+  <a class="button" href="{% url 'admin:tienda_expense_accounting_dashboard' %}">Dashboard contable</a>
+</div>
+
+<form method="post" id="posForm" novalidate>
+  {% csrf_token %}
+  {{ formset.management_form }}
+
+  <div class="pos-panel">
+    <h2>Datos de venta</h2>
+    <div class="pos-header-grid">
+      <div>
+        {{ header_form.payment_method.label_tag }}
+        {{ header_form.payment_method }}
+        {{ header_form.payment_method.errors }}
+      </div>
+      <div>
+        {{ header_form.discount_amount.label_tag }}
+        {{ header_form.discount_amount }}
+        {{ header_form.discount_amount.errors }}
+      </div>
+      <div>
+        {{ header_form.internal_note.label_tag }}
+        {{ header_form.internal_note }}
+        {{ header_form.internal_note.errors }}
+      </div>
+    </div>
+    <p class="pos-note">Esta pantalla crea un pedido completado, descuenta inventario y registra movimientos de venta.</p>
+  </div>
+
+  <div class="pos-panel">
+    <h2>Productos</h2>
+    <table class="pos-table">
+      <thead>
+        <tr>
+          <th>Producto</th>
+          <th>Stock</th>
+          <th>Costo</th>
+          <th>Precio</th>
+          <th>Cantidad</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+          <tr>
+            <td class="pos-product">
+              <strong>{{ row.label }}</strong>
+              <span>{{ row.detail }}</span>
+              {{ row.form.item_key }}
+            </td>
+            <td>{{ row.stock }}</td>
+            <td>${{ row.unit_cost|floatformat:2 }}</td>
+            <td class="pos-number">
+              {{ row.form.unit_price }}
+              {{ row.form.unit_price.errors }}
+            </td>
+            <td class="pos-number">
+              {{ row.form.quantity }}
+              {{ row.form.quantity.errors }}
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="5">No hay productos disponibles para vender.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <div class="pos-total-bar">
+      <div>
+        <strong>Total estimado</strong>
+        <p class="pos-note">El descuento se aplica al crear el pedido.</p>
+      </div>
+      <div class="pos-total">$<span id="posTotal">0.00</span></div>
+    </div>
+  </div>
+
+  <div class="submit-row">
+    <input type="submit" class="default" value="Registrar venta">
+  </div>
+</form>
+
+<script>
+  (function () {
+    const form = document.getElementById("posForm");
+    const totalEl = document.getElementById("posTotal");
+    const discountInput = document.getElementById("id_discount_amount");
+
+    function numberFromInput(input) {
+      const value = parseFloat(input.value || "0");
+      return Number.isFinite(value) ? value : 0;
+    }
+
+    function recalculateTotal() {
+      let total = 0;
+      form.querySelectorAll("tbody tr").forEach((row) => {
+        const quantity = row.querySelector("input[name$='-quantity']");
+        const price = row.querySelector("input[name$='-unit_price']");
+        if (!quantity || !price) return;
+        total += numberFromInput(quantity) * numberFromInput(price);
+      });
+      total -= numberFromInput(discountInput);
+      totalEl.textContent = Math.max(total, 0).toFixed(2);
+    }
+
+    form.querySelectorAll("input, select").forEach((input) => {
+      input.addEventListener("input", recalculateTotal);
+      input.addEventListener("change", recalculateTotal);
+    });
+    recalculateTotal();
+  })();
+</script>
+{% endblock %}
