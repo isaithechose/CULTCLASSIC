@@ -288,6 +288,11 @@ JAZZMIN_SETTINGS = {
     "hide_apps": [],
     "custom_links": {
         "tienda": [{
+            "name": "Punto de venta",
+            "url": "/admin/tienda/order/point-of-sale/",
+            "icon": "fas fa-cash-register",
+            "permissions": ["tienda.view_order"],
+        }, {
             "name": "Inventario",
             "url": "/admin/tienda/producto/inventory-matrix/",
             "icon": "fas fa-boxes-stacked",

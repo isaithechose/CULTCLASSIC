@@ -3,102 +3,167 @@
 {% block extrastyle %}
 {{ block.super }}
 <style>
-  .admin-home-grid {
+  .control-hero {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.65fr);
     gap: 1rem;
-    margin: 1rem 0 1.4rem;
+    margin: 1rem 0 1.25rem;
   }
-  .admin-home-card,
-  .admin-home-panel {
+  .control-panel,
+  .control-card,
+  .control-tool,
+  .control-flow {
     background: #fff;
     border: 1px solid #e8e8ef;
-    border-radius: 18px;
+    border-radius: 14px;
     box-shadow: 0 12px 30px rgba(16, 24, 40, 0.06);
   }
-  .admin-home-card {
-    padding: 1rem 1.05rem;
-    text-decoration: none;
+  .control-panel {
+    padding: 1.15rem;
   }
-  .admin-home-card:hover {
+  .control-title {
+    margin: 0 0 0.35rem;
+    color: #111827;
+    font-size: 1.45rem;
+    font-weight: 800;
+  }
+  .control-subtitle {
+    margin: 0;
+    color: #6b7280;
+  }
+  .control-primary-actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 0.8rem;
+    margin-top: 1rem;
+  }
+  .control-tool {
+    display: block;
+    padding: 0.95rem;
+    color: inherit;
+    text-decoration: none;
+    transition: transform 0.12s ease, border-color 0.12s ease;
+  }
+  .control-tool:hover {
+    border-color: #cfd6e4;
     text-decoration: none;
     transform: translateY(-1px);
   }
-  .admin-home-card__label {
-    color: #6b7280;
-    font-size: 0.82rem;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    margin-bottom: 0.45rem;
-  }
-  .admin-home-card__value {
-    font-size: 2rem;
-    line-height: 1;
-    font-weight: 800;
-    color: #111827;
-  }
-  .admin-home-card--warn .admin-home-card__value { color: #9a6700; }
-  .admin-home-card--danger .admin-home-card__value { color: #b42318; }
-  .admin-home-card--info .admin-home-card__value { color: #175cd3; }
-  .admin-home-card--ok .admin-home-card__value { color: #05603a; }
-  .admin-home-panels {
-    display: grid;
-    grid-template-columns: 1.2fr 1fr;
-    gap: 1rem;
-    margin-bottom: 1.4rem;
-  }
-  .admin-home-panel {
-    padding: 1rem 1.1rem;
-  }
-  .admin-home-panel h3 {
-    margin: 0 0 0.9rem;
-  }
-  .admin-home-links,
-  .admin-home-watchlist {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.75rem;
-  }
-  .admin-home-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    padding: 0.55rem 0.8rem;
-    border-radius: 999px;
-    background: #f8f8fb;
-    border: 1px solid #ececf3;
-    color: #111827;
-    text-decoration: none;
-    font-weight: 700;
-  }
-  .admin-home-watch {
+  .control-tool strong {
     display: block;
-    width: 100%;
-    padding: 0.75rem 0.85rem;
-    border-radius: 14px;
-    background: #f8f8fb;
-    border: 1px solid #ececf3;
+    color: #111827;
+    font-size: 1.02rem;
+  }
+  .control-tool span {
+    display: block;
+    margin-top: 0.35rem;
+    color: #6b7280;
+    line-height: 1.4;
+  }
+  .control-tool--ok { border-left: 4px solid #05603a; }
+  .control-tool--info { border-left: 4px solid #175cd3; }
+  .control-tool--warn { border-left: 4px solid #9a6700; }
+  .control-tool--neutral { border-left: 4px solid #667085; }
+  .control-today {
+    display: grid;
+    gap: 0.65rem;
+  }
+  .control-today-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.72rem 0.85rem;
+    border-radius: 12px;
+    background: #f8fafc;
+  }
+  .control-today-row span {
+    color: #6b7280;
+  }
+  .control-today-row strong {
+    color: #111827;
+  }
+  .control-today-row--ok strong { color: #05603a; }
+  .control-today-row--danger strong { color: #b42318; }
+  .control-today-row--warn strong { color: #9a6700; }
+  .control-today-row--info strong { color: #175cd3; }
+  .control-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 1rem;
+    margin: 0 0 1.25rem;
+  }
+  .control-card {
+    display: block;
+    padding: 1rem;
     color: inherit;
     text-decoration: none;
   }
-  .admin-home-watch strong {
+  .control-card:hover {
+    text-decoration: none;
+  }
+  .control-card__label {
+    color: #6b7280;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .control-card__value {
+    margin-top: 0.4rem;
+    color: #111827;
+    font-size: 1.8rem;
+    font-weight: 800;
+    line-height: 1;
+  }
+  .control-card--warn .control-card__value { color: #9a6700; }
+  .control-card--danger .control-card__value { color: #b42318; }
+  .control-card--info .control-card__value { color: #175cd3; }
+  .control-card--ok .control-card__value { color: #05603a; }
+  .control-flows {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+  }
+  .control-flow {
+    padding: 1rem;
+  }
+  .control-flow h3 {
+    margin: 0 0 0.8rem;
+    color: #111827;
+  }
+  .control-flow a {
+    display: block;
+    padding: 0.62rem 0;
+    border-top: 1px solid #edf0f5;
+    color: #175cd3;
+    font-weight: 700;
+    text-decoration: none;
+  }
+  .control-watchlist {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 0.85rem;
+  }
+  .control-watch {
+    display: block;
+    padding: 0.85rem 0.95rem;
+    border: 1px solid #ececf3;
+    border-radius: 12px;
+    background: #f8f8fb;
+    color: inherit;
+    text-decoration: none;
+  }
+  .control-watch strong {
     display: block;
     color: #111827;
-    margin-bottom: 0.2rem;
   }
-  .admin-home-watch span {
+  .control-watch span {
     color: #6b7280;
   }
-  .admin-home-note {
-    margin-top: 1.2rem;
-    padding: 0.9rem 1rem;
-    border-radius: 16px;
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    color: #6b7280;
-  }
-  @media (max-width: 980px) {
-    .admin-home-panels {
+  @media (max-width: 1100px) {
+    .control-hero,
+    .control-flows {
       grid-template-columns: 1fr;
     }
   }
@@ -106,39 +171,62 @@
 {% endblock %}
 
 {% block content %}
-<div class="admin-home-grid">
+<div class="control-hero">
+  <section class="control-panel">
+    <h2 class="control-title">Centro de control</h2>
+    <p class="control-subtitle">Empieza por la acción que necesitas. El menú lateral queda para búsquedas y edición detallada.</p>
+    <div class="control-primary-actions">
+      {% for link in admin_quick_links %}
+        <a class="control-tool control-tool--{{ link.tone }}" href="{{ link.url }}">
+          <strong>{{ link.label }}</strong>
+          <span>{{ link.description }}</span>
+        </a>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="control-panel">
+    <h2 class="control-title">Hoy</h2>
+    <div class="control-today">
+      {% for item in admin_today_summary %}
+        <div class="control-today-row control-today-row--{{ item.tone }}">
+          <span>{{ item.label }}</span>
+          <strong>{{ item.value }}</strong>
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+
+<div class="control-grid">
   {% for card in admin_overview_cards %}
-    <a class="admin-home-card admin-home-card--{{ card.tone }}" href="{{ card.url }}">
-      <div class="admin-home-card__label">{{ card.label }}</div>
-      <div class="admin-home-card__value">{{ card.value }}</div>
+    <a class="control-card control-card--{{ card.tone }}" href="{{ card.url }}">
+      <div class="control-card__label">{{ card.label }}</div>
+      <div class="control-card__value">{{ card.value }}</div>
     </a>
   {% endfor %}
 </div>
 
-<div class="admin-home-panels">
-  <div class="admin-home-panel">
-    <h3>Herramientas clave</h3>
-    <div class="admin-home-links">
-      {% for link in admin_quick_links %}
-        <a class="admin-home-pill" href="{{ link.url }}">{{ link.label }}</a>
+<div class="control-flows">
+  {% for group in admin_workflow_groups %}
+    <section class="control-flow">
+      <h3>{{ group.title }}</h3>
+      {% for link in group.links %}
+        <a href="{{ link.url }}">{{ link.label }}</a>
       {% endfor %}
-    </div>
-  </div>
-
-  <div class="admin-home-panel">
-    <h3>En qué fijarte hoy</h3>
-    <div class="admin-home-watchlist">
-      {% for item in admin_watchlist %}
-        <a class="admin-home-watch" href="{{ item.url }}">
-          <strong>{{ item.label }}</strong>
-          <span>{{ item.value }}</span>
-        </a>
-      {% endfor %}
-    </div>
-  </div>
+    </section>
+  {% endfor %}
 </div>
 
-<div class="admin-home-note">
-  El menú lateral queda como navegación completa. Esta portada solo deja accesos operativos para no repetir listados y modelos en dos lugares.
-</div>
+<section class="control-panel">
+  <h2 class="control-title">En qué fijarte</h2>
+  <div class="control-watchlist">
+    {% for item in admin_watchlist %}
+      <a class="control-watch" href="{{ item.url }}">
+        <strong>{{ item.label }}</strong>
+        <span>{{ item.value }}</span>
+      </a>
+    {% endfor %}
+  </div>
+</section>
 {% endblock %}

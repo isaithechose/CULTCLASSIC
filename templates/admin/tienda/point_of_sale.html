@@ -31,6 +31,30 @@
     color: #6b7280;
     margin: 0.35rem 0 0;
   }
+  .pos-toolbar {
+    display: grid;
+    grid-template-columns: minmax(220px, 1fr) auto;
+    gap: 1rem;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+  .pos-search {
+    width: 100%;
+    min-height: 2.65rem;
+    padding: 0.65rem 0.85rem;
+    border: 1px solid #d0d5dd;
+    border-radius: 10px;
+  }
+  .pos-selected-count {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.65rem;
+    padding: 0 0.85rem;
+    border-radius: 10px;
+    background: #f8fafc;
+    color: #344054;
+    font-weight: 800;
+  }
   .pos-table {
     width: 100%;
     border-collapse: collapse;
@@ -55,6 +79,12 @@
   .pos-product span {
     color: #6b7280;
     font-size: 0.92rem;
+  }
+  .pos-table tr.is-selected {
+    background: #f0fdf4;
+  }
+  .pos-table tr.is-hidden {
+    display: none;
   }
   .pos-number input {
     max-width: 7rem;
@@ -82,6 +112,9 @@
       display: block;
       overflow-x: auto;
       white-space: nowrap;
+    }
+    .pos-toolbar {
+      grid-template-columns: 1fr;
     }
   }
 </style>
@@ -122,6 +155,10 @@
 
   <div class="pos-panel">
     <h2>Productos</h2>
+    <div class="pos-toolbar">
+      <input class="pos-search" id="posSearch" type="search" placeholder="Buscar producto, color o talla">
+      <div class="pos-selected-count"><span id="posSelectedCount">0</span>&nbsp;líneas seleccionadas</div>
+    </div>
     <table class="pos-table">
       <thead>
         <tr>
@@ -134,7 +171,7 @@
       </thead>
       <tbody>
         {% for row in rows %}
-          <tr>
+          <tr data-search="{{ row.label|lower }} {{ row.detail|lower }}">
             <td class="pos-product">
               <strong>{{ row.label }}</strong>
               <span>{{ row.detail }}</span>
@@ -177,6 +214,8 @@
     const form = document.getElementById("posForm");
     const totalEl = document.getElementById("posTotal");
     const discountInput = document.getElementById("id_discount_amount");
+    const searchInput = document.getElementById("posSearch");
+    const selectedCountEl = document.getElementById("posSelectedCount");
 
     function numberFromInput(input) {
       const value = parseFloat(input.value || "0");
@@ -185,20 +224,34 @@
 
     function recalculateTotal() {
       let total = 0;
+      let selected = 0;
       form.querySelectorAll("tbody tr").forEach((row) => {
         const quantity = row.querySelector("input[name$='-quantity']");
         const price = row.querySelector("input[name$='-unit_price']");
         if (!quantity || !price) return;
-        total += numberFromInput(quantity) * numberFromInput(price);
+        const quantityValue = numberFromInput(quantity);
+        total += quantityValue * numberFromInput(price);
+        row.classList.toggle("is-selected", quantityValue > 0);
+        if (quantityValue > 0) selected += 1;
       });
       total -= numberFromInput(discountInput);
       totalEl.textContent = Math.max(total, 0).toFixed(2);
+      selectedCountEl.textContent = selected;
+    }
+
+    function applySearch() {
+      const query = (searchInput.value || "").trim().toLowerCase();
+      form.querySelectorAll("tbody tr").forEach((row) => {
+        const haystack = row.dataset.search || "";
+        row.classList.toggle("is-hidden", query && !haystack.includes(query));
+      });
     }
 
     form.querySelectorAll("input, select").forEach((input) => {
       input.addEventListener("input", recalculateTotal);
       input.addEventListener("change", recalculateTotal);
     });
+    searchInput.addEventListener("input", applySearch);
     recalculateTotal();
   })();
 </script>

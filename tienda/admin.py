@@ -86,10 +86,25 @@ def _admin_overview_context():
     out_of_stock_variants = active_variants.filter(stock=0).count()
     recent_movements = InventoryMovement.objects.filter(created_at__date=today).count()
     monthly_expenses = Expense.objects.filter(fecha__gte=month_start, fecha__lte=today).aggregate(total=Sum("monto"))["total"] or 0
+    today_expenses = Expense.objects.filter(fecha=today).aggregate(total=Sum("monto"))["total"] or 0
     completed_orders = Order.objects.filter(status="Completed")
     monthly_sales = sum(order.total_price for order in completed_orders.filter(created_at__date__gte=month_start, created_at__date__lte=today))
+    today_orders = [order for order in completed_orders.filter(created_at__date=today).prefetch_related("items__product")]
+    today_sales = sum(order.total_price for order in today_orders)
+    today_cogs = Decimal("0.00")
+    for order in today_orders:
+        for item in order.items.all():
+            today_cogs += _product_unit_cost(item.product) * item.quantity
+    today_profit = Decimal(str(today_sales)) - today_cogs - Decimal(str(today_expenses))
 
     return {
+        "admin_today_summary": [
+            {"label": "Ventas hoy", "value": f"${today_sales:.2f}", "tone": "ok"},
+            {"label": "Pedidos hoy", "value": len(today_orders), "tone": "info"},
+            {"label": "Costo vendido hoy", "value": f"${today_cogs:.2f}", "tone": "warn"},
+            {"label": "Gastos hoy", "value": f"${today_expenses:.2f}", "tone": "danger"},
+            {"label": "Utilidad estimada hoy", "value": f"${today_profit:.2f}", "tone": "ok" if today_profit >= 0 else "danger"},
+        ],
         "admin_overview_cards": [
             {
                 "label": "Pedidos pendientes",
@@ -141,11 +156,48 @@ def _admin_overview_context():
             },
         ],
         "admin_quick_links": [
-            {"label": "Inventario", "url": "/admin/tienda/producto/inventory-dashboard/"},
-            {"label": "Punto de venta", "url": "/admin/tienda/order/point-of-sale/"},
-            {"label": "Recepción de compra", "url": "/admin/tienda/inventorymovement/receive-purchase/"},
-            {"label": "Calendario negocio", "url": "/admin/tienda/businesspayment/business-calendar/"},
-            {"label": "Dashboard contable", "url": "/admin/tienda/expense/accounting-dashboard/"},
+            {"label": "Punto de venta", "url": "/admin/tienda/order/point-of-sale/", "description": "Venta rápida en mostrador con descuento de inventario.", "tone": "ok"},
+            {"label": "Dashboard contable", "url": "/admin/tienda/expense/accounting-dashboard/", "description": "Estado de resultados, gastos y utilidad.", "tone": "info"},
+            {"label": "Inventario", "url": "/admin/tienda/producto/inventory-dashboard/", "description": "Alertas, valor de stock y movimientos recientes.", "tone": "warn"},
+            {"label": "Recepción de compra", "url": "/admin/tienda/inventorymovement/receive-purchase/", "description": "Entrada de mercancía y gasto de compra.", "tone": "neutral"},
+            {"label": "Calendario negocio", "url": "/admin/tienda/businesspayment/business-calendar/", "description": "Ventas, gastos y pagos por día.", "tone": "neutral"},
+        ],
+        "admin_workflow_groups": [
+            {
+                "title": "Vender",
+                "links": [
+                    {"label": "Abrir punto de venta", "url": "/admin/tienda/order/point-of-sale/"},
+                    {"label": "Pedidos de hoy", "url": f"/admin/tienda/order/?created_at__date={today.isoformat()}"},
+                    {"label": "Pedidos pendientes", "url": "/admin/tienda/order/?status__exact=Pending"},
+                ],
+            },
+            {
+                "title": "Inventario",
+                "links": [
+                    {"label": "Dashboard inventario", "url": "/admin/tienda/producto/inventory-dashboard/"},
+                    {"label": "Mesa de inventario", "url": "/admin/tienda/producto/inventory-matrix/"},
+                    {"label": "Recepción de compra", "url": "/admin/tienda/inventorymovement/receive-purchase/"},
+                    {"label": "Variantes", "url": "/admin/tienda/productvariant/"},
+                ],
+            },
+            {
+                "title": "Contabilidad",
+                "links": [
+                    {"label": "Dashboard contable", "url": "/admin/tienda/expense/accounting-dashboard/"},
+                    {"label": "Registrar gasto", "url": "/admin/tienda/expense/add/"},
+                    {"label": "Gastos recurrentes", "url": "/admin/tienda/expense/?recurrencia_activa__exact=1"},
+                    {"label": "Pagos programados", "url": "/admin/tienda/businesspayment/"},
+                ],
+            },
+            {
+                "title": "Catálogo",
+                "links": [
+                    {"label": "Productos", "url": "/admin/tienda/producto/"},
+                    {"label": "Nuevo producto", "url": "/admin/tienda/producto/add/"},
+                    {"label": "Categorías", "url": "/admin/tienda/categoria/"},
+                    {"label": "Diseños", "url": "/admin/tienda/producto/?categoria__nombre=Diseños"},
+                ],
+            },
         ],
         "admin_watchlist": [
             {
