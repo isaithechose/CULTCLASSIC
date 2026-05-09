@@ -1,0 +1,124 @@
+{% extends "admin/base_site.html" %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+  .report-actions,
+  .report-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+  .report-nav strong {
+    color: #111827;
+    min-width: 8rem;
+    text-align: center;
+  }
+  .report-card {
+    background: #fff;
+    border: 1px solid #e8e8ef;
+    border-radius: 14px;
+    box-shadow: 0 12px 30px rgba(16, 24, 40, 0.06);
+    overflow: hidden;
+  }
+  .report-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .report-table th,
+  .report-table td {
+    border-bottom: 1px solid #edf0f5;
+    padding: 0.75rem 0.85rem;
+    text-align: right;
+  }
+  .report-table th:first-child,
+  .report-table td:first-child,
+  .report-table th:nth-child(2),
+  .report-table td:nth-child(2) {
+    text-align: left;
+  }
+  .report-table th {
+    color: #667085;
+    font-size: 0.78rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .report-total {
+    background: #f8fafc;
+    font-weight: 800;
+  }
+  .report-status {
+    display: inline-block;
+    padding: 0.35rem 0.7rem;
+    border-radius: 999px;
+    font-weight: 800;
+  }
+  .report-status--ok {
+    background: #dcfce7;
+    color: #166534;
+  }
+  .report-status--danger {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="report-actions">
+  <a class="button" href="{% url 'admin:tienda_expense_accounting_dashboard' %}">Dashboard contable</a>
+  <a class="button" href="{% url 'admin:tienda_journalentry_changelist' %}">Pólizas</a>
+  <a class="button" href="{% url 'admin:tienda_journalentry_unbalanced' %}?month={{ current_month_value }}">Pólizas descuadradas</a>
+  <span class="report-status {% if is_balanced %}report-status--ok{% else %}report-status--danger{% endif %}">
+    {% if is_balanced %}Debe y haber cuadran{% else %}Hay diferencia{% endif %}
+  </span>
+</div>
+
+<form class="report-nav" method="get">
+  <a class="button" href="?month={{ previous_month }}">Anterior</a>
+  <strong>{{ month_label }}</strong>
+  <a class="button" href="?month={{ next_month }}">Siguiente</a>
+  <input type="month" name="month" value="{{ current_month_value }}">
+  <button type="submit" class="button">Ver mes</button>
+</form>
+
+<div class="report-card">
+  <table class="report-table">
+    <thead>
+      <tr>
+        <th>Código</th>
+        <th>Cuenta</th>
+        <th>Debe</th>
+        <th>Haber</th>
+        <th>Saldo deudor</th>
+        <th>Saldo acreedor</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+        <tr>
+          <td><a href="{% url 'admin:tienda_accountingaccount_ledger' row.account.id %}?month={{ current_month_value }}">{{ row.account.code }}</a></td>
+          <td>{{ row.account.name }}</td>
+          <td>${{ row.debit|floatformat:2 }}</td>
+          <td>${{ row.credit|floatformat:2 }}</td>
+          <td>${{ row.debit_balance|floatformat:2 }}</td>
+          <td>${{ row.credit_balance|floatformat:2 }}</td>
+        </tr>
+      {% empty %}
+        <tr>
+          <td colspan="6">No hay movimientos contables en este mes.</td>
+        </tr>
+      {% endfor %}
+      <tr class="report-total">
+        <td colspan="2">Totales</td>
+        <td>${{ total_debit|floatformat:2 }}</td>
+        <td>${{ total_credit|floatformat:2 }}</td>
+        <td>${{ total_debit_balance|floatformat:2 }}</td>
+        <td>${{ total_credit_balance|floatformat:2 }}</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+{% endblock %}

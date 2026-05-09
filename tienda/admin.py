@@ -2665,7 +2665,7 @@ class CreditCardStatementAdmin(admin.ModelAdmin):
 
 @admin.register(AccountingAccount)
 class AccountingAccountAdmin(admin.ModelAdmin):
-    list_display = ("code", "name", "account_type", "parent", "is_active")
+    list_display = ("code", "name", "account_type", "parent", "is_active", "ledger_link")
     list_filter = ("account_type", "is_active")
     search_fields = ("code", "name")
     list_editable = ("is_active",)
@@ -2678,6 +2678,70 @@ class AccountingAccountAdmin(admin.ModelAdmin):
             "fields": ("description",)
         }),
     )
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path(
+                "<int:account_id>/ledger/",
+                self.admin_site.admin_view(self.ledger_view),
+                name="tienda_accountingaccount_ledger",
+            ),
+        ]
+        return custom_urls + urls
+
+    @admin.display(description="Mayor")
+    def ledger_link(self, obj):
+        return format_html(
+            '<a class="button" href="{}">Ver mayor</a>',
+            reverse("admin:tienda_accountingaccount_ledger", args=[obj.id]),
+        )
+
+    def ledger_view(self, request, account_id):
+        account = self.get_object(request, account_id)
+        if not account:
+            self.message_user(request, "No encontramos esa cuenta contable.", level=messages.ERROR)
+            return HttpResponseRedirect(reverse("admin:tienda_accountingaccount_changelist"))
+
+        today = timezone.localdate()
+        year, month = _coerce_month(request.GET.get("month"), today)
+        month_start = date(year, month, 1)
+        _, month_days = calendar.monthrange(year, month)
+        month_end = month_start.replace(day=month_days)
+        previous_month = (month_start - timedelta(days=1)).strftime("%Y-%m")
+        next_month = (month_end + timedelta(days=1)).strftime("%Y-%m")
+
+        lines = list(
+            JournalEntryLine.objects.filter(
+                account=account,
+                journal_entry__is_posted=True,
+                journal_entry__date__gte=month_start,
+                journal_entry__date__lte=month_end,
+            )
+            .select_related("journal_entry", "account")
+            .order_by("journal_entry__date", "journal_entry__id", "id")
+        )
+        running_balance = Decimal("0.00")
+        rows = []
+        for line in lines:
+            running_balance += line.debit - line.credit
+            rows.append({"line": line, "balance": running_balance})
+
+        context = dict(
+            self.admin_site.each_context(request),
+            title=f"Libro mayor - {account.code} {account.name}",
+            account=account,
+            rows=rows,
+            debit_total=sum(line.debit for line in lines),
+            credit_total=sum(line.credit for line in lines),
+            ending_balance=running_balance,
+            month_label=month_start.strftime("%B %Y").capitalize(),
+            current_month_value=month_start.strftime("%Y-%m"),
+            previous_month=previous_month,
+            next_month=next_month,
+            opts=self.model._meta,
+        )
+        return TemplateResponse(request, "admin/tienda/accounting_ledger.html", context)
 
 
 class JournalEntryLineInlineFormSet(forms.BaseInlineFormSet):
@@ -2738,6 +2802,22 @@ class JournalEntryAdmin(admin.ModelAdmin):
         }),
     )
 
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path(
+                "trial-balance/",
+                self.admin_site.admin_view(self.trial_balance_view),
+                name="tienda_journalentry_trial_balance",
+            ),
+            path(
+                "unbalanced/",
+                self.admin_site.admin_view(self.unbalanced_view),
+                name="tienda_journalentry_unbalanced",
+            ),
+        ]
+        return custom_urls + urls
+
     def save_model(self, request, obj, form, change):
         if not obj.created_by:
             obj.created_by = request.user
@@ -2762,6 +2842,105 @@ class JournalEntryAdmin(admin.ModelAdmin):
         if obj.is_balanced:
             return format_html('<span style="display:inline-block;padding:0.25rem 0.6rem;border-radius:999px;background:#dcfce7;color:#166534;font-weight:800;">Sí</span>')
         return format_html('<span style="display:inline-block;padding:0.25rem 0.6rem;border-radius:999px;background:#fee2e2;color:#991b1b;font-weight:800;">No</span>')
+
+    def _month_bounds(self, request):
+        today = timezone.localdate()
+        year, month = _coerce_month(request.GET.get("month"), today)
+        month_start = date(year, month, 1)
+        _, month_days = calendar.monthrange(year, month)
+        month_end = month_start.replace(day=month_days)
+        return {
+            "month_start": month_start,
+            "month_end": month_end,
+            "month_label": month_start.strftime("%B %Y").capitalize(),
+            "current_month_value": month_start.strftime("%Y-%m"),
+            "previous_month": (month_start - timedelta(days=1)).strftime("%Y-%m"),
+            "next_month": (month_end + timedelta(days=1)).strftime("%Y-%m"),
+        }
+
+    def trial_balance_view(self, request):
+        bounds = self._month_bounds(request)
+        accounts = list(AccountingAccount.objects.filter(is_active=True).order_by("code"))
+        rows = []
+        total_debit = Decimal("0.00")
+        total_credit = Decimal("0.00")
+        total_debit_balance = Decimal("0.00")
+        total_credit_balance = Decimal("0.00")
+
+        for account in accounts:
+            lines = JournalEntryLine.objects.filter(
+                account=account,
+                journal_entry__is_posted=True,
+                journal_entry__date__gte=bounds["month_start"],
+                journal_entry__date__lte=bounds["month_end"],
+            )
+            debit = lines.aggregate(total=Sum("debit"))["total"] or Decimal("0.00")
+            credit = lines.aggregate(total=Sum("credit"))["total"] or Decimal("0.00")
+            balance = debit - credit
+            debit_balance = balance if balance > 0 else Decimal("0.00")
+            credit_balance = abs(balance) if balance < 0 else Decimal("0.00")
+            if debit or credit or debit_balance or credit_balance:
+                rows.append(
+                    {
+                        "account": account,
+                        "debit": debit,
+                        "credit": credit,
+                        "debit_balance": debit_balance,
+                        "credit_balance": credit_balance,
+                    }
+                )
+            total_debit += debit
+            total_credit += credit
+            total_debit_balance += debit_balance
+            total_credit_balance += credit_balance
+
+        context = dict(
+            self.admin_site.each_context(request),
+            title="Balanza de comprobación",
+            rows=rows,
+            total_debit=total_debit,
+            total_credit=total_credit,
+            total_debit_balance=total_debit_balance,
+            total_credit_balance=total_credit_balance,
+            is_balanced=total_debit == total_credit,
+            opts=self.model._meta,
+            **bounds,
+        )
+        return TemplateResponse(request, "admin/tienda/trial_balance.html", context)
+
+    def unbalanced_view(self, request):
+        bounds = self._month_bounds(request)
+        entries = list(
+            JournalEntry.objects.filter(
+                is_posted=True,
+                date__gte=bounds["month_start"],
+                date__lte=bounds["month_end"],
+            ).prefetch_related("lines")
+        )
+        rows = []
+        for entry in entries:
+            debit = entry.total_debit
+            credit = entry.total_credit
+            difference = debit - credit
+            if difference != 0:
+                rows.append(
+                    {
+                        "entry": entry,
+                        "debit": debit,
+                        "credit": credit,
+                        "difference": difference,
+                    }
+                )
+
+        context = dict(
+            self.admin_site.each_context(request),
+            title="Auditoría de pólizas descuadradas",
+            rows=rows,
+            unbalanced_count=len(rows),
+            opts=self.model._meta,
+            **bounds,
+        )
+        return TemplateResponse(request, "admin/tienda/unbalanced_journal_entries.html", context)
 
 
 @admin.action(description="Generar siguiente gasto recurrente")

@@ -1,0 +1,126 @@
+{% extends "admin/base_site.html" %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+  .ledger-actions,
+  .ledger-nav,
+  .ledger-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+  .ledger-nav strong {
+    min-width: 8rem;
+    text-align: center;
+    color: #111827;
+  }
+  .ledger-pill {
+    padding: 0.55rem 0.85rem;
+    border-radius: 999px;
+    background: #f8fafc;
+    color: #344054;
+    font-weight: 800;
+  }
+  .ledger-card {
+    background: #fff;
+    border: 1px solid #e8e8ef;
+    border-radius: 14px;
+    box-shadow: 0 12px 30px rgba(16, 24, 40, 0.06);
+    overflow: hidden;
+  }
+  .ledger-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .ledger-table th,
+  .ledger-table td {
+    border-bottom: 1px solid #edf0f5;
+    padding: 0.75rem 0.85rem;
+    text-align: right;
+  }
+  .ledger-table th:first-child,
+  .ledger-table td:first-child,
+  .ledger-table th:nth-child(2),
+  .ledger-table td:nth-child(2),
+  .ledger-table th:nth-child(3),
+  .ledger-table td:nth-child(3) {
+    text-align: left;
+  }
+  .ledger-table th {
+    color: #667085;
+    font-size: 0.78rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .ledger-total {
+    background: #f8fafc;
+    font-weight: 800;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ledger-actions">
+  <a class="button" href="{% url 'admin:tienda_journalentry_trial_balance' %}?month={{ current_month_value }}">Balanza</a>
+  <a class="button" href="{% url 'admin:tienda_accountingaccount_changelist' %}">Catálogo de cuentas</a>
+  <a class="button" href="{% url 'admin:tienda_journalentry_changelist' %}">Pólizas</a>
+</div>
+
+<div class="ledger-summary">
+  <span class="ledger-pill">{{ account.code }} {{ account.name }}</span>
+  <span class="ledger-pill">Debe ${{ debit_total|floatformat:2 }}</span>
+  <span class="ledger-pill">Haber ${{ credit_total|floatformat:2 }}</span>
+  <span class="ledger-pill">Saldo ${{ ending_balance|floatformat:2 }}</span>
+</div>
+
+<form class="ledger-nav" method="get">
+  <a class="button" href="?month={{ previous_month }}">Anterior</a>
+  <strong>{{ month_label }}</strong>
+  <a class="button" href="?month={{ next_month }}">Siguiente</a>
+  <input type="month" name="month" value="{{ current_month_value }}">
+  <button type="submit" class="button">Ver mes</button>
+</form>
+
+<div class="ledger-card">
+  <table class="ledger-table">
+    <thead>
+      <tr>
+        <th>Fecha</th>
+        <th>Póliza</th>
+        <th>Concepto</th>
+        <th>Debe</th>
+        <th>Haber</th>
+        <th>Saldo</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+        <tr>
+          <td>{{ row.line.journal_entry.date|date:"Y-m-d" }}</td>
+          <td><a href="{% url 'admin:tienda_journalentry_change' row.line.journal_entry.id %}">{{ row.line.journal_entry.reference|default:row.line.journal_entry.id }}</a></td>
+          <td>
+            <strong>{{ row.line.journal_entry.concept }}</strong>
+            {% if row.line.description %}<div>{{ row.line.description }}</div>{% endif %}
+          </td>
+          <td>${{ row.line.debit|floatformat:2 }}</td>
+          <td>${{ row.line.credit|floatformat:2 }}</td>
+          <td>${{ row.balance|floatformat:2 }}</td>
+        </tr>
+      {% empty %}
+        <tr>
+          <td colspan="6">No hay movimientos para esta cuenta en el mes.</td>
+        </tr>
+      {% endfor %}
+      <tr class="ledger-total">
+        <td colspan="3">Totales</td>
+        <td>${{ debit_total|floatformat:2 }}</td>
+        <td>${{ credit_total|floatformat:2 }}</td>
+        <td>${{ ending_balance|floatformat:2 }}</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+{% endblock %}

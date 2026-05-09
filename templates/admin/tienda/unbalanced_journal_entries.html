@@ -1,0 +1,113 @@
+{% extends "admin/base_site.html" %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+  .audit-actions,
+  .audit-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+  .audit-nav strong {
+    min-width: 8rem;
+    text-align: center;
+    color: #111827;
+  }
+  .audit-status {
+    padding: 0.45rem 0.75rem;
+    border-radius: 999px;
+    font-weight: 800;
+  }
+  .audit-status--ok {
+    background: #dcfce7;
+    color: #166534;
+  }
+  .audit-status--danger {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+  .audit-card {
+    background: #fff;
+    border: 1px solid #e8e8ef;
+    border-radius: 14px;
+    box-shadow: 0 12px 30px rgba(16, 24, 40, 0.06);
+    overflow: hidden;
+  }
+  .audit-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .audit-table th,
+  .audit-table td {
+    border-bottom: 1px solid #edf0f5;
+    padding: 0.75rem 0.85rem;
+    text-align: right;
+  }
+  .audit-table th:first-child,
+  .audit-table td:first-child,
+  .audit-table th:nth-child(2),
+  .audit-table td:nth-child(2) {
+    text-align: left;
+  }
+  .audit-table th {
+    color: #667085;
+    font-size: 0.78rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="audit-actions">
+  <a class="button" href="{% url 'admin:tienda_expense_accounting_dashboard' %}">Dashboard contable</a>
+  <a class="button" href="{% url 'admin:tienda_journalentry_trial_balance' %}?month={{ current_month_value }}">Balanza</a>
+  <a class="button" href="{% url 'admin:tienda_journalentry_changelist' %}">Pólizas</a>
+  <span class="audit-status {% if unbalanced_count %}audit-status--danger{% else %}audit-status--ok{% endif %}">
+    {% if unbalanced_count %}{{ unbalanced_count }} descuadradas{% else %}Todo cuadra{% endif %}
+  </span>
+</div>
+
+<form class="audit-nav" method="get">
+  <a class="button" href="?month={{ previous_month }}">Anterior</a>
+  <strong>{{ month_label }}</strong>
+  <a class="button" href="?month={{ next_month }}">Siguiente</a>
+  <input type="month" name="month" value="{{ current_month_value }}">
+  <button type="submit" class="button">Ver mes</button>
+</form>
+
+<div class="audit-card">
+  <table class="audit-table">
+    <thead>
+      <tr>
+        <th>Fecha</th>
+        <th>Póliza</th>
+        <th>Debe</th>
+        <th>Haber</th>
+        <th>Diferencia</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+        <tr>
+          <td>{{ row.entry.date|date:"Y-m-d" }}</td>
+          <td>
+            <a href="{% url 'admin:tienda_journalentry_change' row.entry.id %}">{{ row.entry.concept }}</a>
+            <div>{{ row.entry.reference|default:"Sin referencia" }}</div>
+          </td>
+          <td>${{ row.debit|floatformat:2 }}</td>
+          <td>${{ row.credit|floatformat:2 }}</td>
+          <td>${{ row.difference|floatformat:2 }}</td>
+        </tr>
+      {% empty %}
+        <tr>
+          <td colspan="5">No hay pólizas descuadradas en este mes.</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

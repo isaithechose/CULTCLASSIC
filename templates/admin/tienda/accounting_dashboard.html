@@ -145,6 +145,8 @@
     <a class="button" href="{% url 'admin:tienda_inventorymovement_changelist' %}">Ver movimientos</a>
     <a class="button" href="{% url 'admin:tienda_accountingaccount_changelist' %}">Catálogo de cuentas</a>
     <a class="button" href="{% url 'admin:tienda_journalentry_changelist' %}">Pólizas</a>
+    <a class="button" href="{% url 'admin:tienda_journalentry_trial_balance' %}?month={{ current_month_value }}">Balanza</a>
+    <a class="button" href="{% url 'admin:tienda_journalentry_unbalanced' %}?month={{ current_month_value }}">Auditoría</a>
   </div>
   <div class="accounting-month-nav">
     <a class="button" href="?month={{ previous_month }}">Anterior</a>
