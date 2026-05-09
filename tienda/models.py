@@ -1,6 +1,7 @@
 from django.db import models, transaction
 from django.contrib.auth.models import User
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from decimal import Decimal
 
 
@@ -371,6 +372,104 @@ class CreditCardStatement(models.Model):
 
     def __str__(self):
         return f"{self.tarjeta} - {self.periodo} - ${self.saldo_corte}"
+
+
+class AccountingAccount(models.Model):
+    ACCOUNT_TYPE_CHOICES = [
+        ("asset", "Activo"),
+        ("liability", "Pasivo"),
+        ("equity", "Capital"),
+        ("income", "Ingreso"),
+        ("cost", "Costo"),
+        ("expense", "Gasto"),
+    ]
+
+    code = models.CharField(max_length=20, unique=True)
+    name = models.CharField(max_length=120)
+    account_type = models.CharField(max_length=20, choices=ACCOUNT_TYPE_CHOICES)
+    parent = models.ForeignKey("self", on_delete=models.SET_NULL, null=True, blank=True, related_name="children")
+    is_active = models.BooleanField(default=True)
+    description = models.TextField(blank=True, null=True)
+
+    class Meta:
+        ordering = ["code"]
+        verbose_name = "Cuenta contable"
+        verbose_name_plural = "Catálogo de cuentas"
+
+    def __str__(self):
+        return f"{self.code} {self.name}"
+
+
+class JournalEntry(models.Model):
+    ENTRY_TYPE_CHOICES = [
+        ("income", "Ingreso"),
+        ("expense", "Egreso"),
+        ("diary", "Diario"),
+    ]
+
+    SOURCE_CHOICES = [
+        ("manual", "Manual"),
+        ("pos", "Punto de venta"),
+        ("expense", "Gasto"),
+        ("credit_card", "Tarjeta de credito"),
+        ("inventory", "Inventario"),
+    ]
+
+    date = models.DateField()
+    entry_type = models.CharField(max_length=20, choices=ENTRY_TYPE_CHOICES, default="diary")
+    source = models.CharField(max_length=20, choices=SOURCE_CHOICES, default="manual")
+    concept = models.CharField(max_length=180)
+    reference = models.CharField(max_length=80, blank=True, null=True)
+    order = models.ForeignKey(Order, on_delete=models.SET_NULL, null=True, blank=True, related_name="journal_entries")
+    expense = models.ForeignKey(Expense, on_delete=models.SET_NULL, null=True, blank=True, related_name="journal_entries")
+    credit_card_statement = models.ForeignKey(CreditCardStatement, on_delete=models.SET_NULL, null=True, blank=True, related_name="journal_entries")
+    is_posted = models.BooleanField(default=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-date", "-id"]
+        verbose_name = "Póliza contable"
+        verbose_name_plural = "Pólizas contables"
+
+    @property
+    def total_debit(self):
+        return sum(line.debit for line in self.lines.all())
+
+    @property
+    def total_credit(self):
+        return sum(line.credit for line in self.lines.all())
+
+    @property
+    def is_balanced(self):
+        return self.total_debit == self.total_credit
+
+    def __str__(self):
+        return f"{self.date} - {self.concept}"
+
+
+class JournalEntryLine(models.Model):
+    journal_entry = models.ForeignKey(JournalEntry, on_delete=models.CASCADE, related_name="lines")
+    account = models.ForeignKey(AccountingAccount, on_delete=models.PROTECT, related_name="journal_lines")
+    description = models.CharField(max_length=180, blank=True)
+    debit = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    credit = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+
+    class Meta:
+        ordering = ["id"]
+        verbose_name = "Partida de póliza"
+        verbose_name_plural = "Partidas de póliza"
+
+    def clean(self):
+        if self.debit < 0 or self.credit < 0:
+            raise ValidationError("Cargo y abono no pueden ser negativos.")
+        if self.debit and self.credit:
+            raise ValidationError("Una partida no puede tener cargo y abono al mismo tiempo.")
+
+    def __str__(self):
+        amount = self.debit if self.debit else self.credit
+        side = "Debe" if self.debit else "Haber"
+        return f"{self.account} - {side} ${amount}"
 
 
 class CashRegisterClosure(models.Model):

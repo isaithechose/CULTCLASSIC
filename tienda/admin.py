@@ -19,8 +19,11 @@ from .models import (
     CashRegisterClosure,
     Carrito,
     Categoria,
+    AccountingAccount,
     CreditCardAccount,
     CreditCardStatement,
+    JournalEntry,
+    JournalEntryLine,
     Order,
     OrderItem,
     Producto,
@@ -76,6 +79,156 @@ def _variant_margin(variant):
     if sale_price <= 0:
         return Decimal("0.00")
     return (_variant_profit(variant) / sale_price) * Decimal("100")
+
+
+DEFAULT_ACCOUNTING_ACCOUNTS = {
+    "1000": ("Caja", "asset"),
+    "1010": ("Bancos", "asset"),
+    "1020": ("Tarjetas por cobrar", "asset"),
+    "1100": ("Inventario", "asset"),
+    "1200": ("Clientes", "asset"),
+    "2000": ("Proveedores", "liability"),
+    "2100": ("Tarjetas de credito por pagar", "liability"),
+    "3000": ("Capital", "equity"),
+    "4000": ("Ventas", "income"),
+    "4010": ("Descuentos sobre ventas", "income"),
+    "5000": ("Costo de ventas", "cost"),
+    "6000": ("Gastos generales", "expense"),
+}
+
+
+def _account(code):
+    name, account_type = DEFAULT_ACCOUNTING_ACCOUNTS[code]
+    account, _ = AccountingAccount.objects.get_or_create(
+        code=code,
+        defaults={"name": name, "account_type": account_type},
+    )
+    return account
+
+
+def _cash_account_for_method(method):
+    return {
+        "cash": _account("1000"),
+        "transfer": _account("1010"),
+        "card": _account("1020"),
+        "stripe": _account("1020"),
+        "other": _account("1010"),
+    }.get(method, _account("1010"))
+
+
+def _create_balanced_journal_entry(*, date_value, entry_type, source, concept, lines, reference="", order=None, expense=None, credit_card_statement=None, created_by=None):
+    debit_total = sum(_money(line.get("debit")) for line in lines)
+    credit_total = sum(_money(line.get("credit")) for line in lines)
+    if debit_total != credit_total:
+        raise ValueError(f"La póliza no cuadra: debe ${debit_total:.2f}, haber ${credit_total:.2f}.")
+    if debit_total <= 0:
+        raise ValueError("La póliza debe tener importe mayor a cero.")
+
+    entry = JournalEntry.objects.create(
+        date=date_value,
+        entry_type=entry_type,
+        source=source,
+        concept=concept,
+        reference=reference,
+        order=order,
+        expense=expense,
+        credit_card_statement=credit_card_statement,
+        created_by=created_by,
+    )
+    JournalEntryLine.objects.bulk_create(
+        [
+            JournalEntryLine(
+                journal_entry=entry,
+                account=line["account"],
+                description=line.get("description", ""),
+                debit=_money(line.get("debit")),
+                credit=_money(line.get("credit")),
+            )
+            for line in lines
+            if _money(line.get("debit")) or _money(line.get("credit"))
+        ]
+    )
+    return entry
+
+
+def _post_order_journal_entry(order, lines, created_by=None):
+    if JournalEntry.objects.filter(order=order, source="pos").exists():
+        return None
+
+    product_sales = _money(order.subtotal_price)
+    discount = _money(order.discount_amount)
+    total = _money(order.total_price)
+    cogs = Decimal("0.00")
+    for line in lines:
+        cogs += _product_unit_cost(line["product"]) * Decimal(str(line["quantity"]))
+
+    journal_lines = [
+        {"account": _cash_account_for_method(order.payment_method), "debit": total, "description": "Cobro venta"},
+        {"account": _account("4000"), "credit": product_sales, "description": "Venta de producto"},
+    ]
+    if discount > 0:
+        journal_lines.append({"account": _account("4010"), "debit": discount, "description": "Descuento aplicado"})
+    if cogs > 0:
+        journal_lines.extend(
+            [
+                {"account": _account("5000"), "debit": cogs, "description": "Costo de ventas"},
+                {"account": _account("1100"), "credit": cogs, "description": "Salida de inventario"},
+            ]
+        )
+
+    return _create_balanced_journal_entry(
+        date_value=timezone.localdate(),
+        entry_type="income",
+        source="pos",
+        concept=f"Venta POS pedido #{order.id}",
+        reference=f"ORDER-{order.id}",
+        order=order,
+        lines=journal_lines,
+        created_by=created_by,
+    )
+
+
+def _post_expense_journal_entry(expense, created_by=None):
+    if JournalEntry.objects.filter(expense=expense, source="expense").exists():
+        return None
+    amount = _money(expense.monto)
+    if amount <= 0:
+        return None
+    credit_account = _account("2100") if expense.metodo_pago == "card" else _cash_account_for_method(expense.metodo_pago)
+    return _create_balanced_journal_entry(
+        date_value=expense.fecha,
+        entry_type="expense",
+        source="expense",
+        concept=f"Gasto: {expense.concepto}",
+        reference=f"EXP-{expense.id}",
+        expense=expense,
+        lines=[
+            {"account": _account("6000"), "debit": amount, "description": expense.concepto},
+            {"account": credit_account, "credit": amount, "description": expense.get_metodo_pago_display()},
+        ],
+        created_by=created_by or expense.created_by,
+    )
+
+
+def _post_credit_card_payment_journal_entry(statement, amount, created_by=None):
+    if JournalEntry.objects.filter(credit_card_statement=statement, source="credit_card").exists():
+        return None
+    amount = _money(amount)
+    if amount <= 0:
+        return None
+    return _create_balanced_journal_entry(
+        date_value=statement.fecha_pagado or timezone.localdate(),
+        entry_type="expense",
+        source="credit_card",
+        concept=f"Pago tarjeta {statement.tarjeta} - {statement.periodo}",
+        reference=f"CC-{statement.id}",
+        credit_card_statement=statement,
+        lines=[
+            {"account": _account("2100"), "debit": amount, "description": "Pago de tarjeta"},
+            {"account": _cash_account_for_method(statement.metodo_pago), "credit": amount, "description": statement.get_metodo_pago_display()},
+        ],
+        created_by=created_by or statement.created_by,
+    )
 
 
 def _admin_overview_context():
@@ -169,6 +322,7 @@ def _admin_overview_context():
             {"label": "Punto de venta", "url": "/admin/tienda/order/point-of-sale/", "description": "Venta rápida en mostrador con descuento de inventario.", "tone": "ok"},
             {"label": "Cierre de caja", "url": "/admin/tienda/cashregisterclosure/daily-close/", "description": "Cuadra efectivo, tarjeta, transferencias y diferencias.", "tone": "ok"},
             {"label": "Dashboard contable", "url": "/admin/tienda/expense/accounting-dashboard/", "description": "Estado de resultados, gastos y utilidad.", "tone": "info"},
+            {"label": "Pólizas contables", "url": "/admin/tienda/journalentry/", "description": "Debe, haber y partidas contables por movimiento.", "tone": "info"},
             {"label": "Inventario", "url": "/admin/tienda/producto/inventory-dashboard/", "description": "Alertas, valor de stock y movimientos recientes.", "tone": "warn"},
             {"label": "Recepción de compra", "url": "/admin/tienda/inventorymovement/receive-purchase/", "description": "Entrada de mercancía y gasto de compra.", "tone": "neutral"},
             {"label": "Calendario negocio", "url": "/admin/tienda/businesspayment/business-calendar/", "description": "Ventas, gastos y pagos por día.", "tone": "neutral"},
@@ -197,6 +351,8 @@ def _admin_overview_context():
                 "title": "Contabilidad",
                 "links": [
                     {"label": "Dashboard contable", "url": "/admin/tienda/expense/accounting-dashboard/"},
+                    {"label": "Catálogo de cuentas", "url": "/admin/tienda/accountingaccount/"},
+                    {"label": "Pólizas", "url": "/admin/tienda/journalentry/"},
                     {"label": "Registrar gasto", "url": "/admin/tienda/expense/add/"},
                     {"label": "Gastos recurrentes", "url": "/admin/tienda/expense/?recurrencia_activa__exact=1"},
                     {"label": "Pagos programados", "url": "/admin/tienda/businesspayment/"},
@@ -1861,6 +2017,11 @@ class OrderAdmin(admin.ModelAdmin):
                                         "unit_price": str(line["unit_price"]),
                                     },
                                 )
+                            _post_order_journal_entry(
+                                order,
+                                lines,
+                                created_by=request.user if request.user.is_authenticated else None,
+                            )
                     except ValueError as exc:
                         self.message_user(request, str(exc), level=messages.ERROR)
                     else:
@@ -2289,7 +2450,7 @@ class InventoryMovementAdmin(admin.ModelAdmin):
                     movements += 1
 
                 if create_expense and total_purchase_amount > 0:
-                    Expense.objects.create(
+                    expense = Expense.objects.create(
                         fecha=receipt_date,
                         categoria=self._purchase_expense_category(),
                         concepto=f"Recepción de compra ({movements} variantes)",
@@ -2299,6 +2460,7 @@ class InventoryMovementAdmin(admin.ModelAdmin):
                         nota=note,
                         created_by=request.user,
                     )
+                    _post_expense_journal_entry(expense, created_by=request.user)
 
                 if movements:
                     self.message_user(
@@ -2385,7 +2547,7 @@ def marcar_estados_tarjeta_pagados(modeladmin, request, queryset):
             monto=payment_amount,
         ).exists()
         if not duplicate and payment_amount > 0:
-            Expense.objects.create(
+            expense = Expense.objects.create(
                 fecha=today,
                 categoria=_credit_card_expense_category(),
                 concepto=concept,
@@ -2393,6 +2555,11 @@ def marcar_estados_tarjeta_pagados(modeladmin, request, queryset):
                 metodo_pago=statement.metodo_pago,
                 proveedor=str(statement.tarjeta),
                 nota=statement.nota or "",
+                created_by=request.user if request.user.is_authenticated else statement.created_by,
+            )
+            _post_credit_card_payment_journal_entry(
+                statement,
+                payment_amount,
                 created_by=request.user if request.user.is_authenticated else statement.created_by,
             )
         updated += 1
@@ -2496,6 +2663,107 @@ class CreditCardStatementAdmin(admin.ModelAdmin):
         )
 
 
+@admin.register(AccountingAccount)
+class AccountingAccountAdmin(admin.ModelAdmin):
+    list_display = ("code", "name", "account_type", "parent", "is_active")
+    list_filter = ("account_type", "is_active")
+    search_fields = ("code", "name")
+    list_editable = ("is_active",)
+    autocomplete_fields = ("parent",)
+    fieldsets = (
+        ("Cuenta", {
+            "fields": ("code", "name", "account_type", "parent", "is_active")
+        }),
+        ("Detalle", {
+            "fields": ("description",)
+        }),
+    )
+
+
+class JournalEntryLineInlineFormSet(forms.BaseInlineFormSet):
+    def clean(self):
+        super().clean()
+        debit_total = Decimal("0.00")
+        credit_total = Decimal("0.00")
+        active_lines = 0
+
+        for form in self.forms:
+            if not hasattr(form, "cleaned_data") or form.cleaned_data.get("DELETE"):
+                continue
+            account = form.cleaned_data.get("account")
+            debit = form.cleaned_data.get("debit") or Decimal("0.00")
+            credit = form.cleaned_data.get("credit") or Decimal("0.00")
+            if not account and not debit and not credit:
+                continue
+            if debit and credit:
+                raise forms.ValidationError("Una partida no puede tener debe y haber al mismo tiempo.")
+            if not debit and not credit:
+                raise forms.ValidationError("Cada partida debe tener importe en debe o haber.")
+            debit_total += debit
+            credit_total += credit
+            active_lines += 1
+
+        if active_lines and debit_total != credit_total:
+            raise forms.ValidationError(f"La póliza no cuadra: debe ${debit_total:.2f}, haber ${credit_total:.2f}.")
+        if active_lines == 1:
+            raise forms.ValidationError("Una póliza necesita al menos dos partidas.")
+
+
+class JournalEntryLineInline(admin.TabularInline):
+    model = JournalEntryLine
+    formset = JournalEntryLineInlineFormSet
+    extra = 2
+    autocomplete_fields = ("account",)
+    fields = ("account", "description", "debit", "credit")
+
+
+@admin.register(JournalEntry)
+class JournalEntryAdmin(admin.ModelAdmin):
+    inlines = [JournalEntryLineInline]
+    list_display = ("date", "entry_type", "source", "concept", "reference", "total_debit_display", "total_credit_display", "balanced_badge")
+    list_filter = ("entry_type", "source", "date", "is_posted")
+    search_fields = ("concept", "reference", "lines__account__code", "lines__account__name")
+    autocomplete_fields = ("order", "expense", "credit_card_statement", "created_by")
+    readonly_fields = ("created_at", "total_debit_display", "total_credit_display", "balanced_badge")
+    date_hierarchy = "date"
+    fieldsets = (
+        ("Póliza", {
+            "fields": ("date", "entry_type", "source", "concept", "reference", "is_posted")
+        }),
+        ("Origen", {
+            "fields": ("order", "expense", "credit_card_statement")
+        }),
+        ("Control", {
+            "fields": ("created_by", "created_at", "total_debit_display", "total_credit_display", "balanced_badge")
+        }),
+    )
+
+    def save_model(self, request, obj, form, change):
+        if not obj.created_by:
+            obj.created_by = request.user
+        super().save_model(request, obj, form, change)
+
+    @admin.display(description="Debe")
+    def total_debit_display(self, obj):
+        if not obj or not obj.pk:
+            return "$0.00"
+        return f"${obj.total_debit:.2f}"
+
+    @admin.display(description="Haber")
+    def total_credit_display(self, obj):
+        if not obj or not obj.pk:
+            return "$0.00"
+        return f"${obj.total_credit:.2f}"
+
+    @admin.display(description="Cuadra")
+    def balanced_badge(self, obj):
+        if not obj or not obj.pk:
+            return "-"
+        if obj.is_balanced:
+            return format_html('<span style="display:inline-block;padding:0.25rem 0.6rem;border-radius:999px;background:#dcfce7;color:#166534;font-weight:800;">Sí</span>')
+        return format_html('<span style="display:inline-block;padding:0.25rem 0.6rem;border-radius:999px;background:#fee2e2;color:#991b1b;font-weight:800;">No</span>')
+
+
 @admin.action(description="Generar siguiente gasto recurrente")
 def generar_siguiente_gasto_recurrente(modeladmin, request, queryset):
     created = 0
@@ -2521,7 +2789,7 @@ def generar_siguiente_gasto_recurrente(modeladmin, request, queryset):
             skipped += 1
             continue
 
-        Expense.objects.create(
+        created_expense = Expense.objects.create(
             fecha=next_date,
             categoria=expense.categoria,
             concepto=expense.concepto,
@@ -2535,6 +2803,7 @@ def generar_siguiente_gasto_recurrente(modeladmin, request, queryset):
             gasto_origen=origin,
             created_by=expense.created_by or request.user,
         )
+        _post_expense_journal_entry(created_expense, created_by=expense.created_by or request.user)
         created += 1
 
     if created:
@@ -2596,6 +2865,7 @@ class ExpenseAdmin(admin.ModelAdmin):
         if not obj.created_by:
             obj.created_by = request.user
         super().save_model(request, obj, form, change)
+        _post_expense_journal_entry(obj, created_by=request.user if request.user.is_authenticated else None)
 
     @admin.display(description="Recurrencia")
     def recurrencia_badge(self, obj):

@@ -143,6 +143,8 @@
     <a class="button" href="{% url 'admin:tienda_expense_changelist' %}">Ver gastos</a>
     <a class="button" href="{% url 'admin:tienda_order_changelist' %}?status__exact=Completed">Ver ventas</a>
     <a class="button" href="{% url 'admin:tienda_inventorymovement_changelist' %}">Ver movimientos</a>
+    <a class="button" href="{% url 'admin:tienda_accountingaccount_changelist' %}">Catálogo de cuentas</a>
+    <a class="button" href="{% url 'admin:tienda_journalentry_changelist' %}">Pólizas</a>
   </div>
   <div class="accounting-month-nav">
     <a class="button" href="?month={{ previous_month }}">Anterior</a>
