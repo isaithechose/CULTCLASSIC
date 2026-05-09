@@ -154,6 +154,7 @@ JAZZMIN_SETTINGS = {
         "tienda.InventoryMovement": "fas fa-boxes-stacked",
         "tienda.ExpenseCategory": "fas fa-folder-tree",
         "tienda.Expense": "fas fa-wallet",
+        "tienda.CashRegisterClosure": "fas fa-cash-register",
         "tienda.BusinessPayment": "fas fa-calendar-check",
         "tienda.Order": "fas fa-bag-shopping",
         "tienda.OrderItem": "fas fa-box-open",
@@ -174,6 +175,7 @@ JAZZMIN_SETTINGS = {
         "tienda.InventoryMovement",
         "tienda.ExpenseCategory",
         "tienda.Expense",
+        "tienda.CashRegisterClosure",
         "tienda.BusinessPayment",
         "tienda.Order",
         "tienda.Carrito",
@@ -187,6 +189,11 @@ JAZZMIN_SETTINGS = {
             "url": "/admin/tienda/order/point-of-sale/",
             "icon": "fas fa-cash-register",
             "permissions": ["tienda.view_order"],
+        }, {
+            "name": "Cierre de caja",
+            "url": "/admin/tienda/cashregisterclosure/daily-close/",
+            "icon": "fas fa-cash-register",
+            "permissions": ["tienda.view_cashregisterclosure"],
         }, {
             "name": "Inventario",
             "url": "/admin/tienda/producto/inventory-matrix/",

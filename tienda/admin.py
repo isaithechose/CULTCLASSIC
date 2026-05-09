@@ -16,6 +16,7 @@ from datetime import date, timedelta
 from .skydrop import SkydropError, create_shipment, quote_order, sync_shipment
 from .models import (
     BusinessPayment,
+    CashRegisterClosure,
     Carrito,
     Categoria,
     Order,
@@ -157,6 +158,7 @@ def _admin_overview_context():
         ],
         "admin_quick_links": [
             {"label": "Punto de venta", "url": "/admin/tienda/order/point-of-sale/", "description": "Venta rápida en mostrador con descuento de inventario.", "tone": "ok"},
+            {"label": "Cierre de caja", "url": "/admin/tienda/cashregisterclosure/daily-close/", "description": "Cuadra efectivo, tarjeta, transferencias y diferencias.", "tone": "ok"},
             {"label": "Dashboard contable", "url": "/admin/tienda/expense/accounting-dashboard/", "description": "Estado de resultados, gastos y utilidad.", "tone": "info"},
             {"label": "Inventario", "url": "/admin/tienda/producto/inventory-dashboard/", "description": "Alertas, valor de stock y movimientos recientes.", "tone": "warn"},
             {"label": "Recepción de compra", "url": "/admin/tienda/inventorymovement/receive-purchase/", "description": "Entrada de mercancía y gasto de compra.", "tone": "neutral"},
@@ -167,6 +169,7 @@ def _admin_overview_context():
                 "title": "Vender",
                 "links": [
                     {"label": "Abrir punto de venta", "url": "/admin/tienda/order/point-of-sale/"},
+                    {"label": "Cerrar caja", "url": "/admin/tienda/cashregisterclosure/daily-close/"},
                     {"label": "Pedidos de hoy", "url": f"/admin/tienda/order/?created_at__date={today.isoformat()}"},
                     {"label": "Pedidos pendientes", "url": "/admin/tienda/order/?status__exact=Pending"},
                 ],
@@ -297,6 +300,40 @@ def _next_expense_recurrence_date(expense):
     if expense.recurrencia == "yearly":
         return _add_months(expense.fecha, 12)
     return None
+
+
+def _cash_register_metrics(target_date):
+    orders = list(
+        Order.objects.filter(
+            status="Completed",
+            sales_channel="pos",
+            created_at__date=target_date,
+        ).prefetch_related("items__product")
+    )
+    totals = {
+        "cash": Decimal("0.00"),
+        "card": Decimal("0.00"),
+        "transfer": Decimal("0.00"),
+        "other": Decimal("0.00"),
+    }
+    for order in orders:
+        method = order.payment_method if order.payment_method in totals else "other"
+        totals[method] += Decimal(str(order.total_price))
+
+    cash_expenses = (
+        Expense.objects.filter(fecha=target_date, metodo_pago="cash").aggregate(total=Sum("monto"))["total"]
+        or Decimal("0.00")
+    )
+    return {
+        "orders": orders,
+        "order_count": len(orders),
+        "cash_system": totals["cash"],
+        "card_system": totals["card"],
+        "transfer_system": totals["transfer"],
+        "other_system": totals["other"],
+        "cash_expenses": Decimal(str(cash_expenses)),
+        "system_total": sum(totals.values(), Decimal("0.00")),
+    }
 
 
 def _build_business_calendar_context(year, month):
@@ -683,6 +720,15 @@ class PointOfSaleHeaderForm(forms.Form):
         required=False,
         label="Nota interna",
     )
+
+
+class CashRegisterClosureForm(forms.Form):
+    fecha = forms.DateField(label="Fecha", widget=forms.DateInput(attrs={"type": "date"}))
+    efectivo_contado = forms.DecimalField(min_value=0, decimal_places=2, max_digits=10, initial=0, label="Efectivo contado")
+    tarjeta_contado = forms.DecimalField(min_value=0, decimal_places=2, max_digits=10, initial=0, label="Tarjeta contado")
+    transferencia_contado = forms.DecimalField(min_value=0, decimal_places=2, max_digits=10, initial=0, label="Transferencia contado")
+    otros_contado = forms.DecimalField(min_value=0, decimal_places=2, max_digits=10, initial=0, label="Otros contado")
+    nota = forms.CharField(widget=forms.Textarea(attrs={"rows": 3}), required=False, label="Nota")
 
 
 class ProductVariantInline(admin.TabularInline):
@@ -2489,6 +2535,135 @@ class ExpenseAdmin(admin.ModelAdmin):
             opts=self.model._meta,
         )
         return TemplateResponse(request, "admin/tienda/accounting_dashboard.html", context)
+
+
+@admin.register(CashRegisterClosure)
+class CashRegisterClosureAdmin(admin.ModelAdmin):
+    list_display = ("fecha", "total_sistema_display", "total_contado_display", "gastos_efectivo", "diferencia_badge", "closed_by", "created_at")
+    list_filter = ("fecha", "closed_by")
+    search_fields = ("nota", "closed_by__username")
+    autocomplete_fields = ("closed_by",)
+    readonly_fields = (
+        "efectivo_sistema",
+        "tarjeta_sistema",
+        "transferencia_sistema",
+        "otros_sistema",
+        "gastos_efectivo",
+        "diferencia",
+        "created_at",
+    )
+    date_hierarchy = "fecha"
+    fieldsets = (
+        ("Cierre", {
+            "fields": ("fecha", "closed_by", "nota")
+        }),
+        ("Contado", {
+            "fields": ("efectivo_contado", "tarjeta_contado", "transferencia_contado", "otros_contado")
+        }),
+        ("Sistema", {
+            "fields": ("efectivo_sistema", "tarjeta_sistema", "transferencia_sistema", "otros_sistema", "gastos_efectivo", "diferencia", "created_at")
+        }),
+    )
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path(
+                "daily-close/",
+                self.admin_site.admin_view(self.daily_close_view),
+                name="tienda_cashregisterclosure_daily_close",
+            ),
+        ]
+        return custom_urls + urls
+
+    @admin.display(description="Sistema")
+    def total_sistema_display(self, obj):
+        return f"${obj.total_sistema:.2f}"
+
+    @admin.display(description="Contado")
+    def total_contado_display(self, obj):
+        return f"${obj.total_contado:.2f}"
+
+    @admin.display(description="Diferencia")
+    def diferencia_badge(self, obj):
+        color = "#05603a" if obj.diferencia == 0 else "#b42318"
+        bg = "#dcfce7" if obj.diferencia == 0 else "#fee2e2"
+        return format_html(
+            '<span style="display:inline-block;padding:0.28rem 0.65rem;border-radius:999px;background:{};color:{};font-weight:700;">${}</span>',
+            bg,
+            color,
+            f"{obj.diferencia:.2f}",
+        )
+
+    def daily_close_view(self, request):
+        today = timezone.localdate()
+        target_date = today
+        existing_closure = None
+
+        if request.method == "POST":
+            form = CashRegisterClosureForm(request.POST)
+            if form.is_valid():
+                target_date = form.cleaned_data["fecha"]
+                metrics = _cash_register_metrics(target_date)
+                counted_total = (
+                    form.cleaned_data["efectivo_contado"]
+                    + form.cleaned_data["tarjeta_contado"]
+                    + form.cleaned_data["transferencia_contado"]
+                    + form.cleaned_data["otros_contado"]
+                )
+                expected_total = metrics["system_total"] - metrics["cash_expenses"]
+                closure, _ = CashRegisterClosure.objects.update_or_create(
+                    fecha=target_date,
+                    defaults={
+                        "efectivo_contado": form.cleaned_data["efectivo_contado"],
+                        "tarjeta_contado": form.cleaned_data["tarjeta_contado"],
+                        "transferencia_contado": form.cleaned_data["transferencia_contado"],
+                        "otros_contado": form.cleaned_data["otros_contado"],
+                        "efectivo_sistema": metrics["cash_system"],
+                        "tarjeta_sistema": metrics["card_system"],
+                        "transferencia_sistema": metrics["transfer_system"],
+                        "otros_sistema": metrics["other_system"],
+                        "gastos_efectivo": metrics["cash_expenses"],
+                        "diferencia": counted_total - expected_total,
+                        "nota": form.cleaned_data.get("nota", ""),
+                        "closed_by": request.user if request.user.is_authenticated else None,
+                    },
+                )
+                self.message_user(request, f"Cierre de caja guardado para {target_date}.", level=messages.SUCCESS)
+                return HttpResponseRedirect(reverse("admin:tienda_cashregisterclosure_change", args=[closure.id]))
+        else:
+            raw_date = request.GET.get("fecha")
+            try:
+                target_date = date.fromisoformat(raw_date) if raw_date else today
+            except ValueError:
+                target_date = today
+            existing_closure = CashRegisterClosure.objects.filter(fecha=target_date).first()
+            initial = {
+                "fecha": target_date,
+                "efectivo_contado": existing_closure.efectivo_contado if existing_closure else 0,
+                "tarjeta_contado": existing_closure.tarjeta_contado if existing_closure else 0,
+                "transferencia_contado": existing_closure.transferencia_contado if existing_closure else 0,
+                "otros_contado": existing_closure.otros_contado if existing_closure else 0,
+                "nota": existing_closure.nota if existing_closure else "",
+            }
+            form = CashRegisterClosureForm(initial=initial)
+
+        metrics = _cash_register_metrics(target_date)
+        expected_total = metrics["system_total"] - metrics["cash_expenses"]
+        recent_closures = CashRegisterClosure.objects.order_by("-fecha")[:8]
+        context = dict(
+            self.admin_site.each_context(request),
+            title="Cierre de caja",
+            subtitle="Cuadra ventas POS, gastos en efectivo y dinero contado",
+            form=form,
+            metrics=metrics,
+            target_date=target_date,
+            expected_total=expected_total,
+            existing_closure=existing_closure,
+            recent_closures=recent_closures,
+            opts=self.model._meta,
+        )
+        return TemplateResponse(request, "admin/tienda/cash_register_closure.html", context)
 
 
 @admin.action(description="Marcar pagos como pagados")

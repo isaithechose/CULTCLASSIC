@@ -298,6 +298,40 @@ class BusinessPayment(models.Model):
     def __str__(self):
         return f"{self.concepto} - ${self.monto} ({self.get_estado_display()})"
 
+
+class CashRegisterClosure(models.Model):
+    fecha = models.DateField(unique=True)
+    efectivo_contado = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    tarjeta_contado = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    transferencia_contado = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    otros_contado = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    efectivo_sistema = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    tarjeta_sistema = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    transferencia_sistema = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    otros_sistema = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    gastos_efectivo = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    diferencia = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    nota = models.TextField(blank=True, null=True)
+    closed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-fecha"]
+        verbose_name = "Cierre de caja"
+        verbose_name_plural = "Cierres de caja"
+
+    @property
+    def total_contado(self):
+        return self.efectivo_contado + self.tarjeta_contado + self.transferencia_contado + self.otros_contado
+
+    @property
+    def total_sistema(self):
+        return self.efectivo_sistema + self.tarjeta_sistema + self.transferencia_sistema + self.otros_sistema
+
+    def __str__(self):
+        return f"Cierre {self.fecha} - diferencia ${self.diferencia}"
+
+
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="items")
     product = models.ForeignKey(Producto, on_delete=models.CASCADE)
