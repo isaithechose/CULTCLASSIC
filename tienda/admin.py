@@ -19,6 +19,8 @@ from .models import (
     CashRegisterClosure,
     Carrito,
     Categoria,
+    CreditCardAccount,
+    CreditCardStatement,
     Order,
     OrderItem,
     Producto,
@@ -88,6 +90,7 @@ def _admin_overview_context():
     recent_movements = InventoryMovement.objects.filter(created_at__date=today).count()
     monthly_expenses = Expense.objects.filter(fecha__gte=month_start, fecha__lte=today).aggregate(total=Sum("monto"))["total"] or 0
     today_expenses = Expense.objects.filter(fecha=today).aggregate(total=Sum("monto"))["total"] or 0
+    credit_card_due = sum(statement.saldo_pendiente for statement in CreditCardStatement.objects.filter(estado="pending"))
     completed_orders = Order.objects.filter(status="Completed")
     monthly_sales = sum(order.total_price for order in completed_orders.filter(created_at__date__gte=month_start, created_at__date__lte=today))
     today_orders = [order for order in completed_orders.filter(created_at__date=today).prefetch_related("items__product")]
@@ -150,6 +153,12 @@ def _admin_overview_context():
                 "tone": "danger",
             },
             {
+                "label": "Tarjetas por pagar",
+                "value": f"${credit_card_due:.2f}",
+                "url": "/admin/tienda/creditcardstatement/?estado__exact=pending",
+                "tone": "warn",
+            },
+            {
                 "label": "Ventas del mes",
                 "value": f"${monthly_sales:.2f}",
                 "url": "/admin/tienda/order/?status__exact=Completed",
@@ -163,6 +172,7 @@ def _admin_overview_context():
             {"label": "Inventario", "url": "/admin/tienda/producto/inventory-dashboard/", "description": "Alertas, valor de stock y movimientos recientes.", "tone": "warn"},
             {"label": "Recepción de compra", "url": "/admin/tienda/inventorymovement/receive-purchase/", "description": "Entrada de mercancía y gasto de compra.", "tone": "neutral"},
             {"label": "Calendario negocio", "url": "/admin/tienda/businesspayment/business-calendar/", "description": "Ventas, gastos y pagos por día.", "tone": "neutral"},
+            {"label": "Tarjetas de crédito", "url": "/admin/tienda/creditcardstatement/", "description": "Estados de cuenta, vencimientos y saldos por pagar.", "tone": "warn"},
         ],
         "admin_workflow_groups": [
             {
@@ -190,6 +200,7 @@ def _admin_overview_context():
                     {"label": "Registrar gasto", "url": "/admin/tienda/expense/add/"},
                     {"label": "Gastos recurrentes", "url": "/admin/tienda/expense/?recurrencia_activa__exact=1"},
                     {"label": "Pagos programados", "url": "/admin/tienda/businesspayment/"},
+                    {"label": "Tarjetas por pagar", "url": "/admin/tienda/creditcardstatement/?estado__exact=pending"},
                 ],
             },
             {
@@ -346,6 +357,10 @@ def _build_business_calendar_context(year, month):
     orders = [order for order in Order.objects.filter(status="Completed").prefetch_related("items__product") if first_day <= order.created_at.date() <= last_day]
     expenses = list(Expense.objects.filter(fecha__gte=first_day, fecha__lte=last_day).select_related("categoria"))
     payments = list(BusinessPayment.objects.filter(fecha_programada__gte=first_day, fecha_programada__lte=last_day))
+    credit_card_statements = list(
+        CreditCardStatement.objects.filter(fecha_vencimiento__gte=first_day, fecha_vencimiento__lte=last_day)
+        .select_related("tarjeta")
+    )
 
     sales_by_day = {}
     for order in orders:
@@ -368,6 +383,15 @@ def _build_business_calendar_context(year, month):
         if payment.estado == "pending":
             bucket["pending"] += 1
 
+    cards_by_day = {}
+    for statement in credit_card_statements:
+        day = statement.fecha_vencimiento
+        bucket = cards_by_day.setdefault(day, {"count": 0, "total": Decimal("0.00"), "overdue": 0})
+        bucket["count"] += 1
+        bucket["total"] += statement.saldo_pendiente
+        if statement.esta_vencido:
+            bucket["overdue"] += 1
+
     calendar_weeks = []
     for week in month_weeks:
         days = []
@@ -386,6 +410,14 @@ def _build_business_calendar_context(year, month):
                     "count": payment["count"],
                     "total": payment["total"],
                     "tone": "warn" if payment["pending"] else "neutral",
+                })
+            card_statement = cards_by_day.get(day)
+            if card_statement and card_statement["total"] > 0:
+                events.append({
+                    "label": "Tarjetas",
+                    "count": card_statement["count"],
+                    "total": card_statement["total"],
+                    "tone": "danger" if card_statement["overdue"] else "warn",
                 })
 
             days.append(
@@ -407,6 +439,8 @@ def _build_business_calendar_context(year, month):
     total_expenses = sum(item["total"] for item in expenses_by_day.values()) if expenses_by_day else Decimal("0.00")
     pending_payments = [payment for payment in payments if payment.estado == "pending"]
     total_pending_payments = sum(payment.monto for payment in pending_payments) if pending_payments else Decimal("0.00")
+    pending_credit_cards = [statement for statement in credit_card_statements if statement.estado == "pending"]
+    total_pending_credit_cards = sum(statement.saldo_pendiente for statement in pending_credit_cards) if pending_credit_cards else Decimal("0.00")
 
     return {
         "calendar_weeks": calendar_weeks,
@@ -418,7 +452,10 @@ def _build_business_calendar_context(year, month):
         "month_expenses_total": total_expenses,
         "pending_payments_total": total_pending_payments,
         "pending_payments_count": len(pending_payments),
+        "pending_credit_cards_total": total_pending_credit_cards,
+        "pending_credit_cards_count": len(pending_credit_cards),
         "upcoming_payments": sorted(pending_payments, key=lambda payment: (payment.fecha_programada, payment.id))[:8],
+        "upcoming_credit_cards": sorted(pending_credit_cards, key=lambda statement: (statement.fecha_vencimiento, statement.id))[:8],
         "recent_sales": sorted(orders, key=lambda order: order.created_at, reverse=True)[:8],
         "recent_expenses": sorted(expenses, key=lambda expense: (expense.fecha, expense.id), reverse=True)[:8],
         **inventory_metrics,
@@ -2317,6 +2354,146 @@ class ExpenseCategoryAdmin(admin.ModelAdmin):
         if not obj.descripcion:
             return "-"
         return (obj.descripcion[:60] + "...") if len(obj.descripcion) > 60 else obj.descripcion
+
+
+def _credit_card_expense_category():
+    category, _ = ExpenseCategory.objects.get_or_create(
+        nombre="Pagos tarjetas de credito",
+        defaults={"descripcion": "Pagos de estados de cuenta de tarjetas de credito."},
+    )
+    return category
+
+
+@admin.action(description="Marcar estados de cuenta como pagados")
+def marcar_estados_tarjeta_pagados(modeladmin, request, queryset):
+    today = timezone.localdate()
+    updated = 0
+
+    for statement in queryset.select_related("tarjeta", "created_by"):
+        if statement.estado == "paid":
+            continue
+        payment_amount = statement.saldo_pendiente or statement.saldo_corte
+        statement.estado = "paid"
+        statement.fecha_pagado = today
+        statement.monto_pagado = statement.saldo_corte
+        statement.save(update_fields=["estado", "fecha_pagado", "monto_pagado"])
+
+        concept = f"Pago tarjeta {statement.tarjeta} - {statement.periodo}"
+        duplicate = Expense.objects.filter(
+            fecha=today,
+            concepto=concept,
+            monto=payment_amount,
+        ).exists()
+        if not duplicate and payment_amount > 0:
+            Expense.objects.create(
+                fecha=today,
+                categoria=_credit_card_expense_category(),
+                concepto=concept,
+                monto=payment_amount,
+                metodo_pago=statement.metodo_pago,
+                proveedor=str(statement.tarjeta),
+                nota=statement.nota or "",
+                created_by=request.user if request.user.is_authenticated else statement.created_by,
+            )
+        updated += 1
+
+    modeladmin.message_user(request, f"{updated} estados de cuenta marcados como pagados.", level=messages.SUCCESS)
+
+
+@admin.register(CreditCardAccount)
+class CreditCardAccountAdmin(admin.ModelAdmin):
+    list_display = ("nombre", "banco", "ultimos_4", "limite_credito", "saldo_pendiente_display", "dia_corte", "dia_pago", "activa")
+    list_filter = ("activa", "banco")
+    search_fields = ("nombre", "banco", "ultimos_4")
+    list_editable = ("activa",)
+    fieldsets = (
+        ("Tarjeta", {
+            "fields": ("nombre", "banco", "ultimos_4", "limite_credito", "activa")
+        }),
+        ("Fechas", {
+            "fields": ("dia_corte", "dia_pago")
+        }),
+        ("Detalle", {
+            "fields": ("nota",)
+        }),
+    )
+
+    @admin.display(description="Saldo pendiente")
+    def saldo_pendiente_display(self, obj):
+        return f"${obj.saldo_pendiente:.2f}"
+
+
+@admin.register(CreditCardStatement)
+class CreditCardStatementAdmin(admin.ModelAdmin):
+    list_display = (
+        "tarjeta",
+        "periodo",
+        "fecha_corte",
+        "fecha_vencimiento",
+        "saldo_corte",
+        "pago_minimo",
+        "saldo_pendiente_display",
+        "estado_badge",
+    )
+    list_filter = ("estado", "tarjeta", "fecha_vencimiento", "metodo_pago")
+    search_fields = ("tarjeta__nombre", "tarjeta__banco", "tarjeta__ultimos_4", "periodo", "nota")
+    autocomplete_fields = ("tarjeta", "created_by")
+    readonly_fields = ("created_at", "saldo_pendiente_display", "vencido_badge")
+    date_hierarchy = "fecha_vencimiento"
+    actions = [marcar_estados_tarjeta_pagados]
+    fieldsets = (
+        ("Estado de cuenta", {
+            "fields": ("tarjeta", "periodo", "fecha_corte", "fecha_vencimiento")
+        }),
+        ("Monto", {
+            "fields": ("saldo_corte", "pago_minimo", "monto_pagado", "saldo_pendiente_display")
+        }),
+        ("Pago", {
+            "fields": ("estado", "fecha_pagado", "metodo_pago", "vencido_badge")
+        }),
+        ("Detalle", {
+            "fields": ("nota", "created_by", "created_at")
+        }),
+    )
+
+    def save_model(self, request, obj, form, change):
+        if not obj.created_by:
+            obj.created_by = request.user
+        if obj.estado == "paid" and not obj.fecha_pagado:
+            obj.fecha_pagado = timezone.localdate()
+        super().save_model(request, obj, form, change)
+
+    @admin.display(description="Saldo pendiente")
+    def saldo_pendiente_display(self, obj):
+        if not obj or not obj.pk:
+            return "-"
+        return f"${obj.saldo_pendiente:.2f}"
+
+    @admin.display(description="Vencido")
+    def vencido_badge(self, obj):
+        if not obj or not obj.pk:
+            return "-"
+        if not obj.esta_vencido:
+            return format_html('<span style="color:#05603a;font-weight:700;">No</span>')
+        return format_html('<span style="color:#b42318;font-weight:800;">Sí</span>')
+
+    @admin.display(description="Estado")
+    def estado_badge(self, obj):
+        tones = {
+            "pending": ("#9a6700", "#fff4d6"),
+            "paid": ("#05603a", "#d1fadf"),
+            "canceled": ("#6b7280", "#ececf3"),
+        }
+        if obj.esta_vencido:
+            color, bg = "#b42318", "#fee2e2"
+        else:
+            color, bg = tones.get(obj.estado, ("#6b7280", "#ececf3"))
+        return format_html(
+            '<span style="display:inline-block;padding:0.28rem 0.65rem;border-radius:999px;background:{};color:{};font-weight:700;">{}</span>',
+            bg,
+            color,
+            "Vencido" if obj.esta_vencido else obj.get_estado_display(),
+        )
 
 
 @admin.action(description="Generar siguiente gasto recurrente")

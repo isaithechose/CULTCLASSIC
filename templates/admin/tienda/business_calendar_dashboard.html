@@ -178,6 +178,7 @@
 <div class="business-actions">
   <a class="button default" href="{% url 'admin:tienda_businesspayment_business_calendar' %}">Calendario</a>
   <a class="button" href="{% url 'admin:tienda_businesspayment_changelist' %}">Pagos programados</a>
+  <a class="button" href="{% url 'admin:tienda_creditcardstatement_changelist' %}">Tarjetas por pagar</a>
   <a class="button" href="{% url 'admin:tienda_expense_accounting_dashboard' %}">Dashboard contable</a>
   <a class="button" href="{% url 'admin:tienda_producto_inventory_dashboard' %}">Dashboard inventario</a>
 </div>
@@ -202,6 +203,11 @@
     <div class="business-card__label">Pagos pendientes</div>
     <div class="business-card__value">${{ pending_payments_total|floatformat:2 }}</div>
     <div class="business-card__meta">Programados y todavía no pagados.</div>
+  </div>
+  <div class="business-card">
+    <div class="business-card__label">Tarjetas por pagar</div>
+    <div class="business-card__value">${{ pending_credit_cards_total|floatformat:2 }}</div>
+    <div class="business-card__meta">{{ pending_credit_cards_count }} estados pendientes este mes.</div>
   </div>
   <div class="business-card">
     <div class="business-card__label">Proyección cierre de mes</div>
@@ -272,6 +278,23 @@
         </div>
       {% empty %}
         <p>No hay pagos pendientes en este mes.</p>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="business-panel">
+    <h3>Tarjetas próximas</h3>
+    <div class="business-list">
+      {% for statement in upcoming_credit_cards %}
+        <div class="business-item">
+          <div>
+            <strong>{{ statement.tarjeta }}</strong>
+            <span>{{ statement.periodo }} · vence {{ statement.fecha_vencimiento|date:"Y-m-d" }}</span>
+          </div>
+          <strong>${{ statement.saldo_pendiente|floatformat:2 }}</strong>
+        </div>
+      {% empty %}
+        <p>No hay estados de cuenta pendientes en este mes.</p>
       {% endfor %}
     </div>
   </div>

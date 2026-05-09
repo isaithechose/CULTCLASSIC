@@ -299,6 +299,80 @@ class BusinessPayment(models.Model):
         return f"{self.concepto} - ${self.monto} ({self.get_estado_display()})"
 
 
+class CreditCardAccount(models.Model):
+    nombre = models.CharField(max_length=100)
+    banco = models.CharField(max_length=100, blank=True, null=True)
+    ultimos_4 = models.CharField(max_length=4, blank=True, null=True)
+    limite_credito = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    dia_corte = models.PositiveSmallIntegerField(default=1)
+    dia_pago = models.PositiveSmallIntegerField(default=20)
+    activa = models.BooleanField(default=True)
+    nota = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["nombre"]
+        verbose_name = "Tarjeta de crédito"
+        verbose_name_plural = "Tarjetas de crédito"
+
+    @property
+    def saldo_pendiente(self):
+        total = Decimal("0.00")
+        for statement in self.statements.exclude(estado__in=["paid", "canceled"]):
+            total += statement.saldo_pendiente
+        return total
+
+    def __str__(self):
+        suffix = f" ****{self.ultimos_4}" if self.ultimos_4 else ""
+        return f"{self.nombre}{suffix}"
+
+
+class CreditCardStatement(models.Model):
+    STATUS_CHOICES = [
+        ("pending", "Pendiente"),
+        ("paid", "Pagado"),
+        ("canceled", "Cancelado"),
+    ]
+
+    PAYMENT_METHOD_CHOICES = [
+        ("cash", "Efectivo"),
+        ("transfer", "Transferencia"),
+        ("other", "Otro"),
+    ]
+
+    tarjeta = models.ForeignKey(CreditCardAccount, on_delete=models.CASCADE, related_name="statements")
+    periodo = models.CharField(max_length=80, help_text="Ejemplo: Mayo 2026")
+    fecha_corte = models.DateField()
+    fecha_vencimiento = models.DateField()
+    saldo_corte = models.DecimalField(max_digits=10, decimal_places=2)
+    pago_minimo = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    estado = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
+    monto_pagado = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    fecha_pagado = models.DateField(blank=True, null=True)
+    metodo_pago = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES, default="transfer")
+    nota = models.TextField(blank=True, null=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["fecha_vencimiento", "estado", "id"]
+        verbose_name = "Estado de cuenta de tarjeta"
+        verbose_name_plural = "Estados de cuenta de tarjetas"
+
+    @property
+    def saldo_pendiente(self):
+        return max((self.saldo_corte or Decimal("0.00")) - (self.monto_pagado or Decimal("0.00")), Decimal("0.00"))
+
+    @property
+    def esta_vencido(self):
+        from django.utils import timezone
+
+        return self.estado == "pending" and self.fecha_vencimiento < timezone.localdate()
+
+    def __str__(self):
+        return f"{self.tarjeta} - {self.periodo} - ${self.saldo_corte}"
+
+
 class CashRegisterClosure(models.Model):
     fecha = models.DateField(unique=True)
     efectivo_contado = models.DecimalField(max_digits=10, decimal_places=2, default=0)
