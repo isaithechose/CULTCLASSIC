@@ -2831,6 +2831,16 @@ class JournalEntryAdmin(admin.ModelAdmin):
                 self.admin_site.admin_view(self.generate_missing_entries_view),
                 name="tienda_journalentry_generate_missing",
             ),
+            path(
+                "income-statement/",
+                self.admin_site.admin_view(self.income_statement_view),
+                name="tienda_journalentry_income_statement",
+            ),
+            path(
+                "balance-sheet/",
+                self.admin_site.admin_view(self.balance_sheet_view),
+                name="tienda_journalentry_balance_sheet",
+            ),
         ]
         return custom_urls + urls
 
@@ -3023,6 +3033,129 @@ class JournalEntryAdmin(admin.ModelAdmin):
             self.message_user(request, f"Hay {len(errors) - 5} errores adicionales no mostrados.", level=messages.ERROR)
         next_url = request.POST.get("next") or reverse("admin:tienda_journalentry_changelist")
         return HttpResponseRedirect(next_url)
+
+    def _account_activity(self, *, account_type=None, codes=None, date_from=None, date_to=None):
+        queryset = JournalEntryLine.objects.filter(journal_entry__is_posted=True).select_related("account", "journal_entry")
+        if account_type:
+            queryset = queryset.filter(account__account_type=account_type)
+        if codes:
+            queryset = queryset.filter(account__code__in=codes)
+        if date_from:
+            queryset = queryset.filter(journal_entry__date__gte=date_from)
+        if date_to:
+            queryset = queryset.filter(journal_entry__date__lte=date_to)
+
+        rows_by_account = {}
+        for line in queryset.order_by("account__code"):
+            row = rows_by_account.setdefault(
+                line.account_id,
+                {
+                    "account": line.account,
+                    "debit": Decimal("0.00"),
+                    "credit": Decimal("0.00"),
+                },
+            )
+            row["debit"] += line.debit
+            row["credit"] += line.credit
+        return list(rows_by_account.values())
+
+    def income_statement_view(self, request):
+        bounds = self._month_bounds(request)
+        income_rows = self._account_activity(
+            account_type="income",
+            date_from=bounds["month_start"],
+            date_to=bounds["month_end"],
+        )
+        cost_rows = self._account_activity(
+            account_type="cost",
+            date_from=bounds["month_start"],
+            date_to=bounds["month_end"],
+        )
+        expense_rows = self._account_activity(
+            account_type="expense",
+            date_from=bounds["month_start"],
+            date_to=bounds["month_end"],
+        )
+
+        for row in income_rows:
+            row["amount"] = row["credit"] - row["debit"]
+        for row in cost_rows + expense_rows:
+            row["amount"] = row["debit"] - row["credit"]
+
+        total_income = sum(row["amount"] for row in income_rows)
+        total_cost = sum(row["amount"] for row in cost_rows)
+        total_expense = sum(row["amount"] for row in expense_rows)
+        gross_profit = total_income - total_cost
+        net_profit = gross_profit - total_expense
+
+        context = dict(
+            self.admin_site.each_context(request),
+            title="Estado de resultados desde pólizas",
+            income_rows=income_rows,
+            cost_rows=cost_rows,
+            expense_rows=expense_rows,
+            total_income=total_income,
+            total_cost=total_cost,
+            total_expense=total_expense,
+            gross_profit=gross_profit,
+            net_profit=net_profit,
+            opts=self.model._meta,
+            **bounds,
+        )
+        return TemplateResponse(request, "admin/tienda/journal_income_statement.html", context)
+
+    def balance_sheet_view(self, request):
+        bounds = self._month_bounds(request)
+        end_date = bounds["month_end"]
+        asset_rows = self._account_activity(account_type="asset", date_to=end_date)
+        liability_rows = self._account_activity(account_type="liability", date_to=end_date)
+        equity_rows = self._account_activity(account_type="equity", date_to=end_date)
+        result_rows = self._account_activity(
+            account_type="income",
+            date_to=end_date,
+        ) + self._account_activity(
+            account_type="cost",
+            date_to=end_date,
+        ) + self._account_activity(
+            account_type="expense",
+            date_to=end_date,
+        )
+
+        for row in asset_rows:
+            row["amount"] = row["debit"] - row["credit"]
+        for row in liability_rows + equity_rows:
+            row["amount"] = row["credit"] - row["debit"]
+
+        accumulated_result = Decimal("0.00")
+        for row in result_rows:
+            if row["account"].account_type == "income":
+                accumulated_result += row["credit"] - row["debit"]
+            else:
+                accumulated_result -= row["debit"] - row["credit"]
+
+        total_assets = sum(row["amount"] for row in asset_rows)
+        total_liabilities = sum(row["amount"] for row in liability_rows)
+        total_equity = sum(row["amount"] for row in equity_rows)
+        total_liabilities_equity = total_liabilities + total_equity + accumulated_result
+        difference = total_assets - total_liabilities_equity
+
+        context = dict(
+            self.admin_site.each_context(request),
+            title="Balance general",
+            asset_rows=asset_rows,
+            liability_rows=liability_rows,
+            equity_rows=equity_rows,
+            accumulated_result=accumulated_result,
+            total_assets=total_assets,
+            total_liabilities=total_liabilities,
+            total_equity=total_equity,
+            total_liabilities_equity=total_liabilities_equity,
+            difference=difference,
+            end_date=end_date,
+            opts=self.model._meta,
+            **bounds,
+        )
+        return TemplateResponse(request, "admin/tienda/balance_sheet.html", context)
 
     def unbalanced_view(self, request):
         bounds = self._month_bounds(request)

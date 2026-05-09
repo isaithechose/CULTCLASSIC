@@ -1,0 +1,154 @@
+{% extends "admin/base_site.html" %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+  .balance-actions,
+  .balance-nav,
+  .balance-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+  .balance-nav strong {
+    color: #111827;
+    min-width: 8rem;
+    text-align: center;
+  }
+  .balance-summary span {
+    padding: 0.5rem 0.8rem;
+    border-radius: 999px;
+    background: #f8fafc;
+    font-weight: 800;
+  }
+  .balance-summary .is-ok {
+    background: #dcfce7;
+    color: #166534;
+  }
+  .balance-summary .is-danger {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+  .balance-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+  }
+  .balance-card {
+    background: #fff;
+    border: 1px solid #e8e8ef;
+    border-radius: 14px;
+    box-shadow: 0 12px 30px rgba(16, 24, 40, 0.06);
+    overflow: hidden;
+  }
+  .balance-card h2 {
+    margin: 0;
+    padding: 0.9rem 1rem;
+    border-bottom: 1px solid #edf0f5;
+  }
+  .balance-row {
+    display: grid;
+    grid-template-columns: 7rem 1fr auto;
+    gap: 1rem;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #edf0f5;
+    align-items: center;
+  }
+  .balance-row:last-child {
+    border-bottom: 0;
+  }
+  .balance-code {
+    color: #667085;
+    font-weight: 800;
+  }
+  .balance-amount {
+    text-align: right;
+    font-weight: 800;
+  }
+  .balance-total {
+    background: #f8fafc;
+    font-weight: 900;
+  }
+  @media (max-width: 900px) {
+    .balance-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="balance-actions">
+  <a class="button" href="{% url 'admin:tienda_expense_accounting_dashboard' %}">Dashboard contable</a>
+  <a class="button" href="{% url 'admin:tienda_journalentry_trial_balance' %}?month={{ current_month_value }}">Balanza</a>
+  <a class="button" href="{% url 'admin:tienda_journalentry_income_statement' %}?month={{ current_month_value }}">Estado de resultados</a>
+  <a class="button" href="{% url 'admin:tienda_journalentry_changelist' %}">Pólizas</a>
+</div>
+
+<form class="balance-nav" method="get">
+  <a class="button" href="?month={{ previous_month }}">Anterior</a>
+  <strong>{{ month_label }}</strong>
+  <a class="button" href="?month={{ next_month }}">Siguiente</a>
+  <input type="month" name="month" value="{{ current_month_value }}">
+  <button type="submit" class="button">Ver mes</button>
+</form>
+
+<div class="balance-summary">
+  <span>Al {{ end_date|date:"Y-m-d" }}</span>
+  <span>Activos ${{ total_assets|floatformat:2 }}</span>
+  <span>Pasivo + capital ${{ total_liabilities_equity|floatformat:2 }}</span>
+  <span class="{% if difference == 0 %}is-ok{% else %}is-danger{% endif %}">Diferencia ${{ difference|floatformat:2 }}</span>
+</div>
+
+<div class="balance-grid">
+  <section class="balance-card">
+    <h2>Activos</h2>
+    {% for row in asset_rows %}
+      <div class="balance-row">
+        <div class="balance-code">{{ row.account.code }}</div>
+        <div>{{ row.account.name }}</div>
+        <div class="balance-amount">${{ row.amount|floatformat:2 }}</div>
+      </div>
+    {% empty %}
+      <div class="balance-row"><div></div><div>Sin activos contabilizados.</div><div></div></div>
+    {% endfor %}
+    <div class="balance-row balance-total">
+      <div></div>
+      <div>Total activos</div>
+      <div class="balance-amount">${{ total_assets|floatformat:2 }}</div>
+    </div>
+  </section>
+
+  <section class="balance-card">
+    <h2>Pasivo y capital</h2>
+    {% for row in liability_rows %}
+      <div class="balance-row">
+        <div class="balance-code">{{ row.account.code }}</div>
+        <div>{{ row.account.name }}</div>
+        <div class="balance-amount">${{ row.amount|floatformat:2 }}</div>
+      </div>
+    {% empty %}
+      <div class="balance-row"><div></div><div>Sin pasivos contabilizados.</div><div></div></div>
+    {% endfor %}
+    {% for row in equity_rows %}
+      <div class="balance-row">
+        <div class="balance-code">{{ row.account.code }}</div>
+        <div>{{ row.account.name }}</div>
+        <div class="balance-amount">${{ row.amount|floatformat:2 }}</div>
+      </div>
+    {% endfor %}
+    <div class="balance-row">
+      <div class="balance-code">R</div>
+      <div>Resultado acumulado</div>
+      <div class="balance-amount">${{ accumulated_result|floatformat:2 }}</div>
+    </div>
+    <div class="balance-row balance-total">
+      <div></div>
+      <div>Total pasivo + capital</div>
+      <div class="balance-amount">${{ total_liabilities_equity|floatformat:2 }}</div>
+    </div>
+  </section>
+</div>
+{% endblock %}

@@ -1,0 +1,129 @@
+{% extends "admin/base_site.html" %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+  .statement-actions,
+  .statement-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+  .statement-nav strong {
+    color: #111827;
+    min-width: 8rem;
+    text-align: center;
+  }
+  .statement-card {
+    background: #fff;
+    border: 1px solid #e8e8ef;
+    border-radius: 14px;
+    box-shadow: 0 12px 30px rgba(16, 24, 40, 0.06);
+    margin-bottom: 1rem;
+    overflow: hidden;
+  }
+  .statement-card h2 {
+    margin: 0;
+    padding: 0.9rem 1rem;
+    border-bottom: 1px solid #edf0f5;
+  }
+  .statement-row {
+    display: grid;
+    grid-template-columns: 7rem 1fr auto;
+    gap: 1rem;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #edf0f5;
+    align-items: center;
+  }
+  .statement-row:last-child {
+    border-bottom: 0;
+  }
+  .statement-code {
+    color: #667085;
+    font-weight: 800;
+  }
+  .statement-amount {
+    font-weight: 800;
+    text-align: right;
+  }
+  .statement-total {
+    background: #f8fafc;
+    font-weight: 900;
+  }
+  .statement-total .statement-amount--ok { color: #05603a; }
+  .statement-total .statement-amount--danger { color: #b42318; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="statement-actions">
+  <a class="button" href="{% url 'admin:tienda_expense_accounting_dashboard' %}">Dashboard contable</a>
+  <a class="button" href="{% url 'admin:tienda_journalentry_trial_balance' %}?month={{ current_month_value }}">Balanza</a>
+  <a class="button" href="{% url 'admin:tienda_journalentry_balance_sheet' %}?month={{ current_month_value }}">Balance general</a>
+  <a class="button" href="{% url 'admin:tienda_journalentry_changelist' %}">Pólizas</a>
+</div>
+
+<form class="statement-nav" method="get">
+  <a class="button" href="?month={{ previous_month }}">Anterior</a>
+  <strong>{{ month_label }}</strong>
+  <a class="button" href="?month={{ next_month }}">Siguiente</a>
+  <input type="month" name="month" value="{{ current_month_value }}">
+  <button type="submit" class="button">Ver mes</button>
+</form>
+
+<section class="statement-card">
+  <h2>Ingresos</h2>
+  {% for row in income_rows %}
+    <div class="statement-row">
+      <div class="statement-code">{{ row.account.code }}</div>
+      <div>{{ row.account.name }}</div>
+      <div class="statement-amount">${{ row.amount|floatformat:2 }}</div>
+    </div>
+  {% empty %}
+    <div class="statement-row"><div></div><div>Sin ingresos contabilizados.</div><div></div></div>
+  {% endfor %}
+  <div class="statement-row statement-total">
+    <div></div>
+    <div>Total ingresos</div>
+    <div class="statement-amount">${{ total_income|floatformat:2 }}</div>
+  </div>
+</section>
+
+<section class="statement-card">
+  <h2>Costo de ventas</h2>
+  {% for row in cost_rows %}
+    <div class="statement-row">
+      <div class="statement-code">{{ row.account.code }}</div>
+      <div>{{ row.account.name }}</div>
+      <div class="statement-amount">${{ row.amount|floatformat:2 }}</div>
+    </div>
+  {% empty %}
+    <div class="statement-row"><div></div><div>Sin costo contabilizado.</div><div></div></div>
+  {% endfor %}
+  <div class="statement-row statement-total">
+    <div></div>
+    <div>Utilidad bruta</div>
+    <div class="statement-amount {% if gross_profit >= 0 %}statement-amount--ok{% else %}statement-amount--danger{% endif %}">${{ gross_profit|floatformat:2 }}</div>
+  </div>
+</section>
+
+<section class="statement-card">
+  <h2>Gastos</h2>
+  {% for row in expense_rows %}
+    <div class="statement-row">
+      <div class="statement-code">{{ row.account.code }}</div>
+      <div>{{ row.account.name }}</div>
+      <div class="statement-amount">${{ row.amount|floatformat:2 }}</div>
+    </div>
+  {% empty %}
+    <div class="statement-row"><div></div><div>Sin gastos contabilizados.</div><div></div></div>
+  {% endfor %}
+  <div class="statement-row statement-total">
+    <div></div>
+    <div>Utilidad neta</div>
+    <div class="statement-amount {% if net_profit >= 0 %}statement-amount--ok{% else %}statement-amount--danger{% endif %}">${{ net_profit|floatformat:2 }}</div>
+  </div>
+</section>
+{% endblock %}
