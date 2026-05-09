@@ -33,7 +33,7 @@
   }
   .pos-toolbar {
     display: grid;
-    grid-template-columns: minmax(220px, 1fr) auto;
+    grid-template-columns: minmax(220px, 1fr) auto auto;
     gap: 1rem;
     align-items: center;
     margin-bottom: 1rem;
@@ -54,6 +54,18 @@
     background: #f8fafc;
     color: #344054;
     font-weight: 800;
+  }
+  .pos-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    min-height: 2.65rem;
+    padding: 0 0.85rem;
+    border-radius: 10px;
+    background: #fff;
+    border: 1px solid #d0d5dd;
+    color: #344054;
+    font-weight: 700;
   }
   .pos-table {
     width: 100%;
@@ -76,6 +88,30 @@
     display: block;
     color: #111827;
   }
+  .pos-product {
+    min-width: 19rem;
+  }
+  .pos-product-wrap {
+    display: flex;
+    gap: 0.85rem;
+    align-items: center;
+  }
+  .pos-image {
+    flex: 0 0 auto;
+    width: 4.6rem;
+    height: 4.6rem;
+    border: 1px solid #e4e7ec;
+    border-radius: 12px;
+    background: #f8fafc;
+    object-fit: cover;
+  }
+  .pos-image--empty {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #98a2b3;
+    font-weight: 800;
+  }
   .pos-product span {
     color: #6b7280;
     font-size: 0.92rem;
@@ -89,9 +125,33 @@
   .pos-number input {
     max-width: 7rem;
   }
+  .pos-qty-control {
+    display: inline-grid;
+    grid-template-columns: 2.2rem 5.5rem 2.2rem;
+    gap: 0.35rem;
+    align-items: center;
+  }
+  .pos-qty-btn {
+    width: 2.2rem;
+    height: 2.2rem;
+    border: 1px solid #d0d5dd;
+    border-radius: 8px;
+    background: #fff;
+    color: #111827;
+    font-weight: 900;
+    line-height: 1;
+  }
+  .pos-line-subtotal {
+    color: #111827;
+    font-weight: 800;
+  }
   .pos-total-bar {
-    display: flex;
-    justify-content: space-between;
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    display: grid;
+    grid-template-columns: repeat(4, auto);
+    justify-content: end;
     gap: 1rem;
     align-items: center;
     margin-top: 1rem;
@@ -104,6 +164,16 @@
     font-size: 1.7rem;
     font-weight: 800;
   }
+  .pos-summary-item {
+    min-width: 8rem;
+  }
+  .pos-summary-item strong {
+    display: block;
+    color: #111827;
+  }
+  .pos-clear {
+    min-height: 2.4rem;
+  }
   @media (max-width: 900px) {
     .pos-header-grid {
       grid-template-columns: 1fr;
@@ -115,6 +185,10 @@
     }
     .pos-toolbar {
       grid-template-columns: 1fr;
+    }
+    .pos-total-bar {
+      grid-template-columns: 1fr;
+      justify-content: stretch;
     }
   }
 </style>
@@ -157,6 +231,7 @@
     <h2>Productos</h2>
     <div class="pos-toolbar">
       <input class="pos-search" id="posSearch" type="search" placeholder="Buscar producto, color o talla">
+      <label class="pos-toggle"><input id="hideOutOfStock" type="checkbox"> Ocultar agotados</label>
       <div class="pos-selected-count"><span id="posSelectedCount">0</span>&nbsp;líneas seleccionadas</div>
     </div>
     <table class="pos-table">
@@ -166,16 +241,26 @@
           <th>Stock</th>
           <th>Costo</th>
           <th>Precio</th>
+          <th>Subtotal</th>
           <th>Cantidad</th>
         </tr>
       </thead>
       <tbody>
         {% for row in rows %}
-          <tr data-search="{{ row.label|lower }} {{ row.detail|lower }}">
+          <tr data-search="{{ row.label|lower }} {{ row.detail|lower }}" data-stock="{{ row.stock }}" data-cost="{{ row.unit_cost|floatformat:2 }}">
             <td class="pos-product">
-              <strong>{{ row.label }}</strong>
-              <span>{{ row.detail }}</span>
-              {{ row.form.item_key }}
+              <div class="pos-product-wrap">
+                {% if row.image_url %}
+                  <img class="pos-image" src="{{ row.image_url }}" loading="lazy" decoding="async" alt="">
+                {% else %}
+                  <span class="pos-image pos-image--empty">IMG</span>
+                {% endif %}
+                <div>
+                  <strong>{{ row.label }}</strong>
+                  <span>{{ row.detail }}</span>
+                  {{ row.form.item_key }}
+                </div>
+              </div>
             </td>
             <td>{{ row.stock }}</td>
             <td>${{ row.unit_cost|floatformat:2 }}</td>
@@ -183,8 +268,13 @@
               {{ row.form.unit_price }}
               {{ row.form.unit_price.errors }}
             </td>
+            <td class="pos-line-subtotal">$<span data-line-subtotal>0.00</span></td>
             <td class="pos-number">
-              {{ row.form.quantity }}
+              <div class="pos-qty-control">
+                <button class="pos-qty-btn" type="button" data-qty-step="-1">−</button>
+                {{ row.form.quantity }}
+                <button class="pos-qty-btn" type="button" data-qty-step="1">+</button>
+              </div>
               {{ row.form.quantity.errors }}
             </td>
           </tr>
@@ -196,11 +286,19 @@
       </tbody>
     </table>
     <div class="pos-total-bar">
-      <div>
-        <strong>Total estimado</strong>
-        <p class="pos-note">El descuento se aplica al crear el pedido.</p>
+      <div class="pos-summary-item">
+        <span class="pos-note">Piezas</span>
+        <strong><span id="posPieces">0</span></strong>
       </div>
-      <div class="pos-total">$<span id="posTotal">0.00</span></div>
+      <div class="pos-summary-item">
+        <span class="pos-note">Utilidad est.</span>
+        <strong>$<span id="posProfit">0.00</span></strong>
+      </div>
+      <div class="pos-summary-item">
+        <span class="pos-note">Total estimado</span>
+        <div class="pos-total">$<span id="posTotal">0.00</span></div>
+      </div>
+      <button class="button pos-clear" id="posClearBtn" type="button">Limpiar venta</button>
     </div>
   </div>
 
@@ -216,6 +314,10 @@
     const discountInput = document.getElementById("id_discount_amount");
     const searchInput = document.getElementById("posSearch");
     const selectedCountEl = document.getElementById("posSelectedCount");
+    const hideOutOfStockInput = document.getElementById("hideOutOfStock");
+    const piecesEl = document.getElementById("posPieces");
+    const profitEl = document.getElementById("posProfit");
+    const clearBtn = document.getElementById("posClearBtn");
 
     function numberFromInput(input) {
       const value = parseFloat(input.value || "0");
@@ -224,26 +326,40 @@
 
     function recalculateTotal() {
       let total = 0;
+      let profit = 0;
+      let pieces = 0;
       let selected = 0;
       form.querySelectorAll("tbody tr").forEach((row) => {
         const quantity = row.querySelector("input[name$='-quantity']");
         const price = row.querySelector("input[name$='-unit_price']");
+        const subtotalEl = row.querySelector("[data-line-subtotal]");
         if (!quantity || !price) return;
         const quantityValue = numberFromInput(quantity);
-        total += quantityValue * numberFromInput(price);
+        const priceValue = numberFromInput(price);
+        const costValue = parseFloat(row.dataset.cost || "0") || 0;
+        const lineSubtotal = quantityValue * priceValue;
+        total += lineSubtotal;
+        profit += quantityValue * (priceValue - costValue);
+        pieces += quantityValue;
+        if (subtotalEl) subtotalEl.textContent = lineSubtotal.toFixed(2);
         row.classList.toggle("is-selected", quantityValue > 0);
         if (quantityValue > 0) selected += 1;
       });
       total -= numberFromInput(discountInput);
       totalEl.textContent = Math.max(total, 0).toFixed(2);
+      profit -= numberFromInput(discountInput);
+      profitEl.textContent = profit.toFixed(2);
+      piecesEl.textContent = pieces;
       selectedCountEl.textContent = selected;
     }
 
     function applySearch() {
       const query = (searchInput.value || "").trim().toLowerCase();
+      const hideOutOfStock = hideOutOfStockInput.checked;
       form.querySelectorAll("tbody tr").forEach((row) => {
         const haystack = row.dataset.search || "";
-        row.classList.toggle("is-hidden", query && !haystack.includes(query));
+        const outOfStock = Number(row.dataset.stock || "0") <= 0;
+        row.classList.toggle("is-hidden", Boolean((query && !haystack.includes(query)) || (hideOutOfStock && outOfStock)));
       });
     }
 
@@ -252,6 +368,25 @@
       input.addEventListener("change", recalculateTotal);
     });
     searchInput.addEventListener("input", applySearch);
+    hideOutOfStockInput.addEventListener("change", applySearch);
+    form.querySelectorAll("[data-qty-step]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const row = button.closest("tr");
+        const input = row.querySelector("input[name$='-quantity']");
+        const stock = Number(row.dataset.stock || "0");
+        const step = Number(button.dataset.qtyStep || "0");
+        const current = numberFromInput(input);
+        input.value = Math.max(0, Math.min(stock, current + step));
+        recalculateTotal();
+      });
+    });
+    clearBtn.addEventListener("click", () => {
+      form.querySelectorAll("input[name$='-quantity']").forEach((input) => {
+        input.value = 0;
+      });
+      discountInput.value = 0;
+      recalculateTotal();
+    });
     recalculateTotal();
   })();
 </script>

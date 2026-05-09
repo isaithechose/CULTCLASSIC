@@ -1704,10 +1704,13 @@ class OrderAdmin(admin.ModelAdmin):
 
         for variant in variants:
             key = f"v:{variant.id}"
+            image_name = existing_thumbnail_or_image_name(variant.display_image_name)
+            image_url = f"{settings.MEDIA_URL.rstrip('/')}/{image_name.lstrip('/')}" if image_name else ""
             initial.append({"item_key": key, "quantity": 0, "unit_price": variant.product.precio})
             catalog_rows.append(
                 {
                     "key": key,
+                    "image_url": image_url,
                     "label": variant.product.nombre,
                     "detail": f"{variant.color} / {variant.talla}",
                     "stock": variant.stock,
@@ -1718,10 +1721,12 @@ class OrderAdmin(admin.ModelAdmin):
 
         for product in general_products:
             key = f"p:{product.id}"
+            image_url = product.imagen.url if product.imagen else ""
             initial.append({"item_key": key, "quantity": 0, "unit_price": product.precio})
             catalog_rows.append(
                 {
                     "key": key,
+                    "image_url": image_url,
                     "label": product.nombre,
                     "detail": "Stock general",
                     "stock": product.stock,
