@@ -147,6 +147,12 @@
     <a class="button" href="{% url 'admin:tienda_journalentry_changelist' %}">Pólizas</a>
     <a class="button" href="{% url 'admin:tienda_journalentry_trial_balance' %}?month={{ current_month_value }}">Balanza</a>
     <a class="button" href="{% url 'admin:tienda_journalentry_unbalanced' %}?month={{ current_month_value }}">Auditoría</a>
+    <a class="button" href="{% url 'admin:tienda_journalentry_trial_balance_export' %}?month={{ current_month_value }}">Exportar balanza</a>
+    <form method="post" action="{% url 'admin:tienda_journalentry_generate_missing' %}" style="display:inline-flex;margin:0;">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{% url 'admin:tienda_expense_accounting_dashboard' %}?month={{ current_month_value }}">
+      <button type="submit" class="button">Generar pólizas faltantes</button>
+    </form>
   </div>
   <div class="accounting-month-nav">
     <a class="button" href="?month={{ previous_month }}">Anterior</a>

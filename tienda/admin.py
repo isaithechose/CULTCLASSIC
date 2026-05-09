@@ -6,7 +6,7 @@ from django import forms
 from django.db import transaction
 from django.db.models import Count, Sum
 from django.forms import formset_factory
-from django.http import HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseRedirect
 from django.template.response import TemplateResponse
 from django.urls import path, reverse
 from django.utils.html import format_html
@@ -92,6 +92,7 @@ DEFAULT_ACCOUNTING_ACCOUNTS = {
     "3000": ("Capital", "equity"),
     "4000": ("Ventas", "income"),
     "4010": ("Descuentos sobre ventas", "income"),
+    "4020": ("Ingresos por envio", "income"),
     "5000": ("Costo de ventas", "cost"),
     "6000": ("Gastos generales", "expense"),
 }
@@ -156,6 +157,7 @@ def _post_order_journal_entry(order, lines, created_by=None):
         return None
 
     product_sales = _money(order.subtotal_price)
+    shipping_income = _money(order.shipping_total)
     discount = _money(order.discount_amount)
     total = _money(order.total_price)
     cogs = Decimal("0.00")
@@ -168,6 +170,8 @@ def _post_order_journal_entry(order, lines, created_by=None):
     ]
     if discount > 0:
         journal_lines.append({"account": _account("4010"), "debit": discount, "description": "Descuento aplicado"})
+    if shipping_income > 0:
+        journal_lines.append({"account": _account("4020"), "credit": shipping_income, "description": "Ingreso por envio"})
     if cogs > 0:
         journal_lines.extend(
             [
@@ -177,10 +181,10 @@ def _post_order_journal_entry(order, lines, created_by=None):
         )
 
     return _create_balanced_journal_entry(
-        date_value=timezone.localdate(),
+        date_value=order.created_at.date() if order.created_at else timezone.localdate(),
         entry_type="income",
         source="pos",
-        concept=f"Venta POS pedido #{order.id}",
+        concept=f"Venta pedido #{order.id}",
         reference=f"ORDER-{order.id}",
         order=order,
         lines=journal_lines,
@@ -190,6 +194,8 @@ def _post_order_journal_entry(order, lines, created_by=None):
 
 def _post_expense_journal_entry(expense, created_by=None):
     if JournalEntry.objects.filter(expense=expense, source="expense").exists():
+        return None
+    if expense.categoria and expense.categoria.nombre == "Pagos tarjetas de credito":
         return None
     amount = _money(expense.monto)
     if amount <= 0:
@@ -2815,6 +2821,16 @@ class JournalEntryAdmin(admin.ModelAdmin):
                 self.admin_site.admin_view(self.unbalanced_view),
                 name="tienda_journalentry_unbalanced",
             ),
+            path(
+                "trial-balance/export/",
+                self.admin_site.admin_view(self.export_trial_balance_view),
+                name="tienda_journalentry_trial_balance_export",
+            ),
+            path(
+                "generate-missing/",
+                self.admin_site.admin_view(self.generate_missing_entries_view),
+                name="tienda_journalentry_generate_missing",
+            ),
         ]
         return custom_urls + urls
 
@@ -2858,8 +2874,7 @@ class JournalEntryAdmin(admin.ModelAdmin):
             "next_month": (month_end + timedelta(days=1)).strftime("%Y-%m"),
         }
 
-    def trial_balance_view(self, request):
-        bounds = self._month_bounds(request)
+    def _trial_balance_rows(self, bounds):
         accounts = list(AccountingAccount.objects.filter(is_active=True).order_by("code"))
         rows = []
         total_debit = Decimal("0.00")
@@ -2893,20 +2908,121 @@ class JournalEntryAdmin(admin.ModelAdmin):
             total_credit += credit
             total_debit_balance += debit_balance
             total_credit_balance += credit_balance
+        return {
+            "rows": rows,
+            "total_debit": total_debit,
+            "total_credit": total_credit,
+            "total_debit_balance": total_debit_balance,
+            "total_credit_balance": total_credit_balance,
+            "is_balanced": total_debit == total_credit,
+        }
+
+    def trial_balance_view(self, request):
+        bounds = self._month_bounds(request)
+        trial_balance = self._trial_balance_rows(bounds)
 
         context = dict(
             self.admin_site.each_context(request),
             title="Balanza de comprobación",
-            rows=rows,
-            total_debit=total_debit,
-            total_credit=total_credit,
-            total_debit_balance=total_debit_balance,
-            total_credit_balance=total_credit_balance,
-            is_balanced=total_debit == total_credit,
             opts=self.model._meta,
             **bounds,
+            **trial_balance,
         )
         return TemplateResponse(request, "admin/tienda/trial_balance.html", context)
+
+    def export_trial_balance_view(self, request):
+        bounds = self._month_bounds(request)
+        trial_balance = self._trial_balance_rows(bounds)
+        filename = f"balanza-{bounds['current_month_value']}.xls"
+        response = HttpResponse(content_type="application/vnd.ms-excel; charset=utf-8")
+        response["Content-Disposition"] = f'attachment; filename="{filename}"'
+        response.write("\ufeff")
+        response.write("<html><head><meta charset='utf-8'></head><body>")
+        response.write(f"<h2>Balanza de comprobación - {bounds['month_label']}</h2>")
+        response.write("<table border='1'>")
+        response.write("<tr><th>Código</th><th>Cuenta</th><th>Debe</th><th>Haber</th><th>Saldo deudor</th><th>Saldo acreedor</th></tr>")
+        for row in trial_balance["rows"]:
+            response.write(
+                "<tr>"
+                f"<td>{row['account'].code}</td>"
+                f"<td>{row['account'].name}</td>"
+                f"<td>{row['debit']:.2f}</td>"
+                f"<td>{row['credit']:.2f}</td>"
+                f"<td>{row['debit_balance']:.2f}</td>"
+                f"<td>{row['credit_balance']:.2f}</td>"
+                "</tr>"
+            )
+        response.write(
+            "<tr>"
+            "<td colspan='2'><strong>Totales</strong></td>"
+            f"<td><strong>{trial_balance['total_debit']:.2f}</strong></td>"
+            f"<td><strong>{trial_balance['total_credit']:.2f}</strong></td>"
+            f"<td><strong>{trial_balance['total_debit_balance']:.2f}</strong></td>"
+            f"<td><strong>{trial_balance['total_credit_balance']:.2f}</strong></td>"
+            "</tr>"
+        )
+        response.write("</table></body></html>")
+        return response
+
+    def generate_missing_entries_view(self, request):
+        if request.method != "POST":
+            return HttpResponseRedirect(reverse("admin:tienda_journalentry_changelist"))
+
+        created_orders = 0
+        created_expenses = 0
+        created_card_payments = 0
+        skipped = 0
+        errors = []
+
+        with transaction.atomic():
+            orders = (
+                Order.objects.filter(status="Completed")
+                .exclude(journal_entries__source="pos")
+                .prefetch_related("items__product")
+            )
+            for order in orders:
+                lines = [
+                    {"product": item.product, "quantity": item.quantity}
+                    for item in order.items.all()
+                    if item.product_id and item.quantity > 0
+                ]
+                if not lines:
+                    skipped += 1
+                    continue
+                try:
+                    if _post_order_journal_entry(order, lines, created_by=request.user if request.user.is_authenticated else None):
+                        created_orders += 1
+                except ValueError as exc:
+                    errors.append(f"Pedido #{order.id}: {exc}")
+
+            expenses = Expense.objects.exclude(journal_entries__source="expense")
+            for expense in expenses:
+                try:
+                    if _post_expense_journal_entry(expense, created_by=request.user if request.user.is_authenticated else None):
+                        created_expenses += 1
+                except ValueError as exc:
+                    errors.append(f"Gasto #{expense.id}: {exc}")
+
+            statements = CreditCardStatement.objects.filter(estado="paid").exclude(journal_entries__source="credit_card")
+            for statement in statements:
+                amount = statement.monto_pagado or statement.saldo_corte
+                try:
+                    if _post_credit_card_payment_journal_entry(statement, amount, created_by=request.user if request.user.is_authenticated else None):
+                        created_card_payments += 1
+                except ValueError as exc:
+                    errors.append(f"Tarjeta #{statement.id}: {exc}")
+
+        self.message_user(
+            request,
+            f"Pólizas generadas: {created_orders} ventas, {created_expenses} gastos, {created_card_payments} pagos de tarjeta. Omitidas: {skipped}.",
+            level=messages.SUCCESS if not errors else messages.WARNING,
+        )
+        for error in errors[:5]:
+            self.message_user(request, error, level=messages.ERROR)
+        if len(errors) > 5:
+            self.message_user(request, f"Hay {len(errors) - 5} errores adicionales no mostrados.", level=messages.ERROR)
+        next_url = request.POST.get("next") or reverse("admin:tienda_journalentry_changelist")
+        return HttpResponseRedirect(next_url)
 
     def unbalanced_view(self, request):
         bounds = self._month_bounds(request)
