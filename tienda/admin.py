@@ -1710,6 +1710,7 @@ class OrderAdmin(admin.ModelAdmin):
             catalog_rows.append(
                 {
                     "key": key,
+                    "sku": variant.sku or "",
                     "image_url": image_url,
                     "label": variant.product.nombre,
                     "detail": f"{variant.color} / {variant.talla}",
@@ -1726,6 +1727,7 @@ class OrderAdmin(admin.ModelAdmin):
             catalog_rows.append(
                 {
                     "key": key,
+                    "sku": "",
                     "image_url": image_url,
                     "label": product.nombre,
                     "detail": "Stock general",

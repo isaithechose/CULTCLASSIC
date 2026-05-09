@@ -17,6 +17,12 @@
     margin-bottom: 1rem;
     padding: 1rem;
   }
+  .pos-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(320px, 380px);
+    gap: 1rem;
+    align-items: start;
+  }
   .pos-header-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -33,7 +39,7 @@
   }
   .pos-toolbar {
     display: grid;
-    grid-template-columns: minmax(220px, 1fr) auto auto;
+    grid-template-columns: minmax(200px, 0.8fr) minmax(240px, 1fr) auto auto;
     gap: 1rem;
     align-items: center;
     margin-bottom: 1rem;
@@ -174,6 +180,112 @@
   .pos-clear {
     min-height: 2.4rem;
   }
+  .pos-ticket {
+    position: sticky;
+    top: 1rem;
+  }
+  .pos-ticket__header {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.75rem;
+    align-items: center;
+    margin-bottom: 0.75rem;
+  }
+  .pos-ticket__header h2 {
+    margin: 0;
+  }
+  .pos-ticket-items {
+    display: grid;
+    gap: 0.75rem;
+    min-height: 8rem;
+  }
+  .pos-ticket-empty {
+    display: grid;
+    place-items: center;
+    min-height: 8rem;
+    margin: 0;
+    border: 1px dashed #d0d5dd;
+    border-radius: 12px;
+    color: #667085;
+    text-align: center;
+  }
+  .pos-ticket-item {
+    display: grid;
+    grid-template-columns: 3.8rem minmax(0, 1fr);
+    gap: 0.75rem;
+    padding: 0.75rem;
+    border: 1px solid #edf0f5;
+    border-radius: 12px;
+    background: #fcfcfd;
+  }
+  .pos-ticket-image {
+    width: 3.8rem;
+    height: 3.8rem;
+    border: 1px solid #e4e7ec;
+    border-radius: 10px;
+    background: #f8fafc;
+    object-fit: cover;
+  }
+  .pos-ticket-body strong,
+  .pos-ticket-body span {
+    display: block;
+  }
+  .pos-ticket-body span {
+    color: #667085;
+    font-size: 0.86rem;
+  }
+  .pos-ticket-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.5rem;
+    align-items: center;
+    margin-top: 0.65rem;
+  }
+  .pos-ticket-controls {
+    display: inline-flex;
+    gap: 0.35rem;
+    align-items: center;
+  }
+  .pos-ticket-qty {
+    min-width: 2rem;
+    text-align: center;
+    font-weight: 800;
+  }
+  .pos-ticket-remove {
+    border: 0;
+    background: transparent;
+    color: #b42318;
+    cursor: pointer;
+    font-weight: 800;
+    padding: 0;
+  }
+  .pos-ticket-summary {
+    display: grid;
+    gap: 0.65rem;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #edf0f5;
+  }
+  .pos-ticket-summary div {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    color: #475467;
+  }
+  .pos-ticket-summary strong {
+    color: #111827;
+  }
+  .pos-ticket-summary .is-total {
+    align-items: baseline;
+    color: #111827;
+    font-size: 1.1rem;
+    font-weight: 800;
+  }
+  .pos-ticket-submit {
+    width: 100%;
+    min-height: 2.75rem;
+    margin-top: 1rem;
+  }
   @media (max-width: 900px) {
     .pos-header-grid {
       grid-template-columns: 1fr;
@@ -185,6 +297,12 @@
     }
     .pos-toolbar {
       grid-template-columns: 1fr;
+    }
+    .pos-layout {
+      grid-template-columns: 1fr;
+    }
+    .pos-ticket {
+      position: static;
     }
     .pos-total-bar {
       grid-template-columns: 1fr;
@@ -227,83 +345,94 @@
     <p class="pos-note">Esta pantalla crea un pedido completado, descuenta inventario y registra movimientos de venta.</p>
   </div>
 
-  <div class="pos-panel">
-    <h2>Productos</h2>
-    <div class="pos-toolbar">
-      <input class="pos-search" id="posSearch" type="search" placeholder="Buscar producto, color o talla">
-      <label class="pos-toggle"><input id="hideOutOfStock" type="checkbox"> Ocultar agotados</label>
-      <div class="pos-selected-count"><span id="posSelectedCount">0</span>&nbsp;líneas seleccionadas</div>
-    </div>
-    <table class="pos-table">
-      <thead>
-        <tr>
-          <th>Producto</th>
-          <th>Stock</th>
-          <th>Costo</th>
-          <th>Precio</th>
-          <th>Subtotal</th>
-          <th>Cantidad</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for row in rows %}
-          <tr data-search="{{ row.label|lower }} {{ row.detail|lower }}" data-stock="{{ row.stock }}" data-cost="{{ row.unit_cost|floatformat:2 }}">
-            <td class="pos-product">
-              <div class="pos-product-wrap">
-                {% if row.image_url %}
-                  <img class="pos-image" src="{{ row.image_url }}" loading="lazy" decoding="async" alt="">
-                {% else %}
-                  <span class="pos-image pos-image--empty">IMG</span>
-                {% endif %}
-                <div>
-                  <strong>{{ row.label }}</strong>
-                  <span>{{ row.detail }}</span>
-                  {{ row.form.item_key }}
-                </div>
-              </div>
-            </td>
-            <td>{{ row.stock }}</td>
-            <td>${{ row.unit_cost|floatformat:2 }}</td>
-            <td class="pos-number">
-              {{ row.form.unit_price }}
-              {{ row.form.unit_price.errors }}
-            </td>
-            <td class="pos-line-subtotal">$<span data-line-subtotal>0.00</span></td>
-            <td class="pos-number">
-              <div class="pos-qty-control">
-                <button class="pos-qty-btn" type="button" data-qty-step="-1">−</button>
-                {{ row.form.quantity }}
-                <button class="pos-qty-btn" type="button" data-qty-step="1">+</button>
-              </div>
-              {{ row.form.quantity.errors }}
-            </td>
-          </tr>
-        {% empty %}
+  <div class="pos-layout">
+    <div class="pos-panel">
+      <h2>Productos</h2>
+      <div class="pos-toolbar">
+        <input class="pos-search" id="posQuickAdd" type="search" placeholder="Escanear SKU o escribir producto y Enter" autocomplete="off">
+        <input class="pos-search" id="posSearch" type="search" placeholder="Filtrar producto, color, talla o SKU">
+        <label class="pos-toggle"><input id="hideOutOfStock" type="checkbox"> Ocultar agotados</label>
+        <div class="pos-selected-count"><span id="posSelectedCount">0</span>&nbsp;líneas</div>
+      </div>
+      <table class="pos-table">
+        <thead>
           <tr>
-            <td colspan="5">No hay productos disponibles para vender.</td>
+            <th>Producto</th>
+            <th>Stock</th>
+            <th>Costo</th>
+            <th>Precio</th>
+            <th>Subtotal</th>
+            <th>Cantidad</th>
           </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-    <div class="pos-total-bar">
-      <div class="pos-summary-item">
-        <span class="pos-note">Piezas</span>
-        <strong><span id="posPieces">0</span></strong>
-      </div>
-      <div class="pos-summary-item">
-        <span class="pos-note">Utilidad est.</span>
-        <strong>$<span id="posProfit">0.00</span></strong>
-      </div>
-      <div class="pos-summary-item">
-        <span class="pos-note">Total estimado</span>
-        <div class="pos-total">$<span id="posTotal">0.00</span></div>
-      </div>
-      <button class="button pos-clear" id="posClearBtn" type="button">Limpiar venta</button>
+        </thead>
+        <tbody>
+          {% for row in rows %}
+            <tr
+              data-key="{{ row.key }}"
+              data-search="{{ row.label|lower }} {{ row.detail|lower }} {{ row.sku|default:''|lower }}"
+              data-sku="{{ row.sku|default:'' }}"
+              data-label="{{ row.label }}"
+              data-detail="{{ row.detail }}"
+              data-image="{{ row.image_url }}"
+              data-stock="{{ row.stock }}"
+              data-cost="{{ row.unit_cost|floatformat:2 }}"
+            >
+              <td class="pos-product">
+                <div class="pos-product-wrap">
+                  {% if row.image_url %}
+                    <img class="pos-image" src="{{ row.image_url }}" loading="lazy" decoding="async" alt="">
+                  {% else %}
+                    <span class="pos-image pos-image--empty">IMG</span>
+                  {% endif %}
+                  <div>
+                    <strong>{{ row.label }}</strong>
+                    <span>{{ row.detail }}{% if row.sku %} · SKU {{ row.sku }}{% endif %}</span>
+                    {{ row.form.item_key }}
+                  </div>
+                </div>
+              </td>
+              <td>{{ row.stock }}</td>
+              <td>${{ row.unit_cost|floatformat:2 }}</td>
+              <td class="pos-number">
+                {{ row.form.unit_price }}
+                {{ row.form.unit_price.errors }}
+              </td>
+              <td class="pos-line-subtotal">$<span data-line-subtotal>0.00</span></td>
+              <td class="pos-number">
+                <div class="pos-qty-control">
+                  <button class="pos-qty-btn" type="button" data-qty-step="-1">-</button>
+                  {{ row.form.quantity }}
+                  <button class="pos-qty-btn" type="button" data-qty-step="1">+</button>
+                </div>
+                {{ row.form.quantity.errors }}
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="6">No hay productos disponibles para vender.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
-  </div>
 
-  <div class="submit-row">
-    <input type="submit" class="default" value="Registrar venta">
+    <aside class="pos-panel pos-ticket">
+      <div class="pos-ticket__header">
+        <h2>Ticket</h2>
+        <button class="button pos-clear" id="posClearBtn" type="button">Limpiar</button>
+      </div>
+      <div class="pos-ticket-items" id="posTicketItems">
+        <p class="pos-ticket-empty">Agrega productos para armar la venta.</p>
+      </div>
+      <div class="pos-ticket-summary">
+        <div><span>Piezas</span><strong id="posPieces">0</strong></div>
+        <div><span>Subtotal</span><strong>$<span id="posSubtotal">0.00</span></strong></div>
+        <div><span>Descuento</span><strong>-$<span id="posDiscount">0.00</span></strong></div>
+        <div><span>Utilidad est.</span><strong>$<span id="posProfit">0.00</span></strong></div>
+        <div class="is-total"><span>Total</span><strong class="pos-total">$<span id="posTotal">0.00</span></strong></div>
+      </div>
+      <input type="submit" class="default pos-ticket-submit" value="Cobrar venta">
+    </aside>
   </div>
 </form>
 
@@ -311,74 +440,193 @@
   (function () {
     const form = document.getElementById("posForm");
     const totalEl = document.getElementById("posTotal");
+    const subtotalEl = document.getElementById("posSubtotal");
+    const discountEl = document.getElementById("posDiscount");
     const discountInput = document.getElementById("id_discount_amount");
+    const quickAddInput = document.getElementById("posQuickAdd");
     const searchInput = document.getElementById("posSearch");
     const selectedCountEl = document.getElementById("posSelectedCount");
     const hideOutOfStockInput = document.getElementById("hideOutOfStock");
     const piecesEl = document.getElementById("posPieces");
     const profitEl = document.getElementById("posProfit");
     const clearBtn = document.getElementById("posClearBtn");
+    const ticketItemsEl = document.getElementById("posTicketItems");
+    const rows = Array.from(form.querySelectorAll("tbody tr[data-key]"));
+    const rowsByKey = new Map(rows.map((row) => [row.dataset.key, row]));
 
     function numberFromInput(input) {
       const value = parseFloat(input.value || "0");
       return Number.isFinite(value) ? value : 0;
     }
 
+    function money(value) {
+      return value.toFixed(2);
+    }
+
+    function escapeHtml(value) {
+      return String(value || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function quantityInput(row) {
+      return row.querySelector("input[name$='-quantity']");
+    }
+
+    function priceInput(row) {
+      return row.querySelector("input[name$='-unit_price']");
+    }
+
+    function setQuantity(row, value) {
+      const input = quantityInput(row);
+      if (!input) return;
+      const stock = Number(row.dataset.stock || "0");
+      const normalizedValue = Math.max(0, Math.min(stock, Number(value) || 0));
+      input.value = normalizedValue;
+      recalculateTotal();
+    }
+
+    function renderTicket(items) {
+      if (!items.length) {
+        ticketItemsEl.innerHTML = '<p class="pos-ticket-empty">Agrega productos para armar la venta.</p>';
+        return;
+      }
+
+      ticketItemsEl.innerHTML = items.map((item) => {
+        const image = item.image
+          ? `<img class="pos-ticket-image" src="${escapeHtml(item.image)}" loading="lazy" decoding="async" alt="">`
+          : '<span class="pos-ticket-image pos-image--empty">IMG</span>';
+        return `
+          <div class="pos-ticket-item">
+            ${image}
+            <div class="pos-ticket-body">
+              <strong>${escapeHtml(item.label)}</strong>
+              <span>${escapeHtml(item.detail)}${item.sku ? " · SKU " + escapeHtml(item.sku) : ""}</span>
+              <div class="pos-ticket-row">
+                <div class="pos-ticket-controls">
+                  <button class="pos-qty-btn" type="button" data-ticket-step="-1" data-key="${escapeHtml(item.key)}">-</button>
+                  <span class="pos-ticket-qty">${item.quantity}</span>
+                  <button class="pos-qty-btn" type="button" data-ticket-step="1" data-key="${escapeHtml(item.key)}">+</button>
+                </div>
+                <strong>$${money(item.subtotal)}</strong>
+              </div>
+              <div class="pos-ticket-row">
+                <span>$${money(item.price)} c/u</span>
+                <button class="pos-ticket-remove" type="button" data-ticket-remove data-key="${escapeHtml(item.key)}">Quitar</button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
     function recalculateTotal() {
-      let total = 0;
+      let subtotal = 0;
       let profit = 0;
       let pieces = 0;
       let selected = 0;
-      form.querySelectorAll("tbody tr").forEach((row) => {
-        const quantity = row.querySelector("input[name$='-quantity']");
-        const price = row.querySelector("input[name$='-unit_price']");
-        const subtotalEl = row.querySelector("[data-line-subtotal]");
+      const ticketItems = [];
+      rows.forEach((row) => {
+        const quantity = quantityInput(row);
+        const price = priceInput(row);
+        const lineSubtotalEl = row.querySelector("[data-line-subtotal]");
         if (!quantity || !price) return;
-        const quantityValue = numberFromInput(quantity);
+        const stock = Number(row.dataset.stock || "0");
+        const quantityValue = Math.max(0, Math.min(stock, numberFromInput(quantity)));
+        if (String(quantityValue) !== String(quantity.value || "0")) {
+          quantity.value = quantityValue;
+        }
         const priceValue = numberFromInput(price);
         const costValue = parseFloat(row.dataset.cost || "0") || 0;
         const lineSubtotal = quantityValue * priceValue;
-        total += lineSubtotal;
+        subtotal += lineSubtotal;
         profit += quantityValue * (priceValue - costValue);
         pieces += quantityValue;
-        if (subtotalEl) subtotalEl.textContent = lineSubtotal.toFixed(2);
+        if (lineSubtotalEl) lineSubtotalEl.textContent = money(lineSubtotal);
         row.classList.toggle("is-selected", quantityValue > 0);
-        if (quantityValue > 0) selected += 1;
+        if (quantityValue > 0) {
+          selected += 1;
+          ticketItems.push({
+            key: row.dataset.key,
+            sku: row.dataset.sku || "",
+            label: row.dataset.label || "",
+            detail: row.dataset.detail || "",
+            image: row.dataset.image || "",
+            quantity: quantityValue,
+            price: priceValue,
+            subtotal: lineSubtotal,
+          });
+        }
       });
-      total -= numberFromInput(discountInput);
-      totalEl.textContent = Math.max(total, 0).toFixed(2);
-      profit -= numberFromInput(discountInput);
-      profitEl.textContent = profit.toFixed(2);
+      const discount = numberFromInput(discountInput);
+      const total = Math.max(subtotal - discount, 0);
+      subtotalEl.textContent = money(subtotal);
+      discountEl.textContent = money(discount);
+      totalEl.textContent = money(total);
+      profit -= discount;
+      profitEl.textContent = money(profit);
       piecesEl.textContent = pieces;
       selectedCountEl.textContent = selected;
+      renderTicket(ticketItems);
     }
 
     function applySearch() {
       const query = (searchInput.value || "").trim().toLowerCase();
       const hideOutOfStock = hideOutOfStockInput.checked;
-      form.querySelectorAll("tbody tr").forEach((row) => {
+      rows.forEach((row) => {
         const haystack = row.dataset.search || "";
         const outOfStock = Number(row.dataset.stock || "0") <= 0;
         row.classList.toggle("is-hidden", Boolean((query && !haystack.includes(query)) || (hideOutOfStock && outOfStock)));
       });
     }
 
+    function findQuickAddRow(query) {
+      const normalized = (query || "").trim().toLowerCase();
+      if (!normalized) return null;
+      return rows.find((row) => (row.dataset.sku || "").toLowerCase() === normalized)
+        || rows.find((row) => (row.dataset.search || "").includes(normalized));
+    }
+
     form.querySelectorAll("input, select").forEach((input) => {
       input.addEventListener("input", recalculateTotal);
       input.addEventListener("change", recalculateTotal);
     });
+    quickAddInput.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter") return;
+      event.preventDefault();
+      const row = findQuickAddRow(quickAddInput.value);
+      if (!row) return;
+      const stock = Number(row.dataset.stock || "0");
+      if (stock <= 0) return;
+      setQuantity(row, numberFromInput(quantityInput(row)) + 1);
+      row.scrollIntoView({ behavior: "smooth", block: "center" });
+      quickAddInput.value = "";
+      applySearch();
+    });
     searchInput.addEventListener("input", applySearch);
     hideOutOfStockInput.addEventListener("change", applySearch);
-    form.querySelectorAll("[data-qty-step]").forEach((button) => {
+    form.querySelectorAll("tbody [data-qty-step]").forEach((button) => {
       button.addEventListener("click", () => {
         const row = button.closest("tr");
-        const input = row.querySelector("input[name$='-quantity']");
-        const stock = Number(row.dataset.stock || "0");
         const step = Number(button.dataset.qtyStep || "0");
-        const current = numberFromInput(input);
-        input.value = Math.max(0, Math.min(stock, current + step));
-        recalculateTotal();
+        setQuantity(row, numberFromInput(quantityInput(row)) + step);
       });
+    });
+    ticketItemsEl.addEventListener("click", (event) => {
+      const stepButton = event.target.closest("[data-ticket-step]");
+      const removeButton = event.target.closest("[data-ticket-remove]");
+      const actionButton = stepButton || removeButton;
+      if (!actionButton) return;
+      const row = rowsByKey.get(actionButton.dataset.key);
+      if (!row) return;
+      if (removeButton) {
+        setQuantity(row, 0);
+        return;
+      }
+      setQuantity(row, numberFromInput(quantityInput(row)) + Number(stepButton.dataset.ticketStep || "0"));
     });
     clearBtn.addEventListener("click", () => {
       form.querySelectorAll("input[name$='-quantity']").forEach((input) => {
