@@ -1,0 +1,149 @@
+{% extends "admin/base_site.html" %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+  .recon-actions,
+  .recon-nav,
+  .recon-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+  .recon-nav strong {
+    min-width: 8rem;
+    color: #111827;
+    text-align: center;
+  }
+  .recon-pill {
+    padding: 0.55rem 0.85rem;
+    border-radius: 999px;
+    background: #f8fafc;
+    font-weight: 800;
+  }
+  .recon-pill--ok {
+    background: #dcfce7;
+    color: #166534;
+  }
+  .recon-pill--danger {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+  .recon-card {
+    background: #fff;
+    border: 1px solid #e8e8ef;
+    border-radius: 14px;
+    box-shadow: 0 12px 30px rgba(16, 24, 40, 0.06);
+    overflow: hidden;
+  }
+  .recon-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .recon-table th,
+  .recon-table td {
+    border-bottom: 1px solid #edf0f5;
+    padding: 0.75rem 0.85rem;
+    text-align: right;
+  }
+  .recon-table th:first-child,
+  .recon-table td:first-child,
+  .recon-table th:nth-child(2),
+  .recon-table td:nth-child(2),
+  .recon-table th:nth-child(3),
+  .recon-table td:nth-child(3) {
+    text-align: left;
+  }
+  .recon-table th {
+    color: #667085;
+    font-size: 0.78rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .recon-status {
+    display: inline-block;
+    padding: 0.25rem 0.6rem;
+    border-radius: 999px;
+    font-weight: 800;
+  }
+  .recon-status--ok {
+    background: #dcfce7;
+    color: #166534;
+  }
+  .recon-status--danger {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="recon-actions">
+  <a class="button" href="{% url 'admin:tienda_expense_accounting_dashboard' %}">Dashboard contable</a>
+  <a class="button" href="{% url 'admin:tienda_moneyaccount_changelist' %}">Cuentas de dinero</a>
+  <a class="button" href="{% url 'admin:tienda_bankmovement_changelist' %}">Movimientos bancarios</a>
+  <a class="button" href="{% url 'admin:tienda_bankmovement_add' %}">Nuevo movimiento</a>
+</div>
+
+<div class="recon-summary">
+  <span class="recon-pill">{{ account }}</span>
+  <span class="recon-pill">Banco ${{ bank_total|floatformat:2 }}</span>
+  <span class="recon-pill">Sistema ${{ system_total|floatformat:2 }}</span>
+  <span class="recon-pill">Conciliado ${{ reconciled_total|floatformat:2 }}</span>
+  <span class="recon-pill">Pendiente ${{ unreconciled_total|floatformat:2 }}</span>
+  <span class="recon-pill {% if difference == 0 %}recon-pill--ok{% else %}recon-pill--danger{% endif %}">Diferencia ${{ difference|floatformat:2 }}</span>
+</div>
+
+<form class="recon-nav" method="get">
+  <a class="button" href="?month={{ previous_month }}">Anterior</a>
+  <strong>{{ month_label }}</strong>
+  <a class="button" href="?month={{ next_month }}">Siguiente</a>
+  <input type="month" name="month" value="{{ current_month_value }}">
+  <button type="submit" class="button">Ver mes</button>
+</form>
+
+<div class="recon-card">
+  <table class="recon-table">
+    <thead>
+      <tr>
+        <th>Fecha</th>
+        <th>Descripción</th>
+        <th>Referencia</th>
+        <th>Tipo</th>
+        <th>Importe</th>
+        <th>Póliza</th>
+        <th>Estado</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for movement in movements %}
+        <tr>
+          <td>{{ movement.date|date:"Y-m-d" }}</td>
+          <td><a href="{% url 'admin:tienda_bankmovement_change' movement.id %}">{{ movement.description }}</a></td>
+          <td>{{ movement.reference|default:"-" }}</td>
+          <td>{{ movement.get_movement_type_display }}</td>
+          <td>${{ movement.signed_amount|floatformat:2 }}</td>
+          <td>
+            {% if movement.journal_entry %}
+              <a href="{% url 'admin:tienda_journalentry_change' movement.journal_entry.id %}">{{ movement.journal_entry.reference|default:movement.journal_entry.id }}</a>
+            {% else %}
+              -
+            {% endif %}
+          </td>
+          <td>
+            <span class="recon-status {% if movement.is_reconciled %}recon-status--ok{% else %}recon-status--danger{% endif %}">
+              {% if movement.is_reconciled %}Conciliado{% else %}Pendiente{% endif %}
+            </span>
+          </td>
+        </tr>
+      {% empty %}
+        <tr>
+          <td colspan="7">No hay movimientos bancarios para esta cuenta en el mes.</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

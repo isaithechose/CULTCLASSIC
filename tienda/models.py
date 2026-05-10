@@ -492,6 +492,72 @@ class AccountingPeriodClose(models.Model):
         return f"Cierre contable {self.month_start:%Y-%m}"
 
 
+class MoneyAccount(models.Model):
+    ACCOUNT_KIND_CHOICES = [
+        ("cash", "Efectivo"),
+        ("bank", "Banco"),
+        ("processor", "Procesador de pago"),
+        ("other", "Otro"),
+    ]
+
+    name = models.CharField(max_length=100)
+    kind = models.CharField(max_length=20, choices=ACCOUNT_KIND_CHOICES, default="bank")
+    accounting_account = models.ForeignKey(AccountingAccount, on_delete=models.SET_NULL, null=True, blank=True, related_name="money_accounts")
+    bank_name = models.CharField(max_length=100, blank=True, null=True)
+    account_last4 = models.CharField(max_length=4, blank=True, null=True)
+    opening_balance = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    is_active = models.BooleanField(default=True)
+    note = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["name"]
+        verbose_name = "Cuenta de dinero"
+        verbose_name_plural = "Cuentas de dinero"
+
+    def __str__(self):
+        suffix = f" ****{self.account_last4}" if self.account_last4 else ""
+        return f"{self.name}{suffix}"
+
+
+class BankMovement(models.Model):
+    MOVEMENT_TYPE_CHOICES = [
+        ("deposit", "Depósito"),
+        ("withdrawal", "Retiro"),
+        ("payment", "Pago"),
+        ("fee", "Comisión"),
+        ("transfer", "Transferencia"),
+        ("other", "Otro"),
+    ]
+
+    money_account = models.ForeignKey(MoneyAccount, on_delete=models.CASCADE, related_name="bank_movements")
+    date = models.DateField()
+    description = models.CharField(max_length=180)
+    movement_type = models.CharField(max_length=20, choices=MOVEMENT_TYPE_CHOICES, default="other")
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    journal_entry = models.ForeignKey(JournalEntry, on_delete=models.SET_NULL, null=True, blank=True, related_name="bank_movements")
+    is_reconciled = models.BooleanField(default=False)
+    reconciled_at = models.DateTimeField(blank=True, null=True)
+    reference = models.CharField(max_length=100, blank=True, null=True)
+    note = models.TextField(blank=True, null=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-date", "-id"]
+        verbose_name = "Movimiento bancario"
+        verbose_name_plural = "Movimientos bancarios"
+
+    @property
+    def signed_amount(self):
+        if self.movement_type in ["withdrawal", "payment", "fee"]:
+            return -abs(self.amount)
+        return self.amount
+
+    def __str__(self):
+        return f"{self.date} - {self.money_account} - ${self.amount}"
+
+
 class CashRegisterClosure(models.Model):
     fecha = models.DateField(unique=True)
     efectivo_contado = models.DecimalField(max_digits=10, decimal_places=2, default=0)

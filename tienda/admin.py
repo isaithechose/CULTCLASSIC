@@ -25,6 +25,8 @@ from .models import (
     CreditCardStatement,
     JournalEntry,
     JournalEntryLine,
+    MoneyAccount,
+    BankMovement,
     Order,
     OrderItem,
     Producto,
@@ -3421,6 +3423,152 @@ class AccountingPeriodCloseAdmin(admin.ModelAdmin):
             '<span style="display:inline-block;padding:0.25rem 0.6rem;border-radius:999px;background:#fee2e2;color:#991b1b;font-weight:800;">${}</span>',
             f"{obj.difference:.2f}",
         )
+
+
+@admin.action(description="Marcar movimientos como conciliados")
+def marcar_movimientos_conciliados(modeladmin, request, queryset):
+    updated = queryset.update(is_reconciled=True, reconciled_at=timezone.now())
+    modeladmin.message_user(request, f"{updated} movimientos marcados como conciliados.", level=messages.SUCCESS)
+
+
+@admin.action(description="Marcar movimientos como no conciliados")
+def marcar_movimientos_no_conciliados(modeladmin, request, queryset):
+    updated = queryset.update(is_reconciled=False, reconciled_at=None)
+    modeladmin.message_user(request, f"{updated} movimientos regresaron a no conciliados.", level=messages.SUCCESS)
+
+
+@admin.register(MoneyAccount)
+class MoneyAccountAdmin(admin.ModelAdmin):
+    list_display = ("name", "kind", "bank_name", "account_last4", "accounting_account", "opening_balance", "is_active", "reconciliation_link")
+    list_filter = ("kind", "is_active", "bank_name")
+    search_fields = ("name", "bank_name", "account_last4", "accounting_account__code", "accounting_account__name")
+    autocomplete_fields = ("accounting_account",)
+    list_editable = ("is_active",)
+    fieldsets = (
+        ("Cuenta", {
+            "fields": ("name", "kind", "accounting_account", "is_active")
+        }),
+        ("Banco", {
+            "fields": ("bank_name", "account_last4", "opening_balance")
+        }),
+        ("Detalle", {
+            "fields": ("note",)
+        }),
+    )
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path(
+                "<int:account_id>/reconciliation/",
+                self.admin_site.admin_view(self.reconciliation_view),
+                name="tienda_moneyaccount_reconciliation",
+            ),
+        ]
+        return custom_urls + urls
+
+    @admin.display(description="Conciliación")
+    def reconciliation_link(self, obj):
+        return format_html(
+            '<a class="button" href="{}">Conciliar</a>',
+            reverse("admin:tienda_moneyaccount_reconciliation", args=[obj.id]),
+        )
+
+    def reconciliation_view(self, request, account_id):
+        account = self.get_object(request, account_id)
+        if not account:
+            self.message_user(request, "No encontramos esa cuenta de dinero.", level=messages.ERROR)
+            return HttpResponseRedirect(reverse("admin:tienda_moneyaccount_changelist"))
+
+        today = timezone.localdate()
+        year, month = _coerce_month(request.GET.get("month"), today)
+        month_start = date(year, month, 1)
+        _, month_days = calendar.monthrange(year, month)
+        month_end = month_start.replace(day=month_days)
+        previous_month = (month_start - timedelta(days=1)).strftime("%Y-%m")
+        next_month = (month_end + timedelta(days=1)).strftime("%Y-%m")
+
+        movements = list(
+            BankMovement.objects.filter(
+                money_account=account,
+                date__gte=month_start,
+                date__lte=month_end,
+            ).select_related("journal_entry").order_by("date", "id")
+        )
+        reconciled_total = sum(movement.signed_amount for movement in movements if movement.is_reconciled)
+        unreconciled_total = sum(movement.signed_amount for movement in movements if not movement.is_reconciled)
+        bank_total = sum(movement.signed_amount for movement in movements)
+
+        system_total = Decimal("0.00")
+        if account.accounting_account:
+            lines = JournalEntryLine.objects.filter(
+                account=account.accounting_account,
+                journal_entry__is_posted=True,
+                journal_entry__date__gte=month_start,
+                journal_entry__date__lte=month_end,
+            )
+            system_total = (lines.aggregate(total=Sum("debit"))["total"] or Decimal("0.00")) - (
+                lines.aggregate(total=Sum("credit"))["total"] or Decimal("0.00")
+            )
+        difference = bank_total - system_total
+
+        context = dict(
+            self.admin_site.each_context(request),
+            title=f"Conciliación - {account}",
+            account=account,
+            movements=movements,
+            bank_total=bank_total,
+            system_total=system_total,
+            reconciled_total=reconciled_total,
+            unreconciled_total=unreconciled_total,
+            difference=difference,
+            month_label=month_start.strftime("%B %Y").capitalize(),
+            current_month_value=month_start.strftime("%Y-%m"),
+            previous_month=previous_month,
+            next_month=next_month,
+            opts=self.model._meta,
+        )
+        return TemplateResponse(request, "admin/tienda/bank_reconciliation.html", context)
+
+
+@admin.register(BankMovement)
+class BankMovementAdmin(admin.ModelAdmin):
+    list_display = ("date", "money_account", "description", "movement_type", "amount", "signed_amount_display", "journal_entry", "reconciled_badge")
+    list_filter = ("money_account", "movement_type", "is_reconciled", "date")
+    search_fields = ("description", "reference", "note", "money_account__name", "journal_entry__concept", "journal_entry__reference")
+    autocomplete_fields = ("money_account", "journal_entry", "created_by")
+    date_hierarchy = "date"
+    actions = [marcar_movimientos_conciliados, marcar_movimientos_no_conciliados]
+    fieldsets = (
+        ("Movimiento", {
+            "fields": ("money_account", "date", "description", "movement_type", "amount", "reference")
+        }),
+        ("Conciliación", {
+            "fields": ("journal_entry", "is_reconciled", "reconciled_at")
+        }),
+        ("Detalle", {
+            "fields": ("note", "created_by")
+        }),
+    )
+
+    def save_model(self, request, obj, form, change):
+        if not obj.created_by:
+            obj.created_by = request.user
+        if obj.is_reconciled and not obj.reconciled_at:
+            obj.reconciled_at = timezone.now()
+        if not obj.is_reconciled:
+            obj.reconciled_at = None
+        super().save_model(request, obj, form, change)
+
+    @admin.display(description="Importe firmado")
+    def signed_amount_display(self, obj):
+        return f"${obj.signed_amount:.2f}"
+
+    @admin.display(description="Conciliado")
+    def reconciled_badge(self, obj):
+        if obj.is_reconciled:
+            return format_html('<span style="display:inline-block;padding:0.25rem 0.6rem;border-radius:999px;background:#dcfce7;color:#166534;font-weight:800;">Sí</span>')
+        return format_html('<span style="display:inline-block;padding:0.25rem 0.6rem;border-radius:999px;background:#fee2e2;color:#991b1b;font-weight:800;">No</span>')
 
 
 @admin.action(description="Generar siguiente gasto recurrente")

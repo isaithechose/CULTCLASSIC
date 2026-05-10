@@ -152,6 +152,8 @@
     <a class="button" href="{% url 'admin:tienda_journalentry_trial_balance_export' %}?month={{ current_month_value }}">Exportar balanza</a>
     <a class="button" href="{% url 'admin:tienda_journalentry_entries_export' %}?month={{ current_month_value }}">Exportar pólizas</a>
     <a class="button" href="{% url 'admin:tienda_accountingperiodclose_changelist' %}">Cierres</a>
+    <a class="button" href="{% url 'admin:tienda_moneyaccount_changelist' %}">Cuentas de dinero</a>
+    <a class="button" href="{% url 'admin:tienda_bankmovement_changelist' %}">Conciliación</a>
     <form method="post" action="{% url 'admin:tienda_journalentry_generate_missing' %}" style="display:inline-flex;margin:0;">
       {% csrf_token %}
       <input type="hidden" name="next" value="{% url 'admin:tienda_expense_accounting_dashboard' %}?month={{ current_month_value }}">
