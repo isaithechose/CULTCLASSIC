@@ -20,6 +20,7 @@ from .models import (
     Carrito,
     Categoria,
     AccountingAccount,
+    AccountingPeriodClose,
     CreditCardAccount,
     CreditCardStatement,
     JournalEntry,
@@ -235,6 +236,20 @@ def _post_credit_card_payment_journal_entry(statement, amount, created_by=None):
         ],
         created_by=created_by or statement.created_by,
     )
+
+
+def _month_range_for_date(value):
+    month_start = value.replace(day=1)
+    _, month_days = calendar.monthrange(month_start.year, month_start.month)
+    month_end = month_start.replace(day=month_days)
+    return month_start, month_end
+
+
+def _is_accounting_period_closed(value):
+    if not value:
+        return False
+    month_start, _ = _month_range_for_date(value)
+    return AccountingPeriodClose.objects.filter(month_start=month_start).exists()
 
 
 def _admin_overview_context():
@@ -2693,6 +2708,11 @@ class AccountingAccountAdmin(admin.ModelAdmin):
                 self.admin_site.admin_view(self.ledger_view),
                 name="tienda_accountingaccount_ledger",
             ),
+            path(
+                "<int:account_id>/ledger/export/",
+                self.admin_site.admin_view(self.export_ledger_view),
+                name="tienda_accountingaccount_ledger_export",
+            ),
         ]
         return custom_urls + urls
 
@@ -2749,6 +2769,48 @@ class AccountingAccountAdmin(admin.ModelAdmin):
         )
         return TemplateResponse(request, "admin/tienda/accounting_ledger.html", context)
 
+    def export_ledger_view(self, request, account_id):
+        account = self.get_object(request, account_id)
+        if not account:
+            self.message_user(request, "No encontramos esa cuenta contable.", level=messages.ERROR)
+            return HttpResponseRedirect(reverse("admin:tienda_accountingaccount_changelist"))
+
+        today = timezone.localdate()
+        year, month = _coerce_month(request.GET.get("month"), today)
+        month_start = date(year, month, 1)
+        _, month_days = calendar.monthrange(year, month)
+        month_end = month_start.replace(day=month_days)
+        lines = list(
+            JournalEntryLine.objects.filter(
+                account=account,
+                journal_entry__is_posted=True,
+                journal_entry__date__gte=month_start,
+                journal_entry__date__lte=month_end,
+            ).select_related("journal_entry").order_by("journal_entry__date", "journal_entry__id", "id")
+        )
+        filename = f"mayor-{account.code}-{month_start:%Y-%m}.xls"
+        response = HttpResponse(content_type="application/vnd.ms-excel; charset=utf-8")
+        response["Content-Disposition"] = f'attachment; filename="{filename}"'
+        response.write("\ufeff")
+        response.write("<html><head><meta charset='utf-8'></head><body>")
+        response.write(f"<h2>Libro mayor - {account.code} {account.name} - {month_start:%B %Y}</h2>")
+        response.write("<table border='1'><tr><th>Fecha</th><th>Póliza</th><th>Concepto</th><th>Debe</th><th>Haber</th><th>Saldo</th></tr>")
+        balance = Decimal("0.00")
+        for line in lines:
+            balance += line.debit - line.credit
+            response.write(
+                "<tr>"
+                f"<td>{line.journal_entry.date:%Y-%m-%d}</td>"
+                f"<td>{line.journal_entry.reference or line.journal_entry_id}</td>"
+                f"<td>{line.journal_entry.concept}</td>"
+                f"<td>{line.debit:.2f}</td>"
+                f"<td>{line.credit:.2f}</td>"
+                f"<td>{balance:.2f}</td>"
+                "</tr>"
+            )
+        response.write("</table></body></html>")
+        return response
+
 
 class JournalEntryLineInlineFormSet(forms.BaseInlineFormSet):
     def clean(self):
@@ -2787,8 +2849,21 @@ class JournalEntryLineInline(admin.TabularInline):
     fields = ("account", "description", "debit", "credit")
 
 
+class JournalEntryAdminForm(forms.ModelForm):
+    class Meta:
+        model = JournalEntry
+        fields = "__all__"
+
+    def clean_date(self):
+        value = self.cleaned_data["date"]
+        if _is_accounting_period_closed(value):
+            raise forms.ValidationError("No puedes crear o mover una póliza a un mes contable cerrado.")
+        return value
+
+
 @admin.register(JournalEntry)
 class JournalEntryAdmin(admin.ModelAdmin):
+    form = JournalEntryAdminForm
     inlines = [JournalEntryLineInline]
     list_display = ("date", "entry_type", "source", "concept", "reference", "total_debit_display", "total_credit_display", "balanced_badge")
     list_filter = ("entry_type", "source", "date", "is_posted")
@@ -2841,8 +2916,33 @@ class JournalEntryAdmin(admin.ModelAdmin):
                 self.admin_site.admin_view(self.balance_sheet_view),
                 name="tienda_journalentry_balance_sheet",
             ),
+            path(
+                "income-statement/export/",
+                self.admin_site.admin_view(self.export_income_statement_view),
+                name="tienda_journalentry_income_statement_export",
+            ),
+            path(
+                "balance-sheet/export/",
+                self.admin_site.admin_view(self.export_balance_sheet_view),
+                name="tienda_journalentry_balance_sheet_export",
+            ),
+            path(
+                "entries/export/",
+                self.admin_site.admin_view(self.export_entries_view),
+                name="tienda_journalentry_entries_export",
+            ),
         ]
         return custom_urls + urls
+
+    def has_change_permission(self, request, obj=None):
+        if obj and _is_accounting_period_closed(obj.date):
+            return False
+        return super().has_change_permission(request, obj)
+
+    def has_delete_permission(self, request, obj=None):
+        if obj and _is_accounting_period_closed(obj.date):
+            return False
+        return super().has_delete_permission(request, obj)
 
     def save_model(self, request, obj, form, change):
         if not obj.created_by:
@@ -3061,6 +3161,17 @@ class JournalEntryAdmin(admin.ModelAdmin):
 
     def income_statement_view(self, request):
         bounds = self._month_bounds(request)
+        statement = self._income_statement_data(bounds)
+        context = dict(
+            self.admin_site.each_context(request),
+            title="Estado de resultados desde pólizas",
+            opts=self.model._meta,
+            **bounds,
+            **statement,
+        )
+        return TemplateResponse(request, "admin/tienda/journal_income_statement.html", context)
+
+    def _income_statement_data(self, bounds):
         income_rows = self._account_activity(
             account_type="income",
             date_from=bounds["month_start"],
@@ -3087,25 +3198,30 @@ class JournalEntryAdmin(admin.ModelAdmin):
         total_expense = sum(row["amount"] for row in expense_rows)
         gross_profit = total_income - total_cost
         net_profit = gross_profit - total_expense
-
-        context = dict(
-            self.admin_site.each_context(request),
-            title="Estado de resultados desde pólizas",
-            income_rows=income_rows,
-            cost_rows=cost_rows,
-            expense_rows=expense_rows,
-            total_income=total_income,
-            total_cost=total_cost,
-            total_expense=total_expense,
-            gross_profit=gross_profit,
-            net_profit=net_profit,
-            opts=self.model._meta,
-            **bounds,
-        )
-        return TemplateResponse(request, "admin/tienda/journal_income_statement.html", context)
+        return {
+            "income_rows": income_rows,
+            "cost_rows": cost_rows,
+            "expense_rows": expense_rows,
+            "total_income": total_income,
+            "total_cost": total_cost,
+            "total_expense": total_expense,
+            "gross_profit": gross_profit,
+            "net_profit": net_profit,
+        }
 
     def balance_sheet_view(self, request):
         bounds = self._month_bounds(request)
+        balance_sheet = self._balance_sheet_data(bounds)
+        context = dict(
+            self.admin_site.each_context(request),
+            title="Balance general",
+            opts=self.model._meta,
+            **bounds,
+            **balance_sheet,
+        )
+        return TemplateResponse(request, "admin/tienda/balance_sheet.html", context)
+
+    def _balance_sheet_data(self, bounds):
         end_date = bounds["month_end"]
         asset_rows = self._account_activity(account_type="asset", date_to=end_date)
         liability_rows = self._account_activity(account_type="liability", date_to=end_date)
@@ -3138,24 +3254,72 @@ class JournalEntryAdmin(admin.ModelAdmin):
         total_equity = sum(row["amount"] for row in equity_rows)
         total_liabilities_equity = total_liabilities + total_equity + accumulated_result
         difference = total_assets - total_liabilities_equity
+        return {
+            "asset_rows": asset_rows,
+            "liability_rows": liability_rows,
+            "equity_rows": equity_rows,
+            "accumulated_result": accumulated_result,
+            "total_assets": total_assets,
+            "total_liabilities": total_liabilities,
+            "total_equity": total_equity,
+            "total_liabilities_equity": total_liabilities_equity,
+            "difference": difference,
+            "end_date": end_date,
+        }
 
-        context = dict(
-            self.admin_site.each_context(request),
-            title="Balance general",
-            asset_rows=asset_rows,
-            liability_rows=liability_rows,
-            equity_rows=equity_rows,
-            accumulated_result=accumulated_result,
-            total_assets=total_assets,
-            total_liabilities=total_liabilities,
-            total_equity=total_equity,
-            total_liabilities_equity=total_liabilities_equity,
-            difference=difference,
-            end_date=end_date,
-            opts=self.model._meta,
-            **bounds,
-        )
-        return TemplateResponse(request, "admin/tienda/balance_sheet.html", context)
+    def export_income_statement_view(self, request):
+        bounds = self._month_bounds(request)
+        statement = self._income_statement_data(bounds)
+        filename = f"estado-resultados-{bounds['current_month_value']}.xls"
+        response = HttpResponse(content_type="application/vnd.ms-excel; charset=utf-8")
+        response["Content-Disposition"] = f'attachment; filename="{filename}"'
+        response.write("\ufeff<html><head><meta charset='utf-8'></head><body>")
+        response.write(f"<h2>Estado de resultados - {bounds['month_label']}</h2>")
+        response.write("<table border='1'><tr><th>Sección</th><th>Código</th><th>Cuenta</th><th>Importe</th></tr>")
+        for section, rows in (("Ingresos", statement["income_rows"]), ("Costo de ventas", statement["cost_rows"]), ("Gastos", statement["expense_rows"])):
+            for row in rows:
+                response.write(f"<tr><td>{section}</td><td>{row['account'].code}</td><td>{row['account'].name}</td><td>{row['amount']:.2f}</td></tr>")
+        response.write(f"<tr><td colspan='3'><strong>Utilidad bruta</strong></td><td><strong>{statement['gross_profit']:.2f}</strong></td></tr>")
+        response.write(f"<tr><td colspan='3'><strong>Utilidad neta</strong></td><td><strong>{statement['net_profit']:.2f}</strong></td></tr>")
+        response.write("</table></body></html>")
+        return response
+
+    def export_balance_sheet_view(self, request):
+        bounds = self._month_bounds(request)
+        balance_sheet = self._balance_sheet_data(bounds)
+        filename = f"balance-general-{bounds['current_month_value']}.xls"
+        response = HttpResponse(content_type="application/vnd.ms-excel; charset=utf-8")
+        response["Content-Disposition"] = f'attachment; filename="{filename}"'
+        response.write("\ufeff<html><head><meta charset='utf-8'></head><body>")
+        response.write(f"<h2>Balance general al {balance_sheet['end_date']:%Y-%m-%d}</h2>")
+        response.write("<table border='1'><tr><th>Sección</th><th>Código</th><th>Cuenta</th><th>Importe</th></tr>")
+        for section, rows in (("Activo", balance_sheet["asset_rows"]), ("Pasivo", balance_sheet["liability_rows"]), ("Capital", balance_sheet["equity_rows"])):
+            for row in rows:
+                response.write(f"<tr><td>{section}</td><td>{row['account'].code}</td><td>{row['account'].name}</td><td>{row['amount']:.2f}</td></tr>")
+        response.write(f"<tr><td>Capital</td><td>R</td><td>Resultado acumulado</td><td>{balance_sheet['accumulated_result']:.2f}</td></tr>")
+        response.write(f"<tr><td colspan='3'><strong>Total activos</strong></td><td><strong>{balance_sheet['total_assets']:.2f}</strong></td></tr>")
+        response.write(f"<tr><td colspan='3'><strong>Total pasivo + capital</strong></td><td><strong>{balance_sheet['total_liabilities_equity']:.2f}</strong></td></tr>")
+        response.write(f"<tr><td colspan='3'><strong>Diferencia</strong></td><td><strong>{balance_sheet['difference']:.2f}</strong></td></tr>")
+        response.write("</table></body></html>")
+        return response
+
+    def export_entries_view(self, request):
+        bounds = self._month_bounds(request)
+        entries = JournalEntry.objects.filter(date__gte=bounds["month_start"], date__lte=bounds["month_end"]).prefetch_related("lines__account").order_by("date", "id")
+        filename = f"polizas-{bounds['current_month_value']}.xls"
+        response = HttpResponse(content_type="application/vnd.ms-excel; charset=utf-8")
+        response["Content-Disposition"] = f'attachment; filename="{filename}"'
+        response.write("\ufeff<html><head><meta charset='utf-8'></head><body>")
+        response.write(f"<h2>Pólizas - {bounds['month_label']}</h2>")
+        response.write("<table border='1'><tr><th>Fecha</th><th>Póliza</th><th>Concepto</th><th>Cuenta</th><th>Descripción</th><th>Debe</th><th>Haber</th></tr>")
+        for entry in entries:
+            for line in entry.lines.all():
+                response.write(
+                    f"<tr><td>{entry.date:%Y-%m-%d}</td><td>{entry.reference or entry.id}</td><td>{entry.concept}</td>"
+                    f"<td>{line.account.code} {line.account.name}</td><td>{line.description}</td><td>{line.debit:.2f}</td><td>{line.credit:.2f}</td></tr>"
+                )
+        response.write("</table></body></html>")
+        return response
 
     def unbalanced_view(self, request):
         bounds = self._month_bounds(request)
@@ -3190,6 +3354,73 @@ class JournalEntryAdmin(admin.ModelAdmin):
             **bounds,
         )
         return TemplateResponse(request, "admin/tienda/unbalanced_journal_entries.html", context)
+
+
+@admin.register(AccountingPeriodClose)
+class AccountingPeriodCloseAdmin(admin.ModelAdmin):
+    list_display = ("month_start", "month_end", "total_debit", "total_credit", "difference_badge", "unbalanced_count", "closed_by", "created_at")
+    list_filter = ("month_start", "closed_by")
+    search_fields = ("note", "closed_by__username")
+    autocomplete_fields = ("closed_by",)
+    readonly_fields = ("month_end", "total_debit", "total_credit", "difference", "unbalanced_count", "created_at", "close_guide")
+    date_hierarchy = "month_start"
+    fieldsets = (
+        ("Cierre", {
+            "fields": ("close_guide", "month_start", "month_end", "closed_by", "note")
+        }),
+        ("Resultado", {
+            "fields": ("total_debit", "total_credit", "difference", "unbalanced_count", "created_at")
+        }),
+    )
+
+    def save_model(self, request, obj, form, change):
+        obj.month_start = obj.month_start.replace(day=1)
+        month_start, month_end = _month_range_for_date(obj.month_start)
+        obj.month_start = month_start
+        obj.month_end = month_end
+        if not obj.closed_by:
+            obj.closed_by = request.user
+
+        lines = JournalEntryLine.objects.filter(
+            journal_entry__is_posted=True,
+            journal_entry__date__gte=month_start,
+            journal_entry__date__lte=month_end,
+        )
+        obj.total_debit = lines.aggregate(total=Sum("debit"))["total"] or Decimal("0.00")
+        obj.total_credit = lines.aggregate(total=Sum("credit"))["total"] or Decimal("0.00")
+        obj.difference = obj.total_debit - obj.total_credit
+
+        entries = JournalEntry.objects.filter(
+            is_posted=True,
+            date__gte=month_start,
+            date__lte=month_end,
+        ).prefetch_related("lines")
+        obj.unbalanced_count = sum(1 for entry in entries if entry.total_debit != entry.total_credit)
+        if obj.difference != 0 or obj.unbalanced_count:
+            messages.warning(
+                request,
+                f"El mes se guardó cerrado, pero requiere revisión: diferencia ${obj.difference:.2f}, pólizas descuadradas {obj.unbalanced_count}.",
+            )
+        super().save_model(request, obj, form, change)
+
+    @admin.display(description="Guía de cierre")
+    def close_guide(self, obj=None):
+        return format_html(
+            """
+            <div style="padding:0.85rem 1rem;border-radius:12px;background:#f8fafc;border:1px solid #e2e8f0;">
+              Al guardar un cierre, el sistema calcula debe, haber y pólizas descuadradas del mes. Las pólizas de meses cerrados quedan bloqueadas para edición y borrado.
+            </div>
+            """
+        )
+
+    @admin.display(description="Diferencia")
+    def difference_badge(self, obj):
+        if obj.difference == 0:
+            return format_html('<span style="display:inline-block;padding:0.25rem 0.6rem;border-radius:999px;background:#dcfce7;color:#166534;font-weight:800;">$0.00</span>')
+        return format_html(
+            '<span style="display:inline-block;padding:0.25rem 0.6rem;border-radius:999px;background:#fee2e2;color:#991b1b;font-weight:800;">${}</span>',
+            f"{obj.difference:.2f}",
+        )
 
 
 @admin.action(description="Generar siguiente gasto recurrente")

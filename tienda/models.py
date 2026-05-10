@@ -472,6 +472,26 @@ class JournalEntryLine(models.Model):
         return f"{self.account} - {side} ${amount}"
 
 
+class AccountingPeriodClose(models.Model):
+    month_start = models.DateField(unique=True)
+    month_end = models.DateField()
+    total_debit = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    total_credit = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    difference = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    unbalanced_count = models.PositiveIntegerField(default=0)
+    note = models.TextField(blank=True, null=True)
+    closed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-month_start"]
+        verbose_name = "Cierre contable"
+        verbose_name_plural = "Cierres contables"
+
+    def __str__(self):
+        return f"Cierre contable {self.month_start:%Y-%m}"
+
+
 class CashRegisterClosure(models.Model):
     fecha = models.DateField(unique=True)
     efectivo_contado = models.DecimalField(max_digits=10, decimal_places=2, default=0)

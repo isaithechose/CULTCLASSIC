@@ -85,6 +85,7 @@
   <a class="button" href="{% url 'admin:tienda_journalentry_trial_balance' %}?month={{ current_month_value }}">Balanza</a>
   <a class="button" href="{% url 'admin:tienda_journalentry_income_statement' %}?month={{ current_month_value }}">Estado de resultados</a>
   <a class="button" href="{% url 'admin:tienda_journalentry_changelist' %}">Pólizas</a>
+  <a class="button" href="{% url 'admin:tienda_journalentry_balance_sheet_export' %}?month={{ current_month_value }}">Exportar Excel</a>
 </div>
 
 <form class="balance-nav" method="get">
