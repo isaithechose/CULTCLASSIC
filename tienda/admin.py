@@ -9,7 +9,7 @@ from django.forms import formset_factory
 from django.http import HttpResponse, HttpResponseRedirect
 from django.template.response import TemplateResponse
 from django.urls import path, reverse
-from django.utils.html import format_html
+from django.utils.html import escape, format_html
 import calendar
 from datetime import date, timedelta
 
@@ -3464,6 +3464,16 @@ class MoneyAccountAdmin(admin.ModelAdmin):
                 self.admin_site.admin_view(self.reconciliation_view),
                 name="tienda_moneyaccount_reconciliation",
             ),
+            path(
+                "<int:account_id>/reconciliation/auto-match/",
+                self.admin_site.admin_view(self.auto_match_reconciliation_view),
+                name="tienda_moneyaccount_reconciliation_auto_match",
+            ),
+            path(
+                "<int:account_id>/reconciliation/export/",
+                self.admin_site.admin_view(self.export_reconciliation_view),
+                name="tienda_moneyaccount_reconciliation_export",
+            ),
         ]
         return custom_urls + urls
 
@@ -3529,6 +3539,158 @@ class MoneyAccountAdmin(admin.ModelAdmin):
             opts=self.model._meta,
         )
         return TemplateResponse(request, "admin/tienda/bank_reconciliation.html", context)
+
+    def _reconciliation_month_bounds(self, request):
+        today = timezone.localdate()
+        year, month = _coerce_month(request.GET.get("month") or request.POST.get("month"), today)
+        month_start = date(year, month, 1)
+        _, month_days = calendar.monthrange(year, month)
+        return month_start, month_start.replace(day=month_days)
+
+    def _matching_journal_entry_for_movement(self, account, movement, used_entry_ids=None):
+        if not account.accounting_account:
+            return None
+
+        amount = abs(_money(movement.signed_amount))
+        if amount == Decimal("0.00"):
+            return None
+
+        window_start = movement.date - timedelta(days=3)
+        window_end = movement.date + timedelta(days=3)
+        line_filters = {
+            "account": account.accounting_account,
+            "journal_entry__is_posted": True,
+            "journal_entry__date__gte": window_start,
+            "journal_entry__date__lte": window_end,
+        }
+        if movement.signed_amount >= 0:
+            line_filters.update({"debit": amount, "credit": Decimal("0.00")})
+        else:
+            line_filters.update({"credit": amount, "debit": Decimal("0.00")})
+
+        lines = JournalEntryLine.objects.filter(**line_filters).select_related("journal_entry")
+        if used_entry_ids:
+            lines = lines.exclude(journal_entry_id__in=used_entry_ids)
+        lines = lines.exclude(journal_entry__bank_movements__is_reconciled=True)
+
+        candidates = [line.journal_entry for line in lines]
+        if not candidates:
+            return None
+
+        reference = (movement.reference or "").strip().lower()
+
+        def score(entry):
+            entry_reference = (entry.reference or "").strip().lower()
+            reference_score = 0 if reference and reference in entry_reference else 1
+            return (reference_score, abs((entry.date - movement.date).days), entry.id)
+
+        return sorted(candidates, key=score)[0]
+
+    def auto_match_reconciliation_view(self, request, account_id):
+        account = self.get_object(request, account_id)
+        if not account:
+            self.message_user(request, "No encontramos esa cuenta de dinero.", level=messages.ERROR)
+            return HttpResponseRedirect(reverse("admin:tienda_moneyaccount_changelist"))
+        if request.method != "POST":
+            return HttpResponseRedirect(reverse("admin:tienda_moneyaccount_reconciliation", args=[account.id]))
+        if not account.accounting_account:
+            self.message_user(request, "Esta cuenta no tiene cuenta contable ligada; no se puede auto-conciliar.", level=messages.ERROR)
+            return HttpResponseRedirect(reverse("admin:tienda_moneyaccount_reconciliation", args=[account.id]))
+
+        month_start, month_end = self._reconciliation_month_bounds(request)
+        used_entry_ids = set()
+        matched = 0
+        reviewed = 0
+        with transaction.atomic():
+            movements = BankMovement.objects.select_for_update().filter(
+                money_account=account,
+                is_reconciled=False,
+                date__gte=month_start,
+                date__lte=month_end,
+            ).order_by("date", "id")
+            for movement in movements:
+                reviewed += 1
+                entry = self._matching_journal_entry_for_movement(account, movement, used_entry_ids)
+                if not entry:
+                    continue
+                movement.journal_entry = entry
+                movement.is_reconciled = True
+                movement.reconciled_at = timezone.now()
+                movement.save(update_fields=["journal_entry", "is_reconciled", "reconciled_at"])
+                used_entry_ids.add(entry.id)
+                matched += 1
+
+        pending = reviewed - matched
+        self.message_user(
+            request,
+            f"Auto-conciliación terminada: {matched} movimientos conciliados y {pending} pendientes de revisión.",
+            level=messages.SUCCESS if matched else messages.WARNING,
+        )
+        return HttpResponseRedirect(
+            f"{reverse('admin:tienda_moneyaccount_reconciliation', args=[account.id])}?month={month_start:%Y-%m}"
+        )
+
+    def export_reconciliation_view(self, request, account_id):
+        account = self.get_object(request, account_id)
+        if not account:
+            self.message_user(request, "No encontramos esa cuenta de dinero.", level=messages.ERROR)
+            return HttpResponseRedirect(reverse("admin:tienda_moneyaccount_changelist"))
+
+        month_start, month_end = self._reconciliation_month_bounds(request)
+        movements = list(
+            BankMovement.objects.filter(
+                money_account=account,
+                date__gte=month_start,
+                date__lte=month_end,
+            ).select_related("journal_entry").order_by("date", "id")
+        )
+        bank_total = sum(movement.signed_amount for movement in movements)
+        reconciled_total = sum(movement.signed_amount for movement in movements if movement.is_reconciled)
+        unreconciled_total = bank_total - reconciled_total
+
+        system_total = Decimal("0.00")
+        if account.accounting_account:
+            lines = JournalEntryLine.objects.filter(
+                account=account.accounting_account,
+                journal_entry__is_posted=True,
+                journal_entry__date__gte=month_start,
+                journal_entry__date__lte=month_end,
+            )
+            system_total = (lines.aggregate(total=Sum("debit"))["total"] or Decimal("0.00")) - (
+                lines.aggregate(total=Sum("credit"))["total"] or Decimal("0.00")
+            )
+        difference = bank_total - system_total
+
+        filename = f"conciliacion-{account.id}-{month_start:%Y-%m}.xls"
+        response = HttpResponse(content_type="application/vnd.ms-excel; charset=utf-8")
+        response["Content-Disposition"] = f'attachment; filename="{filename}"'
+        response.write("\ufeff<html><head><meta charset='utf-8'></head><body>")
+        response.write(f"<h2>Conciliación - {escape(account)} - {month_start:%B %Y}</h2>")
+        response.write("<table border='1'>")
+        response.write(f"<tr><th>Total banco</th><td>{bank_total:.2f}</td></tr>")
+        response.write(f"<tr><th>Total sistema</th><td>{system_total:.2f}</td></tr>")
+        response.write(f"<tr><th>Total conciliado</th><td>{reconciled_total:.2f}</td></tr>")
+        response.write(f"<tr><th>Total pendiente</th><td>{unreconciled_total:.2f}</td></tr>")
+        response.write(f"<tr><th>Diferencia</th><td>{difference:.2f}</td></tr>")
+        response.write("</table><br>")
+        response.write("<table border='1'><tr><th>Fecha</th><th>Descripción</th><th>Referencia</th><th>Tipo</th><th>Importe</th><th>Póliza</th><th>Estado</th></tr>")
+        for movement in movements:
+            entry_label = ""
+            if movement.journal_entry:
+                entry_label = movement.journal_entry.reference or str(movement.journal_entry_id)
+            response.write(
+                "<tr>"
+                f"<td>{movement.date:%Y-%m-%d}</td>"
+                f"<td>{escape(movement.description)}</td>"
+                f"<td>{escape(movement.reference or '')}</td>"
+                f"<td>{escape(movement.get_movement_type_display())}</td>"
+                f"<td>{movement.signed_amount:.2f}</td>"
+                f"<td>{escape(entry_label)}</td>"
+                f"<td>{'Conciliado' if movement.is_reconciled else 'Pendiente'}</td>"
+                "</tr>"
+            )
+        response.write("</table></body></html>")
+        return response
 
 
 @admin.register(BankMovement)

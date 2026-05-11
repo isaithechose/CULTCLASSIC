@@ -85,6 +85,12 @@
   <a class="button" href="{% url 'admin:tienda_moneyaccount_changelist' %}">Cuentas de dinero</a>
   <a class="button" href="{% url 'admin:tienda_bankmovement_changelist' %}">Movimientos bancarios</a>
   <a class="button" href="{% url 'admin:tienda_bankmovement_add' %}">Nuevo movimiento</a>
+  <a class="button" href="{% url 'admin:tienda_moneyaccount_reconciliation_export' account.id %}?month={{ current_month_value }}">Exportar conciliación</a>
+  <form method="post" action="{% url 'admin:tienda_moneyaccount_reconciliation_auto_match' account.id %}" style="display:inline-flex;margin:0;">
+    {% csrf_token %}
+    <input type="hidden" name="month" value="{{ current_month_value }}">
+    <button type="submit" class="button">Auto-conciliar</button>
+  </form>
 </div>
 
 <div class="recon-summary">
