@@ -1,0 +1,36 @@
+{% extends "tienda/base.html" %}
+{% load static %}
+
+{% block title %}Productos - Cult Clasiccs{% endblock %}
+{% block hero %}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <h2 class="mb-4" style="font-family:'Teko',sans-serif;font-size:2.4rem;text-transform:uppercase;color:var(--cc-ink);">
+        Productos
+    </h2>
+    <div class="row g-4">
+        {% for producto in productos %}
+        <div class="col-6 col-md-4 col-lg-3">
+            <a href="{% url 'tienda:detalle_producto' producto.id %}" class="text-decoration-none">
+                <div style="border:1px solid var(--cc-line);border-radius:1.25rem;overflow:hidden;background:rgba(255,255,255,0.03);">
+                    {% if producto.imagen %}
+                        <img src="{{ producto.imagen.url }}" alt="{{ producto.nombre }}" class="img-fluid w-100" style="aspect-ratio:1/1;object-fit:cover;">
+                    {% else %}
+                        <div style="aspect-ratio:1/1;background:rgba(255,255,255,0.06);"></div>
+                    {% endif %}
+                    <div class="p-3">
+                        <p class="mb-1" style="color:var(--cc-ink);font-weight:600;">{{ producto.nombre }}</p>
+                        <p class="mb-0" style="color:var(--cc-accent);">${{ producto.precio }}</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <p style="color:var(--cc-muted);">No hay productos en esta categoría.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

@@ -1,6 +1,9 @@
+import re
+
 from django import forms
-from .models import Reseña
-from .models import ShippingAddress
+from django.core.exceptions import ValidationError
+
+from .models import Reseña, ShippingAddress
 from django.contrib.auth.models import User
 
 
@@ -50,6 +53,20 @@ class ShippingAddressForm(forms.ModelForm):
             field.widget.attrs["class"] = f"{existing_classes} {self.base_input_class}".strip()
         self.fields["postal_code"].widget.attrs["inputmode"] = "numeric"
         self.fields["phone"].widget.attrs["inputmode"] = "tel"
+        self.fields["country"].initial = "México"
+
+    def clean_postal_code(self):
+        value = self.cleaned_data.get("postal_code", "").strip()
+        if not re.fullmatch(r"\d{5}", value):
+            raise ValidationError("El código postal debe tener exactamente 5 dígitos.")
+        return value
+
+    def clean_phone(self):
+        value = self.cleaned_data.get("phone", "").strip()
+        digits = re.sub(r"[\s\-\(\)\+]", "", value)
+        if digits and not re.fullmatch(r"\d{10,15}", digits):
+            raise ValidationError("Ingresa un número de teléfono válido (10 a 15 dígitos).")
+        return value
 
 
 class ReseñaForm(forms.ModelForm):

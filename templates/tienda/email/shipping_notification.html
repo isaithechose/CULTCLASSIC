@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tu pedido #{{ order.id }} fue enviado</title>
+</head>
+<body style="margin:0;padding:0;background:#f5f5f5;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f5;padding:32px 0;">
+  <tr>
+    <td align="center">
+      <table width="600" cellpadding="0" cellspacing="0" style="background:#111113;border-radius:16px;overflow:hidden;max-width:600px;width:100%;">
+
+        <!-- Header -->
+        <tr>
+          <td style="padding:32px 40px 24px;border-bottom:1px solid rgba(255,255,255,0.08);">
+            <p style="margin:0;font-size:22px;font-weight:700;color:#d6c3a1;letter-spacing:0.12em;text-transform:uppercase;">Cult Clasiccs</p>
+          </td>
+        </tr>
+
+        <!-- Body -->
+        <tr>
+          <td style="padding:32px 40px;">
+            <h1 style="margin:0 0 8px;font-size:28px;color:#ffffff;font-weight:700;">Tu pedido ya va en camino 🚚</h1>
+            <p style="margin:0 0 24px;color:#999;font-size:15px;">Pedido <strong style="color:#d6c3a1;">#{{ order.id }}</strong></p>
+
+            <p style="margin:0 0 24px;color:#ccc;font-size:15px;line-height:1.6;">
+              Hola {{ order.customer.get_full_name|default:order.customer.username }},<br>
+              tu pedido acaba de salir de nuestras manos. Aquí está tu número de seguimiento:
+            </p>
+
+            <div style="background:rgba(214,195,161,0.08);border:1px solid rgba(214,195,161,0.2);border-radius:12px;padding:20px;margin-bottom:24px;text-align:center;">
+              <p style="margin:0 0 6px;color:#999;font-size:12px;text-transform:uppercase;letter-spacing:0.1em;">Número de seguimiento</p>
+              <p style="margin:0;color:#d6c3a1;font-size:22px;font-weight:700;letter-spacing:0.08em;">{{ order.tracking_number }}</p>
+              {% if order.skydrop_tracking_url %}
+              <a href="{{ order.skydrop_tracking_url }}" style="display:inline-block;margin-top:12px;padding:10px 20px;background:#d6c3a1;color:#111;font-weight:700;font-size:14px;border-radius:8px;text-decoration:none;">
+                Rastrear mi paquete
+              </a>
+              {% endif %}
+            </div>
+
+            <p style="margin:0;color:#999;font-size:13px;line-height:1.6;">
+              También puedes ver el estado de tu pedido en <a href="https://cultclassics.shop" style="color:#d6c3a1;">cultclassics.shop</a>.<br>
+              ¡Gracias por tu compra!
+            </p>
+          </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+          <td style="padding:20px 40px;border-top:1px solid rgba(255,255,255,0.08);text-align:center;">
+            <p style="margin:0;color:#555;font-size:12px;">© Cult Clasiccs · cultclassics.shop</p>
+          </td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>

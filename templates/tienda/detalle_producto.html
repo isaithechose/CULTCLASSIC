@@ -1,7 +1,12 @@
 {% extends "tienda/base.html" %}
 {% load static %}
 
-{% block title %}{{ producto.nombre }} - Cult Calle{% endblock %}
+{% block title %}{{ producto.nombre }} - Cult Clasiccs{% endblock %}
+{% block meta_description %}{{ producto.descripcion|truncatewords:20 }}{% endblock %}
+{% block og_type %}product{% endblock %}
+{% block og_title %}{{ producto.nombre }} — Cult Clasiccs{% endblock %}
+{% block og_description %}{{ producto.descripcion|truncatewords:20 }}{% endblock %}
+{% block og_image %}{% if producto.imagen %}{{ request.scheme }}://{{ request.get_host }}{{ producto.imagen.url }}{% endif %}{% endblock %}
 
 {% block content %}
 <style>
@@ -1291,6 +1296,57 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 </script>
 
+<!-- Sección de reseñas -->
+<div class="container py-4" style="max-width:860px;">
+    <h3 class="mb-4" style="font-family:'Teko',sans-serif;font-size:2rem;letter-spacing:.08em;text-transform:uppercase;color:var(--cc-ink);">
+        Reseñas
+    </h3>
 
+    {% if reseñas %}
+        {% for r in reseñas %}
+        <div class="mb-3 p-3" style="border:1px solid var(--cc-line);border-radius:1rem;background:rgba(255,255,255,0.03);">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+                <strong style="color:var(--cc-ink);">{{ r.usuario.get_full_name|default:r.usuario.username }}</strong>
+                <span style="color:#f59e0b;">
+                    {% for i in "12345" %}{% if forloop.counter <= r.calificacion %}★{% else %}☆{% endif %}{% endfor %}
+                </span>
+            </div>
+            <p style="color:var(--cc-muted);margin:0;">{{ r.comentario }}</p>
+            <small style="color:var(--cc-muted);font-size:.78rem;">{{ r.fecha|date:"d M Y" }}</small>
+        </div>
+        {% endfor %}
+    {% else %}
+        <p style="color:var(--cc-muted);">Todavía no hay reseñas. ¡Sé el primero en dejar una!</p>
+    {% endif %}
+
+    {% if user.is_authenticated %}
+    <div class="mt-4 p-3" style="border:1px solid var(--cc-line);border-radius:1rem;background:rgba(255,255,255,0.03);">
+        <h5 style="color:var(--cc-ink);margin-bottom:1rem;">Deja tu reseña</h5>
+        <form method="post" action="{% url 'tienda:submit_reseña' producto.id %}">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label style="color:var(--cc-muted);font-size:.85rem;text-transform:uppercase;letter-spacing:.1em;">Calificación</label>
+                <select name="calificacion" class="form-select mt-1" style="background:#1a1a1c;color:var(--cc-ink);border:1px solid var(--cc-line);" required>
+                    <option value="">Selecciona...</option>
+                    {% for i in "12345" %}
+                    <option value="{{ forloop.counter }}">{{ forloop.counter }} estrella{% if forloop.counter > 1 %}s{% endif %}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="mb-3">
+                <label style="color:var(--cc-muted);font-size:.85rem;text-transform:uppercase;letter-spacing:.1em;">Comentario</label>
+                <textarea name="comentario" class="form-control mt-1" rows="3"
+                    style="background:#1a1a1c;color:var(--cc-ink);border:1px solid var(--cc-line);"
+                    placeholder="¿Qué te pareció el producto?" required></textarea>
+            </div>
+            <button type="submit" class="btn site-btn site-btn--accent">Publicar reseña</button>
+        </form>
+    </div>
+    {% else %}
+    <p style="color:var(--cc-muted);margin-top:1rem;">
+        <a href="{% url 'account_login' %}?next={{ request.path }}" style="color:var(--cc-accent);">Inicia sesión</a> para dejar una reseña.
+    </p>
+    {% endif %}
+</div>
 
 {% endblock %}

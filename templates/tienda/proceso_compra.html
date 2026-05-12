@@ -1,17 +1,13 @@
-{% extends "tienda/index.html" %}
+{% extends "tienda/base.html" %}
 
-<h2>Proceso de Compra</h2>
-<p>Total a pagar: ${{ total }}</p>
-<!-- Botón de PayPal -->
-<form action="{% url 'paypal_payment' %}" method="post">
-    {% csrf_token %}
-    <button type="submit">Pagar con PayPal</button>
-</form>
-<!-- Botón de Stripe -->
-<form action="{% url 'stripe_payment' %}" method="post">
-    {% csrf_token %}
-    <button type="submit">Pagar con Stripe</button>
-</form>
-<p>{{ mensaje }}</p>
+{% block title %}Proceso de compra - Cult Calle{% endblock %}
 
-<h1 class="text-success">¡Compra exitosa!</h1>
+{% block content %}
+<div class="container py-5 text-center">
+    <h2 class="mb-4">Proceso de compra</h2>
+    <p class="mb-4">Total a pagar: ${{ total }}</p>
+    <a href="{% url 'tienda:checkout' %}" class="btn site-btn site-btn--accent">
+        Continuar al checkout
+    </a>
+</div>
+{% endblock %}

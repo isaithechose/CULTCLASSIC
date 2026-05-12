@@ -76,6 +76,8 @@ def _save_custom_design(user, design_name, uploaded_file=None, edited_image_data
         if ";base64" not in header or not encoded:
             raise ValueError("La imagen editada no llegó en un formato válido.")
         decoded = base64.b64decode(encoded)
+        if len(decoded) > 15 * 1024 * 1024:
+            raise ValueError("El diseño excede el límite de 15 MB.")
         final_name = f"{filename_base}.png"
         file_path = designs_dir / final_name
         counter = 1
@@ -87,6 +89,8 @@ def _save_custom_design(user, design_name, uploaded_file=None, edited_image_data
         return final_name
 
     if uploaded_file:
+        if uploaded_file.size > 15 * 1024 * 1024:
+            raise ValueError("El archivo excede el límite de 15 MB.")
         extension = Path(uploaded_file.name).suffix.lower() or ".png"
         final_name = f"{filename_base}{extension}"
         file_path = designs_dir / final_name
@@ -171,11 +175,12 @@ def design_creator(request):
     else:
         form = CustomDesignUploadForm(initial={"name": selected_design_name})
 
+    user_prefix = slugify(request.user.username or "cliente") + "-"
     own_designs = sorted(
-        [path.name for path in designs_dir.iterdir() if path.is_file()],
-        key=lambda file_name: (designs_dir / file_name).stat().st_mtime,
+        [p.name for p in designs_dir.iterdir() if p.is_file() and p.name.startswith(user_prefix)],
+        key=lambda n: (designs_dir / n).stat().st_mtime,
         reverse=True,
-    )[:18]
+    )[:24]
 
     context = {
         "form": form,
@@ -186,6 +191,24 @@ def design_creator(request):
         "customizable_products": customizable_products,
     }
     return render(request, "tienda/design_creator.html", context)
+
+
+@login_required
+def delete_design(request, filename):
+    if request.method != 'POST':
+        return redirect('tienda:design_creator')
+    safe_name = Path(filename).name
+    user_prefix = slugify(request.user.username or "cliente") + "-"
+    if not safe_name.startswith(user_prefix):
+        messages.error(request, "No tienes permiso para eliminar ese diseño.")
+        return redirect('tienda:design_creator')
+    file_path = _custom_designs_dir() / safe_name
+    if file_path.exists():
+        file_path.unlink()
+        messages.success(request, "Diseño eliminado.")
+    return redirect('tienda:design_creator')
+
+
 def detalle_producto(request, producto_id):
     producto = get_object_or_404(Producto, id=producto_id)
     tallas_disponibles = producto.tallas_disponibles.split(",") if producto.tallas_disponibles else []
@@ -232,6 +255,8 @@ def detalle_producto(request, producto_id):
         },
     )
 
+    reseñas = producto.reseñas.select_related('usuario').order_by('-fecha')
+
     return render(request, 'tienda/detalle_producto.html', {
         'producto': producto,
         'tallas_disponibles': tallas_disponibles,
@@ -240,7 +265,42 @@ def detalle_producto(request, producto_id):
         'diseños_personalizados': personalizado_page,
         'selected_custom_design': selected_custom_design,
         'reseña_form': ReseñaForm(),
+        'reseñas': reseñas,
     })
+
+
+@login_required
+def submit_reseña(request, producto_id):
+    if request.method != 'POST':
+        return redirect('tienda:detalle_producto', producto_id=producto_id)
+    producto = get_object_or_404(Producto, id=producto_id)
+
+    from .models import Reseña as ReseñaModel
+    if ReseñaModel.objects.filter(usuario=request.user, producto=producto).exists():
+        messages.error(request, "Ya dejaste una reseña para este producto.")
+        return redirect('tienda:detalle_producto', producto_id=producto_id)
+
+    compra_verificada = Order.objects.filter(
+        customer=request.user,
+        status='Completed',
+        items__product=producto,
+    ).exists()
+    if not compra_verificada:
+        messages.error(request, "Solo puedes reseñar productos que hayas comprado.")
+        return redirect('tienda:detalle_producto', producto_id=producto_id)
+
+    form = ReseñaForm(request.POST)
+    if form.is_valid():
+        reseña = form.save(commit=False)
+        reseña.usuario = request.user
+        reseña.producto = producto
+        reseña.save()
+        messages.success(request, "¡Tu reseña fue publicada!")
+    else:
+        messages.error(request, "Revisa los campos de tu reseña e inténtalo de nuevo.")
+    return redirect('tienda:detalle_producto', producto_id=producto_id)
+
+
 def _build_order_from_cart(order, carrito, reset_checkout_state=True):
     order.items.all().delete()
     for key, item in carrito.items():
@@ -717,21 +777,29 @@ def agregar_al_carrito(request, producto_id):
 
 def carrito_view(request):
     carrito = request.session.get('carrito', {})
+
+    producto_ids = set()
+    for key in carrito:
+        parts = key.split("-", 4)
+        if len(parts) == 5:
+            try:
+                producto_ids.add(int(parts[0]))
+            except ValueError:
+                pass
+    productos_map = {p.id: p for p in Producto.objects.filter(id__in=producto_ids)}
+
     carrito_items = []
     total = 0
-
     for key, item in carrito.items():
         parts = key.split("-", 4)
         if len(parts) != 5:
             continue
-
         producto_id, talla, color, diseño_pecho, diseño_espalda = parts
-        producto = get_object_or_404(Producto, id=producto_id)
-
-        # ⚡ Usa el precio ya guardado en la sesión
+        producto = productos_map.get(int(producto_id))
+        if not producto:
+            continue
         precio_unitario_total = item['precio']
         subtotal = precio_unitario_total * item['cantidad']
-
         carrito_items.append({
             'producto_id': producto_id,
             'nombre': producto.nombre,
@@ -744,7 +812,6 @@ def carrito_view(request):
             'diseño_pecho': item.get('diseño_pecho', ''),
             'diseño_espalda': item.get('diseño_espalda', ''),
         })
-
         total += subtotal
 
     return render(request, 'tienda/carrito.html', {
@@ -769,35 +836,8 @@ def archivo_view(request):
     productos = Producto.objects.filter(categoria__nombre="archivo")
     return render(request, 'tienda/archivo.html', {'productos': productos})
 
-# Ejemplo de modelo para items del carrito (si se utiliza en otro contexto)
-from django.db import models
-
-class ItemCarrito(models.Model):
-    producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
-    cantidad = models.PositiveIntegerField(default=1)
-    talla = models.CharField(max_length=5, blank=True, null=True)
-    color = models.CharField(max_length=20, blank=True, null=True)
-
-    def subtotal(self):
-        return self.cantidad * self.producto.precio
-
 def proceso_compra(request):
-    # Obtiene los datos del carrito desde la sesión
-    carrito = request.session.get('carrito', {})
-    if not carrito:
-        return redirect('tienda:carrito')  # Redirige si el carrito está vacío
-
-    total = sum(item['precio'] * item['cantidad'] for item in carrito.values())
-
-    # Aquí podrías integrar el formulario de pago y procesamiento real de la compra
-
-    # Limpiar el carrito tras la compra
-    request.session['carrito'] = {}
-
-    return render(request, 'tienda/proceso_compra.html', {
-        'total': total,
-        'mensaje': '¡Gracias por tu compra! Tu pedido se está procesando.',
-    })
+    return redirect('tienda:checkout')
 
 
 
@@ -815,12 +855,26 @@ def order_detail(request, order_id):
     return render(request, 'tienda/order_detail.html', {'order': order})
 
 def lista_productos(request):
-    productos = Producto.objects.all()
-    return render(request, 'tienda/lista_productos.html', {'productos': productos})
+    qs = Producto.objects.all().order_by('nombre')
+    paginator = Paginator(qs, 24)
+    page = paginator.get_page(request.GET.get('page'))
+    return render(request, 'tienda/lista_productos.html', {'productos': page, 'paginator': paginator})
 
 def filtrar_productos(request, categoria_id):
     productos = Producto.objects.filter(categoria__id=categoria_id)
     return render(request, 'tienda/filtrar_productos.html', {'productos': productos})
+
+
+def buscar_productos(request):
+    q = request.GET.get('q', '').strip()
+    qs = Producto.objects.none()
+    if q:
+        qs = Producto.objects.filter(nombre__icontains=q, disponible=True).order_by('nombre')
+    paginator = Paginator(qs, 24)
+    page = paginator.get_page(request.GET.get('page'))
+    return render(request, 'tienda/buscar.html', {'productos': page, 'q': q})
+
+
 @login_required
 def stripe_checkout(request):
     # Configura la API key de Stripe con la clave secreta desde settings
@@ -983,18 +1037,19 @@ def payment_success(request):
         order.status = "Completed"
         order.save(update_fields=["status"])
 
-        subject = f"Pedido #{order.id} - Confirmación de Envío"
-        message = (
-            f"Hola {order.customer.username},\n\n"
-            f"Tu pedido #{order.id} ha sido pagado y ya tenemos tu dirección de envío.\n"
-            f"Subtotal de productos: ${order.subtotal_price:.2f} MXN.\n"
-            f"Envío cotizado: ${order.shipping_total:.2f} MXN.\n"
-            f"Total final: ${order.total_price:.2f} MXN.\n\n"
-            "¡Gracias por comprar en Cult Calle!"
+        from django.template.loader import render_to_string
+        subject = f"Pedido #{order.id} confirmado — Cult Clasiccs"
+        html_message = render_to_string('tienda/email/order_confirmation.html', {'order': order})
+        plain_message = (
+            f"Hola {order.customer.get_full_name() or order.customer.username},\n\n"
+            f"Tu pedido #{order.id} ha sido confirmado.\n"
+            f"Subtotal: ${order.subtotal_price:.2f} MXN\n"
+            f"Envío: ${order.shipping_total:.2f} MXN\n"
+            f"Total: ${order.total_price:.2f} MXN\n\n"
+            "¡Gracias por comprar en Cult Clasiccs!"
         )
-        from_email = settings.DEFAULT_FROM_EMAIL
-        recipient_list = [order.customer.email]
-        send_mail(subject, message, from_email, recipient_list)
+        send_mail(subject, plain_message, settings.DEFAULT_FROM_EMAIL,
+                  [order.customer.email], html_message=html_message)
 
     request.session['carrito'] = {}
     request.session["last_completed_order_id"] = order.id
@@ -1050,6 +1105,60 @@ def order_tracking(request, order_id):
 def tracking_view(request):
     orders = _customer_visible_orders(request.user)
     return render(request, 'tienda/tracking.html', {'orders': orders})
+
+
+@csrf_exempt
+def stripe_webhook(request):
+    payload = request.body
+    sig_header = request.META.get('HTTP_STRIPE_SIGNATURE', '')
+    webhook_secret = getattr(settings, 'STRIPE_WEBHOOK_SECRET', '')
+    stripe.api_key = settings.STRIPE_SECRET_KEY
+
+    if webhook_secret:
+        try:
+            event = stripe.Webhook.construct_event(payload, sig_header, webhook_secret)
+        except (ValueError, stripe.error.SignatureVerificationError) as exc:
+            logger.warning("Stripe webhook firma inválida: %s", exc)
+            return JsonResponse({'error': 'Firma inválida'}, status=400)
+    elif not settings.DEBUG:
+        return JsonResponse({'error': 'Webhook secret no configurado'}, status=400)
+    else:
+        try:
+            event = json.loads(payload)
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Payload inválido'}, status=400)
+
+    if event.get('type') == 'checkout.session.completed':
+        session = event['data']['object']
+        if session.get('payment_status') != 'paid':
+            return JsonResponse({'status': 'ignorado'})
+        order_id = (session.get('metadata') or {}).get('order_id')
+        if not order_id:
+            return JsonResponse({'status': 'sin order_id'})
+        try:
+            order = Order.objects.get(id=order_id)
+        except Order.DoesNotExist:
+            logger.error("Stripe webhook: orden %s no encontrada", order_id)
+            return JsonResponse({'status': 'orden no encontrada'}, status=404)
+
+        if order.status != 'Completed':
+            for item in order.items.select_related('product'):
+                variant = find_variant_for_selection(item.product, talla=item.talla, color=item.color)
+                record_inventory_movement(
+                    product=item.product,
+                    variant=variant,
+                    order=order,
+                    movement_type='sale',
+                    quantity_change=-int(item.quantity),
+                    note=f"Descuento vía Stripe webhook para pedido #{order.id}.",
+                    created_by=None,
+                    metadata={'talla': item.talla, 'color': item.color, 'precio': str(item.price)},
+                )
+            order.status = 'Completed'
+            order.save(update_fields=['status'])
+            logger.info("Stripe webhook: pedido #%s marcado como Completed", order.id)
+
+    return JsonResponse({'status': 'ok'})
 
 
 def _webhook_secret_is_valid(request):

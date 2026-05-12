@@ -4,9 +4,16 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
-    <meta name="description" content="Cult Clasiccs - Ropa y diseños con estilo limpio, compra simple y envío claro." />
+    <meta name="description" content="{% block meta_description %}Cult Clasiccs - Ropa y diseños con estilo limpio, compra simple y envío claro.{% endblock %}" />
     <meta name="author" content="Cult Clasiccs" />
     <title>{% block title %}Cult Clasiccs | Ropa y diseños con estilo limpio{% endblock %}</title>
+    <!-- Open Graph -->
+    <meta property="og:site_name" content="Cult Clasiccs" />
+    <meta property="og:type" content="{% block og_type %}website{% endblock %}" />
+    <meta property="og:title" content="{% block og_title %}Cult Clasiccs | Ropa y diseños con estilo limpio{% endblock %}" />
+    <meta property="og:description" content="{% block og_description %}Cult Clasiccs - Ropa y diseños con estilo limpio, compra simple y envío claro.{% endblock %}" />
+    <meta property="og:image" content="{% block og_image %}{% endblock %}" />
+    <meta property="og:url" content="{{ request.build_absolute_uri }}" />
 
     <!-- Favicon -->
     <link rel="icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}" />
@@ -98,6 +105,14 @@
             </ul>
 
             <div class="d-flex align-items-center flex-wrap gap-2">
+                <form method="get" action="{% url 'tienda:buscar' %}" class="d-flex" role="search">
+                    <input type="text" name="q" class="form-control form-control-sm"
+                           style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.15);color:var(--cc-ink);min-width:160px;"
+                           placeholder="Buscar..." aria-label="Buscar productos">
+                    <button type="submit" class="btn btn-sm ms-1" style="background:rgba(255,255,255,0.1);color:var(--cc-ink);border:none;">
+                        <i class="bi-search"></i>
+                    </button>
+                </form>
                 <a class="btn site-btn site-btn--ghost" href="{% url 'tienda:carrito' %}">
                     <i class="bi-cart-fill me-1"></i>
                     Carrito

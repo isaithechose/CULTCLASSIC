@@ -1,0 +1,66 @@
+{% extends "tienda/base.html" %}
+{% load static %}
+
+{% block title %}Búsqueda: "{{ q }}" - Cult Clasiccs{% endblock %}
+{% block hero %}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <form method="get" action="{% url 'tienda:buscar' %}" class="mb-4 d-flex gap-2" style="max-width:480px;">
+        <input type="text" name="q" value="{{ q }}" class="form-control"
+               style="background:#1a1a1c;color:var(--cc-ink);border:1px solid var(--cc-line);"
+               placeholder="Buscar productos...">
+        <button type="submit" class="btn site-btn site-btn--accent">Buscar</button>
+    </form>
+
+    {% if q %}
+        <p style="color:var(--cc-muted);margin-bottom:1.5rem;">
+            {% if productos.paginator.count %}
+                {{ productos.paginator.count }} resultado{% if productos.paginator.count != 1 %}s{% endif %} para "<strong style="color:var(--cc-ink);">{{ q }}</strong>"
+            {% else %}
+                Sin resultados para "<strong style="color:var(--cc-ink);">{{ q }}</strong>"
+            {% endif %}
+        </p>
+    {% endif %}
+
+    <div class="row g-4">
+        {% for producto in productos %}
+        <div class="col-6 col-md-4 col-lg-3">
+            <a href="{% url 'tienda:detalle_producto' producto.id %}" class="text-decoration-none">
+                <div style="border:1px solid var(--cc-line);border-radius:1.25rem;overflow:hidden;background:rgba(255,255,255,0.03);">
+                    {% if producto.imagen %}
+                        <img src="{{ producto.imagen.url }}" alt="{{ producto.nombre }}" class="img-fluid w-100" style="aspect-ratio:1/1;object-fit:cover;">
+                    {% else %}
+                        <div style="aspect-ratio:1/1;background:rgba(255,255,255,0.06);"></div>
+                    {% endif %}
+                    <div class="p-3">
+                        <p class="mb-1" style="color:var(--cc-ink);font-weight:600;">{{ producto.nombre }}</p>
+                        <p class="mb-0" style="color:var(--cc-accent);">${{ producto.precio }}</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+        {% empty %}
+            {% if q %}
+            <div class="col-12">
+                <p style="color:var(--cc-muted);">Prueba con otra palabra clave.</p>
+            </div>
+            {% endif %}
+        {% endfor %}
+    </div>
+
+    {% if productos.has_other_pages %}
+    <nav class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if productos.has_previous %}
+                <li class="page-item"><a class="page-link" href="?q={{ q }}&page={{ productos.previous_page_number }}">Anterior</a></li>
+            {% endif %}
+            <li class="page-item disabled"><span class="page-link">{{ productos.number }} / {{ productos.paginator.num_pages }}</span></li>
+            {% if productos.has_next %}
+                <li class="page-item"><a class="page-link" href="?q={{ q }}&page={{ productos.next_page_number }}">Siguiente</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+{% endblock %}
