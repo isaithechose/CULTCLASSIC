@@ -38,7 +38,7 @@ from .models import (
     find_variant_for_selection,
     record_inventory_movement,
 )
-from .skydrop import SkydropError, quote_order, sync_shipment
+from .skydrop import SkydropError, map_skydrop_status, quote_order, sync_shipment
 
 logger = logging.getLogger(__name__)
 
@@ -1052,15 +1052,6 @@ def tracking_view(request):
     return render(request, 'tienda/tracking.html', {'orders': orders})
 
 
-def _map_skydrop_status(raw_status):
-    normalized = (raw_status or "").lower()
-    if "deliver" in normalized:
-        return "Delivered"
-    if any(token in normalized for token in ["transit", "ship", "pickup", "label"]):
-        return "Shipped"
-    return "Processing"
-
-
 def _webhook_secret_is_valid(request):
     expected = getattr(settings, "SKYDROP_WEBHOOK_SECRET", "")
     if not expected:
@@ -1106,7 +1097,7 @@ def _apply_skydrop_sync(order, payload, source_label="Skydrop"):
     order.skydrop_service = service
     order.skydrop_shipment_id = shipment_id
     if raw_status:
-        order.shipping_status = _map_skydrop_status(raw_status)
+        order.shipping_status = map_skydrop_status(raw_status)
     order.skydrop_last_payload = payload.get("payload") or payload
     order.skydrop_last_error = ""
     order.save()

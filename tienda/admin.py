@@ -4,7 +4,7 @@ from django.contrib import messages
 from django.contrib.admin.sites import AdminSite
 from django import forms
 from django.db import transaction
-from django.db.models import Count, Sum
+from django.db.models import Count, Prefetch, Sum
 from django.forms import formset_factory
 from django.http import HttpResponse, HttpResponseRedirect
 from django.template.response import TemplateResponse
@@ -13,7 +13,7 @@ from django.utils.html import escape, format_html
 import calendar
 from datetime import date, timedelta
 
-from .skydrop import SkydropError, create_shipment, quote_order, sync_shipment
+from .skydrop import SkydropError, create_shipment, map_skydrop_status, quote_order, sync_shipment
 from .models import (
     BusinessPayment,
     CashRegisterClosure,
@@ -111,13 +111,8 @@ def _account(code):
 
 
 def _cash_account_for_method(method):
-    return {
-        "cash": _account("1000"),
-        "transfer": _account("1010"),
-        "card": _account("1020"),
-        "stripe": _account("1020"),
-        "other": _account("1010"),
-    }.get(method, _account("1010"))
+    code = {"cash": "1000", "transfer": "1010", "card": "1020", "stripe": "1020"}.get(method, "1010")
+    return _account(code)
 
 
 def _create_balanced_journal_entry(*, date_value, entry_type, source, concept, lines, reference="", order=None, expense=None, credit_card_statement=None, created_by=None):
@@ -264,12 +259,19 @@ def _admin_overview_context():
     low_stock_variants = active_variants.filter(stock__lte=3).count()
     out_of_stock_variants = active_variants.filter(stock=0).count()
     recent_movements = InventoryMovement.objects.filter(created_at__date=today).count()
-    monthly_expenses = Expense.objects.filter(fecha__gte=month_start, fecha__lte=today).aggregate(total=Sum("monto"))["total"] or 0
-    today_expenses = Expense.objects.filter(fecha=today).aggregate(total=Sum("monto"))["total"] or 0
-    credit_card_due = sum(statement.saldo_pendiente for statement in CreditCardStatement.objects.filter(estado="pending"))
+    monthly_expenses = Expense.objects.filter(fecha__gte=month_start, fecha__lte=today).aggregate(total=Sum("monto"))["total"] or Decimal("0.00")
+    today_expenses = Expense.objects.filter(fecha=today).aggregate(total=Sum("monto"))["total"] or Decimal("0.00")
+    credit_card_due = sum(
+        statement.saldo_pendiente
+        for statement in CreditCardStatement.objects.filter(estado="pending")
+    )
     completed_orders = Order.objects.filter(status="Completed")
-    monthly_sales = sum(order.total_price for order in completed_orders.filter(created_at__date__gte=month_start, created_at__date__lte=today))
-    today_orders = [order for order in completed_orders.filter(created_at__date=today).prefetch_related("items__product")]
+    monthly_orders = completed_orders.filter(
+        created_at__date__gte=month_start,
+        created_at__date__lte=today,
+    ).prefetch_related("items")
+    monthly_sales = sum(order.total_price for order in monthly_orders)
+    today_orders = list(completed_orders.filter(created_at__date=today).prefetch_related("items__product"))
     today_sales = sum(order.total_price for order in today_orders)
     today_cogs = Decimal("0.00")
     for order in today_orders:
@@ -289,106 +291,106 @@ def _admin_overview_context():
             {
                 "label": "Pedidos pendientes",
                 "value": pending_orders,
-                "url": "/admin/tienda/order/?status__exact=Pending",
+                "url": reverse("admin:tienda_order_changelist") + "?status__exact=Pending",
                 "tone": "warn",
             },
             {
                 "label": "Pedidos por enviar",
                 "value": orders_to_ship,
-                "url": "/admin/tienda/order/?status__exact=Completed&shipping_status__exact=Processing",
+                "url": reverse("admin:tienda_order_changelist") + "?status__exact=Completed&shipping_status__exact=Processing",
                 "tone": "info",
             },
             {
                 "label": "Productos en alerta",
                 "value": low_stock_products,
-                "url": "/admin/tienda/producto/?stock__lte=3",
+                "url": reverse("admin:tienda_producto_changelist") + "?stock__lte=3",
                 "tone": "danger",
             },
             {
                 "label": "Variantes activas",
                 "value": active_variants.count(),
-                "url": "/admin/tienda/productvariant/",
+                "url": reverse("admin:tienda_productvariant_changelist"),
                 "tone": "ok",
             },
             {
                 "label": "Variantes con stock bajo",
                 "value": low_stock_variants,
-                "url": "/admin/tienda/productvariant/?stock__lte=3",
+                "url": reverse("admin:tienda_productvariant_changelist") + "?stock__lte=3",
                 "tone": "warn",
             },
             {
                 "label": "Movimientos hoy",
                 "value": recent_movements,
-                "url": "/admin/tienda/inventorymovement/",
+                "url": reverse("admin:tienda_inventorymovement_changelist"),
                 "tone": "neutral",
             },
             {
                 "label": "Gastos del mes",
                 "value": f"${monthly_expenses:.2f}",
-                "url": "/admin/tienda/expense/",
+                "url": reverse("admin:tienda_expense_changelist"),
                 "tone": "danger",
             },
             {
                 "label": "Tarjetas por pagar",
                 "value": f"${credit_card_due:.2f}",
-                "url": "/admin/tienda/creditcardstatement/?estado__exact=pending",
+                "url": reverse("admin:tienda_creditcardstatement_changelist") + "?estado__exact=pending",
                 "tone": "warn",
             },
             {
                 "label": "Ventas del mes",
                 "value": f"${monthly_sales:.2f}",
-                "url": "/admin/tienda/order/?status__exact=Completed",
+                "url": reverse("admin:tienda_order_changelist") + "?status__exact=Completed",
                 "tone": "ok",
             },
         ],
         "admin_quick_links": [
-            {"label": "Punto de venta", "url": "/admin/tienda/order/point-of-sale/", "description": "Venta rápida en mostrador con descuento de inventario.", "tone": "ok"},
-            {"label": "Cierre de caja", "url": "/admin/tienda/cashregisterclosure/daily-close/", "description": "Cuadra efectivo, tarjeta, transferencias y diferencias.", "tone": "ok"},
-            {"label": "Dashboard contable", "url": "/admin/tienda/expense/accounting-dashboard/", "description": "Estado de resultados, gastos y utilidad.", "tone": "info"},
-            {"label": "Pólizas contables", "url": "/admin/tienda/journalentry/", "description": "Debe, haber y partidas contables por movimiento.", "tone": "info"},
-            {"label": "Inventario", "url": "/admin/tienda/producto/inventory-dashboard/", "description": "Alertas, valor de stock y movimientos recientes.", "tone": "warn"},
-            {"label": "Recepción de compra", "url": "/admin/tienda/inventorymovement/receive-purchase/", "description": "Entrada de mercancía y gasto de compra.", "tone": "neutral"},
-            {"label": "Calendario negocio", "url": "/admin/tienda/businesspayment/business-calendar/", "description": "Ventas, gastos y pagos por día.", "tone": "neutral"},
-            {"label": "Tarjetas de crédito", "url": "/admin/tienda/creditcardstatement/", "description": "Estados de cuenta, vencimientos y saldos por pagar.", "tone": "warn"},
+            {"label": "Punto de venta", "url": reverse("admin:tienda_order_point_of_sale"), "description": "Venta rápida en mostrador con descuento de inventario.", "tone": "ok"},
+            {"label": "Cierre de caja", "url": reverse("admin:tienda_cashregisterclosure_daily_close"), "description": "Cuadra efectivo, tarjeta, transferencias y diferencias.", "tone": "ok"},
+            {"label": "Dashboard contable", "url": reverse("admin:tienda_expense_accounting_dashboard"), "description": "Estado de resultados, gastos y utilidad.", "tone": "info"},
+            {"label": "Pólizas contables", "url": reverse("admin:tienda_journalentry_changelist"), "description": "Debe, haber y partidas contables por movimiento.", "tone": "info"},
+            {"label": "Inventario", "url": reverse("admin:tienda_producto_inventory_dashboard"), "description": "Alertas, valor de stock y movimientos recientes.", "tone": "warn"},
+            {"label": "Recepción de compra", "url": reverse("admin:tienda_inventorymovement_receive_purchase"), "description": "Entrada de mercancía y gasto de compra.", "tone": "neutral"},
+            {"label": "Calendario negocio", "url": reverse("admin:tienda_businesspayment_business_calendar"), "description": "Ventas, gastos y pagos por día.", "tone": "neutral"},
+            {"label": "Tarjetas de crédito", "url": reverse("admin:tienda_creditcardstatement_changelist"), "description": "Estados de cuenta, vencimientos y saldos por pagar.", "tone": "warn"},
         ],
         "admin_workflow_groups": [
             {
                 "title": "Vender",
                 "links": [
-                    {"label": "Abrir punto de venta", "url": "/admin/tienda/order/point-of-sale/"},
-                    {"label": "Cerrar caja", "url": "/admin/tienda/cashregisterclosure/daily-close/"},
-                    {"label": "Pedidos de hoy", "url": f"/admin/tienda/order/?created_at__date={today.isoformat()}"},
-                    {"label": "Pedidos pendientes", "url": "/admin/tienda/order/?status__exact=Pending"},
+                    {"label": "Abrir punto de venta", "url": reverse("admin:tienda_order_point_of_sale")},
+                    {"label": "Cerrar caja", "url": reverse("admin:tienda_cashregisterclosure_daily_close")},
+                    {"label": "Pedidos de hoy", "url": reverse("admin:tienda_order_changelist") + f"?created_at__date={today.isoformat()}"},
+                    {"label": "Pedidos pendientes", "url": reverse("admin:tienda_order_changelist") + "?status__exact=Pending"},
                 ],
             },
             {
                 "title": "Inventario",
                 "links": [
-                    {"label": "Dashboard inventario", "url": "/admin/tienda/producto/inventory-dashboard/"},
-                    {"label": "Mesa de inventario", "url": "/admin/tienda/producto/inventory-matrix/"},
-                    {"label": "Recepción de compra", "url": "/admin/tienda/inventorymovement/receive-purchase/"},
-                    {"label": "Variantes", "url": "/admin/tienda/productvariant/"},
+                    {"label": "Dashboard inventario", "url": reverse("admin:tienda_producto_inventory_dashboard")},
+                    {"label": "Mesa de inventario", "url": reverse("admin:tienda_producto_inventory_matrix")},
+                    {"label": "Recepción de compra", "url": reverse("admin:tienda_inventorymovement_receive_purchase")},
+                    {"label": "Variantes", "url": reverse("admin:tienda_productvariant_changelist")},
                 ],
             },
             {
                 "title": "Contabilidad",
                 "links": [
-                    {"label": "Dashboard contable", "url": "/admin/tienda/expense/accounting-dashboard/"},
-                    {"label": "Catálogo de cuentas", "url": "/admin/tienda/accountingaccount/"},
-                    {"label": "Pólizas", "url": "/admin/tienda/journalentry/"},
-                    {"label": "Registrar gasto", "url": "/admin/tienda/expense/add/"},
-                    {"label": "Gastos recurrentes", "url": "/admin/tienda/expense/?recurrencia_activa__exact=1"},
-                    {"label": "Pagos programados", "url": "/admin/tienda/businesspayment/"},
-                    {"label": "Tarjetas por pagar", "url": "/admin/tienda/creditcardstatement/?estado__exact=pending"},
+                    {"label": "Dashboard contable", "url": reverse("admin:tienda_expense_accounting_dashboard")},
+                    {"label": "Catálogo de cuentas", "url": reverse("admin:tienda_accountingaccount_changelist")},
+                    {"label": "Pólizas", "url": reverse("admin:tienda_journalentry_changelist")},
+                    {"label": "Registrar gasto", "url": reverse("admin:tienda_expense_add")},
+                    {"label": "Gastos recurrentes", "url": reverse("admin:tienda_expense_changelist") + "?recurrencia_activa__exact=1"},
+                    {"label": "Pagos programados", "url": reverse("admin:tienda_businesspayment_changelist")},
+                    {"label": "Tarjetas por pagar", "url": reverse("admin:tienda_creditcardstatement_changelist") + "?estado__exact=pending"},
                 ],
             },
             {
                 "title": "Catálogo",
                 "links": [
-                    {"label": "Productos", "url": "/admin/tienda/producto/"},
-                    {"label": "Nuevo producto", "url": "/admin/tienda/producto/add/"},
-                    {"label": "Categorías", "url": "/admin/tienda/categoria/"},
-                    {"label": "Diseños", "url": "/admin/tienda/producto/?categoria__nombre=Diseños"},
+                    {"label": "Productos", "url": reverse("admin:tienda_producto_changelist")},
+                    {"label": "Nuevo producto", "url": reverse("admin:tienda_producto_add")},
+                    {"label": "Categorías", "url": reverse("admin:tienda_categoria_changelist")},
+                    {"label": "Diseños", "url": reverse("admin:tienda_producto_changelist") + "?categoria__nombre=Diseños"},
                 ],
             },
         ],
@@ -396,17 +398,17 @@ def _admin_overview_context():
             {
                 "label": "Variantes agotadas",
                 "value": out_of_stock_variants,
-                "url": "/admin/tienda/productvariant/?stock__exact=0",
+                "url": reverse("admin:tienda_productvariant_changelist") + "?stock__exact=0",
             },
             {
                 "label": "Stock bajo",
                 "value": low_stock_variants,
-                "url": "/admin/tienda/productvariant/?stock__lte=3",
+                "url": reverse("admin:tienda_productvariant_changelist") + "?stock__lte=3",
             },
             {
                 "label": "Pedidos pendientes",
                 "value": pending_orders,
-                "url": "/admin/tienda/order/",
+                "url": reverse("admin:tienda_order_changelist"),
             },
         ],
     }
@@ -651,6 +653,11 @@ def importar_disenos(modeladmin, request, queryset):
     if not os.path.exists(ruta):
         os.makedirs(ruta)
 
+    precio_default = Decimal(str(getattr(settings, "IMPORT_DISENO_PRECIO_DEFAULT", "199.00")))
+    stock_default = getattr(settings, "IMPORT_DISENO_STOCK_DEFAULT", 10)
+    tallas_default = getattr(settings, "IMPORT_DISENO_TALLAS_DEFAULT", "S,M,L,XL")
+    colores_default = getattr(settings, "IMPORT_DISENO_COLORES_DEFAULT", "Negro,Blanco")
+
     for archivo in os.listdir(ruta):
         if archivo.lower().endswith((".jpg", ".jpeg", ".png", ".gif", ".webp")):
             nombre = os.path.splitext(archivo)[0]
@@ -658,12 +665,12 @@ def importar_disenos(modeladmin, request, queryset):
                 Producto.objects.create(
                     nombre=nombre,
                     descripcion="Diseño importado automaticamente.",
-                    precio=199.00,
-                    stock=10,
+                    precio=precio_default,
+                    stock=stock_default,
                     imagen=f"diseños_nuevos/{archivo}",
                     categoria=categoria,
-                    tallas_disponibles="S,M,L",
-                    colores_disponibles="Negro,Blanco",
+                    tallas_disponibles=tallas_default,
+                    colores_disponibles=colores_default,
                     disponible=True,
                 )
                 creados += 1
@@ -866,13 +873,7 @@ def sincronizar_skydrop(modeladmin, request, queryset):
             order.skydrop_carrier = result.get("carrier") or order.skydrop_carrier
             order.skydrop_service = result.get("service") or order.skydrop_service
             if result.get("status"):
-                normalized = result["status"].lower()
-                if "deliver" in normalized:
-                    order.shipping_status = "Delivered"
-                elif any(token in normalized for token in ["transit", "ship", "pickup", "label"]):
-                    order.shipping_status = "Shipped"
-                else:
-                    order.shipping_status = "Processing"
+                order.shipping_status = map_skydrop_status(result["status"])
             order.skydrop_last_payload = result.get("payload")
             order.skydrop_last_error = ""
             order.save()
@@ -1105,6 +1106,21 @@ class ProductoAdmin(admin.ModelAdmin):
         }),
     )
 
+    list_per_page = 30
+
+    def get_queryset(self, request):
+        return (
+            super()
+            .get_queryset(request)
+            .prefetch_related(
+                Prefetch(
+                    "variants",
+                    queryset=ProductVariant.objects.filter(activo=True),
+                    to_attr="active_variants",
+                )
+            )
+        )
+
     def get_urls(self):
         urls = super().get_urls()
         custom_urls = [
@@ -1204,8 +1220,10 @@ class ProductoAdmin(admin.ModelAdmin):
 
     @admin.display(description="Stock variantes")
     def variant_stock_summary(self, obj):
-        variants = obj.variants.filter(activo=True)
-        if not variants.exists():
+        variants = getattr(obj, "active_variants", None)
+        if variants is None:
+            variants = list(obj.variants.filter(activo=True))
+        if not variants:
             return "-"
         return ", ".join(f"{variant.color}/{variant.talla}: {variant.stock}" for variant in variants[:6])
 
@@ -1751,10 +1769,11 @@ class OrderAdmin(admin.ModelAdmin):
         return custom_urls + urls
 
     def get_queryset(self, request):
-        queryset = super().get_queryset(request)
-        return queryset.annotate(
-            items_total=Count("items", distinct=True),
-            amount_total=Sum("items__price"),
+        return (
+            super()
+            .get_queryset(request)
+            .annotate(items_total=Count("items", distinct=True))
+            .prefetch_related("items")
         )
 
     @admin.display(ordering="status", description="Estado")
@@ -1882,18 +1901,20 @@ class OrderAdmin(admin.ModelAdmin):
     def skydrop_summary(self, obj):
         rows = []
         if obj.skydrop_carrier or obj.skydrop_service:
-            rows.append(f"{obj.skydrop_carrier or '-'} / {obj.skydrop_service or '-'}")
+            rows.append(format_html("{} / {}", obj.skydrop_carrier or "-", obj.skydrop_service or "-"))
         if obj.shipping_quote_amount:
-            rows.append(f"Cotizacion: ${obj.shipping_quote_amount} {obj.shipping_quote_currency or 'MXN'}")
+            rows.append(format_html("Cotizacion: ${} {}", obj.shipping_quote_amount, obj.shipping_quote_currency or "MXN"))
         if obj.tracking_number:
-            rows.append(f"Tracking: {obj.tracking_number}")
+            rows.append(format_html("Tracking: {}", obj.tracking_number))
         if obj.skydrop_label_url:
-            rows.append(f'<a href="{obj.skydrop_label_url}" target="_blank">Abrir guía</a>')
+            rows.append(format_html('<a href="{}" target="_blank">Abrir guía</a>', obj.skydrop_label_url))
         if obj.skydrop_tracking_url:
-            rows.append(f'<a href="{obj.skydrop_tracking_url}" target="_blank">Abrir tracking</a>')
+            rows.append(format_html('<a href="{}" target="_blank">Abrir tracking</a>', obj.skydrop_tracking_url))
         if obj.skydrop_last_error:
-            rows.append(f'<span style="color:#d46b6b;">{obj.skydrop_last_error}</span>')
-        return format_html("<br>".join(rows) if rows else "Sin datos de Skydrop.")
+            rows.append(format_html('<span style="color:#d46b6b;">{}</span>', obj.skydrop_last_error))
+        if not rows:
+            return "Sin datos de Skydrop."
+        return format_html("<br>".join(str(row) for row in rows))
 
     def _redirect_to_change(self, order_id):
         return HttpResponseRedirect(reverse("admin:tienda_order_change", args=[order_id]))
@@ -2143,13 +2164,7 @@ class OrderAdmin(admin.ModelAdmin):
             order.skydrop_carrier = result.get("carrier") or order.skydrop_carrier
             order.skydrop_service = result.get("service") or order.skydrop_service
             if result.get("status"):
-                normalized = result["status"].lower()
-                if "deliver" in normalized:
-                    order.shipping_status = "Delivered"
-                elif any(token in normalized for token in ["transit", "ship", "pickup", "label"]):
-                    order.shipping_status = "Shipped"
-                else:
-                    order.shipping_status = "Processing"
+                order.shipping_status = map_skydrop_status(result["status"])
             order.skydrop_last_payload = result.get("payload")
             order.skydrop_last_error = ""
             order.save()
@@ -2225,9 +2240,7 @@ class ProductVariantAdmin(admin.ModelAdmin):
         }),
     )
 
-    def formfield_for_dbfield(self, db_field, request, **kwargs):
-        formfield = super().formfield_for_dbfield(db_field, request, **kwargs)
-        return formfield
+    list_per_page = 50
 
     @admin.display(description="Imagen")
     def preview_imagen(self, obj):

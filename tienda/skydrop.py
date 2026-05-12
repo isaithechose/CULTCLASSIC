@@ -12,6 +12,15 @@ class SkydropError(Exception):
     pass
 
 
+def map_skydrop_status(raw_status: str) -> str:
+    normalized = (raw_status or "").lower()
+    if "deliver" in normalized:
+        return "Delivered"
+    if any(token in normalized for token in ["transit", "ship", "pickup", "label"]):
+        return "Shipped"
+    return "Processing"
+
+
 def is_skydrop_enabled() -> bool:
     return bool(
         getattr(settings, "SKYDROP_CLIENT_ID", "")
