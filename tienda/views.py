@@ -251,6 +251,21 @@ def submit_reseña(request, producto_id):
     if request.method != 'POST':
         return redirect('tienda:detalle_producto', producto_id=producto_id)
     producto = get_object_or_404(Producto, id=producto_id)
+
+    from .models import Reseña as ReseñaModel
+    if ReseñaModel.objects.filter(usuario=request.user, producto=producto).exists():
+        messages.error(request, "Ya dejaste una reseña para este producto.")
+        return redirect('tienda:detalle_producto', producto_id=producto_id)
+
+    compra_verificada = Order.objects.filter(
+        customer=request.user,
+        status='Completed',
+        items__product=producto,
+    ).exists()
+    if not compra_verificada:
+        messages.error(request, "Solo puedes reseñar productos que hayas comprado.")
+        return redirect('tienda:detalle_producto', producto_id=producto_id)
+
     form = ReseñaForm(request.POST)
     if form.is_valid():
         reseña = form.save(commit=False)
@@ -739,21 +754,29 @@ def agregar_al_carrito(request, producto_id):
 
 def carrito_view(request):
     carrito = request.session.get('carrito', {})
+
+    producto_ids = set()
+    for key in carrito:
+        parts = key.split("-", 4)
+        if len(parts) == 5:
+            try:
+                producto_ids.add(int(parts[0]))
+            except ValueError:
+                pass
+    productos_map = {p.id: p for p in Producto.objects.filter(id__in=producto_ids)}
+
     carrito_items = []
     total = 0
-
     for key, item in carrito.items():
         parts = key.split("-", 4)
         if len(parts) != 5:
             continue
-
         producto_id, talla, color, diseño_pecho, diseño_espalda = parts
-        producto = get_object_or_404(Producto, id=producto_id)
-
-        # ⚡ Usa el precio ya guardado en la sesión
+        producto = productos_map.get(int(producto_id))
+        if not producto:
+            continue
         precio_unitario_total = item['precio']
         subtotal = precio_unitario_total * item['cantidad']
-
         carrito_items.append({
             'producto_id': producto_id,
             'nombre': producto.nombre,
@@ -766,7 +789,6 @@ def carrito_view(request):
             'diseño_pecho': item.get('diseño_pecho', ''),
             'diseño_espalda': item.get('diseño_espalda', ''),
         })
-
         total += subtotal
 
     return render(request, 'tienda/carrito.html', {
@@ -792,22 +814,7 @@ def archivo_view(request):
     return render(request, 'tienda/archivo.html', {'productos': productos})
 
 def proceso_compra(request):
-    # Obtiene los datos del carrito desde la sesión
-    carrito = request.session.get('carrito', {})
-    if not carrito:
-        return redirect('tienda:carrito')  # Redirige si el carrito está vacío
-
-    total = sum(item['precio'] * item['cantidad'] for item in carrito.values())
-
-    # Aquí podrías integrar el formulario de pago y procesamiento real de la compra
-
-    # Limpiar el carrito tras la compra
-    request.session['carrito'] = {}
-
-    return render(request, 'tienda/proceso_compra.html', {
-        'total': total,
-        'mensaje': '¡Gracias por tu compra! Tu pedido se está procesando.',
-    })
+    return redirect('tienda:checkout')
 
 
 
@@ -833,6 +840,18 @@ def lista_productos(request):
 def filtrar_productos(request, categoria_id):
     productos = Producto.objects.filter(categoria__id=categoria_id)
     return render(request, 'tienda/filtrar_productos.html', {'productos': productos})
+
+
+def buscar_productos(request):
+    q = request.GET.get('q', '').strip()
+    qs = Producto.objects.none()
+    if q:
+        qs = Producto.objects.filter(nombre__icontains=q, disponible=True).order_by('nombre')
+    paginator = Paginator(qs, 24)
+    page = paginator.get_page(request.GET.get('page'))
+    return render(request, 'tienda/buscar.html', {'productos': page, 'q': q})
+
+
 @login_required
 def stripe_checkout(request):
     # Configura la API key de Stripe con la clave secreta desde settings
@@ -995,18 +1014,19 @@ def payment_success(request):
         order.status = "Completed"
         order.save(update_fields=["status"])
 
-        subject = f"Pedido #{order.id} - Confirmación de Envío"
-        message = (
-            f"Hola {order.customer.username},\n\n"
-            f"Tu pedido #{order.id} ha sido pagado y ya tenemos tu dirección de envío.\n"
-            f"Subtotal de productos: ${order.subtotal_price:.2f} MXN.\n"
-            f"Envío cotizado: ${order.shipping_total:.2f} MXN.\n"
-            f"Total final: ${order.total_price:.2f} MXN.\n\n"
-            "¡Gracias por comprar en Cult Calle!"
+        from django.template.loader import render_to_string
+        subject = f"Pedido #{order.id} confirmado — Cult Clasiccs"
+        html_message = render_to_string('tienda/email/order_confirmation.html', {'order': order})
+        plain_message = (
+            f"Hola {order.customer.get_full_name() or order.customer.username},\n\n"
+            f"Tu pedido #{order.id} ha sido confirmado.\n"
+            f"Subtotal: ${order.subtotal_price:.2f} MXN\n"
+            f"Envío: ${order.shipping_total:.2f} MXN\n"
+            f"Total: ${order.total_price:.2f} MXN\n\n"
+            "¡Gracias por comprar en Cult Clasiccs!"
         )
-        from_email = settings.DEFAULT_FROM_EMAIL
-        recipient_list = [order.customer.email]
-        send_mail(subject, message, from_email, recipient_list)
+        send_mail(subject, plain_message, settings.DEFAULT_FROM_EMAIL,
+                  [order.customer.email], html_message=html_message)
 
     request.session['carrito'] = {}
     request.session["last_completed_order_id"] = order.id

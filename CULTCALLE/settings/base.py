@@ -1,32 +1,26 @@
 from pathlib import Path
 from decouple import config
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-# SECURITY WARNING: keep the secret key used in production secret!
+
 SECRET_KEY = config('SECRET_KEY', default='django-insecure-anw7&5=-h!@=x6gkj2y+%7vk_$q+_2@9z8%^+$2@u)6a-4do4!')
-ALLOWED_HOSTS = ['127.0.0.1:8000', 'localhost']
 
 INSTALLED_APPS = [
-    # Aplicaciones predeterminadas de Django
+    'jazzmin',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-
-    # Apps necesarias para django-allauth
-    'django.contrib.sites',  # Necesario para allauth
+    'django.contrib.sites',
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
-
-    # Proveedores de autenticación (por ejemplo, Google o Facebook)
-    'allauth.socialaccount.providers.google',  # Para Google
-    'allauth.socialaccount.providers.facebook',  # Para Facebook
+    'allauth.socialaccount.providers.google',
+    'allauth.socialaccount.providers.facebook',
+    'tienda',
 ]
-
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -36,32 +30,16 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-
+    'allauth.account.middleware.AccountMiddleware',
 ]
-SITE_ID = 4
-
-AUTHENTICATION_BACKENDS = [
-    'django.contrib.auth.backends.ModelBackend',  # Backend por defecto de Django
-    'allauth.account.auth_backends.AuthenticationBackend',  # Backend de django-allauth
-]
-# Redirige a la página principal después de iniciar sesión
-LOGIN_REDIRECT_URL = '/'
-
-# Redirige a la página principal después de cerrar sesión
-LOGOUT_REDIRECT_URL = '/'
-
-# Configuración de django-allauth
-ACCOUNT_LOGOUT_ON_GET = True  # Permite cerrar sesión con un solo clic
-ACCOUNT_USERNAME_REQUIRED = False  # Opcional: no requiere nombre de usuario
-ACCOUNT_EMAIL_REQUIRED = True
-ACCOUNT_AUTHENTICATION_METHOD = 'email'  # Autenticación basada en correo
 
 ROOT_URLCONF = 'CULTCALLE.urls'
+WSGI_APPLICATION = 'CULTCALLE.wsgi.application'
 
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [  'templates'],
+        'DIRS': [BASE_DIR.parent / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -69,19 +47,49 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'tienda.context_processors.meta_pixel',
                 'tienda.context_processors.admin_nav_context',
             ],
         },
     },
 ]
 
+SITE_ID = config('SITE_ID', default=4, cast=int)
 
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+    'allauth.account.auth_backends.AuthenticationBackend',
+]
 
-WSGI_APPLICATION = 'CULTCALLE.wsgi.application'
+LOGIN_REDIRECT_URL = 'tienda:tienda'
+LOGOUT_REDIRECT_URL = 'tienda:tienda'
 
+ACCOUNT_LOGOUT_ON_GET = True
+ACCOUNT_USERNAME_REQUIRED = False
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_AUTHENTICATION_METHOD = 'email'
+ACCOUNT_EMAIL_VERIFICATION = 'none'
+SOCIALACCOUNT_LOGIN_ON_GET = True
 
-# Database
-# https://docs.djangoproject.com/en/4.2/ref/settings/#databases
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'APP': {
+            'client_id': config('GOOGLE_CLIENT_ID', default=''),
+            'secret': config('GOOGLE_CLIENT_SECRET', default=''),
+            'key': '',
+        },
+        'SCOPE': ['email', 'profile'],
+        'AUTH_PARAMS': {'access_type': 'online'},
+        'OAUTH_PKCE_ENABLED': True,
+    },
+    'facebook': {
+        'METHOD': 'oauth2',
+        'SCOPE': ['email', 'public_profile'],
+        'FIELDS': ['id', 'email', 'name', 'first_name', 'last_name'],
+        'VERIFIED_EMAIL': False,
+        'VERSION': 'v19.0',
+    },
+}
 
 DATABASES = {
     'default': {
@@ -90,46 +98,85 @@ DATABASES = {
     }
 }
 
-
-# Password validation
-# https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
-
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
+    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-
-# Internationalization
-# https://docs.djangoproject.com/en/4.2/topics/i18n/
-
 LANGUAGE_CODE = 'es-mx'
-
 TIME_ZONE = 'UTC'
-
 USE_I18N = True
-
 USE_TZ = True
 
-
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/4.2/howto/static-files/
-
-# Configuración de archivos estáticos
 STATIC_URL = '/static/'
-STATICFILES_DIRS = [BASE_DIR / "static"]  # Asegúrate de incluir esta línea
-
-# Default primary key field type
-# https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
+STATICFILES_DIRS = [BASE_DIR.parent / 'static']
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+JAZZMIN_SETTINGS = {
+    'site_title': 'Cult Clasiccs Admin',
+    'site_header': 'Cult Clasiccs Admin',
+    'site_brand': 'Cult Clasiccs',
+    'site_logo': 'images/logo.png',
+    'login_logo': 'images/logo.png',
+    'login_logo_dark': None,
+    'site_logo_classes': 'img-circle',
+    'welcome_sign': 'Panel de control para catalogo, pedidos y operacion diaria.',
+    'copyright': 'Cult Clasiccs',
+    'search_model': ['tienda.Producto', 'tienda.Order', 'auth.User'],
+    'topmenu_links': [
+        {'name': 'Inicio', 'url': '/', 'permissions': ['auth.view_user']},
+        {'model': 'tienda.Producto'},
+        {'model': 'tienda.Order'},
+        {'model': 'auth.User'},
+    ],
+    'usermenu_links': [
+        {'name': 'Ver tienda', 'url': '/', 'new_window': True},
+    ],
+    'icons': {
+        'auth': 'fas fa-users-cog',
+        'auth.user': 'fas fa-user',
+        'auth.Group': 'fas fa-users',
+        'sites.Site': 'fas fa-globe',
+        'socialaccount.SocialApp': 'fas fa-share-alt',
+        'tienda.Categoria': 'fas fa-layer-group',
+        'tienda.Subcategoria': 'fas fa-sitemap',
+        'tienda.Producto': 'fas fa-shirt',
+        'tienda.ProductVariant': 'fas fa-tags',
+        'tienda.InventoryMovement': 'fas fa-boxes-stacked',
+        'tienda.ExpenseCategory': 'fas fa-folder-tree',
+        'tienda.Expense': 'fas fa-wallet',
+        'tienda.CashRegisterClosure': 'fas fa-cash-register',
+        'tienda.BusinessPayment': 'fas fa-calendar-check',
+        'tienda.Order': 'fas fa-bag-shopping',
+        'tienda.OrderItem': 'fas fa-box-open',
+        'tienda.Carrito': 'fas fa-cart-shopping',
+        'tienda.Reseña': 'fas fa-star',
+        'tienda.ShippingAddress': 'fas fa-location-dot',
+        'tienda.ShippingUpdate': 'fas fa-truck-fast',
+    },
+    'order_with_respect_to': [
+        'auth', 'sites', 'socialaccount', 'tienda',
+        'tienda.Categoria', 'tienda.Subcategoria', 'tienda.Producto',
+        'tienda.ProductVariant', 'tienda.InventoryMovement',
+        'tienda.ExpenseCategory', 'tienda.Expense',
+        'tienda.CashRegisterClosure', 'tienda.BusinessPayment',
+        'tienda.Order', 'tienda.Carrito', 'tienda.Reseña',
+    ],
+    'navigation_expanded': True,
+    'hide_apps': [],
+    'custom_links': {
+        'tienda': [
+            {'name': 'Punto de venta', 'url': '/admin/tienda/order/point-of-sale/', 'icon': 'fas fa-cash-register', 'permissions': ['tienda.view_order']},
+            {'name': 'Cierre de caja', 'url': '/admin/tienda/cashregisterclosure/daily-close/', 'icon': 'fas fa-cash-register', 'permissions': ['tienda.view_cashregisterclosure']},
+            {'name': 'Inventario', 'url': '/admin/tienda/producto/inventory-matrix/', 'icon': 'fas fa-boxes-stacked', 'permissions': ['tienda.view_producto']},
+            {'name': 'Recepción de compra', 'url': '/admin/tienda/inventorymovement/receive-purchase/', 'icon': 'fas fa-truck-ramp-box', 'permissions': ['tienda.view_inventorymovement']},
+            {'name': 'Pedidos pendientes', 'url': '/admin/tienda/order/?status__exact=Pending', 'icon': 'fas fa-clock', 'permissions': ['tienda.view_order']},
+            {'name': 'Pagos programados', 'url': '/admin/tienda/businesspayment/', 'icon': 'fas fa-calendar-check', 'permissions': ['tienda.view_businesspayment']},
+            {'name': 'Dashboard contable', 'url': '/admin/tienda/expense/accounting-dashboard/', 'icon': 'fas fa-chart-line', 'permissions': ['tienda.view_expense']},
+            {'name': 'Gastos', 'url': '/admin/tienda/expense/', 'icon': 'fas fa-wallet', 'permissions': ['tienda.view_expense']},
+        ]
+    },
+}

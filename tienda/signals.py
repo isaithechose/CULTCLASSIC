@@ -18,14 +18,17 @@ def send_shipping_notification(sender, instance, created, update_fields=None, **
     if not instance.customer or not instance.customer.email:
         return
 
-    subject = f"Tu pedido #{instance.id} ha sido enviado"
-    message = (
+    from django.template.loader import render_to_string
+    subject = f"Tu pedido #{instance.id} ya va en camino — Cult Clasiccs"
+    html_message = render_to_string('tienda/email/shipping_notification.html', {'order': instance})
+    plain_message = (
         f"Hola {instance.customer.get_full_name() or instance.customer.username},\n\n"
-        f"Tu pedido #{instance.id} ya fue enviado.\n"
+        f"Tu pedido #{instance.id} fue enviado.\n"
         f"Número de seguimiento: {instance.tracking_number}\n\n"
-        "Gracias por tu compra en Cult Calle."
+        "Gracias por tu compra en Cult Clasiccs."
     )
-    send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [instance.customer.email])
+    send_mail(subject, plain_message, settings.DEFAULT_FROM_EMAIL,
+              [instance.customer.email], html_message=html_message)
 
 
 @receiver(post_save, sender=ShippingUpdate)

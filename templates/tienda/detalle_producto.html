@@ -1,7 +1,12 @@
 {% extends "tienda/base.html" %}
 {% load static %}
 
-{% block title %}{{ producto.nombre }} - Cult Calle{% endblock %}
+{% block title %}{{ producto.nombre }} - Cult Clasiccs{% endblock %}
+{% block meta_description %}{{ producto.descripcion|truncatewords:20 }}{% endblock %}
+{% block og_type %}product{% endblock %}
+{% block og_title %}{{ producto.nombre }} — Cult Clasiccs{% endblock %}
+{% block og_description %}{{ producto.descripcion|truncatewords:20 }}{% endblock %}
+{% block og_image %}{% if producto.imagen %}{{ request.scheme }}://{{ request.get_host }}{{ producto.imagen.url }}{% endif %}{% endblock %}
 
 {% block content %}
 <style>
