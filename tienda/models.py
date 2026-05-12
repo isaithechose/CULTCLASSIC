@@ -628,6 +628,9 @@ class Reseña(models.Model):
     calificacion = models.PositiveIntegerField(choices=[(i, i) for i in range(1, 6)])
     fecha = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        unique_together = [('usuario', 'producto')]
+
     def __str__(self):
         return f"{self.usuario.username} - {self.calificacion} estrellas"
 
