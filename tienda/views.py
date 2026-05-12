@@ -232,6 +232,8 @@ def detalle_producto(request, producto_id):
         },
     )
 
+    reseñas = producto.reseñas.select_related('usuario').order_by('-fecha')
+
     return render(request, 'tienda/detalle_producto.html', {
         'producto': producto,
         'tallas_disponibles': tallas_disponibles,
@@ -240,7 +242,27 @@ def detalle_producto(request, producto_id):
         'diseños_personalizados': personalizado_page,
         'selected_custom_design': selected_custom_design,
         'reseña_form': ReseñaForm(),
+        'reseñas': reseñas,
     })
+
+
+@login_required
+def submit_reseña(request, producto_id):
+    if request.method != 'POST':
+        return redirect('tienda:detalle_producto', producto_id=producto_id)
+    producto = get_object_or_404(Producto, id=producto_id)
+    form = ReseñaForm(request.POST)
+    if form.is_valid():
+        reseña = form.save(commit=False)
+        reseña.usuario = request.user
+        reseña.producto = producto
+        reseña.save()
+        messages.success(request, "¡Tu reseña fue publicada!")
+    else:
+        messages.error(request, "Revisa los campos de tu reseña e inténtalo de nuevo.")
+    return redirect('tienda:detalle_producto', producto_id=producto_id)
+
+
 def _build_order_from_cart(order, carrito, reset_checkout_state=True):
     order.items.all().delete()
     for key, item in carrito.items():
@@ -769,18 +791,6 @@ def archivo_view(request):
     productos = Producto.objects.filter(categoria__nombre="archivo")
     return render(request, 'tienda/archivo.html', {'productos': productos})
 
-# Ejemplo de modelo para items del carrito (si se utiliza en otro contexto)
-from django.db import models
-
-class ItemCarrito(models.Model):
-    producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
-    cantidad = models.PositiveIntegerField(default=1)
-    talla = models.CharField(max_length=5, blank=True, null=True)
-    color = models.CharField(max_length=20, blank=True, null=True)
-
-    def subtotal(self):
-        return self.cantidad * self.producto.precio
-
 def proceso_compra(request):
     # Obtiene los datos del carrito desde la sesión
     carrito = request.session.get('carrito', {})
@@ -815,8 +825,10 @@ def order_detail(request, order_id):
     return render(request, 'tienda/order_detail.html', {'order': order})
 
 def lista_productos(request):
-    productos = Producto.objects.all()
-    return render(request, 'tienda/lista_productos.html', {'productos': productos})
+    qs = Producto.objects.all().order_by('nombre')
+    paginator = Paginator(qs, 24)
+    page = paginator.get_page(request.GET.get('page'))
+    return render(request, 'tienda/lista_productos.html', {'productos': page, 'paginator': paginator})
 
 def filtrar_productos(request, categoria_id):
     productos = Producto.objects.filter(categoria__id=categoria_id)
@@ -1050,6 +1062,60 @@ def order_tracking(request, order_id):
 def tracking_view(request):
     orders = _customer_visible_orders(request.user)
     return render(request, 'tienda/tracking.html', {'orders': orders})
+
+
+@csrf_exempt
+def stripe_webhook(request):
+    payload = request.body
+    sig_header = request.META.get('HTTP_STRIPE_SIGNATURE', '')
+    webhook_secret = getattr(settings, 'STRIPE_WEBHOOK_SECRET', '')
+    stripe.api_key = settings.STRIPE_SECRET_KEY
+
+    if webhook_secret:
+        try:
+            event = stripe.Webhook.construct_event(payload, sig_header, webhook_secret)
+        except (ValueError, stripe.error.SignatureVerificationError) as exc:
+            logger.warning("Stripe webhook firma inválida: %s", exc)
+            return JsonResponse({'error': 'Firma inválida'}, status=400)
+    elif not settings.DEBUG:
+        return JsonResponse({'error': 'Webhook secret no configurado'}, status=400)
+    else:
+        try:
+            event = json.loads(payload)
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Payload inválido'}, status=400)
+
+    if event.get('type') == 'checkout.session.completed':
+        session = event['data']['object']
+        if session.get('payment_status') != 'paid':
+            return JsonResponse({'status': 'ignorado'})
+        order_id = (session.get('metadata') or {}).get('order_id')
+        if not order_id:
+            return JsonResponse({'status': 'sin order_id'})
+        try:
+            order = Order.objects.get(id=order_id)
+        except Order.DoesNotExist:
+            logger.error("Stripe webhook: orden %s no encontrada", order_id)
+            return JsonResponse({'status': 'orden no encontrada'}, status=404)
+
+        if order.status != 'Completed':
+            for item in order.items.select_related('product'):
+                variant = find_variant_for_selection(item.product, talla=item.talla, color=item.color)
+                record_inventory_movement(
+                    product=item.product,
+                    variant=variant,
+                    order=order,
+                    movement_type='sale',
+                    quantity_change=-int(item.quantity),
+                    note=f"Descuento vía Stripe webhook para pedido #{order.id}.",
+                    created_by=None,
+                    metadata={'talla': item.talla, 'color': item.color, 'precio': str(item.price)},
+                )
+            order.status = 'Completed'
+            order.save(update_fields=['status'])
+            logger.info("Stripe webhook: pedido #%s marcado como Completed", order.id)
+
+    return JsonResponse({'status': 'ok'})
 
 
 def _webhook_secret_is_valid(request):

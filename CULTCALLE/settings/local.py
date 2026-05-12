@@ -7,6 +7,7 @@ import stripe
 
 STRIPE_PUBLIC_KEY = config('STRIPE_PUBLIC_KEY', default='')
 STRIPE_SECRET_KEY = config('STRIPE_SECRET_KEY', default='')
+STRIPE_WEBHOOK_SECRET = config('STRIPE_WEBHOOK_SECRET', default='')
 META_PIXEL_ID = config("META_PIXEL_ID", default="")
 SKYDROP_CLIENT_ID = config("SKYDROP_CLIENT_ID", default="")
 SKYDROP_CLIENT_SECRET = config("SKYDROP_CLIENT_SECRET", default="")

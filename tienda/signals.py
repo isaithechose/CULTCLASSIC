@@ -7,18 +7,23 @@ from .models import Order, ShippingUpdate
 
 
 @receiver(post_save, sender=Order)
-def send_shipping_notification(sender, instance, created, **kwargs):
-    if created or instance.shipping_status != "Shipped" or not instance.tracking_number:
+def send_shipping_notification(sender, instance, created, update_fields=None, **kwargs):
+    if created:
+        return
+    # Solo disparar cuando shipping_status fue explícitamente guardado
+    if update_fields is not None and 'shipping_status' not in update_fields:
+        return
+    if instance.shipping_status != "Shipped" or not instance.tracking_number:
         return
     if not instance.customer or not instance.customer.email:
         return
 
     subject = f"Tu pedido #{instance.id} ha sido enviado"
     message = (
-        f"Hola {instance.customer.username},\n\n"
+        f"Hola {instance.customer.get_full_name() or instance.customer.username},\n\n"
         f"Tu pedido #{instance.id} ya fue enviado.\n"
         f"Número de seguimiento: {instance.tracking_number}\n\n"
-        "Gracias por tu compra."
+        "Gracias por tu compra en Cult Calle."
     )
     send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [instance.customer.email])
 
