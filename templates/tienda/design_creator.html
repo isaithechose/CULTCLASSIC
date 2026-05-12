@@ -377,6 +377,87 @@
         flex: 1;
     }
 
+    /* Layers panel */
+    .design-creator__layers {
+        max-height: 11rem;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 0.3rem;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(214,195,161,0.2) transparent;
+    }
+
+    .layer-row {
+        display: flex;
+        align-items: center;
+        gap: 0.55rem;
+        padding: 0.42rem 0.65rem;
+        border-radius: 0.65rem;
+        border: 1px solid transparent;
+        cursor: pointer;
+        transition: background 0.15s, border-color 0.15s;
+        font-size: 0.84rem;
+        color: var(--cc-muted);
+        user-select: none;
+    }
+
+    .layer-row:hover {
+        background: rgba(255,255,255,0.05);
+    }
+
+    .layer-row.is-selected {
+        background: rgba(214,195,161,0.1);
+        border-color: rgba(214,195,161,0.22);
+        color: var(--cc-ink);
+    }
+
+    .layer-row.is-locked .layer-name {
+        opacity: 0.55;
+    }
+
+    .layer-icon {
+        font-size: 0.78rem;
+        flex-shrink: 0;
+        width: 1.3rem;
+        text-align: center;
+    }
+
+    .layer-name {
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 0.83rem;
+    }
+
+    .layer-vis {
+        font-size: 0.68rem;
+        flex-shrink: 0;
+        opacity: 0.6;
+    }
+
+    .layer-empty {
+        color: var(--cc-muted);
+        font-size: 0.82rem;
+        text-align: center;
+        padding: 0.6rem;
+        opacity: 0.6;
+    }
+
+    .design-creator__layers-actions {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 0.45rem;
+    }
+
+    .design-creator__layers-actions .site-btn {
+        width: 100%;
+        justify-content: center;
+        padding: 0.38rem 0.4rem;
+        font-size: 0.8rem;
+    }
+
     @media (max-width: 991.98px) {
         .design-creator__layout {
             grid-template-columns: 1fr;
@@ -391,6 +472,10 @@
         .design-creator__tool-grid,
         .design-creator__hud {
             grid-template-columns: 1fr;
+        }
+
+        .design-creator__layers-actions {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
         }
     }
 </style>
@@ -490,6 +575,7 @@
                             </div>
                         </div>
 
+                        <!-- Texto -->
                         <div class="design-creator__tool-group">
                             <div class="design-creator__tool-head">
                                 <strong>Texto</strong>
@@ -532,6 +618,23 @@
                             <div class="design-creator__tool-actions">
                                 <button type="button" class="btn site-btn site-btn--ghost" id="addTextButton">Agregar texto</button>
                                 <button type="button" class="btn site-btn site-btn--ghost" id="removeSelectedButton">Quitar seleccionado</button>
+                            </div>
+                        </div>
+
+                        <!-- Capas -->
+                        <div class="design-creator__tool-group">
+                            <div class="design-creator__tool-head">
+                                <strong>Capas</strong>
+                                <span id="layersCount">0</span>
+                            </div>
+                            <div class="design-creator__layers" id="layersList">
+                                <div class="layer-empty">Sin capas</div>
+                            </div>
+                            <div class="design-creator__layers-actions">
+                                <button type="button" class="btn site-btn site-btn--ghost" id="layerUpButton" disabled title="Subir capa">↑ Subir</button>
+                                <button type="button" class="btn site-btn site-btn--ghost" id="layerDownButton" disabled title="Bajar capa">↓ Bajar</button>
+                                <button type="button" class="btn site-btn site-btn--ghost" id="duplicateButton" disabled>Duplicar</button>
+                                <button type="button" class="btn site-btn site-btn--ghost" id="lockButton" disabled>Bloquear</button>
                             </div>
                         </div>
 
@@ -650,6 +753,8 @@
         return;
     }
 
+    // ── DOM refs ──────────────────────────────────────────────────────────────
+
     const form = document.getElementById("design-creator-form");
     const fileInput = document.getElementById("{{ form.image.id_for_label }}");
     const hiddenEditedImage = document.getElementById("id_edited_image");
@@ -682,11 +787,18 @@
     const hudRotate = document.getElementById("hudRotate");
     const hudLayers = document.getElementById("hudLayers");
     const shirtBg = document.getElementById("shirtBg");
+    const layersList = document.getElementById("layersList");
+    const layersCount = document.getElementById("layersCount");
+    const layerUpButton = document.getElementById("layerUpButton");
+    const layerDownButton = document.getElementById("layerDownButton");
+    const duplicateButton = document.getElementById("duplicateButton");
+    const lockButton = document.getElementById("lockButton");
     const selectedDesignUrl = "{% if selected_design_url %}{{ selected_design_url|escapejs }}{% endif %}";
     const productSelect = document.getElementById("productSelect");
     const productIdInput = document.getElementById("productIdInput");
     const quickProductSelect = document.getElementById("quickProductSelect");
     const quickGoToProductButton = document.getElementById("quickGoToProductButton");
+
     const canvasElement = document.getElementById("designFabricCanvas");
     const fabricCanvas = new fabric.Canvas(canvasElement, {
         backgroundColor: "transparent",
@@ -723,7 +835,7 @@
 
     function updateHistoryUI() {
         const total = state.history.length;
-        const current = state.historyIndex + 1;
+        const current = Math.max(0, state.historyIndex + 1);
         historyLabel.textContent = `${current} / ${total}`;
         undoButton.disabled = state.historyIndex <= 0;
         redoButton.disabled = state.historyIndex >= state.history.length - 1;
@@ -735,6 +847,7 @@
             state.artwork = fabricCanvas.getObjects().find(o => o.type === "image") || null;
             fabricCanvas.requestRenderAll();
             syncEmptyState();
+            renderLayersList();
             updateControlsFromArtwork();
             state.pauseHistory = false;
         });
@@ -752,6 +865,154 @@
         state.historyIndex++;
         restoreSnapshot(state.history[state.historyIndex]);
         updateHistoryUI();
+    });
+
+    // ── Layers panel ──────────────────────────────────────────────────────────
+
+    function getLayerLabel(obj, objects) {
+        if (obj.type === "textbox") {
+            const text = (obj.text || "").substring(0, 22);
+            return text || "Texto";
+        }
+        const imageObjects = objects.filter(o => o.type === "image");
+        const idx = imageObjects.indexOf(obj);
+        return "Imagen" + (imageObjects.length > 1 ? ` ${idx + 1}` : "");
+    }
+
+    function renderLayersList() {
+        const objects = fabricCanvas.getObjects();
+        const activeObject = fabricCanvas.getActiveObject();
+        layersCount.textContent = String(objects.length);
+        hudLayers.textContent = String(objects.length);
+
+        if (objects.length === 0) {
+            layersList.innerHTML = '<div class="layer-empty">Sin capas</div>';
+            layerUpButton.disabled = true;
+            layerDownButton.disabled = true;
+            duplicateButton.disabled = true;
+            lockButton.disabled = true;
+            lockButton.textContent = "Bloquear";
+            return;
+        }
+
+        layersList.innerHTML = "";
+
+        // Render top layer first (highest index = top of stack)
+        [...objects].reverse().forEach((obj) => {
+            const isSelected = obj === activeObject;
+            const isLocked = Boolean(obj.lockMovementX);
+
+            const row = document.createElement("div");
+            row.className = "layer-row" +
+                (isSelected ? " is-selected" : "") +
+                (isLocked ? " is-locked" : "");
+
+            const icon = document.createElement("span");
+            icon.className = "layer-icon";
+            icon.textContent = obj.type === "textbox" ? "T" : "⬛";
+
+            const name = document.createElement("span");
+            name.className = "layer-name";
+            name.textContent = getLayerLabel(obj, objects);
+
+            const vis = document.createElement("span");
+            vis.className = "layer-vis";
+            vis.textContent = isLocked ? "🔒" : "";
+
+            row.appendChild(icon);
+            row.appendChild(name);
+            row.appendChild(vis);
+
+            row.addEventListener("click", () => {
+                fabricCanvas.setActiveObject(obj);
+                fabricCanvas.requestRenderAll();
+                updateControlsFromArtwork();
+                renderLayersList();
+            });
+
+            layersList.appendChild(row);
+        });
+
+        // Update action buttons based on selected layer
+        const hasActive = Boolean(activeObject);
+        const idx = activeObject ? objects.indexOf(activeObject) : -1;
+        layerUpButton.disabled = !hasActive || idx >= objects.length - 1;
+        layerDownButton.disabled = !hasActive || idx <= 0;
+        duplicateButton.disabled = !hasActive;
+        lockButton.disabled = !hasActive;
+        lockButton.textContent = (activeObject?.lockMovementX) ? "Desbloquear" : "Bloquear";
+    }
+
+    layerUpButton?.addEventListener("click", () => {
+        const obj = fabricCanvas.getActiveObject();
+        if (!obj) return;
+        // bringForward is v5; bringObjectForward is v6 — try both
+        if (typeof fabricCanvas.bringObjectForward === "function") {
+            fabricCanvas.bringObjectForward(obj);
+        } else {
+            fabricCanvas.bringForward(obj);
+        }
+        fabricCanvas.requestRenderAll();
+        renderLayersList();
+        pushHistory();
+    });
+
+    layerDownButton?.addEventListener("click", () => {
+        const obj = fabricCanvas.getActiveObject();
+        if (!obj) return;
+        if (typeof fabricCanvas.sendObjectBackwards === "function") {
+            fabricCanvas.sendObjectBackwards(obj);
+        } else {
+            fabricCanvas.sendBackwards(obj);
+        }
+        fabricCanvas.requestRenderAll();
+        renderLayersList();
+        pushHistory();
+    });
+
+    duplicateButton?.addEventListener("click", () => {
+        const obj = fabricCanvas.getActiveObject();
+        if (!obj) return;
+
+        const cloneCallback = (cloned) => {
+            cloned.set({
+                left: (cloned.left || 0) + 22,
+                top: (cloned.top || 0) + 22,
+            });
+            fabricCanvas.add(cloned);
+            fabricCanvas.setActiveObject(cloned);
+            fabricCanvas.requestRenderAll();
+            syncEmptyState();
+            renderLayersList();
+            updateControlsFromArtwork();
+            pushHistory();
+        };
+
+        // clone() returns a Promise in Fabric v6, callback in v5
+        const result = obj.clone();
+        if (result && typeof result.then === "function") {
+            result.then(cloneCallback);
+        } else {
+            obj.clone(cloneCallback);
+        }
+    });
+
+    lockButton?.addEventListener("click", () => {
+        const obj = fabricCanvas.getActiveObject();
+        if (!obj) return;
+        const nowLocked = !obj.lockMovementX;
+        obj.set({
+            lockMovementX: nowLocked,
+            lockMovementY: nowLocked,
+            lockScalingX: nowLocked,
+            lockScalingY: nowLocked,
+            lockRotation: nowLocked,
+            hasControls: !nowLocked,
+            selectable: true,
+        });
+        fabricCanvas.requestRenderAll();
+        renderLayersList();
+        pushHistory();
     });
 
     // ── Shirt color ───────────────────────────────────────────────────────────
@@ -809,6 +1070,7 @@
             updateFormatButtons(null);
             return;
         }
+
         const scale = Math.round((activeObject.scaleX || 1) * 100);
         const rotation = Math.round(activeObject.angle || 0);
         scaleRange.value = String(scale);
@@ -837,12 +1099,8 @@
         let nextLeft = state.artwork.left;
         let nextTop = state.artwork.top;
 
-        if (bounds.left < 0) {
-            nextLeft += Math.abs(bounds.left);
-        }
-        if (bounds.top < 0) {
-            nextTop += Math.abs(bounds.top);
-        }
+        if (bounds.left < 0) nextLeft += Math.abs(bounds.left);
+        if (bounds.top < 0) nextTop += Math.abs(bounds.top);
         if (bounds.left + bounds.width > fabricCanvas.getWidth()) {
             nextLeft -= (bounds.left + bounds.width - fabricCanvas.getWidth());
         }
@@ -898,15 +1156,13 @@
         state.artwork = null;
         hiddenEditedImage.value = "";
         syncEmptyState();
+        renderLayersList();
         updateControlsFromArtwork();
         fabricCanvas.requestRenderAll();
     }
 
     function loadArtwork(src) {
-        if (!src) {
-            removeArtwork();
-            return;
-        }
+        if (!src) { removeArtwork(); return; }
 
         const imageElement = new Image();
         imageElement.onload = () => {
@@ -929,29 +1185,23 @@
             state.artwork = artwork;
             fitArtwork();
             syncEmptyState();
+            renderLayersList();
             pushHistory();
         };
         imageElement.src = src;
     }
 
-    fabricCanvas.on("selection:created", updateControlsFromArtwork);
-    fabricCanvas.on("selection:updated", updateControlsFromArtwork);
-    fabricCanvas.on("object:modified", () => {
-        updateControlsFromArtwork();
-        pushHistory();
-    });
-    fabricCanvas.on("object:moving", () => {
-        clampArtworkToArea();
-        updateControlsFromArtwork();
-    });
-    fabricCanvas.on("object:scaling", () => {
-        clampArtworkToArea();
-        updateControlsFromArtwork();
-    });
-    fabricCanvas.on("object:rotating", () => {
-        clampArtworkToArea();
-        updateControlsFromArtwork();
-    });
+    // ── Canvas events ─────────────────────────────────────────────────────────
+
+    fabricCanvas.on("selection:created", () => { updateControlsFromArtwork(); renderLayersList(); });
+    fabricCanvas.on("selection:updated", () => { updateControlsFromArtwork(); renderLayersList(); });
+    fabricCanvas.on("selection:cleared", () => { updateControlsFromArtwork(); renderLayersList(); });
+    fabricCanvas.on("object:modified", () => { updateControlsFromArtwork(); renderLayersList(); pushHistory(); });
+    fabricCanvas.on("object:moving", () => { clampArtworkToArea(); updateControlsFromArtwork(); });
+    fabricCanvas.on("object:scaling", () => { clampArtworkToArea(); updateControlsFromArtwork(); });
+    fabricCanvas.on("object:rotating", () => { clampArtworkToArea(); updateControlsFromArtwork(); });
+
+    // ── Control handlers ──────────────────────────────────────────────────────
 
     function applyScale() {
         const activeObject = fabricCanvas.getActiveObject();
@@ -959,11 +1209,8 @@
         const nextScale = Number(scaleRange.value) / 100;
         activeObject.scaleX = nextScale;
         activeObject.scaleY = nextScale;
-        if (activeObject === state.artwork) {
-            clampArtworkToArea();
-        } else {
-            activeObject.setCoords();
-        }
+        if (activeObject === state.artwork) clampArtworkToArea();
+        else activeObject.setCoords();
         fabricCanvas.requestRenderAll();
         updateControlsFromArtwork();
     }
@@ -972,11 +1219,8 @@
         const activeObject = fabricCanvas.getActiveObject();
         if (!activeObject) return;
         activeObject.rotate(Number(rotateRange.value));
-        if (activeObject === state.artwork) {
-            clampArtworkToArea();
-        } else {
-            activeObject.setCoords();
-        }
+        if (activeObject === state.artwork) clampArtworkToArea();
+        else activeObject.setCoords();
         fabricCanvas.requestRenderAll();
         updateControlsFromArtwork();
     }
@@ -984,8 +1228,7 @@
     function applyOpacity() {
         const activeObject = fabricCanvas.getActiveObject();
         if (!activeObject) return;
-        const val = Number(opacityRange.value) / 100;
-        activeObject.set("opacity", val);
+        activeObject.set("opacity", Number(opacityRange.value) / 100);
         fabricCanvas.requestRenderAll();
         opacityValue.textContent = `${opacityRange.value}%`;
     }
@@ -1014,6 +1257,7 @@
         fabricCanvas.setActiveObject(textObject);
         fabricCanvas.requestRenderAll();
         syncEmptyState();
+        renderLayersList();
         updateControlsFromArtwork();
         pushHistory();
     }
@@ -1028,19 +1272,17 @@
             fabricCanvas.discardActiveObject();
             fabricCanvas.requestRenderAll();
             syncEmptyState();
+            renderLayersList();
             updateControlsFromArtwork();
         }
         pushHistory();
     }
 
-    // ── File input ────────────────────────────────────────────────────────────
-
     fileInput?.addEventListener("change", (event) => {
         const file = event.target.files?.[0];
         if (!file) return;
-        const MAX_MB = 15;
-        if (file.size > MAX_MB * 1024 * 1024) {
-            alert(`El archivo es demasiado grande. El límite es ${MAX_MB} MB.`);
+        if (file.size > 15 * 1024 * 1024) {
+            alert("El archivo es demasiado grande. El límite es 15 MB.");
             event.target.value = "";
             return;
         }
@@ -1049,11 +1291,7 @@
         reader.readAsDataURL(file);
     });
 
-    // ── Controls ──────────────────────────────────────────────────────────────
-
-    productSelect?.addEventListener("change", () => {
-        productIdInput.value = productSelect.value;
-    });
+    productSelect?.addEventListener("change", () => { productIdInput.value = productSelect.value; });
 
     scaleRange?.addEventListener("input", applyScale);
     rotateRange?.addEventListener("input", applyRotation);
@@ -1076,68 +1314,60 @@
         pushHistory();
     });
 
-    resetButton?.addEventListener("click", () => {
-        if (!state.artwork) return;
-        fitArtwork();
-        pushHistory();
-    });
-
-    removeButton?.addEventListener("click", () => {
-        removeArtwork();
-        pushHistory();
-    });
-
-    addTextButton?.addEventListener("click", () => { addTextLayer(); });
-    removeSelectedButton?.addEventListener("click", () => { removeSelectedObject(); });
+    resetButton?.addEventListener("click", () => { if (state.artwork) { fitArtwork(); pushHistory(); } });
+    removeButton?.addEventListener("click", () => { removeArtwork(); pushHistory(); });
+    addTextButton?.addEventListener("click", addTextLayer);
+    removeSelectedButton?.addEventListener("click", removeSelectedObject);
 
     boldButton?.addEventListener("click", () => {
-        const activeObject = fabricCanvas.getActiveObject();
         boldButton.classList.toggle("is-active");
-        if (activeObject?.type === "textbox") {
-            activeObject.set("fontWeight", boldButton.classList.contains("is-active") ? "bold" : "normal");
+        const obj = fabricCanvas.getActiveObject();
+        if (obj?.type === "textbox") {
+            obj.set("fontWeight", boldButton.classList.contains("is-active") ? "bold" : "normal");
             fabricCanvas.requestRenderAll();
             pushHistory();
         }
     });
 
     italicButton?.addEventListener("click", () => {
-        const activeObject = fabricCanvas.getActiveObject();
         italicButton.classList.toggle("is-active");
-        if (activeObject?.type === "textbox") {
-            activeObject.set("fontStyle", italicButton.classList.contains("is-active") ? "italic" : "normal");
+        const obj = fabricCanvas.getActiveObject();
+        if (obj?.type === "textbox") {
+            obj.set("fontStyle", italicButton.classList.contains("is-active") ? "italic" : "normal");
             fabricCanvas.requestRenderAll();
             pushHistory();
         }
     });
 
     textInput?.addEventListener("input", () => {
-        const activeObject = fabricCanvas.getActiveObject();
-        if (!activeObject || activeObject.type !== "textbox") return;
-        activeObject.text = textInput.value;
+        const obj = fabricCanvas.getActiveObject();
+        if (!obj || obj.type !== "textbox") return;
+        obj.text = textInput.value;
         fabricCanvas.requestRenderAll();
+        renderLayersList();
     });
 
     textFontSelect?.addEventListener("change", () => {
-        const activeObject = fabricCanvas.getActiveObject();
-        if (!activeObject || activeObject.type !== "textbox") return;
-        activeObject.set("fontFamily", textFontSelect.value);
-        activeObject.setCoords();
+        const obj = fabricCanvas.getActiveObject();
+        if (!obj || obj.type !== "textbox") return;
+        obj.set("fontFamily", textFontSelect.value);
+        obj.setCoords();
         fabricCanvas.requestRenderAll();
         pushHistory();
     });
 
     textSizeRange?.addEventListener("input", () => {
-        const activeObject = fabricCanvas.getActiveObject();
-        if (!activeObject || activeObject.type !== "textbox") return;
-        activeObject.set("fontSize", Number(textSizeRange.value));
-        activeObject.setCoords();
+        const obj = fabricCanvas.getActiveObject();
+        if (!obj || obj.type !== "textbox") return;
+        obj.set("fontSize", Number(textSizeRange.value));
+        obj.setCoords();
         fabricCanvas.requestRenderAll();
     });
 
     textColorInput?.addEventListener("input", () => {
-        const activeObject = fabricCanvas.getActiveObject();
-        if (!activeObject || activeObject.type !== "textbox") return;
-        activeObject.set("fill", textColorInput.value);
+        const obj = fabricCanvas.getActiveObject();
+        if (!obj || obj.type !== "textbox") return;
+        obj.set("fill", textColorInput.value);
         fabricCanvas.requestRenderAll();
     });
 
@@ -1156,12 +1386,8 @@
         }
         const activeTag = document.activeElement?.tagName;
         if (activeTag === "INPUT" || activeTag === "TEXTAREA") return;
-        if (event.key === "Delete" || event.key === "Backspace") {
-            removeSelectedObject();
-        }
+        if (event.key === "Delete" || event.key === "Backspace") removeSelectedObject();
     });
-
-    // ── Form submit ───────────────────────────────────────────────────────────
 
     form?.addEventListener("submit", (event) => {
         const hasContent = fabricCanvas.getObjects().length > 0;
@@ -1169,7 +1395,6 @@
             if (!hasContent) alert("Agrega una imagen o texto antes de guardar.");
             return;
         }
-
         event.preventDefault();
         state.submitting = true;
         fabricCanvas.discardActiveObject();
@@ -1181,8 +1406,6 @@
         });
         form.submit();
     });
-
-    // ── Delete design forms ───────────────────────────────────────────────────
 
     document.querySelectorAll(".design-delete-form").forEach(deleteForm => {
         deleteForm.addEventListener("submit", (e) => {
@@ -1198,6 +1421,7 @@
         loadArtwork(selectedDesignUrl);
     } else {
         syncEmptyState();
+        renderLayersList();
         updateControlsFromArtwork();
         pushHistory();
     }
