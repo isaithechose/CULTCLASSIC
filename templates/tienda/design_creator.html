@@ -686,6 +686,21 @@
                                     </div>
                                 </div>
                             </div>
+
+                            <!-- Gradiente -->
+                            <div class="design-creator__group">
+                                <label>Gradiente de relleno</label>
+                                <div class="effect-row">
+                                    <button type="button" class="format-btn" id="gradientToggle">Off</button>
+                                    <input type="color" id="gradColor1Input" value="#d6c3a1" title="Color inicial">
+                                    <input type="color" id="gradColor2Input" value="#111111" title="Color final">
+                                    <select id="gradDirectionSelect" style="flex:1;font-size:0.78rem;padding:0.25rem 0.4rem;border-radius:0.5rem;border:1px solid rgba(214,195,161,0.2);background:rgba(255,255,255,0.04);color:var(--cc-muted);">
+                                        <option value="horizontal">→ Horizontal</option>
+                                        <option value="vertical">↓ Vertical</option>
+                                        <option value="diagonal">↘ Diagonal</option>
+                                    </select>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Capas -->
@@ -721,6 +736,7 @@
                         <div class="design-creator__actions">
                             <button type="button" class="btn site-btn site-btn--ghost" id="resetButton">Resetear</button>
                             <button type="button" class="btn site-btn site-btn--ghost" id="removeButton">Quitar imagen</button>
+                            <button type="button" class="btn site-btn site-btn--ghost" id="exportButton">⬇ PNG HD</button>
                             <button type="submit" class="btn site-btn site-btn--accent">Guardar diseño</button>
                         </div>
 
@@ -750,6 +766,8 @@
                         <div class="design-canvas__print-area" id="printArea">
                             <div class="design-canvas__empty" id="emptyState">Sube un diseño, agrega texto o una forma para empezar.</div>
                             <canvas id="designFabricCanvas" class="design-canvas__surface" width="720" height="720"></canvas>
+                            <div id="guideV" style="position:absolute;left:50%;top:0;bottom:0;width:1px;background:rgba(214,195,161,0.9);pointer-events:none;display:none;transform:translateX(-50%);z-index:10;"></div>
+                            <div id="guideH" style="position:absolute;top:50%;left:0;right:0;height:1px;background:rgba(214,195,161,0.9);pointer-events:none;display:none;transform:translateY(-50%);z-index:10;"></div>
                         </div>
                     </div>
                     <div class="design-creator__hud">
@@ -857,6 +875,13 @@
     const strokeColorInput    = document.getElementById("strokeColorInput");
     const strokeWidthRange    = document.getElementById("strokeWidthRange");
     const strokeWidthVal      = document.getElementById("strokeWidthVal");
+    const gradientToggle      = document.getElementById("gradientToggle");
+    const gradColor1Input     = document.getElementById("gradColor1Input");
+    const gradColor2Input     = document.getElementById("gradColor2Input");
+    const gradDirectionSelect = document.getElementById("gradDirectionSelect");
+    const exportButton        = document.getElementById("exportButton");
+    const guideV              = document.getElementById("guideV");
+    const guideH              = document.getElementById("guideH");
     const resetButton         = document.getElementById("resetButton");
     const undoButton          = document.getElementById("undoButton");
     const redoButton          = document.getElementById("redoButton");
@@ -881,7 +906,7 @@
     const canvasElement = document.getElementById("designFabricCanvas");
     const fabricCanvas = new fabric.Canvas(canvasElement, {
         backgroundColor: "transparent",
-        selection: false,
+        selection: true,
         preserveObjectStacking: true,
         uniScaleTransform: true,
     });
@@ -1088,6 +1113,75 @@
         if (strokeToggle.classList.contains("is-active")) applyStroke();
     });
 
+    // ── Gradient (NEW) ────────────────────────────────────────────────────────
+
+    function applyGradient() {
+        const obj = fabricCanvas.getActiveObject();
+        if (!obj || obj.type === "activeSelection") return;
+        const w = obj.width  || 200;
+        const h = obj.height || 150;
+        const dir = gradDirectionSelect.value;
+        const coords = {
+            horizontal: { x1: 0, y1: 0, x2: w, y2: 0 },
+            vertical:   { x1: 0, y1: 0, x2: 0, y2: h },
+            diagonal:   { x1: 0, y1: 0, x2: w, y2: h },
+        }[dir] || { x1: 0, y1: 0, x2: w, y2: 0 };
+
+        obj.set("fill", new fabric.Gradient({
+            type: "linear",
+            coords,
+            colorStops: [
+                { offset: 0, color: gradColor1Input.value },
+                { offset: 1, color: gradColor2Input.value },
+            ],
+        }));
+        fabricCanvas.requestRenderAll();
+    }
+
+    gradientToggle?.addEventListener("click", () => {
+        gradientToggle.classList.toggle("is-active");
+        gradientToggle.textContent = gradientToggle.classList.contains("is-active") ? "On" : "Off";
+        if (gradientToggle.classList.contains("is-active")) {
+            applyGradient();
+        } else {
+            const obj = fabricCanvas.getActiveObject();
+            if (obj && obj.type !== "activeSelection") {
+                obj.set("fill", shapeFillInput.value || textColorInput.value || "#d6c3a1");
+                fabricCanvas.requestRenderAll();
+            }
+        }
+        pushHistory();
+    });
+
+    [gradColor1Input, gradColor2Input, gradDirectionSelect].forEach(el => {
+        el?.addEventListener("input", () => { if (gradientToggle.classList.contains("is-active")) applyGradient(); });
+    });
+
+    // ── Snap guides (NEW) ─────────────────────────────────────────────────────
+
+    const SNAP_THRESHOLD = 9;
+
+    function showGuides(showV, showH) {
+        if (guideV) guideV.style.display = showV ? "block" : "none";
+        if (guideH) guideH.style.display = showH ? "block" : "none";
+    }
+
+    function hideGuides() { showGuides(false, false); }
+
+    // ── Export PNG HD (NEW) ───────────────────────────────────────────────────
+
+    exportButton?.addEventListener("click", () => {
+        fabricCanvas.discardActiveObject();
+        fabricCanvas.requestRenderAll();
+        const nameEl = document.getElementById("{{ form.name.id_for_label }}");
+        const filename = (nameEl?.value?.trim() || "diseño") + "-HD.png";
+        const dataUrl = fabricCanvas.toDataURL({ format: "png", multiplier: 4, enableRetinaScaling: true });
+        const a = document.createElement("a");
+        a.href = dataUrl;
+        a.download = filename;
+        a.click();
+    });
+
     // ── Shirt color ───────────────────────────────────────────────────────────
 
     document.querySelectorAll(".shirt-color-btn").forEach(btn => {
@@ -1112,8 +1206,13 @@
         if (!obj) {
             shadowToggle.classList.remove("is-active"); shadowToggle.textContent = "Off";
             strokeToggle.classList.remove("is-active"); strokeToggle.textContent = "Off";
+            gradientToggle.classList.remove("is-active"); gradientToggle.textContent = "Off";
             return;
         }
+        // Gradient
+        const hasGradient = obj.fill && typeof obj.fill === "object" && obj.fill.type === "linear";
+        gradientToggle.classList.toggle("is-active", hasGradient);
+        gradientToggle.textContent = hasGradient ? "On" : "Off";
         // Shadow
         const sh = obj.shadow;
         const hasShadow = sh && (sh.blur > 0 || sh.offsetX !== 0);
@@ -1139,6 +1238,15 @@
 
     function updateControlsFromObject() {
         const obj = fabricCanvas.getActiveObject();
+
+        // Multi-selection: show count and disable per-object controls
+        if (obj && (obj.type === "activeSelection" || obj._objects)) {
+            const n = obj._objects?.length || "N";
+            hudStatus.textContent = `${n} objetos`;
+            boldButton.classList.remove("is-active"); italicButton.classList.remove("is-active");
+            syncEffectControls(null);
+            return;
+        }
 
         opacityRange.value = String(Math.round((obj?.opacity ?? 1) * 100));
         opacityValue.textContent = `${opacityRange.value}%`;
@@ -1250,8 +1358,28 @@
     fabricCanvas.on("selection:created", () => { updateControlsFromObject(); renderLayersList(); });
     fabricCanvas.on("selection:updated", () => { updateControlsFromObject(); renderLayersList(); });
     fabricCanvas.on("selection:cleared", () => { updateControlsFromObject(); renderLayersList(); });
-    fabricCanvas.on("object:modified",   () => { updateControlsFromObject(); renderLayersList(); pushHistory(); });
-    fabricCanvas.on("object:moving",     () => { clampArtworkToArea(); updateControlsFromObject(); });
+    fabricCanvas.on("object:modified",   () => { updateControlsFromObject(); renderLayersList(); hideGuides(); pushHistory(); });
+    fabricCanvas.on("object:moving",     (e) => {
+        clampArtworkToArea(); updateControlsFromObject();
+        // Snap guides
+        const obj = e.target;
+        const b = obj.getBoundingRect(true);
+        const cw = fabricCanvas.getWidth(), ch = fabricCanvas.getHeight();
+        const objCx = b.left + b.width  / 2;
+        const objCy = b.top  + b.height / 2;
+        let snapV = false, snapH = false;
+        if (Math.abs(objCx - cw / 2) < SNAP_THRESHOLD) {
+            obj.set({ left: obj.left + (cw / 2 - objCx) });
+            obj.setCoords(); snapV = true;
+        }
+        if (Math.abs(objCy - ch / 2) < SNAP_THRESHOLD) {
+            obj.set({ top: obj.top + (ch / 2 - objCy) });
+            obj.setCoords(); snapH = true;
+        }
+        showGuides(snapV, snapH);
+        fabricCanvas.requestRenderAll();
+    });
+    fabricCanvas.on("mouse:up",          () => hideGuides());
     fabricCanvas.on("object:scaling",    () => { clampArtworkToArea(); updateControlsFromObject(); });
     fabricCanvas.on("object:rotating",   () => { clampArtworkToArea(); updateControlsFromObject(); });
 
