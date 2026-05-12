@@ -1,17 +1,33 @@
 from django.conf import settings
 from django.core.mail import send_mail
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 
 from .models import Order, ShippingUpdate
+
+_shipping_status_before = {}
+
+
+@receiver(pre_save, sender=Order)
+def capture_shipping_status(sender, instance, **kwargs):
+    if not instance.pk:
+        return
+    _shipping_status_before[instance.pk] = (
+        Order.objects.filter(pk=instance.pk)
+        .values_list("shipping_status", flat=True)
+        .first()
+    )
 
 
 @receiver(post_save, sender=Order)
 def send_shipping_notification(sender, instance, created, update_fields=None, **kwargs):
     if created:
         return
-    # Solo disparar cuando shipping_status fue explícitamente guardado
+
+    previous_status = _shipping_status_before.pop(instance.pk, None)
     if update_fields is not None and 'shipping_status' not in update_fields:
+        return
+    if previous_status == instance.shipping_status:
         return
     if instance.shipping_status != "Shipped" or not instance.tracking_number:
         return

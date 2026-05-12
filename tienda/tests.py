@@ -2,9 +2,11 @@ from datetime import date
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
-from django.test import TestCase, Client
+from django.core import mail
+from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 
+from .forms import ShippingAddressForm
 from .models import (
     AccountingAccount,
     BankMovement,
@@ -17,7 +19,6 @@ from .models import (
     Producto,
     Reseña,
 )
-from .forms import ShippingAddressForm
 
 User = get_user_model()
 
@@ -110,6 +111,8 @@ class ReseñaTests(TestCase):
 
     def test_submit_reseña_authenticated(self):
         self.client.force_login(self.user)
+        order = Order.objects.create(customer=self.user, status="Completed")
+        OrderItem.objects.create(order=order, product=self.producto, quantity=1, price=self.producto.precio)
         url = reverse("tienda:submit_reseña", args=[self.producto.id])
         response = self.client.post(url, {"calificacion": 4, "comentario": "Buena calidad"})
         self.assertEqual(response.status_code, 302)
@@ -257,3 +260,31 @@ class MoneyAccountReconciliationAdminTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn("application/vnd.ms-excel", response["Content-Type"])
         self.assertIn("conciliacion", response["Content-Disposition"])
+
+
+@override_settings(
+    EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+    DEFAULT_FROM_EMAIL="ventas@example.com",
+)
+class ShippingNotificationSignalTests(TestCase):
+    def setUp(self):
+        user_model = get_user_model()
+        self.customer = user_model.objects.create_user(
+            username="cliente",
+            email="cliente@example.com",
+            password="password",
+        )
+
+    def test_shipping_email_only_sends_when_status_changes_to_shipped(self):
+        order = Order.objects.create(customer=self.customer, status="Completed")
+
+        order.tracking_number = "TRACK-123"
+        order.shipping_status = "Shipped"
+        order.save()
+
+        self.assertEqual(len(mail.outbox), 1)
+
+        order.internal_note = "Nota administrativa"
+        order.save(update_fields=["internal_note"])
+
+        self.assertEqual(len(mail.outbox), 1)

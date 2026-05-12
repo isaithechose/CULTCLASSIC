@@ -4,7 +4,7 @@ from django.contrib import messages
 from django.contrib.admin.sites import AdminSite
 from django import forms
 from django.db import transaction
-from django.db.models import Count, Prefetch, Sum
+from django.db.models import Case, Count, DecimalField, ExpressionWrapper, F, Prefetch, Sum, Value, When
 from django.forms import formset_factory
 from django.http import HttpResponse, HttpResponseRedirect
 from django.template.response import TemplateResponse
@@ -261,9 +261,23 @@ def _admin_overview_context():
     recent_movements = InventoryMovement.objects.filter(created_at__date=today).count()
     monthly_expenses = Expense.objects.filter(fecha__gte=month_start, fecha__lte=today).aggregate(total=Sum("monto"))["total"] or Decimal("0.00")
     today_expenses = Expense.objects.filter(fecha=today).aggregate(total=Sum("monto"))["total"] or Decimal("0.00")
-    credit_card_due = sum(
-        statement.saldo_pendiente
-        for statement in CreditCardStatement.objects.filter(estado="pending")
+    credit_card_due = (
+        CreditCardStatement.objects.filter(estado="pending")
+        .annotate(
+            pending_balance=Case(
+                When(
+                    saldo_corte__gt=F("monto_pagado"),
+                    then=ExpressionWrapper(
+                        F("saldo_corte") - F("monto_pagado"),
+                        output_field=DecimalField(max_digits=10, decimal_places=2),
+                    ),
+                ),
+                default=Value(Decimal("0.00")),
+                output_field=DecimalField(max_digits=10, decimal_places=2),
+            )
+        )
+        .aggregate(total=Sum("pending_balance"))["total"]
+        or Decimal("0.00")
     )
     completed_orders = Order.objects.filter(status="Completed")
     monthly_orders = completed_orders.filter(
@@ -422,11 +436,22 @@ def _inventory_snapshot_metrics():
         Producto.objects.filter(disponible=True).exclude(variants__activo=True).aggregate(total=Sum("stock"))["total"] or 0
     )
 
-    total_inventory_cost_value = Decimal("0.00")
-    total_inventory_sale_value = Decimal("0.00")
-    for variant in active_variants.select_related("product"):
-        total_inventory_cost_value += _variant_unit_cost(variant) * Decimal(str(variant.stock))
-        total_inventory_sale_value += _variant_sale_price(variant) * Decimal(str(variant.stock))
+    inventory_values = active_variants.aggregate(
+        cost_value=Sum(
+            ExpressionWrapper(
+                F("product__costo") * F("stock"),
+                output_field=DecimalField(max_digits=14, decimal_places=2),
+            )
+        ),
+        sale_value=Sum(
+            ExpressionWrapper(
+                F("product__precio") * F("stock"),
+                output_field=DecimalField(max_digits=14, decimal_places=2),
+            )
+        ),
+    )
+    total_inventory_cost_value = inventory_values["cost_value"] or Decimal("0.00")
+    total_inventory_sale_value = inventory_values["sale_value"] or Decimal("0.00")
 
     return {
         "low_stock_variants": low_stock_variants,
@@ -441,16 +466,26 @@ def _inventory_snapshot_metrics():
 
 def _sales_projection_metrics(today):
     window_start = today - timedelta(days=29)
-    completed_orders = [order for order in Order.objects.filter(status="Completed") if window_start <= order.created_at.date() <= today]
+    completed_orders = list(
+        Order.objects.filter(
+            status="Completed",
+            created_at__date__gte=window_start,
+            created_at__date__lte=today,
+        ).prefetch_related("items")
+    )
     trailing_sales = sum(order.total_price for order in completed_orders)
     daily_average = (Decimal(str(trailing_sales)) / Decimal("30")) if completed_orders or trailing_sales else Decimal("0.00")
 
     month_start = today.replace(day=1)
     _, month_days = calendar.monthrange(today.year, today.month)
     elapsed_days = max((today - month_start).days + 1, 1)
+    month_orders = Order.objects.filter(
+        status="Completed",
+        created_at__date__gte=month_start,
+        created_at__date__lte=today,
+    ).prefetch_related("items")
     month_sales = sum(
-        order.total_price for order in Order.objects.filter(status="Completed")
-        if month_start <= order.created_at.date() <= today
+        order.total_price for order in month_orders
     )
     current_daily_average = Decimal(str(month_sales)) / Decimal(str(elapsed_days))
     projected_month_sales = current_daily_average * Decimal(str(month_days))
@@ -535,7 +570,13 @@ def _build_business_calendar_context(year, month):
     month_weeks = calendar.Calendar(firstweekday=0).monthdatescalendar(year, month)
     today = timezone.localdate()
 
-    orders = [order for order in Order.objects.filter(status="Completed").prefetch_related("items__product") if first_day <= order.created_at.date() <= last_day]
+    orders = list(
+        Order.objects.filter(
+            status="Completed",
+            created_at__date__gte=first_day,
+            created_at__date__lte=last_day,
+        ).prefetch_related("items__product")
+    )
     expenses = list(Expense.objects.filter(fecha__gte=first_day, fecha__lte=last_day).select_related("categoria"))
     payments = list(BusinessPayment.objects.filter(fecha_programada__gte=first_day, fecha_programada__lte=last_day))
     credit_card_statements = list(
