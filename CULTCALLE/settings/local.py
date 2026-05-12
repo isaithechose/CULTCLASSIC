@@ -39,7 +39,6 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 INSTALLED_APPS = [
     # Aplicaciones predeterminadas de Django
-    'jazzmin',  # Admin personalizado (opcional)
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -244,6 +243,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "tienda.context_processors.meta_pixel",
+                "tienda.context_processors.admin_nav_context",
             ],
         },
     },

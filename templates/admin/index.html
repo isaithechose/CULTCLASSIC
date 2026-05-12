@@ -1,232 +1,166 @@
 {% extends "admin/base_site.html" %}
-
-{% block extrastyle %}
-{{ block.super }}
-<style>
-  .control-hero {
-    display: grid;
-    grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.65fr);
-    gap: 1rem;
-    margin: 1rem 0 1.25rem;
-  }
-  .control-panel,
-  .control-card,
-  .control-tool,
-  .control-flow {
-    background: #fff;
-    border: 1px solid #e8e8ef;
-    border-radius: 14px;
-    box-shadow: 0 12px 30px rgba(16, 24, 40, 0.06);
-  }
-  .control-panel {
-    padding: 1.15rem;
-  }
-  .control-title {
-    margin: 0 0 0.35rem;
-    color: #111827;
-    font-size: 1.45rem;
-    font-weight: 800;
-  }
-  .control-subtitle {
-    margin: 0;
-    color: #6b7280;
-  }
-  .control-primary-actions {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-    gap: 0.8rem;
-    margin-top: 1rem;
-  }
-  .control-tool {
-    display: block;
-    padding: 0.95rem;
-    color: inherit;
-    text-decoration: none;
-    transition: transform 0.12s ease, border-color 0.12s ease;
-  }
-  .control-tool:hover {
-    border-color: #cfd6e4;
-    text-decoration: none;
-    transform: translateY(-1px);
-  }
-  .control-tool strong {
-    display: block;
-    color: #111827;
-    font-size: 1.02rem;
-  }
-  .control-tool span {
-    display: block;
-    margin-top: 0.35rem;
-    color: #6b7280;
-    line-height: 1.4;
-  }
-  .control-tool--ok { border-left: 4px solid #05603a; }
-  .control-tool--info { border-left: 4px solid #175cd3; }
-  .control-tool--warn { border-left: 4px solid #9a6700; }
-  .control-tool--neutral { border-left: 4px solid #667085; }
-  .control-today {
-    display: grid;
-    gap: 0.65rem;
-  }
-  .control-today-row {
-    display: flex;
-    justify-content: space-between;
-    gap: 1rem;
-    padding: 0.72rem 0.85rem;
-    border-radius: 12px;
-    background: #f8fafc;
-  }
-  .control-today-row span {
-    color: #6b7280;
-  }
-  .control-today-row strong {
-    color: #111827;
-  }
-  .control-today-row--ok strong { color: #05603a; }
-  .control-today-row--danger strong { color: #b42318; }
-  .control-today-row--warn strong { color: #9a6700; }
-  .control-today-row--info strong { color: #175cd3; }
-  .control-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-    gap: 1rem;
-    margin: 0 0 1.25rem;
-  }
-  .control-card {
-    display: block;
-    padding: 1rem;
-    color: inherit;
-    text-decoration: none;
-  }
-  .control-card:hover {
-    text-decoration: none;
-  }
-  .control-card__label {
-    color: #6b7280;
-    font-size: 0.78rem;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-  }
-  .control-card__value {
-    margin-top: 0.4rem;
-    color: #111827;
-    font-size: 1.8rem;
-    font-weight: 800;
-    line-height: 1;
-  }
-  .control-card--warn .control-card__value { color: #9a6700; }
-  .control-card--danger .control-card__value { color: #b42318; }
-  .control-card--info .control-card__value { color: #175cd3; }
-  .control-card--ok .control-card__value { color: #05603a; }
-  .control-flows {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 1rem;
-    margin-bottom: 1.25rem;
-  }
-  .control-flow {
-    padding: 1rem;
-  }
-  .control-flow h3 {
-    margin: 0 0 0.8rem;
-    color: #111827;
-  }
-  .control-flow a {
-    display: block;
-    padding: 0.62rem 0;
-    border-top: 1px solid #edf0f5;
-    color: #175cd3;
-    font-weight: 700;
-    text-decoration: none;
-  }
-  .control-watchlist {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 0.85rem;
-  }
-  .control-watch {
-    display: block;
-    padding: 0.85rem 0.95rem;
-    border: 1px solid #ececf3;
-    border-radius: 12px;
-    background: #f8f8fb;
-    color: inherit;
-    text-decoration: none;
-  }
-  .control-watch strong {
-    display: block;
-    color: #111827;
-  }
-  .control-watch span {
-    color: #6b7280;
-  }
-  @media (max-width: 1100px) {
-    .control-hero,
-    .control-flows {
-      grid-template-columns: 1fr;
-    }
-  }
-</style>
-{% endblock %}
+{% load i18n static %}
 
 {% block content %}
-<div class="control-hero">
-  <section class="control-panel">
-    <h2 class="control-title">Centro de control</h2>
-    <p class="control-subtitle">Empieza por la acción que necesitas. El menú lateral queda para búsquedas y edición detallada.</p>
-    <div class="control-primary-actions">
-      {% for link in admin_quick_links %}
-        <a class="control-tool control-tool--{{ link.tone }}" href="{{ link.url }}">
-          <strong>{{ link.label }}</strong>
-          <span>{{ link.description }}</span>
-        </a>
-      {% endfor %}
-    </div>
-  </section>
+<style>
+  .cc-summary-row {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .cc-summary-card {
+    background: #141414;
+    border: 1px solid #1e1e1e;
+    border-radius: 8px;
+    padding: 14px;
+    min-width: 0;
+  }
+  .cc-summary-label {
+    font-family: "DM Mono", ui-monospace, monospace;
+    font-size: 10px;
+    color: #444;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .cc-summary-value {
+    font-family: "DM Mono", ui-monospace, monospace;
+    font-size: 22px;
+    font-weight: 600;
+    color: #fff;
+    line-height: 1;
+  }
+  .cc-section-title {
+    font-family: "DM Mono", ui-monospace, monospace;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: #3a3a3a;
+    margin: 0 0 10px;
+  }
+  .cc-quick-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+  .cc-quick-card {
+    background: #141414;
+    border: 1px solid #1e1e1e;
+    border-radius: 8px;
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none !important;
+    transition: border-color 0.15s, background 0.15s;
+    min-width: 0;
+  }
+  .cc-quick-card:hover { background: #181818 !important; border-color: #2a2a2a; }
+  .cc-quick-icon {
+    width: 32px;
+    height: 32px;
+    background: #1c1c1c;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    color: #666;
+    flex-shrink: 0;
+  }
+  .cc-quick-label { font-size: 13px; color: #aaa; font-weight: 500; }
+  .cc-quick-sub { font-size: 11px; color: #444; margin-top: 1px; }
+  .cc-alerts-list { display: flex; flex-direction: column; gap: 6px; }
+  .cc-alert-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #141414;
+    border: 1px solid #1e1e1e;
+    border-radius: 8px;
+    padding: 10px 14px;
+    text-decoration: none !important;
+  }
+  .cc-alert-row:hover { background: #181818 !important; }
+  .cc-alert-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .dot-warn { background: #f0a500; }
+  .dot-danger { background: #e05050; }
+  .dot-ok { background: #2dbe6c; }
+  .dot-info { background: #4a9eff; }
+  .cc-alert-text { font-size: 13px; color: #888; flex: 1; }
+  .cc-alert-text strong { color: #ccc; }
+  .cc-alert-count {
+    font-family: "DM Mono", ui-monospace, monospace;
+    font-size: 12px;
+    color: #555;
+  }
 
-  <section class="control-panel">
-    <h2 class="control-title">Hoy</h2>
-    <div class="control-today">
-      {% for item in admin_today_summary %}
-        <div class="control-today-row control-today-row--{{ item.tone }}">
-          <span>{{ item.label }}</span>
-          <strong>{{ item.value }}</strong>
-        </div>
-      {% endfor %}
+  @media (max-width: 1100px) {
+    .cc-summary-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 720px) {
+    .cc-summary-row, .cc-quick-grid { grid-template-columns: 1fr; }
+  }
+</style>
+
+<div class="cc-summary-row">
+  {% for stat in admin_today_summary|slice:":4" %}
+    <div class="cc-summary-card">
+      <div class="cc-summary-label">{{ stat.label }}</div>
+      <div class="cc-summary-value">{{ stat.value }}</div>
     </div>
-  </section>
+  {% empty %}
+    <div class="cc-summary-card">
+      <div class="cc-summary-label">Sin datos</div>
+      <div class="cc-summary-value">-</div>
+    </div>
+  {% endfor %}
 </div>
 
-<div class="control-grid">
-  {% for card in admin_overview_cards %}
-    <a class="control-card control-card--{{ card.tone }}" href="{{ card.url }}">
-      <div class="control-card__label">{{ card.label }}</div>
-      <div class="control-card__value">{{ card.value }}</div>
+<div class="cc-section-title">Accesos rapidos</div>
+<div class="cc-quick-grid">
+  {% for link in admin_quick_links|slice:":4" %}
+    <a class="cc-quick-card" href="{{ link.url }}">
+      <div class="cc-quick-icon">
+        {% if 'venta' in link.label|lower or link.tone == 'ok' %}
+          <i class="ti ti-credit-card" aria-hidden="true"></i>
+        {% elif 'caja' in link.label|lower %}
+          <i class="ti ti-cash-register" aria-hidden="true"></i>
+        {% elif 'recepcion' in link.label|lower or 'compra' in link.label|lower %}
+          <i class="ti ti-arrow-up-circle" aria-hidden="true"></i>
+        {% elif link.tone == 'info' %}
+          <i class="ti ti-report-analytics" aria-hidden="true"></i>
+        {% else %}
+          <i class="ti ti-arrow-right" aria-hidden="true"></i>
+        {% endif %}
+      </div>
+      <div>
+        <div class="cc-quick-label">{{ link.label }}</div>
+        {% if link.description %}<div class="cc-quick-sub">{{ link.description }}</div>{% endif %}
+      </div>
     </a>
   {% endfor %}
 </div>
 
-<div class="control-flows">
-  {% for group in admin_workflow_groups %}
-    <section class="control-flow">
-      <h3>{{ group.title }}</h3>
-      {% for link in group.links %}
-        <a href="{{ link.url }}">{{ link.label }}</a>
-      {% endfor %}
-    </section>
+<div class="cc-section-title">Alertas activas</div>
+<div class="cc-alerts-list">
+  {% for card in admin_overview_cards %}
+    {% if card.value and card.value != 0 and card.value != '0' and card.value != '$0.00' %}
+      <a class="cc-alert-row" href="{{ card.url }}">
+        <div class="cc-alert-dot {% if card.tone == 'danger' %}dot-danger{% elif card.tone == 'warn' %}dot-warn{% elif card.tone == 'ok' %}dot-ok{% else %}dot-info{% endif %}"></div>
+        <div class="cc-alert-text"><strong>{{ card.label }}</strong>: {{ card.value }}</div>
+        <div class="cc-alert-count">→</div>
+      </a>
+    {% endif %}
+  {% empty %}
+    <div class="cc-alert-row">
+      <div class="cc-alert-dot dot-ok"></div>
+      <div class="cc-alert-text">Sin alertas activas.</div>
+      <div class="cc-alert-count">✓</div>
+    </div>
   {% endfor %}
 </div>
-
-<section class="control-panel">
-  <h2 class="control-title">En qué fijarte</h2>
-  <div class="control-watchlist">
-    {% for item in admin_watchlist %}
-      <a class="control-watch" href="{{ item.url }}">
-        <strong>{{ item.label }}</strong>
-        <span>{{ item.value }}</span>
-      </a>
-    {% endfor %}
-  </div>
-</section>
 {% endblock %}

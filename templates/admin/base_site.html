@@ -1,0 +1,507 @@
+{% extends "admin/base.html" %}
+{% load i18n static %}
+
+{% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title|default:"Admin" }} | Cult Classics{% endblock %}
+
+{% block extrastyle %}
+{{ block.super }}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Outfit:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<style>
+  :root {
+    --cc-bg: #111;
+    --cc-sidebar: #0a0a0a;
+    --cc-panel: #141414;
+    --cc-panel-2: #181818;
+    --cc-topbar: #0d0d0d;
+    --cc-border: #1e1e1e;
+    --cc-border-2: #2a2a2a;
+    --cc-text: #e8e8e8;
+    --cc-muted: #888;
+    --cc-faint: #3a3a3a;
+    --cc-blue: #4a9eff;
+    --cc-green: #2dbe6c;
+    --cc-yellow: #f0a500;
+    --cc-red: #e05050;
+    --font-family-primary: "Outfit", Arial, sans-serif;
+    --font-family-monospace: "DM Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+
+  html[data-theme="light"], :root {
+    --primary: #fff;
+    --secondary: #141414;
+    --accent: #4a9eff;
+    --body-bg: var(--cc-bg);
+    --body-fg: var(--cc-text);
+    --body-quiet-color: var(--cc-muted);
+    --body-loud-color: #fff;
+    --header-bg: var(--cc-sidebar);
+    --breadcrumbs-bg: var(--cc-topbar);
+    --link-fg: #6a9fd8;
+    --link-hover-color: #9ec4f5;
+    --hairline-color: var(--cc-border);
+    --border-color: var(--cc-border);
+    --darkened-bg: #0f0f0f;
+    --selected-bg: #171717;
+    --selected-row: #181818;
+    --button-bg: #fff;
+    --button-fg: #000;
+  }
+
+  body {
+    margin: 0;
+    background: var(--cc-bg) !important;
+    color: var(--cc-text) !important;
+    font-family: var(--font-family-primary) !important;
+    font-size: 14px;
+  }
+
+  #container {
+    min-height: 100vh;
+    background: var(--cc-bg);
+  }
+
+  #header,
+  .breadcrumbs,
+  #toggle-nav-sidebar,
+  #nav-sidebar {
+    display: none !important;
+  }
+
+  #main {
+    display: flex !important;
+    min-height: 100vh;
+    margin: 0 !important;
+    background: var(--cc-bg);
+  }
+
+  #content-start {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    background: var(--cc-bg);
+  }
+
+  #content {
+    flex: 1;
+    width: auto !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 20px !important;
+    background: var(--cc-bg) !important;
+    color: var(--cc-text);
+  }
+
+  .cc-sidebar {
+    width: 230px;
+    min-width: 230px;
+    height: 100vh;
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    scrollbar-width: none;
+    background: var(--cc-sidebar);
+    border-right: 1px solid var(--cc-border);
+  }
+  .cc-sidebar::-webkit-scrollbar { display: none; }
+
+  .cc-brand {
+    padding: 18px 16px 14px;
+    border-bottom: 1px solid var(--cc-border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: inherit !important;
+    text-decoration: none !important;
+  }
+  .cc-brand-icon {
+    width: 30px;
+    height: 30px;
+    background: #fff;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-family-monospace);
+    font-size: 14px;
+    font-weight: 700;
+    color: #000;
+    letter-spacing: -0.5px;
+  }
+  .cc-brand-text { font-size: 13px; font-weight: 600; color: #fff; letter-spacing: 0.3px; }
+  .cc-brand-sub {
+    font-family: var(--font-family-monospace);
+    font-size: 10px;
+    color: #555;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  .cc-sidebar-section { padding: 16px 0 4px; }
+  .cc-section-label {
+    display: block;
+    padding: 0 16px 6px;
+    font-family: var(--font-family-monospace);
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--cc-faint);
+  }
+  .cc-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 7px 16px;
+    color: var(--cc-muted) !important;
+    text-decoration: none !important;
+    font-size: 13.5px;
+    line-height: 1.45;
+    position: relative;
+    transition: background 0.12s, color 0.12s;
+  }
+  .cc-nav-item:hover { background: #141414; color: #ccc !important; }
+  .cc-nav-item.active { background: #171717; color: #fff !important; }
+  .cc-nav-item.active::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 4px;
+    bottom: 4px;
+    width: 2px;
+    background: #fff;
+    border-radius: 0 2px 2px 0;
+  }
+  .cc-nav-icon { width: 18px; text-align: center; font-size: 15px; flex-shrink: 0; }
+  .cc-nav-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .cc-badge {
+    font-family: var(--font-family-monospace);
+    font-size: 10px;
+    font-weight: 600;
+    padding: 1px 6px;
+    border-radius: 20px;
+    line-height: 1.6;
+    white-space: nowrap;
+  }
+  .cc-badge-warn { background: #2a1f00; color: var(--cc-yellow); }
+  .cc-badge-danger { background: #2a0000; color: var(--cc-red); }
+  .cc-badge-ok { background: #001a0d; color: var(--cc-green); }
+  .cc-badge-info { background: #00142a; color: var(--cc-blue); }
+
+  .cc-sidebar-user {
+    margin-top: auto;
+    border-top: 1px solid #1a1a1a;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .cc-user-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #222;
+    border: 1px solid #333;
+    color: #888;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-family-monospace);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    flex-shrink: 0;
+  }
+  .cc-user-name { flex: 1; min-width: 0; font-size: 12px; color: #666; }
+  .cc-user-name strong {
+    display: block;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #bbb;
+    font-size: 13px;
+    font-weight: 500;
+  }
+  .cc-logout { color: #3a3a3a !important; text-decoration: none !important; font-size: 15px; }
+  .cc-logout:hover { color: #888 !important; }
+
+  .cc-topbar {
+    height: 52px;
+    background: var(--cc-topbar);
+    border-bottom: 1px solid var(--cc-border);
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    gap: 12px;
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    z-index: 30;
+  }
+  .cc-topbar-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #fff;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .cc-topbar-meta {
+    font-family: var(--font-family-monospace);
+    font-size: 11px;
+    color: var(--cc-faint);
+    white-space: nowrap;
+  }
+  .cc-topbar-action {
+    background: #fff !important;
+    color: #000 !important;
+    border: 0 !important;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 6px 12px;
+    text-decoration: none !important;
+    letter-spacing: 0.2px;
+  }
+
+  .messagelist {
+    margin: 12px 20px 0 !important;
+    padding: 0 !important;
+  }
+  .messagelist li {
+    border-radius: 6px !important;
+    border: 1px solid var(--cc-border-2) !important;
+    background: var(--cc-panel) !important;
+    color: #aaa !important;
+    font-size: 13px !important;
+  }
+  .messagelist li.success { background: #001a0d !important; color: var(--cc-green) !important; border-color: #003020 !important; }
+  .messagelist li.warning { background: #2a1f00 !important; color: var(--cc-yellow) !important; border-color: #3a2a00 !important; }
+  .messagelist li.error { background: #2a0000 !important; color: var(--cc-red) !important; border-color: #3a0000 !important; }
+
+  h1, h2, h3, caption { color: #fff !important; }
+  a { color: #6a9fd8; }
+  a:hover { color: #9ec4f5; }
+  .module, .inline-group {
+    background: var(--cc-panel) !important;
+    border: 1px solid var(--cc-border) !important;
+    border-radius: 8px !important;
+    overflow: hidden;
+  }
+  .module h2, .module caption, .inline-group h2 {
+    background: #0f0f0f !important;
+    border-bottom: 1px solid var(--cc-border) !important;
+    color: #aaa !important;
+    font-family: var(--font-family-monospace) !important;
+    font-size: 10px !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.8px !important;
+    text-transform: uppercase !important;
+    padding: 10px 14px !important;
+  }
+  table { background: transparent !important; }
+  th, td {
+    border-color: var(--cc-border) !important;
+    color: #aaa !important;
+  }
+  thead th, tfoot td { background: #0f0f0f !important; color: #aaa !important; }
+  tbody tr:hover td, tbody tr:hover th { background: #181818 !important; }
+  .row1, .row2 { background: transparent !important; }
+  .object-tools a,
+  .button,
+  input[type="submit"],
+  input[type="button"],
+  .submit-row input {
+    border-radius: 6px !important;
+    font-family: var(--font-family-primary) !important;
+    font-weight: 600 !important;
+  }
+  input[type="text"], input[type="password"], input[type="email"], input[type="number"], input[type="url"],
+  input[type="tel"], select, textarea, .vTextField {
+    background: #1a1a1a !important;
+    border: 1px solid var(--cc-border-2) !important;
+    color: #ddd !important;
+    border-radius: 6px !important;
+  }
+  .submit-row, .form-row, fieldset, .aligned label, .help, p, li { color: #aaa; }
+  #changelist-filter {
+    background: var(--cc-panel) !important;
+    border-left: 1px solid var(--cc-border) !important;
+  }
+  #changelist-filter h2 { background: #0f0f0f !important; color: #aaa !important; }
+  #footer { display: none; }
+
+  @media (max-width: 900px) {
+    #main { display: block !important; }
+    .cc-sidebar {
+      width: 100%;
+      min-width: 0;
+      height: auto;
+      position: relative;
+      display: block;
+      border-right: 0;
+      border-bottom: 1px solid var(--cc-border);
+    }
+    .cc-sidebar-section { padding-top: 10px; }
+    .cc-nav-item { display: inline-flex; width: calc(50% - 2px); box-sizing: border-box; }
+    .cc-sidebar-user { display: none; }
+    .cc-topbar { position: relative; }
+    .cc-topbar-meta { display: none; }
+    #content { padding: 16px !important; }
+  }
+</style>
+{% endblock %}
+
+{% block header %}{% endblock %}
+{% block nav-breadcrumbs %}{% endblock %}
+{% block nav-global %}{% endblock %}
+{% block usertools %}{% endblock %}
+{% block content_title %}{% endblock %}
+
+{% block nav-sidebar %}
+<aside class="cc-sidebar" aria-label="Navegacion principal del admin">
+  <a class="cc-brand" href="{% url 'admin:index' %}">
+    <div class="cc-brand-icon">CC</div>
+    <div>
+      <div class="cc-brand-text">Cult Classics</div>
+      <div class="cc-brand-sub">Admin</div>
+    </div>
+  </a>
+
+  <div class="cc-sidebar-section">
+    <span class="cc-section-label">Principal</span>
+    <a class="cc-nav-item {% if request.resolver_match.url_name == 'index' %}active{% endif %}" href="{% url 'admin:index' %}">
+      <i class="ti ti-layout-dashboard cc-nav-icon" aria-hidden="true"></i><span class="cc-nav-label">Inicio</span>
+    </a>
+    <a class="cc-nav-item {% if '/admin/tienda/order/' in request.path and 'point-of-sale' not in request.path and 'skydrop' not in request.path %}active{% endif %}" href="{% url 'admin:tienda_order_changelist' %}">
+      <i class="ti ti-shopping-bag cc-nav-icon" aria-hidden="true"></i><span class="cc-nav-label">Pedidos</span>
+      {% for card in admin_overview_cards %}{% if card.label == 'Pedidos pendientes' and card.value > 0 %}<span class="cc-badge cc-badge-warn">{{ card.value }}</span>{% endif %}{% endfor %}
+    </a>
+    <a class="cc-nav-item {% if 'point-of-sale' in request.path %}active{% endif %}" href="{% url 'admin:tienda_order_point_of_sale' %}">
+      <i class="ti ti-credit-card cc-nav-icon" aria-hidden="true"></i><span class="cc-nav-label">Punto de venta</span>
+    </a>
+    <a class="cc-nav-item {% if 'daily-close' in request.path %}active{% endif %}" href="{% url 'admin:tienda_cashregisterclosure_daily_close' %}">
+      <i class="ti ti-cash-register cc-nav-icon" aria-hidden="true"></i><span class="cc-nav-label">Cierre de caja</span>
+    </a>
+  </div>
+
+  <div class="cc-sidebar-section">
+    <span class="cc-section-label">Catalogo</span>
+    <a class="cc-nav-item {% if '/admin/tienda/producto/' in request.path and 'inventory' not in request.path %}active{% endif %}" href="{% url 'admin:tienda_producto_changelist' %}">
+      <i class="ti ti-shirt cc-nav-icon" aria-hidden="true"></i><span class="cc-nav-label">Productos</span>
+    </a>
+    <a class="cc-nav-item {% if 'productvariant' in request.path %}active{% endif %}" href="{% url 'admin:tienda_productvariant_changelist' %}">
+      <i class="ti ti-versions cc-nav-icon" aria-hidden="true"></i><span class="cc-nav-label">Variantes</span>
+      {% for item in admin_watchlist %}{% if item.label == 'Variantes agotadas' and item.value > 0 %}<span class="cc-badge cc-badge-danger">{{ item.value }}</span>{% endif %}{% endfor %}
+    </a>
+    <a class="cc-nav-item {% if 'categoria' in request.path %}active{% endif %}" href="{% url 'admin:tienda_categoria_changelist' %}">
+      <i class="ti ti-tag cc-nav-icon" aria-hidden="true"></i><span class="cc-nav-label">Categorias</span>
+    </a>
+    <a class="cc-nav-item" href="{% url 'admin:tienda_producto_changelist' %}?categoria__nombre=Diseños">
+      <i class="ti ti-palette cc-nav-icon" aria-hidden="true"></i><span class="cc-nav-label">Disenos</span>
+    </a>
+  </div>
+
+  <div class="cc-sidebar-section">
+    <span class="cc-section-label">Inventario</span>
+    <a class="cc-nav-item {% if 'inventory-dashboard' in request.path %}active{% endif %}" href="{% url 'admin:tienda_producto_inventory_dashboard' %}">
+      <i class="ti ti-chart-bar cc-nav-icon" aria-hidden="true"></i><span class="cc-nav-label">Dashboard</span>
+    </a>
+    <a class="cc-nav-item {% if 'inventory-matrix' in request.path %}active{% endif %}" href="{% url 'admin:tienda_producto_inventory_matrix' %}">
+      <i class="ti ti-table cc-nav-icon" aria-hidden="true"></i><span class="cc-nav-label">Mesa de stock</span>
+    </a>
+    <a class="cc-nav-item {% if 'receive-purchase' in request.path %}active{% endif %}" href="{% url 'admin:tienda_inventorymovement_receive_purchase' %}">
+      <i class="ti ti-arrow-up-circle cc-nav-icon" aria-hidden="true"></i><span class="cc-nav-label">Recepcion</span>
+    </a>
+    <a class="cc-nav-item {% if 'inventorymovement' in request.path and 'receive' not in request.path %}active{% endif %}" href="{% url 'admin:tienda_inventorymovement_changelist' %}">
+      <i class="ti ti-history cc-nav-icon" aria-hidden="true"></i><span class="cc-nav-label">Movimientos</span>
+    </a>
+  </div>
+
+  <div class="cc-sidebar-section">
+    <span class="cc-section-label">Contabilidad</span>
+    <a class="cc-nav-item {% if 'accounting-dashboard' in request.path %}active{% endif %}" href="{% url 'admin:tienda_expense_accounting_dashboard' %}">
+      <i class="ti ti-report-analytics cc-nav-icon" aria-hidden="true"></i><span class="cc-nav-label">Dashboard</span>
+    </a>
+    <a class="cc-nav-item {% if 'expense' in request.path and 'accounting' not in request.path %}active{% endif %}" href="{% url 'admin:tienda_expense_changelist' %}">
+      <i class="ti ti-receipt-2 cc-nav-icon" aria-hidden="true"></i><span class="cc-nav-label">Gastos</span>
+    </a>
+    <a class="cc-nav-item {% if 'journalentry' in request.path %}active{% endif %}" href="{% url 'admin:tienda_journalentry_changelist' %}">
+      <i class="ti ti-book cc-nav-icon" aria-hidden="true"></i><span class="cc-nav-label">Polizas</span>
+    </a>
+    <a class="cc-nav-item {% if 'creditcard' in request.path %}active{% endif %}" href="{% url 'admin:tienda_creditcardstatement_changelist' %}">
+      <i class="ti ti-credit-card cc-nav-icon" aria-hidden="true"></i><span class="cc-nav-label">Tarjetas</span>
+      {% for card in admin_overview_cards %}{% if card.label == 'Tarjetas por pagar' and card.value != '$0.00' %}<span class="cc-badge cc-badge-warn">{{ card.value }}</span>{% endif %}{% endfor %}
+    </a>
+    <a class="cc-nav-item {% if 'business-calendar' in request.path %}active{% endif %}" href="{% url 'admin:tienda_businesspayment_business_calendar' %}">
+      <i class="ti ti-calendar-event cc-nav-icon" aria-hidden="true"></i><span class="cc-nav-label">Calendario</span>
+    </a>
+    <a class="cc-nav-item {% if 'moneyaccount' in request.path or 'bankmovement' in request.path %}active{% endif %}" href="{% url 'admin:tienda_moneyaccount_changelist' %}">
+      <i class="ti ti-building-bank cc-nav-icon" aria-hidden="true"></i><span class="cc-nav-label">Conciliacion</span>
+    </a>
+  </div>
+
+  <div class="cc-sidebar-section">
+    <span class="cc-section-label">Envios</span>
+    <a class="cc-nav-item" href="{% url 'admin:tienda_order_changelist' %}?shipping_status__exact=Processing&status__exact=Completed">
+      <i class="ti ti-truck cc-nav-icon" aria-hidden="true"></i><span class="cc-nav-label">Skydrop</span>
+      {% for card in admin_overview_cards %}{% if card.label == 'Pedidos por enviar' and card.value > 0 %}<span class="cc-badge cc-badge-info">{{ card.value }}</span>{% endif %}{% endfor %}
+    </a>
+    <a class="cc-nav-item {% if 'shippingupdate' in request.path %}active{% endif %}" href="{% url 'admin:tienda_shippingupdate_changelist' %}">
+      <i class="ti ti-map-pin cc-nav-icon" aria-hidden="true"></i><span class="cc-nav-label">Tracking</span>
+    </a>
+  </div>
+
+  <div class="cc-sidebar-section">
+    <span class="cc-section-label">Sistema</span>
+    <a class="cc-nav-item {% if 'auth/user' in request.path %}active{% endif %}" href="{% url 'admin:auth_user_changelist' %}">
+      <i class="ti ti-users cc-nav-icon" aria-hidden="true"></i><span class="cc-nav-label">Usuarios</span>
+    </a>
+    <a class="cc-nav-item {% if 'auth/group' in request.path %}active{% endif %}" href="{% url 'admin:auth_group_changelist' %}">
+      <i class="ti ti-settings cc-nav-icon" aria-hidden="true"></i><span class="cc-nav-label">Configuracion</span>
+    </a>
+  </div>
+
+  <div class="cc-sidebar-user">
+    <div class="cc-user-avatar">{{ user.username|slice:":2" }}</div>
+    <div class="cc-user-name">
+      <strong>{{ user.get_full_name|default:user.username }}</strong>
+      {% if user.is_superuser %}Superusuario{% else %}Staff{% endif %}
+    </div>
+    <a class="cc-logout" href="{% url 'admin:logout' %}" title="Cerrar sesion"><i class="ti ti-logout" aria-hidden="true"></i></a>
+  </div>
+</aside>
+{% endblock %}
+
+{% block messages %}
+<div class="cc-topbar">
+  <div class="cc-topbar-title">{{ title|default:"Inicio" }}</div>
+  <span class="cc-topbar-meta" id="cc-clock"></span>
+  <a class="cc-topbar-action" href="{% url 'admin:tienda_order_point_of_sale' %}">+ Nuevo pedido</a>
+</div>
+{% if messages %}
+  <ul class="messagelist">{% for message in messages %}<li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message|capfirst }}</li>{% endfor %}</ul>
+{% endif %}
+<script>
+(function() {
+  var clock = document.getElementById("cc-clock");
+  if (!clock) return;
+  function tick() {
+    var d = new Date();
+    var days = ["dom", "lun", "mar", "mie", "jue", "vie", "sab"];
+    var months = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+    clock.textContent = days[d.getDay()] + " " + d.getDate() + " " + months[d.getMonth()] + " " + d.getFullYear() + " · " + String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
+  }
+  tick();
+  setInterval(tick, 30000);
+})();
+</script>
+{% endblock %}

@@ -40,7 +40,6 @@ SECURE_HSTS_PRELOAD = True
 # APPS
 # =========================
 INSTALLED_APPS = [
-    "jazzmin",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -172,6 +171,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "tienda.context_processors.meta_pixel",
+                "tienda.context_processors.admin_nav_context",
             ],
         },
     },
