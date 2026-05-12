@@ -5,40 +5,39 @@ from collections import defaultdict
 from decimal import Decimal, ROUND_HALF_UP
 from pathlib import Path
 
-from django.shortcuts import render, redirect, get_object_or_404
-from .models import (
-    Producto,
-    OrderItem,
-    ShippingAddress,
-    Order,
-    ProductVariant,
-    find_variant_for_selection,
-    available_stock_for_selection,
-    record_inventory_movement,
-)
-from .forms import (
-    SeleccionarTallaColorForm,
-    ReseñaForm,
-    UserProfileForm,
-    ShippingAddressForm,
-    CustomDesignUploadForm,
-)
 import stripe
 from django.conf import settings
-from django.urls import reverse
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.core.files.storage import FileSystemStorage
 from django.core.mail import send_mail
+from django.core.paginator import Paginator
+from django.http import JsonResponse
+from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse
+from django.utils.text import slugify
+from django.views.decorators.csrf import csrf_exempt
 from tienda.utils.importador_diseños import importar_diseños_desde_carpeta, importar_diseños_propios
 import os
-from django.core.paginator import Paginator
-from .models import Producto, Categoria
-from django.conf import settings
-from django.core.files.storage import FileSystemStorage
-from django.contrib import messages
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.contrib.auth.decorators import login_required
-from django.utils.text import slugify
 
+from .forms import (
+    CustomDesignUploadForm,
+    ReseñaForm,
+    ShippingAddressForm,
+    SeleccionarTallaColorForm,
+    UserProfileForm,
+)
+from .models import (
+    Categoria,
+    Order,
+    OrderItem,
+    Producto,
+    ProductVariant,
+    ShippingAddress,
+    available_stock_for_selection,
+    find_variant_for_selection,
+    record_inventory_movement,
+)
 from .skydrop import SkydropError, quote_order, sync_shipment
 
 logger = logging.getLogger(__name__)
@@ -113,7 +112,7 @@ def subir_diseño_personalizado(request):
     product_id = request.POST.get("product_id", "").strip()
     try:
         saved_name = _save_custom_design(
-            request.user if getattr(request, "user", None) and request.user.is_authenticated else None,
+            request.user,
             design_name,
             uploaded_file=imagen,
             edited_image_data=edited_image,
@@ -187,9 +186,6 @@ def design_creator(request):
         "customizable_products": customizable_products,
     }
     return render(request, "tienda/design_creator.html", context)
-
-from urllib.parse import unquote as urlunquote
-
 def detalle_producto(request, producto_id):
     producto = get_object_or_404(Producto, id=producto_id)
     tallas_disponibles = producto.tallas_disponibles.split(",") if producto.tallas_disponibles else []
@@ -313,21 +309,38 @@ def _cart_matches_order(order, carrito):
 def _cart_stock_issues(carrito):
     quantities_by_variant = defaultdict(int)
     quantities_by_product = defaultdict(int)
+    unavailable_products = defaultdict(int)
+
     for key, item in carrito.items():
         parts = key.split("-", 4)
         if len(parts) != 5:
             continue
         product_id, talla, color, _, _ = parts
-        product = get_object_or_404(Producto, id=int(product_id))
+
+        try:
+            product_id_int = int(product_id)
+            requested_qty = int(item["cantidad"])
+        except (TypeError, ValueError, KeyError):
+            unavailable_products[product_id] += 1
+            continue
+
+        product = Producto.objects.filter(id=product_id_int).first()
+        if product is None:
+            unavailable_products[product_id] += requested_qty
+            continue
+
         variant = find_variant_for_selection(product, talla=talla, color=color)
         if variant:
-            quantities_by_variant[variant.id] += int(item["cantidad"])
+            quantities_by_variant[variant.id] += requested_qty
         else:
-            quantities_by_product[int(product_id)] += int(item["cantidad"])
+            quantities_by_product[product_id_int] += requested_qty
 
     issues = []
     for variant_id, requested_qty in quantities_by_variant.items():
-        variant = get_object_or_404(ProductVariant, id=variant_id)
+        variant = ProductVariant.objects.select_related("product").filter(id=variant_id).first()
+        if variant is None:
+            issues.append(("Producto no disponible", 0, requested_qty))
+            continue
         if variant.stock < requested_qty:
             issues.append(
                 (
@@ -338,13 +351,23 @@ def _cart_stock_issues(carrito):
             )
 
     for product_id, requested_qty in quantities_by_product.items():
-        producto = get_object_or_404(Producto, id=product_id)
+        producto = Producto.objects.filter(id=product_id).first()
+        if producto is None:
+            issues.append(("Producto no disponible", 0, requested_qty))
+            continue
         if producto.stock < requested_qty:
             issues.append((producto.nombre, producto.stock, requested_qty))
+
+    for requested_qty in unavailable_products.values():
+        issues.append(("Producto no disponible", 0, requested_qty))
+
     return issues
 
 
 def _get_checkout_order(request):
+    if not getattr(request, "user", None) or not request.user.is_authenticated:
+        return None
+
     carrito = request.session.get("carrito", {})
     if not carrito:
         return None
@@ -1012,7 +1035,6 @@ def payment_success_done(request):
             "order": order,
         },
     )
-from .forms import ShippingAddressForm
 
 
 @login_required
@@ -1042,6 +1064,12 @@ def _map_skydrop_status(raw_status):
 def _webhook_secret_is_valid(request):
     expected = getattr(settings, "SKYDROP_WEBHOOK_SECRET", "")
     if not expected:
+        if not settings.DEBUG:
+            logger.warning(
+                "SKYDROP_WEBHOOK_SECRET no está configurado. "
+                "El webhook está rechazando todas las peticiones en producción."
+            )
+            return False
         return True
 
     candidates = [

@@ -152,13 +152,15 @@ class ProductVariant(models.Model):
         return f"{media_url}/{image_name.lstrip('/')}"
 
     def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
-        self.product.sync_stock_from_variants()
+        with transaction.atomic():
+            super().save(*args, **kwargs)
+            self.product.sync_stock_from_variants()
 
     def delete(self, *args, **kwargs):
-        product = self.product
-        super().delete(*args, **kwargs)
-        product.sync_stock_from_variants()
+        with transaction.atomic():
+            product = self.product
+            super().delete(*args, **kwargs)
+            product.sync_stock_from_variants()
 
 
 class InventoryMovement(models.Model):
