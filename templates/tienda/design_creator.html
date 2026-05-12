@@ -19,9 +19,7 @@
 
 {% block content %}
 <style>
-    .design-creator {
-        padding: 0 0 5rem;
-    }
+    .design-creator { padding: 0 0 5rem; }
 
     .design-creator__layout {
         display: grid;
@@ -34,7 +32,7 @@
         border: 1px solid var(--cc-line);
         border-radius: 1.8rem;
         background:
-            radial-gradient(circle at top right, rgba(214, 195, 161, 0.08), transparent 40%),
+            radial-gradient(circle at top right, rgba(214,195,161,0.08), transparent 40%),
             linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01));
         box-shadow: var(--cc-shadow);
         padding: 1.45rem;
@@ -62,24 +60,18 @@
         line-height: 1.7;
     }
 
-    .design-creator__form {
-        display: grid;
-        gap: 1rem;
-    }
+    .design-creator__form { display: grid; gap: 1rem; }
 
     .design-creator__toolbar {
         display: grid;
         gap: 0.9rem;
         padding: 1rem;
         border-radius: 1.25rem;
-        border: 1px solid rgba(214, 195, 161, 0.1);
+        border: 1px solid rgba(214,195,161,0.1);
         background: rgba(255,255,255,0.025);
     }
 
-    .design-creator__group {
-        display: grid;
-        gap: 0.45rem;
-    }
+    .design-creator__group { display: grid; gap: 0.45rem; }
 
     .design-creator__group label {
         font-size: 0.76rem;
@@ -93,15 +85,8 @@
         accent-color: var(--cc-accent);
     }
 
-    .design-creator__actions {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.8rem;
-    }
-
-    .design-creator__actions .site-btn {
-        justify-content: center;
-    }
+    .design-creator__actions { display: flex; flex-wrap: wrap; gap: 0.8rem; }
+    .design-creator__actions .site-btn { justify-content: center; }
 
     .design-creator__tool-grid {
         display: grid;
@@ -114,7 +99,7 @@
         gap: 0.65rem;
         padding: 0.9rem;
         border-radius: 1rem;
-        border: 1px solid rgba(214, 195, 161, 0.08);
+        border: 1px solid rgba(214,195,161,0.08);
         background: rgba(255,255,255,0.03);
     }
 
@@ -142,22 +127,18 @@
         gap: 0.6rem;
     }
 
-    .design-creator__tool-actions .site-btn {
-        width: 100%;
-    }
+    .design-creator__tool-actions .site-btn { width: 100%; }
 
-    .design-creator__preview {
-        display: grid;
-        gap: 1rem;
-    }
+    .design-creator__preview { display: grid; gap: 1rem; }
 
+    /* Canvas */
     .design-canvas {
         position: relative;
         min-height: 36rem;
         border-radius: 2rem;
-        border: 1px solid rgba(214, 195, 161, 0.16);
+        border: 1px solid rgba(214,195,161,0.16);
         background:
-            radial-gradient(circle at top, rgba(214, 195, 161, 0.08), transparent 35%),
+            radial-gradient(circle at top, rgba(214,195,161,0.08), transparent 35%),
             linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.01)),
             #111113;
         overflow: hidden;
@@ -188,44 +169,29 @@
         width: min(48%, 17rem);
         aspect-ratio: 1;
         transform: translate(-50%, -44%);
-        border: 1px dashed rgba(17, 17, 17, 0.22);
+        border: 1px dashed rgba(17,17,17,0.22);
         border-radius: 1rem;
         background:
             linear-gradient(180deg, rgba(255,255,255,0.2), rgba(255,255,255,0.12)),
-            repeating-linear-gradient(
-                0deg,
-                rgba(17,17,17,0.03) 0,
-                rgba(17,17,17,0.03) 1px,
-                transparent 1px,
-                transparent 24px
-            ),
-            repeating-linear-gradient(
-                90deg,
-                rgba(17,17,17,0.03) 0,
-                rgba(17,17,17,0.03) 1px,
-                transparent 1px,
-                transparent 24px
-            );
+            repeating-linear-gradient(0deg, rgba(17,17,17,0.03) 0, rgba(17,17,17,0.03) 1px, transparent 1px, transparent 24px),
+            repeating-linear-gradient(90deg, rgba(17,17,17,0.03) 0, rgba(17,17,17,0.03) 1px, transparent 1px, transparent 24px);
         overflow: hidden;
     }
 
-    .design-canvas__surface {
-        width: 100%;
-        height: 100%;
-        display: block;
-    }
+    .design-canvas__surface { width: 100%; height: 100%; display: block; }
 
     .design-canvas__empty {
         position: absolute;
         inset: 0;
         display: grid;
         place-items: center;
-        color: rgba(17, 17, 17, 0.46);
+        color: rgba(17,17,17,0.46);
         font-size: 0.92rem;
         text-align: center;
         padding: 1rem;
     }
 
+    /* HUD */
     .design-creator__hud {
         display: grid;
         grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -236,7 +202,7 @@
     .design-creator__stat {
         padding: 0.8rem 0.9rem;
         border-radius: 1rem;
-        border: 1px solid rgba(214, 195, 161, 0.08);
+        border: 1px solid rgba(214,195,161,0.08);
         background: rgba(255,255,255,0.03);
     }
 
@@ -249,11 +215,9 @@
         text-transform: uppercase;
     }
 
-    .design-creator__stat strong {
-        color: var(--cc-ink);
-        font-size: 1rem;
-    }
+    .design-creator__stat strong { color: var(--cc-ink); font-size: 1rem; }
 
+    /* Saved designs */
     .design-creator__saved {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
@@ -276,7 +240,7 @@
     .design-creator__saved-item:hover,
     .design-creator__saved-item.is-active {
         transform: translateY(-2px);
-        border-color: rgba(214, 195, 161, 0.28);
+        border-color: rgba(214,195,161,0.28);
         background: rgba(255,255,255,0.05);
     }
 
@@ -310,23 +274,14 @@
         place-items: center;
         cursor: pointer;
         opacity: 0;
-        transition: opacity 0.18s ease, color 0.18s ease;
+        transition: opacity 0.18s, color 0.18s;
         line-height: 1;
     }
 
-    .design-creator__saved-item:hover .design-creator__saved-delete {
-        opacity: 1;
-    }
+    .design-creator__saved-item:hover .design-creator__saved-delete { opacity: 1; }
+    .design-creator__saved-delete:hover { color: #e05c5c; border-color: #e05c5c; }
 
-    .design-creator__saved-delete:hover {
-        color: #e05c5c;
-        border-color: #e05c5c;
-    }
-
-    .design-creator__handoff {
-        display: grid;
-        gap: 0.9rem;
-    }
+    .design-creator__handoff { display: grid; gap: 0.9rem; }
 
     /* Shirt color swatches */
     .shirt-color-btn {
@@ -335,30 +290,25 @@
         border-radius: 50%;
         border: 2px solid transparent;
         cursor: pointer;
-        transition: transform 0.18s ease, border-color 0.18s ease;
+        transition: transform 0.18s, border-color 0.18s;
         flex-shrink: 0;
     }
 
-    .shirt-color-btn:hover {
-        transform: scale(1.15);
-    }
+    .shirt-color-btn:hover { transform: scale(1.15); }
+    .shirt-color-btn.is-active { border-color: var(--cc-accent); transform: scale(1.1); }
 
-    .shirt-color-btn.is-active {
-        border-color: var(--cc-accent);
-        transform: scale(1.1);
-    }
-
-    /* Bold / italic buttons */
+    /* Format / toggle buttons */
     .format-btn {
-        padding: 0.25rem 0.7rem;
+        padding: 0.25rem 0.65rem;
         border-radius: 0.5rem;
         border: 1px solid rgba(214,195,161,0.15);
         background: rgba(255,255,255,0.04);
         color: var(--cc-muted);
-        font-size: 0.88rem;
+        font-size: 0.85rem;
         cursor: pointer;
         transition: background 0.18s, color 0.18s, border-color 0.18s;
         line-height: 1.4;
+        white-space: nowrap;
     }
 
     .format-btn.is-active {
@@ -368,16 +318,86 @@
     }
 
     /* Undo / redo */
-    .undo-redo-bar {
-        display: flex;
+    .undo-redo-bar { display: flex; gap: 0.5rem; }
+    .undo-redo-bar .site-btn { flex: 1; }
+
+    /* ── Alignment grid ── */
+    .design-creator__align-grid {
+        display: grid;
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        gap: 0.4rem;
+    }
+
+    .align-btn {
+        padding: 0.44rem 0.3rem;
+        border-radius: 0.55rem;
+        border: 1px solid rgba(214,195,161,0.12);
+        background: rgba(255,255,255,0.03);
+        color: var(--cc-muted);
+        font-size: 0.72rem;
+        cursor: pointer;
+        transition: background 0.15s, color 0.15s;
+        display: grid;
+        place-items: center;
+        text-align: center;
+        line-height: 1.3;
+    }
+
+    .align-btn:hover { background: rgba(214,195,161,0.15); color: var(--cc-ink); }
+
+    /* ── Shapes ── */
+    .shapes-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 0.5rem;
     }
 
-    .undo-redo-bar .site-btn {
-        flex: 1;
+    .shapes-grid .site-btn {
+        width: 100%;
+        justify-content: center;
+        padding: 0.45rem 0.4rem;
+        font-size: 0.83rem;
     }
 
-    /* Layers panel */
+    /* ── Effects inline row ── */
+    .effect-row {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .effect-row input[type="color"] {
+        width: 2.4rem;
+        height: 2rem;
+        padding: 0.08rem 0.15rem;
+        border-radius: 0.4rem;
+        border: 1px solid rgba(214,195,161,0.2);
+        background: transparent;
+        cursor: pointer;
+        flex-shrink: 0;
+    }
+
+    .effect-slider-wrap {
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+        flex: 1;
+        min-width: 110px;
+    }
+
+    .effect-slider-wrap span {
+        font-size: 0.73rem;
+        color: var(--cc-muted);
+        white-space: nowrap;
+    }
+
+    .effect-slider-wrap input[type="range"] {
+        flex: 1;
+        accent-color: var(--cc-accent);
+    }
+
+    /* ── Layers panel ── */
     .design-creator__layers {
         max-height: 11rem;
         overflow-y: auto;
@@ -402,9 +422,7 @@
         user-select: none;
     }
 
-    .layer-row:hover {
-        background: rgba(255,255,255,0.05);
-    }
+    .layer-row:hover { background: rgba(255,255,255,0.05); }
 
     .layer-row.is-selected {
         background: rgba(214,195,161,0.1);
@@ -412,38 +430,12 @@
         color: var(--cc-ink);
     }
 
-    .layer-row.is-locked .layer-name {
-        opacity: 0.55;
-    }
+    .layer-row.is-locked .layer-name { opacity: 0.55; }
 
-    .layer-icon {
-        font-size: 0.78rem;
-        flex-shrink: 0;
-        width: 1.3rem;
-        text-align: center;
-    }
-
-    .layer-name {
-        flex: 1;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        font-size: 0.83rem;
-    }
-
-    .layer-vis {
-        font-size: 0.68rem;
-        flex-shrink: 0;
-        opacity: 0.6;
-    }
-
-    .layer-empty {
-        color: var(--cc-muted);
-        font-size: 0.82rem;
-        text-align: center;
-        padding: 0.6rem;
-        opacity: 0.6;
-    }
+    .layer-icon { font-size: 0.78rem; flex-shrink: 0; width: 1.3rem; text-align: center; }
+    .layer-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.83rem; }
+    .layer-vis { font-size: 0.68rem; flex-shrink: 0; opacity: 0.6; }
+    .layer-empty { color: var(--cc-muted); font-size: 0.82rem; text-align: center; padding: 0.6rem; opacity: 0.6; }
 
     .design-creator__layers-actions {
         display: grid;
@@ -459,35 +451,28 @@
     }
 
     @media (max-width: 991.98px) {
-        .design-creator__layout {
-            grid-template-columns: 1fr;
-        }
-
-        .design-canvas {
-            min-height: 30rem;
-        }
+        .design-creator__layout { grid-template-columns: 1fr; }
+        .design-canvas { min-height: 30rem; }
     }
 
     @media (max-width: 767.98px) {
         .design-creator__tool-grid,
-        .design-creator__hud {
-            grid-template-columns: 1fr;
-        }
-
-        .design-creator__layers-actions {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
+        .design-creator__hud,
+        .design-creator__align-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .design-creator__layers-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
 </style>
 
 <section class="design-creator">
     <div class="container px-4 px-lg-5">
         <div class="design-creator__layout">
+
+            <!-- ── Left: controls ── -->
             <div class="design-creator__panel">
                 <p class="design-creator__eyebrow">Herramienta</p>
                 <h2 class="design-creator__title">Tu diseño listo para usar</h2>
                 <p class="design-creator__copy">
-                    Puedes subir un PNG, JPG o WebP, moverlo dentro del área de impresión y guardarlo como una nueva versión lista para colocar en tus playeras.
+                    Carga un PNG, JPG o WebP, agrega texto o formas, y guárdalo listo para tus playeras.
                 </p>
 
                 <form method="post" enctype="multipart/form-data" class="design-creator__form" id="design-creator-form">
@@ -496,13 +481,15 @@
                     <input type="hidden" name="product_id" id="productIdInput" value="{{ selected_product_id }}">
 
                     <div class="design-creator__toolbar">
+
+                        <!-- Name + File -->
                         <div class="design-creator__group">
-                            <label for="{{ form.name.id_for_label }}">Nombre</label>
+                            <label for="{{ form.name.id_for_label }}">Nombre del diseño</label>
                             {{ form.name }}
                         </div>
 
                         <div class="design-creator__group">
-                            <label for="{{ form.image.id_for_label }}">Archivo base</label>
+                            <label for="{{ form.image.id_for_label }}">Archivo base (PNG / JPG / WebP · máx 15 MB)</label>
                             {{ form.image }}
                         </div>
 
@@ -513,14 +500,14 @@
                                 <span id="shirtColorLabel">Beige</span>
                             </div>
                             <div style="display:flex;flex-wrap:wrap;gap:0.55rem;margin-top:0.25rem;">
-                                <button type="button" class="shirt-color-btn is-active" data-color="#f1ede6" data-label="Beige" style="background:#f1ede6;" title="Beige"></button>
-                                <button type="button" class="shirt-color-btn" data-color="#111111" data-label="Negro" style="background:#111111;" title="Negro"></button>
-                                <button type="button" class="shirt-color-btn" data-color="#f8f8f8" data-label="Blanco" style="background:#f8f8f8;border:1px solid #ccc;" title="Blanco"></button>
-                                <button type="button" class="shirt-color-btn" data-color="#9e9e9e" data-label="Gris" style="background:#9e9e9e;" title="Gris"></button>
-                                <button type="button" class="shirt-color-btn" data-color="#6d2030" data-label="Vino" style="background:#6d2030;" title="Vino"></button>
-                                <button type="button" class="shirt-color-btn" data-color="#1c2b4a" data-label="Azul marino" style="background:#1c2b4a;" title="Azul marino"></button>
-                                <button type="button" class="shirt-color-btn" data-color="#2e4a35" data-label="Verde" style="background:#2e4a35;" title="Verde"></button>
-                                <button type="button" class="shirt-color-btn" data-color="#c9b99a" data-label="Latte" style="background:#c9b99a;" title="Latte"></button>
+                                <button type="button" class="shirt-color-btn is-active" data-color="#f1ede6" data-label="Beige"     style="background:#f1ede6;"                   title="Beige"></button>
+                                <button type="button" class="shirt-color-btn"            data-color="#111111" data-label="Negro"     style="background:#111111;"                   title="Negro"></button>
+                                <button type="button" class="shirt-color-btn"            data-color="#f8f8f8" data-label="Blanco"    style="background:#f8f8f8;border:1px solid #ccc;" title="Blanco"></button>
+                                <button type="button" class="shirt-color-btn"            data-color="#9e9e9e" data-label="Gris"      style="background:#9e9e9e;"                   title="Gris"></button>
+                                <button type="button" class="shirt-color-btn"            data-color="#6d2030" data-label="Vino"      style="background:#6d2030;"                   title="Vino"></button>
+                                <button type="button" class="shirt-color-btn"            data-color="#1c2b4a" data-label="Marino"    style="background:#1c2b4a;"                   title="Azul marino"></button>
+                                <button type="button" class="shirt-color-btn"            data-color="#2e4a35" data-label="Verde"     style="background:#2e4a35;"                   title="Verde"></button>
+                                <button type="button" class="shirt-color-btn"            data-color="#c9b99a" data-label="Latte"     style="background:#c9b99a;"                   title="Latte"></button>
                             </div>
                         </div>
 
@@ -533,6 +520,23 @@
                             <input type="range" min="5" max="100" value="100" id="opacityRange">
                         </div>
 
+                        <!-- Alineación (NEW) -->
+                        <div class="design-creator__tool-group">
+                            <div class="design-creator__tool-head">
+                                <strong>Alineación</strong>
+                                <span>Respecto al lienzo</span>
+                            </div>
+                            <div class="design-creator__align-grid">
+                                <button type="button" class="align-btn" data-align="left"    title="Alinear a la izquierda">⬅ Izq</button>
+                                <button type="button" class="align-btn" data-align="centerH" title="Centrar horizontalmente">↔ Ctr</button>
+                                <button type="button" class="align-btn" data-align="right"   title="Alinear a la derecha">Der ➡</button>
+                                <button type="button" class="align-btn" data-align="top"     title="Alinear arriba">⬆ Arr</button>
+                                <button type="button" class="align-btn" data-align="centerV" title="Centrar verticalmente">↕ Med</button>
+                                <button type="button" class="align-btn" data-align="bottom"  title="Alinear abajo">Aba ⬇</button>
+                            </div>
+                        </div>
+
+                        <!-- Escala / Rotación -->
                         <div class="design-creator__tool-grid">
                             <div class="design-creator__tool-group">
                                 <div class="design-creator__tool-head">
@@ -541,7 +545,6 @@
                                 </div>
                                 <input type="range" min="20" max="260" value="100" id="scaleRange">
                             </div>
-
                             <div class="design-creator__tool-group">
                                 <div class="design-creator__tool-head">
                                     <strong>Rotación</strong>
@@ -551,6 +554,7 @@
                             </div>
                         </div>
 
+                        <!-- Posición / Transformar -->
                         <div class="design-creator__tool-grid">
                             <div class="design-creator__tool-group">
                                 <div class="design-creator__tool-head">
@@ -562,7 +566,6 @@
                                     <button type="button" class="btn site-btn site-btn--ghost" id="fitButton">Ajustar</button>
                                 </div>
                             </div>
-
                             <div class="design-creator__tool-group">
                                 <div class="design-creator__tool-head">
                                     <strong>Transformar</strong>
@@ -572,6 +575,29 @@
                                     <button type="button" class="btn site-btn site-btn--ghost" id="flipXButton">Flip X</button>
                                     <button type="button" class="btn site-btn site-btn--ghost" id="flipYButton">Flip Y</button>
                                 </div>
+                            </div>
+                        </div>
+
+                        <!-- Formas básicas (NEW) -->
+                        <div class="design-creator__tool-group">
+                            <div class="design-creator__tool-head">
+                                <strong>Formas</strong>
+                                <span>Agregar al lienzo</span>
+                            </div>
+                            <div class="design-creator__tool-grid">
+                                <div class="design-creator__group">
+                                    <label for="shapeFillInput">Relleno</label>
+                                    <input type="color" id="shapeFillInput" value="#d6c3a1" class="shipping-form__control" style="height:2.3rem;padding:0.1rem 0.15rem;">
+                                </div>
+                                <div class="design-creator__group">
+                                    <label for="shapeBorderInput">Borde</label>
+                                    <input type="color" id="shapeBorderInput" value="#111111" class="shipping-form__control" style="height:2.3rem;padding:0.1rem 0.15rem;">
+                                </div>
+                            </div>
+                            <div class="shapes-grid">
+                                <button type="button" class="btn site-btn site-btn--ghost" data-shape="rect"     id="addRectButton">▭ Rect</button>
+                                <button type="button" class="btn site-btn site-btn--ghost" data-shape="circle"   id="addCircleButton">○ Círculo</button>
+                                <button type="button" class="btn site-btn site-btn--ghost" data-shape="triangle" id="addTriangleButton">△ Triángulo</button>
                             </div>
                         </div>
 
@@ -605,7 +631,7 @@
                             <div class="design-creator__tool-grid">
                                 <div class="design-creator__group">
                                     <label for="textColorInput">Color</label>
-                                    <input type="color" id="textColorInput" value="#111111" class="shipping-form__control">
+                                    <input type="color" id="textColorInput" value="#111111" class="shipping-form__control" style="height:2.3rem;padding:0.1rem 0.15rem;">
                                 </div>
                                 <div class="design-creator__group">
                                     <label>Estilo</label>
@@ -621,6 +647,47 @@
                             </div>
                         </div>
 
+                        <!-- Efectos: sombra + contorno (NEW) -->
+                        <div class="design-creator__tool-group">
+                            <div class="design-creator__tool-head">
+                                <strong>Efectos</strong>
+                                <span>Objeto seleccionado</span>
+                            </div>
+
+                            <!-- Sombra -->
+                            <div class="design-creator__group">
+                                <label>Sombra</label>
+                                <div class="effect-row">
+                                    <button type="button" class="format-btn" id="shadowToggle">Off</button>
+                                    <input type="color" id="shadowColorInput" value="#000000" title="Color de sombra">
+                                    <div class="effect-slider-wrap">
+                                        <span>desenfoque</span>
+                                        <input type="range" min="0" max="50" value="12" id="shadowBlurRange">
+                                        <span id="shadowBlurVal">12</span>
+                                    </div>
+                                    <div class="effect-slider-wrap">
+                                        <span>offset</span>
+                                        <input type="range" min="0" max="30" value="4" id="shadowOffsetRange">
+                                        <span id="shadowOffsetVal">4</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Contorno -->
+                            <div class="design-creator__group">
+                                <label>Contorno</label>
+                                <div class="effect-row">
+                                    <button type="button" class="format-btn" id="strokeToggle">Off</button>
+                                    <input type="color" id="strokeColorInput" value="#ffffff" title="Color de contorno">
+                                    <div class="effect-slider-wrap">
+                                        <span>grosor</span>
+                                        <input type="range" min="1" max="24" value="3" id="strokeWidthRange">
+                                        <span id="strokeWidthVal">3</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Capas -->
                         <div class="design-creator__tool-group">
                             <div class="design-creator__tool-head">
@@ -631,10 +698,10 @@
                                 <div class="layer-empty">Sin capas</div>
                             </div>
                             <div class="design-creator__layers-actions">
-                                <button type="button" class="btn site-btn site-btn--ghost" id="layerUpButton" disabled title="Subir capa">↑ Subir</button>
-                                <button type="button" class="btn site-btn site-btn--ghost" id="layerDownButton" disabled title="Bajar capa">↓ Bajar</button>
+                                <button type="button" class="btn site-btn site-btn--ghost" id="layerUpButton"   disabled>↑ Subir</button>
+                                <button type="button" class="btn site-btn site-btn--ghost" id="layerDownButton" disabled>↓ Bajar</button>
                                 <button type="button" class="btn site-btn site-btn--ghost" id="duplicateButton" disabled>Duplicar</button>
-                                <button type="button" class="btn site-btn site-btn--ghost" id="lockButton" disabled>Bloquear</button>
+                                <button type="button" class="btn site-btn site-btn--ghost" id="lockButton"      disabled>Bloquear</button>
                             </div>
                         </div>
 
@@ -650,19 +717,21 @@
                             </div>
                         </div>
 
+                        <!-- Acciones globales -->
                         <div class="design-creator__actions">
                             <button type="button" class="btn site-btn site-btn--ghost" id="resetButton">Resetear</button>
                             <button type="button" class="btn site-btn site-btn--ghost" id="removeButton">Quitar imagen</button>
                             <button type="submit" class="btn site-btn site-btn--accent">Guardar diseño</button>
                         </div>
 
+                        <!-- Handoff a playera -->
                         <div class="design-creator__handoff">
                             <div class="design-creator__group">
                                 <label for="productSelect">Mandar a playera</label>
                                 <select id="productSelect" class="shipping-form__control">
                                     <option value="">Solo guardar diseño</option>
                                     {% for producto in customizable_products %}
-                                        <option value="{{ producto.id }}"{% if selected_product_id == producto.id|stringformat:"s" %} selected{% endif %}>{{ producto.nombre }} - ${{ producto.precio }}</option>
+                                        <option value="{{ producto.id }}"{% if selected_product_id == producto.id|stringformat:"s" %} selected{% endif %}>{{ producto.nombre }} — ${{ producto.precio }}</option>
                                     {% endfor %}
                                 </select>
                             </div>
@@ -672,51 +741,52 @@
                 </form>
             </div>
 
+            <!-- ── Right: preview ── -->
             <div class="design-creator__preview">
-                    <div class="design-creator__panel">
-                        <p class="design-creator__eyebrow">Preview</p>
-                        <div class="design-canvas" id="designCanvas">
-                            <div class="design-canvas__shirt" id="shirtBg"></div>
-                            <div class="design-canvas__print-area" id="printArea">
-                                <div class="design-canvas__empty" id="emptyState">Sube un diseño o abre uno guardado para empezar a editar.</div>
-                                <canvas id="designFabricCanvas" class="design-canvas__surface" width="720" height="720"></canvas>
-                            </div>
-                        </div>
-                        <div class="design-creator__hud">
-                            <div class="design-creator__stat">
-                                <small>Estado</small>
-                                <strong id="hudStatus">Sin diseño</strong>
-                            </div>
-                            <div class="design-creator__stat">
-                                <small>Tamaño</small>
-                                <strong id="hudScale">100%</strong>
-                            </div>
-                            <div class="design-creator__stat">
-                                <small>Rotación</small>
-                                <strong id="hudRotate">0°</strong>
-                            </div>
-                            <div class="design-creator__stat">
-                                <small>Capas</small>
-                                <strong id="hudLayers">0</strong>
-                            </div>
+                <div class="design-creator__panel">
+                    <p class="design-creator__eyebrow">Preview</p>
+                    <div class="design-canvas" id="designCanvas">
+                        <div class="design-canvas__shirt" id="shirtBg"></div>
+                        <div class="design-canvas__print-area" id="printArea">
+                            <div class="design-canvas__empty" id="emptyState">Sube un diseño, agrega texto o una forma para empezar.</div>
+                            <canvas id="designFabricCanvas" class="design-canvas__surface" width="720" height="720"></canvas>
                         </div>
                     </div>
+                    <div class="design-creator__hud">
+                        <div class="design-creator__stat">
+                            <small>Estado</small>
+                            <strong id="hudStatus">Sin diseño</strong>
+                        </div>
+                        <div class="design-creator__stat">
+                            <small>Tamaño</small>
+                            <strong id="hudScale">100%</strong>
+                        </div>
+                        <div class="design-creator__stat">
+                            <small>Rotación</small>
+                            <strong id="hudRotate">0°</strong>
+                        </div>
+                        <div class="design-creator__stat">
+                            <small>Capas</small>
+                            <strong id="hudLayers">0</strong>
+                        </div>
+                    </div>
+                </div>
 
                 {% if saved_designs %}
                 <div class="design-creator__panel">
                     <p class="design-creator__eyebrow">Guardados</p>
-                    <div class="design-creator__saved" id="savedDesignsGrid">
+                    <div class="design-creator__saved">
                         {% for design_name in saved_designs %}
-                            <div class="design-creator__saved-item{% if selected_design_url and selected_design_url|urlencode == design_name|urlencode %} is-active{% endif %}">
-                                <a href="{% url 'tienda:design_creator' %}?file={{ design_name|urlencode }}" style="display:contents;">
-                                    <img src="{{ MEDIA_URL }}diseños_propios/{{ design_name|urlencode }}" alt="{{ design_name }}">
-                                    <span>{{ design_name }}</span>
-                                </a>
-                                <form method="post" action="{% url 'tienda:delete_design' design_name %}" class="design-delete-form" style="display:contents;">
-                                    {% csrf_token %}
-                                    <button type="submit" class="design-creator__saved-delete" title="Eliminar diseño" aria-label="Eliminar {{ design_name }}">✕</button>
-                                </form>
-                            </div>
+                        <div class="design-creator__saved-item{% if selected_design_url and selected_design_url|urlencode == design_name|urlencode %} is-active{% endif %}">
+                            <a href="{% url 'tienda:design_creator' %}?file={{ design_name|urlencode }}" style="display:contents;">
+                                <img src="{{ MEDIA_URL }}diseños_propios/{{ design_name|urlencode }}" alt="{{ design_name }}">
+                                <span>{{ design_name }}</span>
+                            </a>
+                            <form method="post" action="{% url 'tienda:delete_design' design_name %}" class="design-delete-form" style="display:contents;">
+                                {% csrf_token %}
+                                <button type="submit" class="design-creator__saved-delete" title="Eliminar diseño" aria-label="Eliminar {{ design_name }}">✕</button>
+                            </form>
+                        </div>
                         {% endfor %}
                     </div>
                 </div>
@@ -725,14 +795,14 @@
                 {% if selected_design_url and customizable_products %}
                 <div class="design-creator__panel">
                     <p class="design-creator__eyebrow">Compra</p>
-                    <h3 class="design-creator__title" style="font-size: clamp(1.6rem, 3vw, 2.2rem);">Mándalo a una playera</h3>
-                    <p class="design-creator__copy">Si este diseño ya está listo, puedes abrir una playera y seguir directo con talla, color y compra.</p>
+                    <h3 class="design-creator__title" style="font-size:clamp(1.6rem,3vw,2.2rem);">Mándalo a una playera</h3>
+                    <p class="design-creator__copy">Si este diseño ya está listo, abre una playera y sigue directo con talla, color y compra.</p>
                     <div class="design-creator__handoff">
                         <div class="design-creator__group">
                             <label for="quickProductSelect">Elige la playera</label>
                             <select id="quickProductSelect" class="shipping-form__control">
                                 {% for producto in customizable_products %}
-                                    <option value="{{ producto.id }}">{{ producto.nombre }} - ${{ producto.precio }}</option>
+                                    <option value="{{ producto.id }}">{{ producto.nombre }} — ${{ producto.precio }}</option>
                                 {% endfor %}
                             </select>
                         </div>
@@ -748,55 +818,64 @@
 <script src="https://cdn.jsdelivr.net/npm/fabric@latest/dist/index.min.js"></script>
 <script>
 (() => {
-    if (!window.fabric) {
-        console.error("Fabric.js no cargó correctamente.");
-        return;
-    }
+    if (!window.fabric) { console.error("Fabric.js no cargó."); return; }
 
-    // ── DOM refs ──────────────────────────────────────────────────────────────
+    // ── DOM ───────────────────────────────────────────────────────────────────
 
-    const form = document.getElementById("design-creator-form");
-    const fileInput = document.getElementById("{{ form.image.id_for_label }}");
-    const hiddenEditedImage = document.getElementById("id_edited_image");
-    const emptyState = document.getElementById("emptyState");
-    const scaleRange = document.getElementById("scaleRange");
-    const rotateRange = document.getElementById("rotateRange");
-    const opacityRange = document.getElementById("opacityRange");
-    const opacityValue = document.getElementById("opacityValue");
-    const scaleValue = document.getElementById("scaleValue");
-    const rotateValue = document.getElementById("rotateValue");
-    const centerButton = document.getElementById("centerButton");
-    const fitButton = document.getElementById("fitButton");
-    const flipXButton = document.getElementById("flipXButton");
-    const flipYButton = document.getElementById("flipYButton");
-    const removeButton = document.getElementById("removeButton");
-    const addTextButton = document.getElementById("addTextButton");
-    const removeSelectedButton = document.getElementById("removeSelectedButton");
-    const textInput = document.getElementById("textInput");
-    const textFontSelect = document.getElementById("textFontSelect");
-    const textSizeRange = document.getElementById("textSizeRange");
-    const textColorInput = document.getElementById("textColorInput");
-    const boldButton = document.getElementById("boldButton");
-    const italicButton = document.getElementById("italicButton");
-    const resetButton = document.getElementById("resetButton");
-    const undoButton = document.getElementById("undoButton");
-    const redoButton = document.getElementById("redoButton");
-    const historyLabel = document.getElementById("historyLabel");
-    const hudStatus = document.getElementById("hudStatus");
-    const hudScale = document.getElementById("hudScale");
-    const hudRotate = document.getElementById("hudRotate");
-    const hudLayers = document.getElementById("hudLayers");
-    const shirtBg = document.getElementById("shirtBg");
-    const layersList = document.getElementById("layersList");
-    const layersCount = document.getElementById("layersCount");
-    const layerUpButton = document.getElementById("layerUpButton");
-    const layerDownButton = document.getElementById("layerDownButton");
-    const duplicateButton = document.getElementById("duplicateButton");
-    const lockButton = document.getElementById("lockButton");
-    const selectedDesignUrl = "{% if selected_design_url %}{{ selected_design_url|escapejs }}{% endif %}";
-    const productSelect = document.getElementById("productSelect");
-    const productIdInput = document.getElementById("productIdInput");
-    const quickProductSelect = document.getElementById("quickProductSelect");
+    const form                = document.getElementById("design-creator-form");
+    const fileInput           = document.getElementById("{{ form.image.id_for_label }}");
+    const hiddenEditedImage   = document.getElementById("id_edited_image");
+    const emptyState          = document.getElementById("emptyState");
+    const scaleRange          = document.getElementById("scaleRange");
+    const rotateRange         = document.getElementById("rotateRange");
+    const opacityRange        = document.getElementById("opacityRange");
+    const opacityValue        = document.getElementById("opacityValue");
+    const scaleValue          = document.getElementById("scaleValue");
+    const rotateValue         = document.getElementById("rotateValue");
+    const centerButton        = document.getElementById("centerButton");
+    const fitButton           = document.getElementById("fitButton");
+    const flipXButton         = document.getElementById("flipXButton");
+    const flipYButton         = document.getElementById("flipYButton");
+    const removeButton        = document.getElementById("removeButton");
+    const addTextButton       = document.getElementById("addTextButton");
+    const removeSelectedButton= document.getElementById("removeSelectedButton");
+    const textInput           = document.getElementById("textInput");
+    const textFontSelect      = document.getElementById("textFontSelect");
+    const textSizeRange       = document.getElementById("textSizeRange");
+    const textColorInput      = document.getElementById("textColorInput");
+    const boldButton          = document.getElementById("boldButton");
+    const italicButton        = document.getElementById("italicButton");
+    const shapeFillInput      = document.getElementById("shapeFillInput");
+    const shapeBorderInput    = document.getElementById("shapeBorderInput");
+    const shadowToggle        = document.getElementById("shadowToggle");
+    const shadowColorInput    = document.getElementById("shadowColorInput");
+    const shadowBlurRange     = document.getElementById("shadowBlurRange");
+    const shadowBlurVal       = document.getElementById("shadowBlurVal");
+    const shadowOffsetRange   = document.getElementById("shadowOffsetRange");
+    const shadowOffsetVal     = document.getElementById("shadowOffsetVal");
+    const strokeToggle        = document.getElementById("strokeToggle");
+    const strokeColorInput    = document.getElementById("strokeColorInput");
+    const strokeWidthRange    = document.getElementById("strokeWidthRange");
+    const strokeWidthVal      = document.getElementById("strokeWidthVal");
+    const resetButton         = document.getElementById("resetButton");
+    const undoButton          = document.getElementById("undoButton");
+    const redoButton          = document.getElementById("redoButton");
+    const historyLabel        = document.getElementById("historyLabel");
+    const hudStatus           = document.getElementById("hudStatus");
+    const hudScale            = document.getElementById("hudScale");
+    const hudRotate           = document.getElementById("hudRotate");
+    const hudLayers           = document.getElementById("hudLayers");
+    const shirtBg             = document.getElementById("shirtBg");
+    const layersList          = document.getElementById("layersList");
+    const layersCount         = document.getElementById("layersCount");
+    const layerUpButton       = document.getElementById("layerUpButton");
+    const layerDownButton     = document.getElementById("layerDownButton");
+    const duplicateButton     = document.getElementById("duplicateButton");
+    const lockButton          = document.getElementById("lockButton");
+    const selectedDesignUrl   = "{% if selected_design_url %}{{ selected_design_url|escapejs }}{% endif %}";
+    const productSelect       = document.getElementById("productSelect");
+    const productIdInput      = document.getElementById("productIdInput");
+    const quickProductSelect  = document.getElementById("quickProductSelect");
     const quickGoToProductButton = document.getElementById("quickGoToProductButton");
 
     const canvasElement = document.getElementById("designFabricCanvas");
@@ -810,7 +889,6 @@
     const state = {
         artwork: null,
         submitting: false,
-        shirtColor: "#f1ede6",
         history: [],
         historyIndex: -1,
         pauseHistory: false,
@@ -818,37 +896,34 @@
 
     const MAX_HISTORY = 40;
 
-    // ── History ──────────────────────────────────────────────────────────────
+    const LAYER_ICONS = { textbox: "T", image: "⬛", rect: "▭", circle: "○", triangle: "△" };
+
+    // ── History ───────────────────────────────────────────────────────────────
 
     function pushHistory() {
         if (state.pauseHistory) return;
-        const snapshot = JSON.stringify(fabricCanvas.toJSON());
+        const snap = JSON.stringify(fabricCanvas.toJSON());
         state.history = state.history.slice(0, state.historyIndex + 1);
-        state.history.push(snapshot);
-        if (state.history.length > MAX_HISTORY) {
-            state.history.shift();
-        } else {
-            state.historyIndex++;
-        }
+        state.history.push(snap);
+        if (state.history.length > MAX_HISTORY) state.history.shift();
+        else state.historyIndex++;
         updateHistoryUI();
     }
 
     function updateHistoryUI() {
-        const total = state.history.length;
-        const current = Math.max(0, state.historyIndex + 1);
-        historyLabel.textContent = `${current} / ${total}`;
+        historyLabel.textContent = `${Math.max(0, state.historyIndex + 1)} / ${state.history.length}`;
         undoButton.disabled = state.historyIndex <= 0;
         redoButton.disabled = state.historyIndex >= state.history.length - 1;
     }
 
-    function restoreSnapshot(snapshot) {
+    function restoreSnapshot(snap) {
         state.pauseHistory = true;
-        fabricCanvas.loadFromJSON(snapshot, () => {
+        fabricCanvas.loadFromJSON(snap, () => {
             state.artwork = fabricCanvas.getObjects().find(o => o.type === "image") || null;
             fabricCanvas.requestRenderAll();
             syncEmptyState();
             renderLayersList();
-            updateControlsFromArtwork();
+            updateControlsFromObject();
             state.pauseHistory = false;
         });
     }
@@ -867,163 +942,158 @@
         updateHistoryUI();
     });
 
-    // ── Layers panel ──────────────────────────────────────────────────────────
+    // ── Alignment (NEW) ───────────────────────────────────────────────────────
 
-    function getLayerLabel(obj, objects) {
-        if (obj.type === "textbox") {
-            const text = (obj.text || "").substring(0, 22);
-            return text || "Texto";
+    function alignObject(type) {
+        const obj = fabricCanvas.getActiveObject();
+        if (!obj) return;
+        const bounds = obj.getBoundingRect(true);
+        const cw = fabricCanvas.getWidth();
+        const ch = fabricCanvas.getHeight();
+
+        switch (type) {
+            case "left":    obj.set({ left: obj.left - bounds.left }); break;
+            case "centerH": obj.set({ left: obj.left + cw / 2 - (bounds.left + bounds.width / 2) }); break;
+            case "right":   obj.set({ left: obj.left + cw - (bounds.left + bounds.width) }); break;
+            case "top":     obj.set({ top: obj.top - bounds.top }); break;
+            case "centerV": obj.set({ top: obj.top + ch / 2 - (bounds.top + bounds.height / 2) }); break;
+            case "bottom":  obj.set({ top: obj.top + ch - (bounds.top + bounds.height) }); break;
         }
-        const imageObjects = objects.filter(o => o.type === "image");
-        const idx = imageObjects.indexOf(obj);
-        return "Imagen" + (imageObjects.length > 1 ? ` ${idx + 1}` : "");
+        obj.setCoords();
+        fabricCanvas.requestRenderAll();
+        pushHistory();
     }
 
-    function renderLayersList() {
-        const objects = fabricCanvas.getObjects();
-        const activeObject = fabricCanvas.getActiveObject();
-        layersCount.textContent = String(objects.length);
-        hudLayers.textContent = String(objects.length);
-
-        if (objects.length === 0) {
-            layersList.innerHTML = '<div class="layer-empty">Sin capas</div>';
-            layerUpButton.disabled = true;
-            layerDownButton.disabled = true;
-            duplicateButton.disabled = true;
-            lockButton.disabled = true;
-            lockButton.textContent = "Bloquear";
-            return;
-        }
-
-        layersList.innerHTML = "";
-
-        // Render top layer first (highest index = top of stack)
-        [...objects].reverse().forEach((obj) => {
-            const isSelected = obj === activeObject;
-            const isLocked = Boolean(obj.lockMovementX);
-
-            const row = document.createElement("div");
-            row.className = "layer-row" +
-                (isSelected ? " is-selected" : "") +
-                (isLocked ? " is-locked" : "");
-
-            const icon = document.createElement("span");
-            icon.className = "layer-icon";
-            icon.textContent = obj.type === "textbox" ? "T" : "⬛";
-
-            const name = document.createElement("span");
-            name.className = "layer-name";
-            name.textContent = getLayerLabel(obj, objects);
-
-            const vis = document.createElement("span");
-            vis.className = "layer-vis";
-            vis.textContent = isLocked ? "🔒" : "";
-
-            row.appendChild(icon);
-            row.appendChild(name);
-            row.appendChild(vis);
-
-            row.addEventListener("click", () => {
-                fabricCanvas.setActiveObject(obj);
-                fabricCanvas.requestRenderAll();
-                updateControlsFromArtwork();
-                renderLayersList();
-            });
-
-            layersList.appendChild(row);
-        });
-
-        // Update action buttons based on selected layer
-        const hasActive = Boolean(activeObject);
-        const idx = activeObject ? objects.indexOf(activeObject) : -1;
-        layerUpButton.disabled = !hasActive || idx >= objects.length - 1;
-        layerDownButton.disabled = !hasActive || idx <= 0;
-        duplicateButton.disabled = !hasActive;
-        lockButton.disabled = !hasActive;
-        lockButton.textContent = (activeObject?.lockMovementX) ? "Desbloquear" : "Bloquear";
-    }
-
-    layerUpButton?.addEventListener("click", () => {
-        const obj = fabricCanvas.getActiveObject();
-        if (!obj) return;
-        // bringForward is v5; bringObjectForward is v6 — try both
-        if (typeof fabricCanvas.bringObjectForward === "function") {
-            fabricCanvas.bringObjectForward(obj);
-        } else {
-            fabricCanvas.bringForward(obj);
-        }
-        fabricCanvas.requestRenderAll();
-        renderLayersList();
-        pushHistory();
+    document.querySelectorAll(".align-btn").forEach(btn => {
+        btn.addEventListener("click", () => alignObject(btn.dataset.align));
     });
 
-    layerDownButton?.addEventListener("click", () => {
-        const obj = fabricCanvas.getActiveObject();
-        if (!obj) return;
-        if (typeof fabricCanvas.sendObjectBackwards === "function") {
-            fabricCanvas.sendObjectBackwards(obj);
-        } else {
-            fabricCanvas.sendBackwards(obj);
-        }
-        fabricCanvas.requestRenderAll();
-        renderLayersList();
-        pushHistory();
-    });
+    // ── Shapes (NEW) ──────────────────────────────────────────────────────────
 
-    duplicateButton?.addEventListener("click", () => {
-        const obj = fabricCanvas.getActiveObject();
-        if (!obj) return;
-
-        const cloneCallback = (cloned) => {
-            cloned.set({
-                left: (cloned.left || 0) + 22,
-                top: (cloned.top || 0) + 22,
-            });
-            fabricCanvas.add(cloned);
-            fabricCanvas.setActiveObject(cloned);
-            fabricCanvas.requestRenderAll();
-            syncEmptyState();
-            renderLayersList();
-            updateControlsFromArtwork();
-            pushHistory();
+    function shapeDefaults() {
+        return {
+            left: fabricCanvas.getWidth() / 2,
+            top: fabricCanvas.getHeight() / 2,
+            originX: "center",
+            originY: "center",
+            fill: shapeFillInput.value,
+            stroke: shapeBorderInput.value,
+            strokeWidth: 0,
+            cornerStyle: "circle",
+            transparentCorners: false,
+            cornerColor: "#d6c3a1",
+            borderColor: "#d6c3a1",
+            padding: 8,
         };
+    }
 
-        // clone() returns a Promise in Fabric v6, callback in v5
-        const result = obj.clone();
-        if (result && typeof result.then === "function") {
-            result.then(cloneCallback);
-        } else {
-            obj.clone(cloneCallback);
+    function addShape(type) {
+        let obj;
+        if (type === "rect") {
+            obj = new fabric.Rect({ ...shapeDefaults(), width: 220, height: 160 });
+        } else if (type === "circle") {
+            obj = new fabric.Circle({ ...shapeDefaults(), radius: 110 });
+        } else if (type === "triangle") {
+            obj = new fabric.Triangle({ ...shapeDefaults(), width: 220, height: 190 });
         }
+        if (!obj) return;
+        fabricCanvas.add(obj);
+        fabricCanvas.setActiveObject(obj);
+        fabricCanvas.requestRenderAll();
+        syncEmptyState();
+        renderLayersList();
+        updateControlsFromObject();
+        pushHistory();
+    }
+
+    document.querySelectorAll("[data-shape]").forEach(btn => {
+        btn.addEventListener("click", () => addShape(btn.dataset.shape));
     });
 
-    lockButton?.addEventListener("click", () => {
+    // Sync fill/stroke color pickers to selected shape
+    shapeFillInput?.addEventListener("input", () => {
+        const obj = fabricCanvas.getActiveObject();
+        if (obj) { obj.set("fill", shapeFillInput.value); fabricCanvas.requestRenderAll(); }
+    });
+
+    shapeBorderInput?.addEventListener("input", () => {
+        const obj = fabricCanvas.getActiveObject();
+        if (obj && obj.strokeWidth > 0) { obj.set("stroke", shapeBorderInput.value); fabricCanvas.requestRenderAll(); }
+    });
+
+    // ── Effects: shadow + stroke (NEW) ────────────────────────────────────────
+
+    function applyShadow() {
         const obj = fabricCanvas.getActiveObject();
         if (!obj) return;
-        const nowLocked = !obj.lockMovementX;
-        obj.set({
-            lockMovementX: nowLocked,
-            lockMovementY: nowLocked,
-            lockScalingX: nowLocked,
-            lockScalingY: nowLocked,
-            lockRotation: nowLocked,
-            hasControls: !nowLocked,
-            selectable: true,
-        });
+        if (shadowToggle.classList.contains("is-active")) {
+            const offset = Number(shadowOffsetRange.value);
+            obj.set("shadow", new fabric.Shadow({
+                color: shadowColorInput.value,
+                blur: Number(shadowBlurRange.value),
+                offsetX: offset,
+                offsetY: offset,
+            }));
+        } else {
+            obj.set("shadow", null);
+        }
         fabricCanvas.requestRenderAll();
-        renderLayersList();
+    }
+
+    function applyStroke() {
+        const obj = fabricCanvas.getActiveObject();
+        if (!obj) return;
+        if (strokeToggle.classList.contains("is-active")) {
+            obj.set({
+                stroke: strokeColorInput.value,
+                strokeWidth: Number(strokeWidthRange.value),
+                paintFirst: "stroke",
+            });
+        } else {
+            obj.set({ strokeWidth: 0 });
+        }
+        fabricCanvas.requestRenderAll();
+    }
+
+    shadowToggle?.addEventListener("click", () => {
+        shadowToggle.classList.toggle("is-active");
+        shadowToggle.textContent = shadowToggle.classList.contains("is-active") ? "On" : "Off";
+        applyShadow();
         pushHistory();
+    });
+
+    shadowColorInput?.addEventListener("input", () => { if (shadowToggle.classList.contains("is-active")) applyShadow(); });
+
+    shadowBlurRange?.addEventListener("input", () => {
+        shadowBlurVal.textContent = shadowBlurRange.value;
+        if (shadowToggle.classList.contains("is-active")) applyShadow();
+    });
+
+    shadowOffsetRange?.addEventListener("input", () => {
+        shadowOffsetVal.textContent = shadowOffsetRange.value;
+        if (shadowToggle.classList.contains("is-active")) applyShadow();
+    });
+
+    strokeToggle?.addEventListener("click", () => {
+        strokeToggle.classList.toggle("is-active");
+        strokeToggle.textContent = strokeToggle.classList.contains("is-active") ? "On" : "Off";
+        applyStroke();
+        pushHistory();
+    });
+
+    strokeColorInput?.addEventListener("input", () => { if (strokeToggle.classList.contains("is-active")) applyStroke(); });
+
+    strokeWidthRange?.addEventListener("input", () => {
+        strokeWidthVal.textContent = strokeWidthRange.value;
+        if (strokeToggle.classList.contains("is-active")) applyStroke();
     });
 
     // ── Shirt color ───────────────────────────────────────────────────────────
 
     document.querySelectorAll(".shirt-color-btn").forEach(btn => {
         btn.addEventListener("click", () => {
-            const color = btn.dataset.color;
-            const label = btn.dataset.label;
-            state.shirtColor = color;
-            shirtBg.style.setProperty("--shirt-color", color);
-            document.getElementById("shirtColorLabel").textContent = label;
+            shirtBg.style.setProperty("--shirt-color", btn.dataset.color);
+            document.getElementById("shirtColorLabel").textContent = btn.dataset.label;
             document.querySelectorAll(".shirt-color-btn").forEach(b => b.classList.remove("is-active"));
             btn.classList.add("is-active");
         });
@@ -1032,122 +1102,119 @@
     // ── Canvas state ──────────────────────────────────────────────────────────
 
     function syncEmptyState() {
-        const hasContent = fabricCanvas.getObjects().length > 0;
-        emptyState.hidden = hasContent;
-        hudStatus.textContent = hasContent ? "Listo" : "Sin diseño";
+        const has = fabricCanvas.getObjects().length > 0;
+        emptyState.hidden = has;
+        hudStatus.textContent = has ? "Listo" : "Sin diseño";
         hudLayers.textContent = String(fabricCanvas.getObjects().length);
     }
 
-    function updateFormatButtons(obj) {
-        if (!obj || obj.type !== "textbox") {
-            boldButton.classList.remove("is-active");
-            italicButton.classList.remove("is-active");
+    function syncEffectControls(obj) {
+        if (!obj) {
+            shadowToggle.classList.remove("is-active"); shadowToggle.textContent = "Off";
+            strokeToggle.classList.remove("is-active"); strokeToggle.textContent = "Off";
             return;
         }
-        boldButton.classList.toggle("is-active", obj.fontWeight === "bold" || obj.fontWeight === 700);
-        italicButton.classList.toggle("is-active", obj.fontStyle === "italic");
+        // Shadow
+        const sh = obj.shadow;
+        const hasShadow = sh && (sh.blur > 0 || sh.offsetX !== 0);
+        shadowToggle.classList.toggle("is-active", Boolean(hasShadow));
+        shadowToggle.textContent = hasShadow ? "On" : "Off";
+        if (hasShadow) {
+            shadowColorInput.value = sh.color || "#000000";
+            shadowBlurRange.value = String(sh.blur || 0);
+            shadowBlurVal.textContent = String(sh.blur || 0);
+            shadowOffsetRange.value = String(sh.offsetX || 0);
+            shadowOffsetVal.textContent = String(sh.offsetX || 0);
+        }
+        // Stroke
+        const hasStroke = (obj.strokeWidth || 0) > 0;
+        strokeToggle.classList.toggle("is-active", hasStroke);
+        strokeToggle.textContent = hasStroke ? "On" : "Off";
+        if (hasStroke) {
+            strokeColorInput.value = obj.stroke || "#ffffff";
+            strokeWidthRange.value = String(obj.strokeWidth);
+            strokeWidthVal.textContent = String(obj.strokeWidth);
+        }
     }
 
-    function updateControlsFromArtwork() {
-        const activeObject = fabricCanvas.getActiveObject();
+    function updateControlsFromObject() {
+        const obj = fabricCanvas.getActiveObject();
 
-        if (activeObject) {
-            const opacity = Math.round((activeObject.opacity ?? 1) * 100);
-            opacityRange.value = String(opacity);
-            opacityValue.textContent = `${opacity}%`;
-        } else {
-            opacityRange.value = "100";
-            opacityValue.textContent = "100%";
-        }
+        opacityRange.value = String(Math.round((obj?.opacity ?? 1) * 100));
+        opacityValue.textContent = `${opacityRange.value}%`;
 
-        if (!activeObject) {
-            scaleRange.value = "100";
-            rotateRange.value = "0";
-            scaleValue.textContent = "100%";
-            rotateValue.textContent = "0°";
-            hudScale.textContent = "100%";
-            hudRotate.textContent = "0°";
-            updateFormatButtons(null);
+        if (!obj) {
+            scaleRange.value = "100"; rotateRange.value = "0";
+            scaleValue.textContent = "100%"; rotateValue.textContent = "0°";
+            hudScale.textContent = "100%"; hudRotate.textContent = "0°";
+            boldButton.classList.remove("is-active"); italicButton.classList.remove("is-active");
+            syncEffectControls(null);
             return;
         }
 
-        const scale = Math.round((activeObject.scaleX || 1) * 100);
-        const rotation = Math.round(activeObject.angle || 0);
-        scaleRange.value = String(scale);
-        rotateRange.value = String(rotation);
-        scaleValue.textContent = `${scale}%`;
-        rotateValue.textContent = `${rotation}°`;
-        hudScale.textContent = `${scale}%`;
-        hudRotate.textContent = `${rotation}°`;
+        const scale = Math.round((obj.scaleX || 1) * 100);
+        const rot   = Math.round(obj.angle || 0);
+        scaleRange.value = String(scale); rotateRange.value = String(rot);
+        scaleValue.textContent = `${scale}%`; rotateValue.textContent = `${rot}°`;
+        hudScale.textContent = `${scale}%`; hudRotate.textContent = `${rot}°`;
 
-        if (activeObject.type === "textbox") {
-            textInput.value = activeObject.text || "";
-            textFontSelect.value = activeObject.fontFamily || "Arial";
-            textSizeRange.value = String(Math.round(activeObject.fontSize || 56));
-            textColorInput.value = activeObject.fill || "#111111";
+        if (obj.type === "textbox") {
+            textInput.value = obj.text || "";
+            textFontSelect.value = obj.fontFamily || "Arial";
+            textSizeRange.value = String(Math.round(obj.fontSize || 56));
+            textColorInput.value = obj.fill || "#111111";
+            boldButton.classList.toggle("is-active", obj.fontWeight === "bold" || obj.fontWeight === 700);
+            italicButton.classList.toggle("is-active", obj.fontStyle === "italic");
             hudStatus.textContent = "Texto activo";
-            updateFormatButtons(activeObject);
-        } else if (activeObject === state.artwork) {
+        } else if (["rect","circle","triangle"].includes(obj.type)) {
+            shapeFillInput.value = obj.fill || "#d6c3a1";
+            shapeBorderInput.value = obj.stroke || "#111111";
+            boldButton.classList.remove("is-active"); italicButton.classList.remove("is-active");
+            hudStatus.textContent = "Forma activa";
+        } else {
+            boldButton.classList.remove("is-active"); italicButton.classList.remove("is-active");
             hudStatus.textContent = "Imagen activa";
-            updateFormatButtons(null);
         }
+
+        syncEffectControls(obj);
     }
+
+    // ── Artwork helpers ───────────────────────────────────────────────────────
 
     function clampArtworkToArea() {
         if (!state.artwork) return;
-        const bounds = state.artwork.getBoundingRect();
-        let nextLeft = state.artwork.left;
-        let nextTop = state.artwork.top;
-
-        if (bounds.left < 0) nextLeft += Math.abs(bounds.left);
-        if (bounds.top < 0) nextTop += Math.abs(bounds.top);
-        if (bounds.left + bounds.width > fabricCanvas.getWidth()) {
-            nextLeft -= (bounds.left + bounds.width - fabricCanvas.getWidth());
-        }
-        if (bounds.top + bounds.height > fabricCanvas.getHeight()) {
-            nextTop -= (bounds.top + bounds.height - fabricCanvas.getHeight());
-        }
-
-        state.artwork.set({ left: nextLeft, top: nextTop });
+        const b = state.artwork.getBoundingRect();
+        let l = state.artwork.left, t = state.artwork.top;
+        if (b.left < 0) l += Math.abs(b.left);
+        if (b.top  < 0) t += Math.abs(b.top);
+        if (b.left + b.width  > fabricCanvas.getWidth())  l -= (b.left + b.width  - fabricCanvas.getWidth());
+        if (b.top  + b.height > fabricCanvas.getHeight()) t -= (b.top  + b.height - fabricCanvas.getHeight());
+        state.artwork.set({ left: l, top: t });
         state.artwork.setCoords();
     }
 
     function fitArtwork() {
         if (!state.artwork) return;
-        const maxWidth = fabricCanvas.getWidth() * 0.62;
-        const maxHeight = fabricCanvas.getHeight() * 0.62;
-        const widthRatio = maxWidth / state.artwork.width;
-        const heightRatio = maxHeight / state.artwork.height;
-        const scale = Math.min(widthRatio, heightRatio, 1);
-        state.artwork.set({
-            scaleX: scale,
-            scaleY: scale,
-            angle: 0,
-            flipX: false,
-            flipY: false,
-            left: fabricCanvas.getWidth() / 2,
-            top: fabricCanvas.getHeight() / 2,
-            originX: "center",
-            originY: "center",
-        });
+        const maxW = fabricCanvas.getWidth() * 0.62;
+        const maxH = fabricCanvas.getHeight() * 0.62;
+        const s = Math.min(maxW / state.artwork.width, maxH / state.artwork.height, 1);
+        state.artwork.set({ scaleX: s, scaleY: s, angle: 0, flipX: false, flipY: false,
+            left: fabricCanvas.getWidth() / 2, top: fabricCanvas.getHeight() / 2,
+            originX: "center", originY: "center" });
         state.artwork.setCoords();
         fabricCanvas.setActiveObject(state.artwork);
         fabricCanvas.requestRenderAll();
-        updateControlsFromArtwork();
+        updateControlsFromObject();
     }
 
     function centerArtwork() {
         if (!state.artwork) return;
-        state.artwork.set({
-            left: fabricCanvas.getWidth() / 2,
-            top: fabricCanvas.getHeight() / 2,
-            originX: "center",
-            originY: "center",
-        });
+        state.artwork.set({ left: fabricCanvas.getWidth() / 2, top: fabricCanvas.getHeight() / 2,
+            originX: "center", originY: "center" });
         state.artwork.setCoords();
         fabricCanvas.setActiveObject(state.artwork);
         fabricCanvas.requestRenderAll();
-        updateControlsFromArtwork();
+        updateControlsFromObject();
     }
 
     function removeArtwork() {
@@ -1155,137 +1222,235 @@
         fabricCanvas.remove(state.artwork);
         state.artwork = null;
         hiddenEditedImage.value = "";
-        syncEmptyState();
-        renderLayersList();
-        updateControlsFromArtwork();
+        syncEmptyState(); renderLayersList(); updateControlsFromObject();
         fabricCanvas.requestRenderAll();
     }
 
     function loadArtwork(src) {
         if (!src) { removeArtwork(); return; }
-
-        const imageElement = new Image();
-        imageElement.onload = () => {
+        const img = new Image();
+        img.onload = () => {
             fabricCanvas.clear();
-            const artwork = new fabric.Image(imageElement, {
-                originX: "center",
-                originY: "center",
-                left: fabricCanvas.getWidth() / 2,
-                top: fabricCanvas.getHeight() / 2,
-                cornerStyle: "circle",
-                transparentCorners: false,
-                cornerColor: "#d6c3a1",
-                borderColor: "#d6c3a1",
-                padding: 8,
-                lockUniScaling: true,
+            const artwork = new fabric.Image(img, {
+                originX: "center", originY: "center",
+                left: fabricCanvas.getWidth() / 2, top: fabricCanvas.getHeight() / 2,
+                cornerStyle: "circle", transparentCorners: false,
+                cornerColor: "#d6c3a1", borderColor: "#d6c3a1", padding: 8, lockUniScaling: true,
             });
-
             fabricCanvas.add(artwork);
             fabricCanvas.setActiveObject(artwork);
             state.artwork = artwork;
-            fitArtwork();
-            syncEmptyState();
-            renderLayersList();
-            pushHistory();
+            fitArtwork(); syncEmptyState(); renderLayersList(); pushHistory();
         };
-        imageElement.src = src;
+        img.src = src;
     }
 
     // ── Canvas events ─────────────────────────────────────────────────────────
 
-    fabricCanvas.on("selection:created", () => { updateControlsFromArtwork(); renderLayersList(); });
-    fabricCanvas.on("selection:updated", () => { updateControlsFromArtwork(); renderLayersList(); });
-    fabricCanvas.on("selection:cleared", () => { updateControlsFromArtwork(); renderLayersList(); });
-    fabricCanvas.on("object:modified", () => { updateControlsFromArtwork(); renderLayersList(); pushHistory(); });
-    fabricCanvas.on("object:moving", () => { clampArtworkToArea(); updateControlsFromArtwork(); });
-    fabricCanvas.on("object:scaling", () => { clampArtworkToArea(); updateControlsFromArtwork(); });
-    fabricCanvas.on("object:rotating", () => { clampArtworkToArea(); updateControlsFromArtwork(); });
+    fabricCanvas.on("selection:created", () => { updateControlsFromObject(); renderLayersList(); });
+    fabricCanvas.on("selection:updated", () => { updateControlsFromObject(); renderLayersList(); });
+    fabricCanvas.on("selection:cleared", () => { updateControlsFromObject(); renderLayersList(); });
+    fabricCanvas.on("object:modified",   () => { updateControlsFromObject(); renderLayersList(); pushHistory(); });
+    fabricCanvas.on("object:moving",     () => { clampArtworkToArea(); updateControlsFromObject(); });
+    fabricCanvas.on("object:scaling",    () => { clampArtworkToArea(); updateControlsFromObject(); });
+    fabricCanvas.on("object:rotating",   () => { clampArtworkToArea(); updateControlsFromObject(); });
 
-    // ── Control handlers ──────────────────────────────────────────────────────
+    // ── Layers panel ──────────────────────────────────────────────────────────
 
-    function applyScale() {
-        const activeObject = fabricCanvas.getActiveObject();
-        if (!activeObject) return;
-        const nextScale = Number(scaleRange.value) / 100;
-        activeObject.scaleX = nextScale;
-        activeObject.scaleY = nextScale;
-        if (activeObject === state.artwork) clampArtworkToArea();
-        else activeObject.setCoords();
-        fabricCanvas.requestRenderAll();
-        updateControlsFromArtwork();
+    function getLayerLabel(obj, all) {
+        if (obj.type === "textbox") return (obj.text || "Texto").substring(0, 22) || "Texto";
+        if (obj.type === "rect")     return "Rectángulo";
+        if (obj.type === "circle")   return "Círculo";
+        if (obj.type === "triangle") return "Triángulo";
+        const imgs = all.filter(o => o.type === "image");
+        const i = imgs.indexOf(obj);
+        return "Imagen" + (imgs.length > 1 ? ` ${i + 1}` : "");
     }
 
-    function applyRotation() {
-        const activeObject = fabricCanvas.getActiveObject();
-        if (!activeObject) return;
-        activeObject.rotate(Number(rotateRange.value));
-        if (activeObject === state.artwork) clampArtworkToArea();
-        else activeObject.setCoords();
-        fabricCanvas.requestRenderAll();
-        updateControlsFromArtwork();
+    function renderLayersList() {
+        const objects = fabricCanvas.getObjects();
+        const active  = fabricCanvas.getActiveObject();
+        layersCount.textContent = String(objects.length);
+        hudLayers.textContent   = String(objects.length);
+
+        if (objects.length === 0) {
+            layersList.innerHTML = '<div class="layer-empty">Sin capas</div>';
+            layerUpButton.disabled = layerDownButton.disabled = duplicateButton.disabled = lockButton.disabled = true;
+            lockButton.textContent = "Bloquear";
+            return;
+        }
+
+        layersList.innerHTML = "";
+        [...objects].reverse().forEach(obj => {
+            const row = document.createElement("div");
+            row.className = "layer-row" + (obj === active ? " is-selected" : "") + (obj.lockMovementX ? " is-locked" : "");
+
+            const icon = document.createElement("span"); icon.className = "layer-icon";
+            icon.textContent = LAYER_ICONS[obj.type] || "◆";
+
+            const name = document.createElement("span"); name.className = "layer-name";
+            name.textContent = getLayerLabel(obj, objects);
+
+            const vis = document.createElement("span"); vis.className = "layer-vis";
+            vis.textContent = obj.lockMovementX ? "🔒" : "";
+
+            row.appendChild(icon); row.appendChild(name); row.appendChild(vis);
+            row.addEventListener("click", () => {
+                fabricCanvas.setActiveObject(obj);
+                fabricCanvas.requestRenderAll();
+                updateControlsFromObject(); renderLayersList();
+            });
+            layersList.appendChild(row);
+        });
+
+        const idx = active ? objects.indexOf(active) : -1;
+        layerUpButton.disabled   = !active || idx >= objects.length - 1;
+        layerDownButton.disabled = !active || idx <= 0;
+        duplicateButton.disabled = !active;
+        lockButton.disabled      = !active;
+        lockButton.textContent   = active?.lockMovementX ? "Desbloquear" : "Bloquear";
     }
 
-    function applyOpacity() {
-        const activeObject = fabricCanvas.getActiveObject();
-        if (!activeObject) return;
-        activeObject.set("opacity", Number(opacityRange.value) / 100);
-        fabricCanvas.requestRenderAll();
-        opacityValue.textContent = `${opacityRange.value}%`;
-    }
+    layerUpButton?.addEventListener("click", () => {
+        const obj = fabricCanvas.getActiveObject(); if (!obj) return;
+        (typeof fabricCanvas.bringObjectForward === "function" ? fabricCanvas.bringObjectForward : fabricCanvas.bringForward).call(fabricCanvas, obj);
+        fabricCanvas.requestRenderAll(); renderLayersList(); pushHistory();
+    });
+
+    layerDownButton?.addEventListener("click", () => {
+        const obj = fabricCanvas.getActiveObject(); if (!obj) return;
+        (typeof fabricCanvas.sendObjectBackwards === "function" ? fabricCanvas.sendObjectBackwards : fabricCanvas.sendBackwards).call(fabricCanvas, obj);
+        fabricCanvas.requestRenderAll(); renderLayersList(); pushHistory();
+    });
+
+    duplicateButton?.addEventListener("click", () => {
+        const obj = fabricCanvas.getActiveObject(); if (!obj) return;
+        const cb = (cloned) => {
+            cloned.set({ left: (cloned.left || 0) + 22, top: (cloned.top || 0) + 22 });
+            fabricCanvas.add(cloned); fabricCanvas.setActiveObject(cloned);
+            fabricCanvas.requestRenderAll(); syncEmptyState(); renderLayersList(); updateControlsFromObject(); pushHistory();
+        };
+        const r = obj.clone(); (r && typeof r.then === "function") ? r.then(cb) : obj.clone(cb);
+    });
+
+    lockButton?.addEventListener("click", () => {
+        const obj = fabricCanvas.getActiveObject(); if (!obj) return;
+        const lock = !obj.lockMovementX;
+        obj.set({ lockMovementX: lock, lockMovementY: lock, lockScalingX: lock, lockScalingY: lock, lockRotation: lock, hasControls: !lock, selectable: true });
+        fabricCanvas.requestRenderAll(); renderLayersList(); pushHistory();
+    });
+
+    // ── Sliders / controls ────────────────────────────────────────────────────
+
+    scaleRange?.addEventListener("input", () => {
+        const obj = fabricCanvas.getActiveObject(); if (!obj) return;
+        const s = Number(scaleRange.value) / 100; obj.scaleX = s; obj.scaleY = s;
+        if (obj === state.artwork) clampArtworkToArea(); else obj.setCoords();
+        fabricCanvas.requestRenderAll(); updateControlsFromObject();
+    });
+
+    rotateRange?.addEventListener("input", () => {
+        const obj = fabricCanvas.getActiveObject(); if (!obj) return;
+        obj.rotate(Number(rotateRange.value));
+        if (obj === state.artwork) clampArtworkToArea(); else obj.setCoords();
+        fabricCanvas.requestRenderAll(); updateControlsFromObject();
+    });
+
+    opacityRange?.addEventListener("input", () => {
+        const obj = fabricCanvas.getActiveObject(); if (!obj) return;
+        obj.set("opacity", Number(opacityRange.value) / 100);
+        fabricCanvas.requestRenderAll(); opacityValue.textContent = `${opacityRange.value}%`;
+    });
+
+    centerButton?.addEventListener("click", () => { centerArtwork(); pushHistory(); });
+    fitButton?.addEventListener("click",    () => { fitArtwork();    pushHistory(); });
+
+    flipXButton?.addEventListener("click", () => {
+        if (!state.artwork) return; state.artwork.set("flipX", !state.artwork.flipX);
+        fabricCanvas.requestRenderAll(); pushHistory();
+    });
+    flipYButton?.addEventListener("click", () => {
+        if (!state.artwork) return; state.artwork.set("flipY", !state.artwork.flipY);
+        fabricCanvas.requestRenderAll(); pushHistory();
+    });
+
+    resetButton?.addEventListener("click", () => { if (state.artwork) { fitArtwork(); pushHistory(); } });
+    removeButton?.addEventListener("click", () => { removeArtwork(); pushHistory(); });
+
+    // ── Text controls ─────────────────────────────────────────────────────────
 
     function addTextLayer() {
-        const value = (textInput.value || "").trim() || "Cult Clasiccs";
-        const textObject = new fabric.Textbox(value, {
-            left: fabricCanvas.getWidth() / 2,
-            top: fabricCanvas.getHeight() / 2,
-            originX: "center",
-            originY: "center",
-            fontFamily: textFontSelect.value || "Arial",
-            fontSize: Number(textSizeRange.value),
+        const val = (textInput.value || "").trim() || "Cult Clasiccs";
+        const t = new fabric.Textbox(val, {
+            left: fabricCanvas.getWidth() / 2, top: fabricCanvas.getHeight() / 2,
+            originX: "center", originY: "center",
+            fontFamily: textFontSelect.value || "Arial", fontSize: Number(textSizeRange.value),
             fill: textColorInput.value || "#111111",
             fontWeight: boldButton.classList.contains("is-active") ? "bold" : "normal",
             fontStyle: italicButton.classList.contains("is-active") ? "italic" : "normal",
-            textAlign: "center",
-            width: fabricCanvas.getWidth() * 0.62,
-            cornerStyle: "circle",
-            transparentCorners: false,
-            cornerColor: "#d6c3a1",
-            borderColor: "#d6c3a1",
-            padding: 8,
+            textAlign: "center", width: fabricCanvas.getWidth() * 0.62,
+            cornerStyle: "circle", transparentCorners: false,
+            cornerColor: "#d6c3a1", borderColor: "#d6c3a1", padding: 8,
         });
-        fabricCanvas.add(textObject);
-        fabricCanvas.setActiveObject(textObject);
-        fabricCanvas.requestRenderAll();
-        syncEmptyState();
-        renderLayersList();
-        updateControlsFromArtwork();
-        pushHistory();
+        fabricCanvas.add(t); fabricCanvas.setActiveObject(t);
+        fabricCanvas.requestRenderAll(); syncEmptyState(); renderLayersList(); updateControlsFromObject(); pushHistory();
     }
 
     function removeSelectedObject() {
-        const activeObject = fabricCanvas.getActiveObject();
-        if (!activeObject) return;
-        if (activeObject === state.artwork) {
-            removeArtwork();
-        } else {
-            fabricCanvas.remove(activeObject);
-            fabricCanvas.discardActiveObject();
-            fabricCanvas.requestRenderAll();
-            syncEmptyState();
-            renderLayersList();
-            updateControlsFromArtwork();
+        const obj = fabricCanvas.getActiveObject(); if (!obj) return;
+        if (obj === state.artwork) { removeArtwork(); }
+        else {
+            fabricCanvas.remove(obj); fabricCanvas.discardActiveObject();
+            fabricCanvas.requestRenderAll(); syncEmptyState(); renderLayersList(); updateControlsFromObject();
         }
         pushHistory();
     }
 
-    fileInput?.addEventListener("change", (event) => {
-        const file = event.target.files?.[0];
-        if (!file) return;
-        if (file.size > 15 * 1024 * 1024) {
-            alert("El archivo es demasiado grande. El límite es 15 MB.");
-            event.target.value = "";
-            return;
-        }
+    addTextButton?.addEventListener("click", addTextLayer);
+    removeSelectedButton?.addEventListener("click", removeSelectedObject);
+
+    boldButton?.addEventListener("click", () => {
+        boldButton.classList.toggle("is-active");
+        const obj = fabricCanvas.getActiveObject();
+        if (obj?.type === "textbox") { obj.set("fontWeight", boldButton.classList.contains("is-active") ? "bold" : "normal"); fabricCanvas.requestRenderAll(); pushHistory(); }
+    });
+
+    italicButton?.addEventListener("click", () => {
+        italicButton.classList.toggle("is-active");
+        const obj = fabricCanvas.getActiveObject();
+        if (obj?.type === "textbox") { obj.set("fontStyle", italicButton.classList.contains("is-active") ? "italic" : "normal"); fabricCanvas.requestRenderAll(); pushHistory(); }
+    });
+
+    textInput?.addEventListener("input", () => {
+        const obj = fabricCanvas.getActiveObject();
+        if (!obj || obj.type !== "textbox") return;
+        obj.text = textInput.value; fabricCanvas.requestRenderAll(); renderLayersList();
+    });
+
+    textFontSelect?.addEventListener("change", () => {
+        const obj = fabricCanvas.getActiveObject();
+        if (!obj || obj.type !== "textbox") return;
+        obj.set("fontFamily", textFontSelect.value); obj.setCoords();
+        fabricCanvas.requestRenderAll(); pushHistory();
+    });
+
+    textSizeRange?.addEventListener("input", () => {
+        const obj = fabricCanvas.getActiveObject();
+        if (!obj || obj.type !== "textbox") return;
+        obj.set("fontSize", Number(textSizeRange.value)); obj.setCoords(); fabricCanvas.requestRenderAll();
+    });
+
+    textColorInput?.addEventListener("input", () => {
+        const obj = fabricCanvas.getActiveObject();
+        if (!obj || obj.type !== "textbox") return;
+        obj.set("fill", textColorInput.value); fabricCanvas.requestRenderAll();
+    });
+
+    // ── File input ────────────────────────────────────────────────────────────
+
+    fileInput?.addEventListener("change", (e) => {
+        const file = e.target.files?.[0]; if (!file) return;
+        if (file.size > 15 * 1024 * 1024) { alert("El archivo es demasiado grande. El límite es 15 MB."); e.target.value = ""; return; }
         const reader = new FileReader();
         reader.onload = () => loadArtwork(reader.result);
         reader.readAsDataURL(file);
@@ -1293,126 +1458,36 @@
 
     productSelect?.addEventListener("change", () => { productIdInput.value = productSelect.value; });
 
-    scaleRange?.addEventListener("input", applyScale);
-    rotateRange?.addEventListener("input", applyRotation);
-    opacityRange?.addEventListener("input", applyOpacity);
+    // ── Keyboard shortcuts ────────────────────────────────────────────────────
 
-    centerButton?.addEventListener("click", () => { centerArtwork(); pushHistory(); });
-    fitButton?.addEventListener("click", () => { fitArtwork(); pushHistory(); });
-
-    flipXButton?.addEventListener("click", () => {
-        if (!state.artwork) return;
-        state.artwork.set("flipX", !state.artwork.flipX);
-        fabricCanvas.requestRenderAll();
-        pushHistory();
-    });
-
-    flipYButton?.addEventListener("click", () => {
-        if (!state.artwork) return;
-        state.artwork.set("flipY", !state.artwork.flipY);
-        fabricCanvas.requestRenderAll();
-        pushHistory();
-    });
-
-    resetButton?.addEventListener("click", () => { if (state.artwork) { fitArtwork(); pushHistory(); } });
-    removeButton?.addEventListener("click", () => { removeArtwork(); pushHistory(); });
-    addTextButton?.addEventListener("click", addTextLayer);
-    removeSelectedButton?.addEventListener("click", removeSelectedObject);
-
-    boldButton?.addEventListener("click", () => {
-        boldButton.classList.toggle("is-active");
-        const obj = fabricCanvas.getActiveObject();
-        if (obj?.type === "textbox") {
-            obj.set("fontWeight", boldButton.classList.contains("is-active") ? "bold" : "normal");
-            fabricCanvas.requestRenderAll();
-            pushHistory();
+    window.addEventListener("keydown", (e) => {
+        if (e.ctrlKey || e.metaKey) {
+            if (e.key === "z") { e.preventDefault(); undoButton.click(); return; }
+            if (e.key === "y" || (e.shiftKey && e.key === "z")) { e.preventDefault(); redoButton.click(); return; }
         }
+        const tag = document.activeElement?.tagName;
+        if (tag === "INPUT" || tag === "TEXTAREA") return;
+        if (e.key === "Delete" || e.key === "Backspace") removeSelectedObject();
     });
 
-    italicButton?.addEventListener("click", () => {
-        italicButton.classList.toggle("is-active");
-        const obj = fabricCanvas.getActiveObject();
-        if (obj?.type === "textbox") {
-            obj.set("fontStyle", italicButton.classList.contains("is-active") ? "italic" : "normal");
-            fabricCanvas.requestRenderAll();
-            pushHistory();
-        }
-    });
+    // ── Form submit ───────────────────────────────────────────────────────────
 
-    textInput?.addEventListener("input", () => {
-        const obj = fabricCanvas.getActiveObject();
-        if (!obj || obj.type !== "textbox") return;
-        obj.text = textInput.value;
-        fabricCanvas.requestRenderAll();
-        renderLayersList();
-    });
-
-    textFontSelect?.addEventListener("change", () => {
-        const obj = fabricCanvas.getActiveObject();
-        if (!obj || obj.type !== "textbox") return;
-        obj.set("fontFamily", textFontSelect.value);
-        obj.setCoords();
-        fabricCanvas.requestRenderAll();
-        pushHistory();
-    });
-
-    textSizeRange?.addEventListener("input", () => {
-        const obj = fabricCanvas.getActiveObject();
-        if (!obj || obj.type !== "textbox") return;
-        obj.set("fontSize", Number(textSizeRange.value));
-        obj.setCoords();
-        fabricCanvas.requestRenderAll();
-    });
-
-    textColorInput?.addEventListener("input", () => {
-        const obj = fabricCanvas.getActiveObject();
-        if (!obj || obj.type !== "textbox") return;
-        obj.set("fill", textColorInput.value);
-        fabricCanvas.requestRenderAll();
-    });
-
-    window.addEventListener("keydown", (event) => {
-        if (event.ctrlKey || event.metaKey) {
-            if (event.key === "z") {
-                event.preventDefault();
-                undoButton.click();
-                return;
-            }
-            if (event.key === "y" || (event.shiftKey && event.key === "z")) {
-                event.preventDefault();
-                redoButton.click();
-                return;
-            }
-        }
-        const activeTag = document.activeElement?.tagName;
-        if (activeTag === "INPUT" || activeTag === "TEXTAREA") return;
-        if (event.key === "Delete" || event.key === "Backspace") removeSelectedObject();
-    });
-
-    form?.addEventListener("submit", (event) => {
-        const hasContent = fabricCanvas.getObjects().length > 0;
-        if (!hasContent || state.submitting) {
-            if (!hasContent) alert("Agrega una imagen o texto antes de guardar.");
+    form?.addEventListener("submit", (e) => {
+        if (fabricCanvas.getObjects().length === 0 || state.submitting) {
+            if (fabricCanvas.getObjects().length === 0) alert("Agrega una imagen, texto o forma antes de guardar.");
             return;
         }
-        event.preventDefault();
+        e.preventDefault();
         state.submitting = true;
-        fabricCanvas.discardActiveObject();
-        fabricCanvas.requestRenderAll();
-        hiddenEditedImage.value = fabricCanvas.toDataURL({
-            format: "png",
-            multiplier: 2,
-            enableRetinaScaling: true,
-        });
+        fabricCanvas.discardActiveObject(); fabricCanvas.requestRenderAll();
+        hiddenEditedImage.value = fabricCanvas.toDataURL({ format: "png", multiplier: 2, enableRetinaScaling: true });
         form.submit();
     });
 
-    document.querySelectorAll(".design-delete-form").forEach(deleteForm => {
-        deleteForm.addEventListener("submit", (e) => {
-            if (!confirm("¿Eliminar este diseño? Esta acción no se puede deshacer.")) {
-                e.preventDefault();
-            }
-        });
+    // ── Delete saved designs ──────────────────────────────────────────────────
+
+    document.querySelectorAll(".design-delete-form").forEach(f => {
+        f.addEventListener("submit", (e) => { if (!confirm("¿Eliminar este diseño? Esta acción no se puede deshacer.")) e.preventDefault(); });
     });
 
     // ── Init ──────────────────────────────────────────────────────────────────
@@ -1420,17 +1495,13 @@
     if (selectedDesignUrl) {
         loadArtwork(selectedDesignUrl);
     } else {
-        syncEmptyState();
-        renderLayersList();
-        updateControlsFromArtwork();
-        pushHistory();
+        syncEmptyState(); renderLayersList(); updateControlsFromObject(); pushHistory();
     }
 
     quickGoToProductButton?.addEventListener("click", () => {
         if (!quickProductSelect?.value || !selectedDesignUrl) return;
-        const selectedDesignFile = selectedDesignUrl.split("/").pop();
-        if (!selectedDesignFile) return;
-        window.location.href = `/producto/${quickProductSelect.value}/?diseño=${encodeURIComponent(selectedDesignFile)}`;
+        const file = selectedDesignUrl.split("/").pop();
+        if (file) window.location.href = `/producto/${quickProductSelect.value}/?diseño=${encodeURIComponent(file)}`;
     });
 })();
 </script>
