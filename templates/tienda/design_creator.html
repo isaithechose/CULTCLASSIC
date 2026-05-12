@@ -176,8 +176,9 @@
         width: min(88%, 31rem);
         aspect-ratio: 0.82;
         border-radius: 2.2rem;
-        background: #f1ede6;
+        background: var(--shirt-color, #f1ede6);
         box-shadow: inset 0 0 0 1px rgba(0,0,0,0.06);
+        transition: background-color 0.25s ease;
     }
 
     .design-canvas__print-area {
@@ -259,7 +260,7 @@
         gap: 0.8rem;
     }
 
-    .design-creator__saved a {
+    .design-creator__saved-item {
         display: grid;
         gap: 0.55rem;
         text-decoration: none;
@@ -269,16 +270,17 @@
         padding: 0.7rem;
         background: rgba(255,255,255,0.03);
         transition: transform 0.22s ease, border-color 0.22s ease, background-color 0.22s ease;
+        position: relative;
     }
 
-    .design-creator__saved a:hover,
-    .design-creator__saved a.is-active {
+    .design-creator__saved-item:hover,
+    .design-creator__saved-item.is-active {
         transform: translateY(-2px);
         border-color: rgba(214, 195, 161, 0.28);
         background: rgba(255,255,255,0.05);
     }
 
-    .design-creator__saved img {
+    .design-creator__saved-item img {
         width: 100%;
         aspect-ratio: 1;
         object-fit: contain;
@@ -287,15 +289,92 @@
         padding: 0.35rem;
     }
 
-    .design-creator__saved span {
+    .design-creator__saved-item span {
         color: var(--cc-muted);
         font-size: 0.83rem;
         word-break: break-word;
     }
 
+    .design-creator__saved-delete {
+        position: absolute;
+        top: 0.35rem;
+        right: 0.35rem;
+        width: 1.6rem;
+        height: 1.6rem;
+        border-radius: 50%;
+        border: 1px solid rgba(214,195,161,0.18);
+        background: rgba(17,17,17,0.7);
+        color: var(--cc-muted);
+        font-size: 0.75rem;
+        display: grid;
+        place-items: center;
+        cursor: pointer;
+        opacity: 0;
+        transition: opacity 0.18s ease, color 0.18s ease;
+        line-height: 1;
+    }
+
+    .design-creator__saved-item:hover .design-creator__saved-delete {
+        opacity: 1;
+    }
+
+    .design-creator__saved-delete:hover {
+        color: #e05c5c;
+        border-color: #e05c5c;
+    }
+
     .design-creator__handoff {
         display: grid;
         gap: 0.9rem;
+    }
+
+    /* Shirt color swatches */
+    .shirt-color-btn {
+        width: 2rem;
+        height: 2rem;
+        border-radius: 50%;
+        border: 2px solid transparent;
+        cursor: pointer;
+        transition: transform 0.18s ease, border-color 0.18s ease;
+        flex-shrink: 0;
+    }
+
+    .shirt-color-btn:hover {
+        transform: scale(1.15);
+    }
+
+    .shirt-color-btn.is-active {
+        border-color: var(--cc-accent);
+        transform: scale(1.1);
+    }
+
+    /* Bold / italic buttons */
+    .format-btn {
+        padding: 0.25rem 0.7rem;
+        border-radius: 0.5rem;
+        border: 1px solid rgba(214,195,161,0.15);
+        background: rgba(255,255,255,0.04);
+        color: var(--cc-muted);
+        font-size: 0.88rem;
+        cursor: pointer;
+        transition: background 0.18s, color 0.18s, border-color 0.18s;
+        line-height: 1.4;
+    }
+
+    .format-btn.is-active {
+        background: rgba(214,195,161,0.18);
+        color: var(--cc-ink);
+        border-color: rgba(214,195,161,0.4);
+    }
+
+    /* Undo / redo */
+    .undo-redo-bar {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .undo-redo-bar .site-btn {
+        flex: 1;
     }
 
     @media (max-width: 991.98px) {
@@ -323,7 +402,7 @@
                 <p class="design-creator__eyebrow">Herramienta</p>
                 <h2 class="design-creator__title">Tu diseño listo para usar</h2>
                 <p class="design-creator__copy">
-                    Puedes subir un PNG, JPG o WebP, moverlo dentro del área de impresión y guardarlo como una nueva versión lista para colocar en tus productos.
+                    Puedes subir un PNG, JPG o WebP, moverlo dentro del área de impresión y guardarlo como una nueva versión lista para colocar en tus playeras.
                 </p>
 
                 <form method="post" enctype="multipart/form-data" class="design-creator__form" id="design-creator-form">
@@ -340,6 +419,33 @@
                         <div class="design-creator__group">
                             <label for="{{ form.image.id_for_label }}">Archivo base</label>
                             {{ form.image }}
+                        </div>
+
+                        <!-- Color de playera -->
+                        <div class="design-creator__tool-group">
+                            <div class="design-creator__tool-head">
+                                <strong>Color de playera</strong>
+                                <span id="shirtColorLabel">Beige</span>
+                            </div>
+                            <div style="display:flex;flex-wrap:wrap;gap:0.55rem;margin-top:0.25rem;">
+                                <button type="button" class="shirt-color-btn is-active" data-color="#f1ede6" data-label="Beige" style="background:#f1ede6;" title="Beige"></button>
+                                <button type="button" class="shirt-color-btn" data-color="#111111" data-label="Negro" style="background:#111111;" title="Negro"></button>
+                                <button type="button" class="shirt-color-btn" data-color="#f8f8f8" data-label="Blanco" style="background:#f8f8f8;border:1px solid #ccc;" title="Blanco"></button>
+                                <button type="button" class="shirt-color-btn" data-color="#9e9e9e" data-label="Gris" style="background:#9e9e9e;" title="Gris"></button>
+                                <button type="button" class="shirt-color-btn" data-color="#6d2030" data-label="Vino" style="background:#6d2030;" title="Vino"></button>
+                                <button type="button" class="shirt-color-btn" data-color="#1c2b4a" data-label="Azul marino" style="background:#1c2b4a;" title="Azul marino"></button>
+                                <button type="button" class="shirt-color-btn" data-color="#2e4a35" data-label="Verde" style="background:#2e4a35;" title="Verde"></button>
+                                <button type="button" class="shirt-color-btn" data-color="#c9b99a" data-label="Latte" style="background:#c9b99a;" title="Latte"></button>
+                            </div>
+                        </div>
+
+                        <!-- Opacidad -->
+                        <div class="design-creator__tool-group">
+                            <div class="design-creator__tool-head">
+                                <strong>Opacidad</strong>
+                                <span id="opacityValue">100%</span>
+                            </div>
+                            <input type="range" min="5" max="100" value="100" id="opacityRange">
                         </div>
 
                         <div class="design-creator__tool-grid">
@@ -415,10 +521,29 @@
                                     <label for="textColorInput">Color</label>
                                     <input type="color" id="textColorInput" value="#111111" class="shipping-form__control">
                                 </div>
+                                <div class="design-creator__group">
+                                    <label>Estilo</label>
+                                    <div style="display:flex;gap:0.45rem;">
+                                        <button type="button" class="format-btn" id="boldButton" title="Negrita"><strong>B</strong></button>
+                                        <button type="button" class="format-btn" id="italicButton" title="Itálica"><em>I</em></button>
+                                    </div>
+                                </div>
                             </div>
                             <div class="design-creator__tool-actions">
                                 <button type="button" class="btn site-btn site-btn--ghost" id="addTextButton">Agregar texto</button>
                                 <button type="button" class="btn site-btn site-btn--ghost" id="removeSelectedButton">Quitar seleccionado</button>
+                            </div>
+                        </div>
+
+                        <!-- Historial -->
+                        <div class="design-creator__tool-group">
+                            <div class="design-creator__tool-head">
+                                <strong>Historial</strong>
+                                <span id="historyLabel">0 / 0</span>
+                            </div>
+                            <div class="undo-redo-bar">
+                                <button type="button" class="btn site-btn site-btn--ghost" id="undoButton" disabled>↩ Deshacer</button>
+                                <button type="button" class="btn site-btn site-btn--ghost" id="redoButton" disabled>↪ Rehacer</button>
                             </div>
                         </div>
 
@@ -448,7 +573,7 @@
                     <div class="design-creator__panel">
                         <p class="design-creator__eyebrow">Preview</p>
                         <div class="design-canvas" id="designCanvas">
-                            <div class="design-canvas__shirt"></div>
+                            <div class="design-canvas__shirt" id="shirtBg"></div>
                             <div class="design-canvas__print-area" id="printArea">
                                 <div class="design-canvas__empty" id="emptyState">Sube un diseño o abre uno guardado para empezar a editar.</div>
                                 <canvas id="designFabricCanvas" class="design-canvas__surface" width="720" height="720"></canvas>
@@ -477,12 +602,18 @@
                 {% if saved_designs %}
                 <div class="design-creator__panel">
                     <p class="design-creator__eyebrow">Guardados</p>
-                    <div class="design-creator__saved">
+                    <div class="design-creator__saved" id="savedDesignsGrid">
                         {% for design_name in saved_designs %}
-                            <a href="{% url 'tienda:design_creator' %}?file={{ design_name|urlencode }}"{% if selected_design_url and selected_design_url|urlencode == design_name|urlencode %} class="is-active"{% endif %}>
-                                <img src="{{ MEDIA_URL }}diseños_propios/{{ design_name|urlencode }}" alt="{{ design_name }}">
-                                <span>{{ design_name }}</span>
-                            </a>
+                            <div class="design-creator__saved-item{% if selected_design_url and selected_design_url|urlencode == design_name|urlencode %} is-active{% endif %}">
+                                <a href="{% url 'tienda:design_creator' %}?file={{ design_name|urlencode }}" style="display:contents;">
+                                    <img src="{{ MEDIA_URL }}diseños_propios/{{ design_name|urlencode }}" alt="{{ design_name }}">
+                                    <span>{{ design_name }}</span>
+                                </a>
+                                <form method="post" action="{% url 'tienda:delete_design' design_name %}" class="design-delete-form" style="display:contents;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="design-creator__saved-delete" title="Eliminar diseño" aria-label="Eliminar {{ design_name }}">✕</button>
+                                </form>
+                            </div>
                         {% endfor %}
                     </div>
                 </div>
@@ -525,6 +656,8 @@
     const emptyState = document.getElementById("emptyState");
     const scaleRange = document.getElementById("scaleRange");
     const rotateRange = document.getElementById("rotateRange");
+    const opacityRange = document.getElementById("opacityRange");
+    const opacityValue = document.getElementById("opacityValue");
     const scaleValue = document.getElementById("scaleValue");
     const rotateValue = document.getElementById("rotateValue");
     const centerButton = document.getElementById("centerButton");
@@ -538,11 +671,17 @@
     const textFontSelect = document.getElementById("textFontSelect");
     const textSizeRange = document.getElementById("textSizeRange");
     const textColorInput = document.getElementById("textColorInput");
+    const boldButton = document.getElementById("boldButton");
+    const italicButton = document.getElementById("italicButton");
     const resetButton = document.getElementById("resetButton");
+    const undoButton = document.getElementById("undoButton");
+    const redoButton = document.getElementById("redoButton");
+    const historyLabel = document.getElementById("historyLabel");
     const hudStatus = document.getElementById("hudStatus");
     const hudScale = document.getElementById("hudScale");
     const hudRotate = document.getElementById("hudRotate");
     const hudLayers = document.getElementById("hudLayers");
+    const shirtBg = document.getElementById("shirtBg");
     const selectedDesignUrl = "{% if selected_design_url %}{{ selected_design_url|escapejs }}{% endif %}";
     const productSelect = document.getElementById("productSelect");
     const productIdInput = document.getElementById("productIdInput");
@@ -559,16 +698,107 @@
     const state = {
         artwork: null,
         submitting: false,
+        shirtColor: "#f1ede6",
+        history: [],
+        historyIndex: -1,
+        pauseHistory: false,
     };
 
+    const MAX_HISTORY = 40;
+
+    // ── History ──────────────────────────────────────────────────────────────
+
+    function pushHistory() {
+        if (state.pauseHistory) return;
+        const snapshot = JSON.stringify(fabricCanvas.toJSON());
+        state.history = state.history.slice(0, state.historyIndex + 1);
+        state.history.push(snapshot);
+        if (state.history.length > MAX_HISTORY) {
+            state.history.shift();
+        } else {
+            state.historyIndex++;
+        }
+        updateHistoryUI();
+    }
+
+    function updateHistoryUI() {
+        const total = state.history.length;
+        const current = state.historyIndex + 1;
+        historyLabel.textContent = `${current} / ${total}`;
+        undoButton.disabled = state.historyIndex <= 0;
+        redoButton.disabled = state.historyIndex >= state.history.length - 1;
+    }
+
+    function restoreSnapshot(snapshot) {
+        state.pauseHistory = true;
+        fabricCanvas.loadFromJSON(snapshot, () => {
+            state.artwork = fabricCanvas.getObjects().find(o => o.type === "image") || null;
+            fabricCanvas.requestRenderAll();
+            syncEmptyState();
+            updateControlsFromArtwork();
+            state.pauseHistory = false;
+        });
+    }
+
+    undoButton?.addEventListener("click", () => {
+        if (state.historyIndex <= 0) return;
+        state.historyIndex--;
+        restoreSnapshot(state.history[state.historyIndex]);
+        updateHistoryUI();
+    });
+
+    redoButton?.addEventListener("click", () => {
+        if (state.historyIndex >= state.history.length - 1) return;
+        state.historyIndex++;
+        restoreSnapshot(state.history[state.historyIndex]);
+        updateHistoryUI();
+    });
+
+    // ── Shirt color ───────────────────────────────────────────────────────────
+
+    document.querySelectorAll(".shirt-color-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const color = btn.dataset.color;
+            const label = btn.dataset.label;
+            state.shirtColor = color;
+            shirtBg.style.setProperty("--shirt-color", color);
+            document.getElementById("shirtColorLabel").textContent = label;
+            document.querySelectorAll(".shirt-color-btn").forEach(b => b.classList.remove("is-active"));
+            btn.classList.add("is-active");
+        });
+    });
+
+    // ── Canvas state ──────────────────────────────────────────────────────────
+
     function syncEmptyState() {
-        emptyState.hidden = Boolean(state.artwork);
-        hudStatus.textContent = state.artwork ? "Listo" : "Sin diseño";
+        const hasContent = fabricCanvas.getObjects().length > 0;
+        emptyState.hidden = hasContent;
+        hudStatus.textContent = hasContent ? "Listo" : "Sin diseño";
         hudLayers.textContent = String(fabricCanvas.getObjects().length);
+    }
+
+    function updateFormatButtons(obj) {
+        if (!obj || obj.type !== "textbox") {
+            boldButton.classList.remove("is-active");
+            italicButton.classList.remove("is-active");
+            return;
+        }
+        boldButton.classList.toggle("is-active", obj.fontWeight === "bold" || obj.fontWeight === 700);
+        italicButton.classList.toggle("is-active", obj.fontStyle === "italic");
     }
 
     function updateControlsFromArtwork() {
         const activeObject = fabricCanvas.getActiveObject();
+
+        if (activeObject) {
+            const opacity = Math.round((activeObject.opacity ?? 1) * 100);
+            opacityRange.value = String(opacity);
+            opacityValue.textContent = `${opacity}%`;
+        } else {
+            opacityRange.value = "100";
+            opacityValue.textContent = "100%";
+        }
+
         if (!activeObject) {
             scaleRange.value = "100";
             rotateRange.value = "0";
@@ -576,6 +806,7 @@
             rotateValue.textContent = "0°";
             hudScale.textContent = "100%";
             hudRotate.textContent = "0°";
+            updateFormatButtons(null);
             return;
         }
         const scale = Math.round((activeObject.scaleX || 1) * 100);
@@ -593,8 +824,10 @@
             textSizeRange.value = String(Math.round(activeObject.fontSize || 56));
             textColorInput.value = activeObject.fill || "#111111";
             hudStatus.textContent = "Texto activo";
+            updateFormatButtons(activeObject);
         } else if (activeObject === state.artwork) {
             hudStatus.textContent = "Imagen activa";
+            updateFormatButtons(null);
         }
     }
 
@@ -696,13 +929,17 @@
             state.artwork = artwork;
             fitArtwork();
             syncEmptyState();
+            pushHistory();
         };
         imageElement.src = src;
     }
 
     fabricCanvas.on("selection:created", updateControlsFromArtwork);
     fabricCanvas.on("selection:updated", updateControlsFromArtwork);
-    fabricCanvas.on("object:modified", updateControlsFromArtwork);
+    fabricCanvas.on("object:modified", () => {
+        updateControlsFromArtwork();
+        pushHistory();
+    });
     fabricCanvas.on("object:moving", () => {
         clampArtworkToArea();
         updateControlsFromArtwork();
@@ -744,6 +981,15 @@
         updateControlsFromArtwork();
     }
 
+    function applyOpacity() {
+        const activeObject = fabricCanvas.getActiveObject();
+        if (!activeObject) return;
+        const val = Number(opacityRange.value) / 100;
+        activeObject.set("opacity", val);
+        fabricCanvas.requestRenderAll();
+        opacityValue.textContent = `${opacityRange.value}%`;
+    }
+
     function addTextLayer() {
         const value = (textInput.value || "").trim() || "Cult Clasiccs";
         const textObject = new fabric.Textbox(value, {
@@ -754,7 +1000,8 @@
             fontFamily: textFontSelect.value || "Arial",
             fontSize: Number(textSizeRange.value),
             fill: textColorInput.value || "#111111",
-            fontWeight: 700,
+            fontWeight: boldButton.classList.contains("is-active") ? "bold" : "normal",
+            fontStyle: italicButton.classList.contains("is-active") ? "italic" : "normal",
             textAlign: "center",
             width: fabricCanvas.getWidth() * 0.62,
             cornerStyle: "circle",
@@ -768,6 +1015,7 @@
         fabricCanvas.requestRenderAll();
         syncEmptyState();
         updateControlsFromArtwork();
+        pushHistory();
     }
 
     function removeSelectedObject() {
@@ -775,22 +1023,33 @@
         if (!activeObject) return;
         if (activeObject === state.artwork) {
             removeArtwork();
-            return;
+        } else {
+            fabricCanvas.remove(activeObject);
+            fabricCanvas.discardActiveObject();
+            fabricCanvas.requestRenderAll();
+            syncEmptyState();
+            updateControlsFromArtwork();
         }
-        fabricCanvas.remove(activeObject);
-        fabricCanvas.discardActiveObject();
-        fabricCanvas.requestRenderAll();
-        syncEmptyState();
-        updateControlsFromArtwork();
+        pushHistory();
     }
+
+    // ── File input ────────────────────────────────────────────────────────────
 
     fileInput?.addEventListener("change", (event) => {
         const file = event.target.files?.[0];
         if (!file) return;
+        const MAX_MB = 15;
+        if (file.size > MAX_MB * 1024 * 1024) {
+            alert(`El archivo es demasiado grande. El límite es ${MAX_MB} MB.`);
+            event.target.value = "";
+            return;
+        }
         const reader = new FileReader();
         reader.onload = () => loadArtwork(reader.result);
         reader.readAsDataURL(file);
     });
+
+    // ── Controls ──────────────────────────────────────────────────────────────
 
     productSelect?.addEventListener("change", () => {
         productIdInput.value = productSelect.value;
@@ -798,42 +1057,57 @@
 
     scaleRange?.addEventListener("input", applyScale);
     rotateRange?.addEventListener("input", applyRotation);
+    opacityRange?.addEventListener("input", applyOpacity);
 
-    centerButton?.addEventListener("click", () => {
-        centerArtwork();
-    });
-
-    fitButton?.addEventListener("click", () => {
-        fitArtwork();
-    });
+    centerButton?.addEventListener("click", () => { centerArtwork(); pushHistory(); });
+    fitButton?.addEventListener("click", () => { fitArtwork(); pushHistory(); });
 
     flipXButton?.addEventListener("click", () => {
         if (!state.artwork) return;
         state.artwork.set("flipX", !state.artwork.flipX);
         fabricCanvas.requestRenderAll();
+        pushHistory();
     });
 
     flipYButton?.addEventListener("click", () => {
         if (!state.artwork) return;
         state.artwork.set("flipY", !state.artwork.flipY);
         fabricCanvas.requestRenderAll();
+        pushHistory();
     });
 
     resetButton?.addEventListener("click", () => {
         if (!state.artwork) return;
         fitArtwork();
+        pushHistory();
     });
 
     removeButton?.addEventListener("click", () => {
         removeArtwork();
+        pushHistory();
     });
 
-    addTextButton?.addEventListener("click", () => {
-        addTextLayer();
+    addTextButton?.addEventListener("click", () => { addTextLayer(); });
+    removeSelectedButton?.addEventListener("click", () => { removeSelectedObject(); });
+
+    boldButton?.addEventListener("click", () => {
+        const activeObject = fabricCanvas.getActiveObject();
+        boldButton.classList.toggle("is-active");
+        if (activeObject?.type === "textbox") {
+            activeObject.set("fontWeight", boldButton.classList.contains("is-active") ? "bold" : "normal");
+            fabricCanvas.requestRenderAll();
+            pushHistory();
+        }
     });
 
-    removeSelectedButton?.addEventListener("click", () => {
-        removeSelectedObject();
+    italicButton?.addEventListener("click", () => {
+        const activeObject = fabricCanvas.getActiveObject();
+        italicButton.classList.toggle("is-active");
+        if (activeObject?.type === "textbox") {
+            activeObject.set("fontStyle", italicButton.classList.contains("is-active") ? "italic" : "normal");
+            fabricCanvas.requestRenderAll();
+            pushHistory();
+        }
     });
 
     textInput?.addEventListener("input", () => {
@@ -849,6 +1123,7 @@
         activeObject.set("fontFamily", textFontSelect.value);
         activeObject.setCoords();
         fabricCanvas.requestRenderAll();
+        pushHistory();
     });
 
     textSizeRange?.addEventListener("input", () => {
@@ -867,6 +1142,18 @@
     });
 
     window.addEventListener("keydown", (event) => {
+        if (event.ctrlKey || event.metaKey) {
+            if (event.key === "z") {
+                event.preventDefault();
+                undoButton.click();
+                return;
+            }
+            if (event.key === "y" || (event.shiftKey && event.key === "z")) {
+                event.preventDefault();
+                redoButton.click();
+                return;
+            }
+        }
         const activeTag = document.activeElement?.tagName;
         if (activeTag === "INPUT" || activeTag === "TEXTAREA") return;
         if (event.key === "Delete" || event.key === "Backspace") {
@@ -874,8 +1161,12 @@
         }
     });
 
+    // ── Form submit ───────────────────────────────────────────────────────────
+
     form?.addEventListener("submit", (event) => {
-        if (!state.artwork || state.submitting) {
+        const hasContent = fabricCanvas.getObjects().length > 0;
+        if (!hasContent || state.submitting) {
+            if (!hasContent) alert("Agrega una imagen o texto antes de guardar.");
             return;
         }
 
@@ -891,11 +1182,24 @@
         form.submit();
     });
 
+    // ── Delete design forms ───────────────────────────────────────────────────
+
+    document.querySelectorAll(".design-delete-form").forEach(deleteForm => {
+        deleteForm.addEventListener("submit", (e) => {
+            if (!confirm("¿Eliminar este diseño? Esta acción no se puede deshacer.")) {
+                e.preventDefault();
+            }
+        });
+    });
+
+    // ── Init ──────────────────────────────────────────────────────────────────
+
     if (selectedDesignUrl) {
         loadArtwork(selectedDesignUrl);
     } else {
         syncEmptyState();
         updateControlsFromArtwork();
+        pushHistory();
     }
 
     quickGoToProductButton?.addEventListener("click", () => {

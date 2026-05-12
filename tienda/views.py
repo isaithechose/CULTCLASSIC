@@ -76,6 +76,8 @@ def _save_custom_design(user, design_name, uploaded_file=None, edited_image_data
         if ";base64" not in header or not encoded:
             raise ValueError("La imagen editada no llegó en un formato válido.")
         decoded = base64.b64decode(encoded)
+        if len(decoded) > 15 * 1024 * 1024:
+            raise ValueError("El diseño excede el límite de 15 MB.")
         final_name = f"{filename_base}.png"
         file_path = designs_dir / final_name
         counter = 1
@@ -87,6 +89,8 @@ def _save_custom_design(user, design_name, uploaded_file=None, edited_image_data
         return final_name
 
     if uploaded_file:
+        if uploaded_file.size > 15 * 1024 * 1024:
+            raise ValueError("El archivo excede el límite de 15 MB.")
         extension = Path(uploaded_file.name).suffix.lower() or ".png"
         final_name = f"{filename_base}{extension}"
         file_path = designs_dir / final_name
@@ -171,11 +175,12 @@ def design_creator(request):
     else:
         form = CustomDesignUploadForm(initial={"name": selected_design_name})
 
+    user_prefix = slugify(request.user.username or "cliente") + "-"
     own_designs = sorted(
-        [path.name for path in designs_dir.iterdir() if path.is_file()],
-        key=lambda file_name: (designs_dir / file_name).stat().st_mtime,
+        [p.name for p in designs_dir.iterdir() if p.is_file() and p.name.startswith(user_prefix)],
+        key=lambda n: (designs_dir / n).stat().st_mtime,
         reverse=True,
-    )[:18]
+    )[:24]
 
     context = {
         "form": form,
@@ -186,6 +191,24 @@ def design_creator(request):
         "customizable_products": customizable_products,
     }
     return render(request, "tienda/design_creator.html", context)
+
+
+@login_required
+def delete_design(request, filename):
+    if request.method != 'POST':
+        return redirect('tienda:design_creator')
+    safe_name = Path(filename).name
+    user_prefix = slugify(request.user.username or "cliente") + "-"
+    if not safe_name.startswith(user_prefix):
+        messages.error(request, "No tienes permiso para eliminar ese diseño.")
+        return redirect('tienda:design_creator')
+    file_path = _custom_designs_dir() / safe_name
+    if file_path.exists():
+        file_path.unlink()
+        messages.success(request, "Diseño eliminado.")
+    return redirect('tienda:design_creator')
+
+
 def detalle_producto(request, producto_id):
     producto = get_object_or_404(Producto, id=producto_id)
     tallas_disponibles = producto.tallas_disponibles.split(",") if producto.tallas_disponibles else []
