@@ -720,3 +720,23 @@ def record_inventory_movement(
             metadata=metadata,
             created_by=created_by,
         )
+
+
+class NewsletterSubscriber(models.Model):
+    """
+    Email captado por el popup de bienvenida. El cupón global se aplica
+    al hacer checkout via 'allow_promotion_codes' de Stripe.
+    """
+    email = models.EmailField(unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    source = models.CharField(max_length=40, default="popup", blank=True,
+                              help_text="popup | footer | etc.")
+    coupon_sent = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Suscriptor de newsletter"
+        verbose_name_plural = "Suscriptores de newsletter"
+
+    def __str__(self):
+        return self.email

@@ -1,0 +1,218 @@
+{% extends "tienda/base.html" %}
+{% load static %}
+
+{% block title %}Cambios y devoluciones | Cult Clasiccs{% endblock %}
+{% block meta_description %}Política clara de cambios y devoluciones de Cult Clasiccs. Plazos, condiciones y proceso paso a paso.{% endblock %}
+
+{% block hero %}
+<header class="page-hero">
+    <div class="container px-4 px-lg-5">
+        <div class="page-hero__inner">
+            <p class="page-eyebrow">Soporte</p>
+            <h1 class="page-hero__title">Cambios y devoluciones.</h1>
+            <p class="page-hero__copy">
+                Compras tranquilo. Si algo no llega como esperabas, lo resolvemos rápido y sin pretextos.
+            </p>
+        </div>
+    </div>
+</header>
+{% endblock %}
+
+{% block content %}
+<style>
+    .returns-page {
+        padding: 4rem 0 6rem;
+    }
+    .returns-layout {
+        display: grid;
+        gap: 2.5rem;
+        grid-template-columns: minmax(0, 1fr);
+        max-width: 820px;
+        margin: 0 auto;
+    }
+    .returns-summary {
+        display: grid;
+        gap: 1rem;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        margin-bottom: 2rem;
+    }
+    .returns-summary__card {
+        padding: 1.25rem 1.4rem;
+        border: 1px solid var(--cc-line);
+        border-radius: 1rem;
+        background: rgba(255, 255, 255, 0.03);
+    }
+    .returns-summary__eyebrow {
+        margin: 0 0 0.35rem;
+        font-size: 0.7rem;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--cc-muted);
+    }
+    .returns-summary__value {
+        margin: 0;
+        font-size: 1.55rem;
+        font-weight: 700;
+        color: var(--cc-ink);
+        letter-spacing: -0.01em;
+    }
+    .returns-block {
+        margin-bottom: 2.5rem;
+    }
+    .returns-block h2 {
+        margin: 0 0 0.85rem;
+        font-size: clamp(1.45rem, 2.4vw, 1.85rem);
+        letter-spacing: -0.01em;
+    }
+    .returns-block h3 {
+        margin: 1.5rem 0 0.6rem;
+        font-size: 1.1rem;
+    }
+    .returns-block p, .returns-block li {
+        color: var(--cc-muted);
+        line-height: 1.7;
+    }
+    .returns-block ul, .returns-block ol {
+        padding-left: 1.2rem;
+        margin: 0 0 1rem;
+    }
+    .returns-block li { margin-bottom: 0.4rem; }
+    .returns-block strong { color: var(--cc-ink); }
+    .returns-block a { color: var(--cc-ink); text-decoration: underline; }
+    .returns-callout {
+        margin: 1.5rem 0;
+        padding: 1.25rem 1.4rem;
+        border-left: 3px solid var(--cc-ink);
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: 0 0.6rem 0.6rem 0;
+    }
+    .returns-callout p { margin: 0; }
+    .returns-steps {
+        counter-reset: step;
+        padding: 0;
+        margin: 0;
+        list-style: none;
+    }
+    .returns-steps li {
+        counter-increment: step;
+        padding: 1.1rem 0 1.1rem 3rem;
+        border-bottom: 1px solid var(--cc-line);
+        position: relative;
+    }
+    .returns-steps li:last-child { border-bottom: 0; }
+    .returns-steps li::before {
+        content: counter(step);
+        position: absolute;
+        left: 0;
+        top: 1.05rem;
+        width: 2.2rem;
+        height: 2.2rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid var(--cc-line);
+        border-radius: 50%;
+        font-weight: 700;
+        color: var(--cc-ink);
+        font-size: 0.95rem;
+    }
+    .returns-steps strong { display: block; color: var(--cc-ink); margin-bottom: 0.25rem; }
+</style>
+
+<section class="returns-page">
+    <div class="container px-4 px-lg-5">
+        <div class="returns-layout">
+
+            <div class="returns-summary">
+                <div class="returns-summary__card">
+                    <p class="returns-summary__eyebrow">Plazo</p>
+                    <p class="returns-summary__value">15 días</p>
+                </div>
+                <div class="returns-summary__card">
+                    <p class="returns-summary__eyebrow">Costo</p>
+                    <p class="returns-summary__value">Gratis*</p>
+                </div>
+                <div class="returns-summary__card">
+                    <p class="returns-summary__eyebrow">Reembolso</p>
+                    <p class="returns-summary__value">5–10 días</p>
+                </div>
+            </div>
+
+            <section class="returns-block">
+                <h2>Lo esencial</h2>
+                <p>Tienes <strong>15 días naturales</strong> desde que recibes tu pedido para solicitar un cambio o devolución. La prenda debe estar <strong>sin uso, sin lavar, con etiquetas y en su empaque original</strong>. Si el problema es nuestro (defecto, error de talla enviada, daño en tránsito) el envío de devolución corre por nuestra cuenta. Si el cambio es por preferencia personal, el costo del envío de regreso lo cubres tú.</p>
+
+                <div class="returns-callout">
+                    <p><strong>Diseños personalizados:</strong> las piezas con diseño propio (subido en el Creador) no aceptan devolución por cambio de opinión, ya que se producen específicamente para ti. Sí aceptamos devolución si llega con defecto de impresión o costura.</p>
+                </div>
+            </section>
+
+            <section class="returns-block">
+                <h2>Cambios de talla o color</h2>
+                <p>Si recibiste tu pieza y la talla no te queda, puedes cambiarla por otra talla disponible del mismo modelo y color, o por otro color si hay stock. El primer cambio es <strong>sin costo</strong> dentro de los primeros 15 días.</p>
+                <h3>Condiciones</h3>
+                <ul>
+                    <li>Prenda sin uso, sin lavar, sin perfume y con etiquetas pegadas.</li>
+                    <li>La pieza nueva debe estar disponible en el archivo al momento del cambio.</li>
+                    <li>Si la pieza nueva tiene un precio diferente, se cobra o reembolsa la diferencia.</li>
+                </ul>
+            </section>
+
+            <section class="returns-block">
+                <h2>Devoluciones con reembolso</h2>
+                <p>Si decides devolver la pieza en vez de cambiarla, te reembolsamos el monto pagado al mismo método de pago original. El reembolso refleja en tu tarjeta o cuenta en <strong>5 a 10 días hábiles</strong> después de que recibimos y validamos la prenda.</p>
+                <h3>Qué se reembolsa</h3>
+                <ul>
+                    <li><strong>El precio de la pieza:</strong> 100% si cumple las condiciones.</li>
+                    <li><strong>El envío original:</strong> se reembolsa solo si el motivo es responsabilidad nuestra (defecto, error o daño en tránsito).</li>
+                    <li><strong>El envío de devolución:</strong> lo cubres tú si el motivo es por cambio de opinión. Lo cubrimos nosotros si es por defecto o error.</li>
+                </ul>
+            </section>
+
+            <section class="returns-block">
+                <h2>Cómo solicitarlo</h2>
+                <ol class="returns-steps">
+                    <li>
+                        <strong>Escríbenos por Instagram</strong>
+                        Manda mensaje a <a href="https://www.instagram.com/{{ instagram_username }}/" target="_blank" rel="noopener noreferrer">@{{ instagram_username }}</a> con tu número de pedido y el motivo (cambio o devolución). Si es por defecto, adjunta fotos claras.
+                    </li>
+                    <li>
+                        <strong>Te confirmamos y te damos la guía</strong>
+                        En menos de 24 horas hábiles te respondemos con la confirmación y la guía de envío (si aplica que la cubrimos) o la dirección donde mandar tu paquete.
+                    </li>
+                    <li>
+                        <strong>Empaca y envía la pieza</strong>
+                        Vuelve a meter la pieza en su empaque original (o uno equivalente) con todas sus etiquetas. Lleva el paquete a la paquetería con la guía que te dimos.
+                    </li>
+                    <li>
+                        <strong>Validamos y procesamos</strong>
+                        Al recibir el paquete revisamos el estado de la pieza. Si todo está en orden: te enviamos el cambio en 3 días hábiles, o procesamos el reembolso al método original (5–10 días en reflejarse).
+                    </li>
+                </ol>
+            </section>
+
+            <section class="returns-block">
+                <h2>Qué no aceptamos</h2>
+                <ul>
+                    <li>Piezas usadas, lavadas, con olor a perfume, sin etiquetas o con daños del cliente.</li>
+                    <li>Piezas con diseño propio personalizado (salvo defecto de fabricación).</li>
+                    <li>Solicitudes después de los 15 días desde la fecha de entrega.</li>
+                    <li>Devoluciones sin contacto previo: necesitamos confirmarte antes de que mandes el paquete.</li>
+                </ul>
+            </section>
+
+            <section class="returns-block">
+                <h2>Pedido dañado o equivocado</h2>
+                <p>Si tu pedido llega <strong>dañado, con defecto de fabricación, o con la pieza/talla/color equivocada</strong>, es 100% responsabilidad nuestra. Cubrimos el envío de devolución y reponemos la pieza correcta sin costo o reembolsamos el total, lo que tú prefieras.</p>
+                <p>Mándanos fotos del problema dentro de las primeras <strong>48 horas</strong> tras recibir el paquete para procesarlo más rápido.</p>
+            </section>
+
+            <p class="returns-block" style="text-align:center; color: var(--cc-muted); font-size: 0.88rem;">
+                *Envío de devolución gratis cuando el motivo es responsabilidad de Cult Clasiccs (defecto, daño o error en el pedido).<br>
+                ¿Tienes otra duda? Revisa nuestras <a href="{% url 'tienda:faq' %}" style="color: var(--cc-ink);">preguntas frecuentes</a>.
+            </p>
+
+        </div>
+    </div>
+</section>
+{% endblock %}

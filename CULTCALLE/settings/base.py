@@ -20,6 +20,7 @@ INSTALLED_APPS = [
     'allauth.socialaccount.providers.google',
     'allauth.socialaccount.providers.facebook',
     'tienda',
+    'mercadolibre',
 ]
 
 MIDDLEWARE = [
@@ -49,12 +50,29 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'tienda.context_processors.meta_pixel',
                 'tienda.context_processors.admin_nav_context',
+                'tienda.context_processors.instagram_feed',
             ],
         },
     },
 ]
 
 SITE_ID = config('SITE_ID', default=4, cast=int)
+
+# ── Instagram (Behold.so widget) ───────────────────────────────────────────
+# Conecta @cultclasiccs en https://behold.so/ y pega aquí el feed ID:
+#   BEHOLD_FEED_ID=xxxxxxxxxxxxxxxxxxxx
+BEHOLD_FEED_ID = config('BEHOLD_FEED_ID', default='')
+INSTAGRAM_USERNAME = config('INSTAGRAM_USERNAME', default='cultclasiccs')
+
+# ── Mercado Libre ──────────────────────────────────────────────────────────
+# Crea tu app en https://developers.mercadolibre.com.mx/devcenter
+# Pon estas variables en tu .env:
+#   ML_APP_ID=xxxxx
+#   ML_APP_SECRET=xxxxx
+#   ML_REDIRECT_URI=https://tudominio.com/mercadolibre/callback/
+ML_APP_ID = config('ML_APP_ID', default='')
+ML_APP_SECRET = config('ML_APP_SECRET', default='')
+ML_REDIRECT_URI = config('ML_REDIRECT_URI', default='http://127.0.0.1:8000/mercadolibre/callback/')
 
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
@@ -156,6 +174,11 @@ JAZZMIN_SETTINGS = {
         'tienda.Reseña': 'fas fa-star',
         'tienda.ShippingAddress': 'fas fa-location-dot',
         'tienda.ShippingUpdate': 'fas fa-truck-fast',
+        'tienda.NewsletterSubscriber': 'fas fa-envelope-open-text',
+        'mercadolibre': 'fas fa-store',
+        'mercadolibre.MercadoLibreCredential': 'fas fa-key',
+        'mercadolibre.MercadoLibreOrder': 'fas fa-receipt',
+        'mercadolibre.MercadoLibreListing': 'fas fa-tag',
     },
     'order_with_respect_to': [
         'auth', 'sites', 'socialaccount', 'tienda',

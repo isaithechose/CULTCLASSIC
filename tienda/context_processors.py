@@ -1,6 +1,17 @@
 from django.conf import settings
 
 
+def instagram_feed(request):
+    """
+    Inyecta el feed ID de Behold y el username de Instagram en todos los templates.
+    El feed se renderiza con el widget de Behold (script en base.html).
+    """
+    return {
+        "behold_feed_id": getattr(settings, "BEHOLD_FEED_ID", ""),
+        "instagram_username": getattr(settings, "INSTAGRAM_USERNAME", "cultclasiccs"),
+    }
+
+
 def meta_pixel(request):
     queued_events = request.session.pop("meta_pixel_events", [])
     inline_events = getattr(request, "_meta_pixel_events", [])

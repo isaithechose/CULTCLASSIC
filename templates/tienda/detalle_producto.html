@@ -279,6 +279,29 @@
         text-transform: uppercase;
     }
 
+    .detail-size-guide__tabs {
+        gap: 0.4rem;
+        margin-bottom: 0.9rem;
+        flex-wrap: wrap;
+    }
+
+    .detail-size-guide__tabs .nav-link {
+        padding: 0.35rem 0.85rem;
+        border: 1px solid var(--cc-line);
+        border-radius: 999px;
+        background: transparent;
+        color: var(--cc-muted);
+        font-size: 0.78rem;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+    }
+
+    .detail-size-guide__tabs .nav-link.active {
+        background: var(--cc-ink);
+        color: var(--cc-bg, #fff);
+        border-color: var(--cc-ink);
+    }
+
     .detail-size-guide table {
         width: 100%;
         margin-bottom: 0.75rem;
@@ -794,24 +817,66 @@
                       </div>
 
                       <div class="collapse detail-size-guide" id="detailSizeGuide">
-                          <p class="detail-size-guide__title">Referencia de talla</p>
-                          <table aria-label="Guía de tallas Cult Clasiccs">
-                              <thead>
-                                  <tr>
-                                      <th>Talla</th>
-                                      <th>Pecho</th>
-                                      <th>Largo</th>
-                                      <th>Fit</th>
-                                  </tr>
-                              </thead>
-                              <tbody>
-                                  <tr><td>S</td><td>51 cm</td><td>68 cm</td><td>Regular</td></tr>
-                                  <tr><td>M</td><td>54 cm</td><td>71 cm</td><td>Regular</td></tr>
-                                  <tr><td>L</td><td>57 cm</td><td>74 cm</td><td>Amplio</td></tr>
-                                  <tr><td>XL</td><td>60 cm</td><td>77 cm</td><td>Amplio</td></tr>
-                              </tbody>
-                          </table>
-                          <p class="detail-size-guide__note">Medidas aproximadas de la prenda en plano. Si dudas entre dos tallas, elige la más grande para un fit más relajado.</p>
+                          <ul class="nav nav-pills detail-size-guide__tabs" role="tablist">
+                              <li class="nav-item" role="presentation">
+                                  <button class="nav-link active" id="tab-oversized" data-bs-toggle="pill" data-bs-target="#size-oversized" type="button" role="tab" aria-controls="size-oversized" aria-selected="true">Oversized Tee</button>
+                              </li>
+                              <li class="nav-item" role="presentation">
+                                  <button class="nav-link" id="tab-dropshoulder" data-bs-toggle="pill" data-bs-target="#size-dropshoulder" type="button" role="tab" aria-controls="size-dropshoulder" aria-selected="false">Drop Shoulder</button>
+                              </li>
+                              <li class="nav-item" role="presentation">
+                                  <button class="nav-link" id="tab-designer" data-bs-toggle="pill" data-bs-target="#size-designer" type="button" role="tab" aria-controls="size-designer" aria-selected="false">Designer Tee</button>
+                              </li>
+                          </ul>
+                          <div class="tab-content">
+                              <div class="tab-pane fade show active" id="size-oversized" role="tabpanel" aria-labelledby="tab-oversized">
+                                  <p class="detail-size-guide__title">7.5oz Max Heavyweight Oversized Tee · 100% algodón 260gsm</p>
+                                  <table aria-label="Guía de tallas Oversized Tee">
+                                      <thead>
+                                          <tr><th>Talla</th><th>Pecho</th><th>Largo</th><th>Manga</th></tr>
+                                      </thead>
+                                      <tbody>
+                                          <tr><td>S</td><td>55.9 cm</td><td>67.3 cm</td><td>29.2 cm</td></tr>
+                                          <tr><td>M</td><td>61.0 cm</td><td>67.3 cm</td><td>30.5 cm</td></tr>
+                                          <tr><td>L</td><td>66.0 cm</td><td>72.4 cm</td><td>31.1 cm</td></tr>
+                                          <tr><td>XL</td><td>71.1 cm</td><td>77.5 cm</td><td>31.8 cm</td></tr>
+                                          <tr><td>2XL</td><td>76.2 cm</td><td>82.6 cm</td><td>32.4 cm</td></tr>
+                                      </tbody>
+                                  </table>
+                              </div>
+                              <div class="tab-pane fade" id="size-dropshoulder" role="tabpanel" aria-labelledby="tab-dropshoulder">
+                                  <p class="detail-size-guide__title">7.5oz Garment Dye Drop Shoulder · 100% algodón 260gsm</p>
+                                  <table aria-label="Guía de tallas Drop Shoulder">
+                                      <thead>
+                                          <tr><th>Talla</th><th>Pecho</th><th>Largo</th><th>Manga</th></tr>
+                                      </thead>
+                                      <tbody>
+                                          <tr><td>XS</td><td>52.7 cm</td><td>65.4 cm</td><td>24.1 cm</td></tr>
+                                          <tr><td>S</td><td>57.8 cm</td><td>67.9 cm</td><td>26.0 cm</td></tr>
+                                          <tr><td>M</td><td>62.9 cm</td><td>69.2 cm</td><td>26.7 cm</td></tr>
+                                          <tr><td>L</td><td>67.3 cm</td><td>74.3 cm</td><td>29.2 cm</td></tr>
+                                          <tr><td>XL</td><td>71.1 cm</td><td>79.4 cm</td><td>29.2 cm</td></tr>
+                                          <tr><td>2XL</td><td>76.2 cm</td><td>79.4 cm</td><td>29.8 cm</td></tr>
+                                      </tbody>
+                                  </table>
+                              </div>
+                              <div class="tab-pane fade" id="size-designer" role="tabpanel" aria-labelledby="tab-designer">
+                                  <p class="detail-size-guide__title">9.0oz Garment Dye Designer Tee · 100% algodón 300gsm</p>
+                                  <table aria-label="Guía de tallas Designer Tee">
+                                      <thead>
+                                          <tr><th>Talla</th><th>Pecho</th><th>Largo</th><th>Manga</th></tr>
+                                      </thead>
+                                      <tbody>
+                                          <tr><td>S</td><td>53.3 cm</td><td>71.1 cm</td><td>27.9 cm</td></tr>
+                                          <tr><td>M</td><td>58.4 cm</td><td>73.7 cm</td><td>30.5 cm</td></tr>
+                                          <tr><td>L</td><td>63.5 cm</td><td>76.2 cm</td><td>31.1 cm</td></tr>
+                                          <tr><td>XL</td><td>68.6 cm</td><td>77.5 cm</td><td>31.8 cm</td></tr>
+                                          <tr><td>2XL</td><td>73.7 cm</td><td>80.0 cm</td><td>34.3 cm</td></tr>
+                                      </tbody>
+                                  </table>
+                              </div>
+                          </div>
+                          <p class="detail-size-guide__note">Medidas en centímetros, tomadas con la prenda en plano. <strong>Pecho</strong>: 2.5 cm debajo de la sisa, de costura a costura. <strong>Largo</strong>: desde el punto más alto del hombro. <strong>Manga</strong>: desde el centro del cuello al borde. Si dudas entre dos tallas, elige la más grande para un fit más relajado.</p>
                       </div>
 
                       <div class="detail-summary-panel">

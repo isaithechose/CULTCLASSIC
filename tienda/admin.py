@@ -4276,3 +4276,14 @@ class ShippingUpdateAdmin(admin.ModelAdmin):
     list_filter = ("updated_at",)
     search_fields = ("order__id", "status_message")
     autocomplete_fields = ("order",)
+
+
+from .models import NewsletterSubscriber
+
+@admin.register(NewsletterSubscriber)
+class NewsletterSubscriberAdmin(admin.ModelAdmin):
+    list_display = ("email", "source", "coupon_sent", "created_at")
+    list_filter = ("source", "coupon_sent", "created_at")
+    search_fields = ("email",)
+    date_hierarchy = "created_at"
+    ordering = ("-created_at",)

@@ -31,3 +31,6 @@ Thumbs.db
 # Logs
 *.log
 
+
+# Claude worktrees and session data
+.claude/

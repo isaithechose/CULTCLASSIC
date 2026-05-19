@@ -8,6 +8,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('tienda.urls', namespace='tienda')),
     path('accounts/', include('allauth.urls')),  # <-- para django-allauth
+    path('mercadolibre/', include('mercadolibre.urls')),
 ]
 
 # Para servir archivos estáticos y/o multimedia en modo DEBUG

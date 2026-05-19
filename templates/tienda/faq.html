@@ -1,0 +1,275 @@
+{% extends "tienda/base.html" %}
+{% load static %}
+
+{% block title %}Preguntas frecuentes | Cult Clasiccs{% endblock %}
+{% block meta_description %}Respuestas a las preguntas más comunes sobre pedidos, envíos, tallas, métodos de pago y diseños personalizados en Cult Clasiccs.{% endblock %}
+
+{% block hero %}
+<header class="page-hero">
+    <div class="container px-4 px-lg-5">
+        <div class="page-hero__inner">
+            <p class="page-eyebrow">Ayuda</p>
+            <h1 class="page-hero__title">Preguntas frecuentes.</h1>
+            <p class="page-hero__copy">
+                Todo lo que necesitas saber antes y después de comprar. Si tu duda no está aquí, escríbenos por Instagram <a href="https://www.instagram.com/{{ instagram_username }}/" target="_blank" rel="noopener noreferrer">@{{ instagram_username }}</a>.
+            </p>
+        </div>
+    </div>
+</header>
+{% endblock %}
+
+{% block content %}
+<style>
+    .faq-page {
+        padding: 4rem 0 6rem;
+    }
+    .faq-page__layout {
+        display: grid;
+        gap: 3rem;
+        grid-template-columns: minmax(0, 220px) minmax(0, 1fr);
+        align-items: start;
+    }
+    @media (max-width: 800px) {
+        .faq-page__layout { grid-template-columns: 1fr; }
+        .faq-page__nav { position: static; }
+    }
+    .faq-page__nav {
+        position: sticky;
+        top: 100px;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    .faq-page__nav a {
+        padding: 0.55rem 0.85rem;
+        border-radius: 999px;
+        border: 1px solid var(--cc-line);
+        color: var(--cc-muted);
+        font-size: 0.82rem;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        text-decoration: none;
+        transition: background .15s ease, color .15s ease, border-color .15s ease;
+    }
+    .faq-page__nav a:hover {
+        border-color: var(--cc-ink);
+        color: var(--cc-ink);
+    }
+    .faq-section {
+        margin-bottom: 3rem;
+        scroll-margin-top: 90px;
+    }
+    .faq-section__title {
+        margin: 0 0 1.25rem;
+        font-size: clamp(1.6rem, 2.6vw, 2.1rem);
+        letter-spacing: -0.01em;
+    }
+    .faq-item {
+        border-top: 1px solid var(--cc-line);
+        padding: 1.25rem 0;
+    }
+    .faq-item:last-child { border-bottom: 1px solid var(--cc-line); }
+    .faq-item summary {
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 1.05rem;
+        list-style: none;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+        color: var(--cc-ink);
+    }
+    .faq-item summary::-webkit-details-marker { display: none; }
+    .faq-item summary::after {
+        content: '+';
+        font-size: 1.4rem;
+        line-height: 1;
+        transition: transform .2s ease;
+    }
+    .faq-item[open] summary::after { content: '–'; }
+    .faq-item__body {
+        margin: 0.85rem 0 0;
+        color: var(--cc-muted);
+        line-height: 1.65;
+    }
+    .faq-item__body a { color: var(--cc-ink); text-decoration: underline; }
+    .faq-help {
+        margin-top: 3rem;
+        padding: 1.75rem;
+        border: 1px solid var(--cc-line);
+        border-radius: 1.25rem;
+        background: rgba(255, 255, 255, 0.03);
+    }
+    .faq-help h3 { margin: 0 0 0.5rem; font-size: 1.15rem; }
+    .faq-help p { margin: 0; color: var(--cc-muted); }
+    .faq-help a { color: var(--cc-ink); font-weight: 600; }
+</style>
+
+<section class="faq-page">
+    <div class="container px-4 px-lg-5">
+        <div class="faq-page__layout">
+            <nav class="faq-page__nav" aria-label="Secciones">
+                <a href="#pedidos">Pedidos</a>
+                <a href="#envios">Envíos</a>
+                <a href="#tallas">Tallas y producto</a>
+                <a href="#pagos">Pagos</a>
+                <a href="#disenos">Diseños propios</a>
+                <a href="#cuenta">Cuenta</a>
+            </nav>
+
+            <div>
+                <!-- PEDIDOS -->
+                <section class="faq-section" id="pedidos">
+                    <h2 class="faq-section__title">Pedidos</h2>
+
+                    <details class="faq-item">
+                        <summary>¿Cuánto tarda en prepararse mi pedido?</summary>
+                        <p class="faq-item__body">Los pedidos del archivo (piezas disponibles) se preparan en 1 a 2 días hábiles. Los pedidos con diseño propio o sobre demanda tardan de 3 a 5 días hábiles antes de salir a paquetería.</p>
+                    </details>
+
+                    <details class="faq-item">
+                        <summary>¿Cómo veo el estado de mi pedido?</summary>
+                        <p class="faq-item__body">Entra a <a href="{% url 'tienda:my_orders' %}">Mis pedidos</a>, ahí ves todos tus pedidos con su estatus y número de guía cuando ya está en camino. También te llega un correo automático cuando cambia el estado.</p>
+                    </details>
+
+                    <details class="faq-item">
+                        <summary>¿Puedo modificar mi pedido después de pagarlo?</summary>
+                        <p class="faq-item__body">Si el pedido todavía no entra a producción (en estado "Pendiente"), escríbenos por Instagram en menos de 2 horas y lo ajustamos. Una vez en producción ya no se puede cambiar talla, color ni diseño.</p>
+                    </details>
+
+                    <details class="faq-item">
+                        <summary>¿Puedo cancelar mi pedido?</summary>
+                        <p class="faq-item__body">Sí, mientras esté en estado "Pendiente" y no haya entrado a producción. La cancelación es total y el reembolso llega a tu método de pago original en 5 a 10 días hábiles.</p>
+                    </details>
+                </section>
+
+                <!-- ENVIOS -->
+                <section class="faq-section" id="envios">
+                    <h2 class="faq-section__title">Envíos</h2>
+
+                    <details class="faq-item">
+                        <summary>¿A dónde envían?</summary>
+                        <p class="faq-item__body">Envíos a toda la República Mexicana. Para entregas internacionales, escríbenos primero por Instagram para cotizar.</p>
+                    </details>
+
+                    <details class="faq-item">
+                        <summary>¿Cuánto cuesta el envío?</summary>
+                        <p class="faq-item__body">El costo se calcula en el checkout según tu código postal y el peso del paquete. Envío estándar dentro de México suele estar entre $99 y $199 MXN.</p>
+                    </details>
+
+                    <details class="faq-item">
+                        <summary>¿Cuánto tarda en llegar?</summary>
+                        <p class="faq-item__body">Después de que sale del taller: 2 a 4 días hábiles a zonas metropolitanas, 4 a 7 días hábiles al interior. Recibes el número de guía por correo y puedes rastrearlo desde <a href="{% url 'tienda:my_orders' %}">Mis pedidos</a>.</p>
+                    </details>
+
+                    <details class="faq-item">
+                        <summary>¿Qué pasa si nadie está en casa cuando llega?</summary>
+                        <p class="faq-item__body">La paquetería deja aviso e intenta entregar hasta 3 veces. Después regresa el paquete a la sucursal más cercana — tú tienes 3 días para recogerlo antes de que se devuelva al remitente.</p>
+                    </details>
+                </section>
+
+                <!-- TALLAS -->
+                <section class="faq-section" id="tallas">
+                    <h2 class="faq-section__title">Tallas y producto</h2>
+
+                    <details class="faq-item">
+                        <summary>¿Cómo elijo mi talla?</summary>
+                        <p class="faq-item__body">En cada producto encuentras la <strong>guía de tallas</strong> con medidas en centímetros para nuestros 3 modelos: Oversized Tee (260gsm), Drop Shoulder (260gsm) y Designer Tee (300gsm). Si dudas entre dos tallas, elige la más grande para un fit más relajado.</p>
+                    </details>
+
+                    <details class="faq-item">
+                        <summary>¿De qué material son las playeras?</summary>
+                        <p class="faq-item__body">100% algodón en todos los modelos. Gramaje pesado: 260gsm en Oversized y Drop Shoulder, 300gsm en Designer Tee. Son piezas que aguantan lavadas, no se deforman y caen bien desde el primer uso.</p>
+                    </details>
+
+                    <details class="faq-item">
+                        <summary>¿Cómo lavo mi prenda?</summary>
+                        <p class="faq-item__body">Lavar al revés con agua fría, ciclo suave. No usar blanqueador. Secar a la sombra. No planchar directamente sobre el estampado. Siguiendo esto el diseño dura años.</p>
+                    </details>
+
+                    <details class="faq-item">
+                        <summary>¿El color que veo es exactamente el que llega?</summary>
+                        <p class="faq-item__body">Hacemos lo posible por que las fotos reflejen el color real, pero puede haber pequeñas variaciones por la pantalla en la que veas el producto. Si tu pedido llega con un tono claramente distinto al de la foto, escríbenos.</p>
+                    </details>
+                </section>
+
+                <!-- PAGOS -->
+                <section class="faq-section" id="pagos">
+                    <h2 class="faq-section__title">Pagos</h2>
+
+                    <details class="faq-item">
+                        <summary>¿Qué métodos de pago aceptan?</summary>
+                        <p class="faq-item__body">Tarjetas de crédito y débito (Visa, Mastercard, American Express) a través de Stripe. Todo el proceso es seguro y nosotros no almacenamos los datos de tu tarjeta.</p>
+                    </details>
+
+                    <details class="faq-item">
+                        <summary>¿Es seguro pagar con tarjeta?</summary>
+                        <p class="faq-item__body">Sí. El cobro lo procesa <strong>Stripe</strong>, certificado PCI DSS Nivel 1 (el más alto). Tus datos viajan cifrados y no pasan por nuestros servidores en ningún momento.</p>
+                    </details>
+
+                    <details class="faq-item">
+                        <summary>¿Puedo pagar a meses sin intereses?</summary>
+                        <p class="faq-item__body">Aún no. Si esto cambia te avisamos por Instagram.</p>
+                    </details>
+
+                    <details class="faq-item">
+                        <summary>¿Me dan factura?</summary>
+                        <p class="faq-item__body">Sí, tienes 30 días desde la compra para solicitarla. Escríbenos por Instagram con tu RFC y datos fiscales y te enviamos el CFDI.</p>
+                    </details>
+                </section>
+
+                <!-- DISEÑOS -->
+                <section class="faq-section" id="disenos">
+                    <h2 class="faq-section__title">Diseños propios</h2>
+
+                    <details class="faq-item">
+                        <summary>¿Puedo mandar mi propio diseño?</summary>
+                        <p class="faq-item__body">Sí. Entra al <a href="{% url 'tienda:design_creator' %}">Creador</a>, sube tu archivo (PNG o JPG, mínimo 1500x1500 px) y elige el modelo y la talla. Te mostramos un preview antes de cobrar.</p>
+                    </details>
+
+                    <details class="faq-item">
+                        <summary>¿Qué archivos aceptan?</summary>
+                        <p class="faq-item__body">PNG o JPG en alta resolución (mínimo 1500x1500 px, idealmente 3000x3000 px). Si tienes un PDF o un archivo vectorial (AI/SVG) escríbenos por Instagram para coordinarlo.</p>
+                    </details>
+
+                    <details class="faq-item">
+                        <summary>¿Pueden imprimir cualquier diseño?</summary>
+                        <p class="faq-item__body">Casi cualquiera. No imprimimos contenido con derechos de autor de terceros (logos de marcas, personajes), apología de violencia ni contenido explícito. Si tu diseño es de un tercero necesitamos prueba de que tienes los derechos.</p>
+                    </details>
+
+                    <details class="faq-item">
+                        <summary>¿Cuánto cuesta una pieza con diseño propio?</summary>
+                        <p class="faq-item__body">El precio se actualiza en tiempo real en el creador según el modelo, talla y tamaño del estampado. Sin sorpresas en el checkout.</p>
+                    </details>
+                </section>
+
+                <!-- CUENTA -->
+                <section class="faq-section" id="cuenta">
+                    <h2 class="faq-section__title">Cuenta</h2>
+
+                    <details class="faq-item">
+                        <summary>¿Necesito crear cuenta para comprar?</summary>
+                        <p class="faq-item__body">Sí, así puedes ver el estatus de tus pedidos, guardar direcciones y rastrear envíos. Tomar 30 segundos: solo correo y contraseña.</p>
+                    </details>
+
+                    <details class="faq-item">
+                        <summary>Olvidé mi contraseña, ¿qué hago?</summary>
+                        <p class="faq-item__body">Por ahora restablecemos la contraseña a mano: escríbenos por Instagram desde el correo con el que te registraste y te enviamos una nueva.</p>
+                    </details>
+
+                    <details class="faq-item">
+                        <summary>¿Cómo actualizo mis datos de envío?</summary>
+                        <p class="faq-item__body">Entra a tu <a href="{% url 'tienda:profile' %}">Perfil</a> y edita tu dirección. Los próximos pedidos saldrán con la dirección actualizada.</p>
+                    </details>
+                </section>
+
+                <div class="faq-help">
+                    <h3>¿Sigues con dudas?</h3>
+                    <p>Escríbenos por <a href="https://www.instagram.com/{{ instagram_username }}/" target="_blank" rel="noopener noreferrer">Instagram @{{ instagram_username }}</a> y te respondemos en menos de 24 horas. También revisa nuestra <a href="{% url 'tienda:devoluciones' %}">política de cambios y devoluciones</a>.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

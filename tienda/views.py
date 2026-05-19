@@ -840,6 +840,34 @@ def proceso_compra(request):
     return redirect('tienda:checkout')
 
 
+def faq_view(request):
+    return render(request, 'tienda/faq.html')
+
+
+def devoluciones_view(request):
+    return render(request, 'tienda/devoluciones.html')
+
+
+def newsletter_signup(request):
+    """Captura email del popup de bienvenida y devuelve el código de cupón."""
+    if request.method != "POST":
+        return JsonResponse({"ok": False, "error": "Método no permitido"}, status=405)
+    email = (request.POST.get("email") or "").strip().lower()
+    if not email or "@" not in email or "." not in email.split("@")[-1]:
+        return JsonResponse({"ok": False, "error": "Correo no válido"}, status=400)
+    from tienda.models import NewsletterSubscriber
+    NewsletterSubscriber.objects.get_or_create(
+        email=email,
+        defaults={"source": request.POST.get("source", "popup")[:40]},
+    )
+    coupon = getattr(settings, "WELCOME_COUPON_CODE", "BIENVENIDA10")
+    return JsonResponse({
+        "ok": True,
+        "coupon": coupon,
+        "message": "¡Listo! Aplica este código en el checkout para tu 10% de descuento.",
+    })
+
+
 
 @login_required
 def my_orders(request):
@@ -948,6 +976,7 @@ def stripe_checkout(request):
             line_items=line_items,
             mode='payment',
             metadata={"order_id": str(order.id)},
+            allow_promotion_codes=True,  # permite aplicar cupón BIENVENIDA10
             # Genera URLs absolutas para éxito y cancelación
             success_url=request.build_absolute_uri(reverse('tienda:payment_success')) + "?session_id={CHECKOUT_SESSION_ID}",
             cancel_url=request.build_absolute_uri(reverse('tienda:payment_cancel')),
