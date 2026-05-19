@@ -4104,15 +4104,41 @@ class ExpenseAdmin(admin.ModelAdmin):
         total_recurring_expenses = recurring_expenses.aggregate(total=Sum("monto"))["total"] or 0
         total_one_time_expenses = one_time_expenses.aggregate(total=Sum("monto"))["total"] or 0
 
-        estimated_cogs = 0
+        # ── Mercado Libre del mes (si la app está instalada) ──
+        ml_sales = Decimal("0.00")
+        ml_fees = Decimal("0.00")
+        ml_shipping_cost = Decimal("0.00")
+        ml_net = Decimal("0.00")
+        ml_orders_count = 0
+        ml_cancelled_count = 0
+        try:
+            from mercadolibre.models import MercadoLibreOrder
+            VALID_ML = ("paid", "confirmed", "shipped", "delivered")
+            ml_qs = MercadoLibreOrder.objects.filter(
+                date_created__date__gte=month_start, date_created__date__lte=month_end,
+            )
+            ml_valid = ml_qs.filter(status__in=VALID_ML)
+            ml_sales = ml_valid.aggregate(t=Sum("total_amount"))["t"] or Decimal("0.00")
+            ml_fees = ml_valid.aggregate(t=Sum("marketplace_fee"))["t"] or Decimal("0.00")
+            ml_shipping_cost = ml_valid.aggregate(t=Sum("shipping_cost"))["t"] or Decimal("0.00")
+            ml_net = ml_valid.aggregate(t=Sum("net_received_amount"))["t"] or Decimal("0.00")
+            ml_orders_count = ml_valid.count()
+            ml_cancelled_count = ml_qs.filter(status__in=("cancelled", "invalid")).count()
+        except Exception:
+            pass
+
+        estimated_cogs = Decimal("0.00")
         for order in month_orders:
             for item in order.items.all():
                 estimated_cogs += _product_unit_cost(item.product) * item.quantity
 
-        gross_profit = product_sales - estimated_cogs
+        # Métricas combinadas web + ML
+        combined_sales = Decimal(str(product_sales)) + ml_sales
+        combined_net_sales = Decimal(str(product_sales)) + ml_net  # ML neto (después de fees) + web bruto
+        gross_profit = combined_net_sales - estimated_cogs - ml_shipping_cost
         net_profit = gross_profit - total_expenses
-        gross_margin = (gross_profit / product_sales * 100) if product_sales else Decimal("0.00")
-        net_margin = (net_profit / product_sales * 100) if product_sales else Decimal("0.00")
+        gross_margin = (gross_profit / combined_net_sales * 100) if combined_net_sales else Decimal("0.00")
+        net_margin = (net_profit / combined_net_sales * 100) if combined_net_sales else Decimal("0.00")
 
         top_expenses = list(month_expenses.select_related("categoria").order_by("-monto")[:10])
         recent_orders = month_orders[-10:][::-1]
@@ -4145,12 +4171,21 @@ class ExpenseAdmin(admin.ModelAdmin):
             )
 
         income_statement = [
-            {"label": "Ventas de producto", "amount": product_sales, "tone": "ok"},
-            {"label": "Costo de producto vendido", "amount": -estimated_cogs, "tone": "warn"},
-            {"label": "Utilidad bruta", "amount": gross_profit, "tone": "ok" if gross_profit >= 0 else "danger"},
-            {"label": "Gastos únicos", "amount": -total_one_time_expenses, "tone": "danger"},
-            {"label": "Gastos recurrentes", "amount": -total_recurring_expenses, "tone": "danger"},
-            {"label": "Utilidad neta estimada", "amount": net_profit, "tone": "ok" if net_profit >= 0 else "danger"},
+            {"label": "Ventas sitio web", "amount": product_sales, "tone": "ok", "section": "ingresos"},
+        ]
+        if ml_sales:
+            income_statement += [
+                {"label": "Ventas Mercado Libre (bruto)", "amount": ml_sales, "tone": "ok", "section": "ingresos"},
+                {"label": "Comisión Mercado Libre", "amount": -ml_fees, "tone": "danger", "section": "ingresos", "indent": True},
+                {"label": "Costo envío Mercado Libre", "amount": -ml_shipping_cost, "tone": "warn", "section": "ingresos", "indent": True},
+            ]
+        income_statement += [
+            {"label": "Ingresos netos", "amount": combined_net_sales, "tone": "ok", "section": "subtotal"},
+            {"label": "Costo de producto vendido (COGS)", "amount": -estimated_cogs, "tone": "warn", "section": "costos"},
+            {"label": "Utilidad bruta", "amount": gross_profit, "tone": "ok" if gross_profit >= 0 else "danger", "section": "subtotal"},
+            {"label": "Gastos únicos", "amount": -total_one_time_expenses, "tone": "danger", "section": "gastos"},
+            {"label": "Gastos recurrentes", "amount": -total_recurring_expenses, "tone": "danger", "section": "gastos"},
+            {"label": "Utilidad neta estimada", "amount": net_profit, "tone": "ok" if net_profit >= 0 else "danger", "section": "total"},
         ]
 
         context = dict(
@@ -4173,6 +4208,14 @@ class ExpenseAdmin(admin.ModelAdmin):
             gross_margin=gross_margin,
             net_margin=net_margin,
             month_orders_count=len(month_orders),
+            ml_sales=ml_sales,
+            ml_fees=ml_fees,
+            ml_shipping_cost=ml_shipping_cost,
+            ml_net=ml_net,
+            ml_orders_count=ml_orders_count,
+            ml_cancelled_count=ml_cancelled_count,
+            combined_sales=combined_sales,
+            combined_net_sales=combined_net_sales,
             month_expenses_count=month_expenses.count(),
             recurring_expenses_count=recurring_expenses.count(),
             one_time_expenses_count=one_time_expenses.count(),

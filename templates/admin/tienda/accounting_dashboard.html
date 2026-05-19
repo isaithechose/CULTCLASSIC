@@ -3,276 +3,387 @@
 {% block extrastyle %}
 {{ block.super }}
 <style>
-  .accounting-grid {
+  .acc {
+    --acc-good: #2dbe6c;
+    --acc-bad: #e05050;
+    --acc-warn: #f0a500;
+    --acc-info: #4a9eff;
+  }
+  .acc__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .acc__month-nav {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--cc-panel);
+    border: 1px solid var(--cc-border);
+    border-radius: 10px;
+    padding: 6px;
+  }
+  .acc__month-nav a {
+    background: transparent;
+    color: var(--cc-muted);
+    padding: 6px 10px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 13px;
+  }
+  .acc__month-nav a:hover { background: #1a1a1a; color: #fff; }
+  .acc__month-label {
+    color: #fff;
+    font-weight: 600;
+    padding: 0 12px;
+    font-size: 14px;
+  }
+  details.acc__tools {
+    background: var(--cc-panel);
+    border: 1px solid var(--cc-border);
+    border-radius: 10px;
+    margin-bottom: 16px;
+  }
+  details.acc__tools[open] summary { border-bottom: 1px solid var(--cc-border); }
+  details.acc__tools summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 10px 14px;
+    color: var(--cc-muted);
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  details.acc__tools summary::-webkit-details-marker { display: none; }
+  details.acc__tools summary::after { content: '▾'; opacity: 0.5; }
+  details.acc__tools[open] summary::after { content: '▴'; }
+  .acc__tools-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 8px;
+    padding: 12px 14px;
+  }
+  .acc__tools-grid a, .acc__tools-grid button {
+    background: #1a1a1a !important;
+    color: #ddd !important;
+    border: 1px solid var(--cc-border-2) !important;
+    padding: 8px 12px !important;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 12.5px;
+    text-align: center;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .acc__tools-grid a:hover, .acc__tools-grid button:hover {
+    background: #222 !important;
+    color: #fff !important;
+  }
+  .acc__tools-grid form { margin: 0; }
+
+  .acc__kpis {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 1rem;
-    margin: 1rem 0 1.4rem;
+    gap: 12px;
+    margin-bottom: 16px;
   }
-  .accounting-card,
-  .accounting-panel {
-    background: #fff;
-    border: 1px solid #e8e8ef;
-    border-radius: 18px;
-    box-shadow: 0 12px 30px rgba(16, 24, 40, 0.06);
-  }
-  .accounting-card {
-    padding: 1rem 1.1rem;
-  }
-  .accounting-label {
-    color: #6b7280;
-    font-size: 0.82rem;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    margin-bottom: 0.45rem;
-  }
-  .accounting-value {
-    font-size: 1.9rem;
-    line-height: 1;
-    font-weight: 800;
-    color: #111827;
-  }
-  .accounting-value--danger { color: #b42318; }
-  .accounting-value--ok { color: #05603a; }
-  .accounting-value--warn { color: #9a6700; }
-  .accounting-panels {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-    margin-bottom: 1.3rem;
-  }
-  .accounting-panel {
-    padding: 1rem 1.1rem;
-  }
-  .accounting-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.65rem;
-  }
-  .accounting-item {
-    display: flex;
-    justify-content: space-between;
-    gap: 0.8rem;
-    padding: 0.7rem 0.8rem;
+  .acc__kpi {
+    background: var(--cc-panel);
+    border: 1px solid var(--cc-border);
     border-radius: 12px;
-    background: #f8f8fb;
+    padding: 16px 18px;
   }
-  .accounting-item strong {
-    display: block;
-    color: #111827;
+  .acc__kpi-label {
+    margin: 0 0 8px;
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--cc-muted);
   }
-  .accounting-item span {
-    color: #6b7280;
-    font-size: 0.92rem;
+  .acc__kpi-value {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 700;
+    color: #fff;
+    font-family: ui-monospace, monospace;
+    letter-spacing: -0.01em;
   }
-  .accounting-actions {
-    display: flex;
-    gap: 0.75rem;
-    flex-wrap: wrap;
-    margin-bottom: 1rem;
-    align-items: center;
-    justify-content: space-between;
+  .acc__kpi-sub {
+    margin: 6px 0 0;
+    color: var(--cc-faint);
+    font-size: 11px;
   }
-  .accounting-actions__links,
-  .accounting-month-nav {
-    display: flex;
-    gap: 0.75rem;
-    flex-wrap: wrap;
-    align-items: center;
+  .acc__kpi--good .acc__kpi-value { color: var(--acc-good); }
+  .acc__kpi--bad .acc__kpi-value { color: var(--acc-bad); }
+  .acc__kpi--warn .acc__kpi-value { color: var(--acc-warn); }
+
+  .acc__section-title {
+    margin: 24px 0 12px;
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--cc-muted);
+    font-weight: 600;
   }
-  .accounting-month-nav strong {
-    color: #111827;
-    font-size: 1.05rem;
-    min-width: 8.5rem;
-    text-align: center;
-  }
-  .accounting-section-title {
-    margin: 1.1rem 0 0.2rem;
-    color: #111827;
-  }
-  .accounting-statement {
-    margin-bottom: 1.3rem;
+
+  .acc__statement {
+    background: var(--cc-panel);
+    border: 1px solid var(--cc-border);
+    border-radius: 12px;
     overflow: hidden;
+    margin-bottom: 16px;
   }
-  .accounting-row {
+  .acc__row {
     display: grid;
     grid-template-columns: 1fr auto;
-    gap: 1rem;
-    padding: 0.85rem 1rem;
-    border-bottom: 1px solid #edf0f5;
+    gap: 12px;
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--cc-border);
     align-items: center;
   }
-  .accounting-row:last-child {
-    border-bottom: 0;
+  .acc__row:last-child { border-bottom: 0; }
+  .acc__row[data-section="indent"] { padding-left: 38px; }
+  .acc__row[data-section="subtotal"] {
+    background: #0d0d0d;
+    border-top: 1px solid var(--cc-border-2);
+    border-bottom: 1px solid var(--cc-border-2);
   }
-  .accounting-row--total {
-    background: #f8fafc;
-    font-weight: 800;
+  .acc__row[data-section="subtotal"] .acc__row-label { font-weight: 600; }
+  .acc__row[data-section="total"] {
+    background: #1a1a1a;
+    font-weight: 700;
+    font-size: 1.05em;
   }
-  .accounting-amount {
-    font-weight: 800;
-    color: #111827;
+  .acc__row[data-section="total"] .acc__row-label { color: #fff; text-transform: uppercase; letter-spacing: 0.06em; font-size: 12px; }
+  .acc__row-label { color: var(--cc-text); }
+  .acc__row-note { display: block; color: var(--cc-faint); font-size: 11px; margin-top: 2px; }
+  .acc__row-amount {
+    font-family: ui-monospace, monospace;
+    font-weight: 600;
+    color: #fff;
   }
-  .accounting-amount--danger { color: #b42318; }
-  .accounting-amount--ok { color: #05603a; }
-  .accounting-amount--warn { color: #9a6700; }
-  .accounting-note {
-    color: #6b7280;
-    font-size: 0.92rem;
-    margin-top: 0.35rem;
+  .acc__row-amount--ok { color: var(--acc-good); }
+  .acc__row-amount--danger { color: var(--acc-bad); }
+  .acc__row-amount--warn { color: var(--acc-warn); }
+
+  .acc__cols {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 16px;
   }
-  @media (max-width: 980px) {
-    .accounting-panels {
-      grid-template-columns: 1fr;
-    }
-    .accounting-actions {
-      justify-content: flex-start;
-    }
-    .accounting-month-nav strong {
-      text-align: left;
-    }
+  @media (max-width: 800px) {
+    .acc__cols { grid-template-columns: 1fr; }
   }
+  .acc__panel {
+    background: var(--cc-panel);
+    border: 1px solid var(--cc-border);
+    border-radius: 12px;
+    padding: 16px 18px;
+  }
+  .acc__panel h3 {
+    margin: 0 0 12px;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--cc-muted);
+    font-weight: 600;
+  }
+  .acc__list-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--cc-border);
+  }
+  .acc__list-item:last-child { border-bottom: 0; }
+  .acc__list-item strong { display: block; color: #fff; font-size: 13.5px; font-weight: 500; }
+  .acc__list-item span { display: block; color: var(--cc-faint); font-size: 11px; margin-top: 2px; }
+  .acc__list-item-amt {
+    color: var(--cc-text);
+    font-family: ui-monospace, monospace;
+    font-weight: 600;
+    font-size: 14px;
+    white-space: nowrap;
+  }
+  .acc__empty {
+    padding: 24px;
+    text-align: center;
+    color: var(--cc-faint);
+    font-size: 13px;
+  }
+  .acc__alert {
+    padding: 10px 14px;
+    background: rgba(224,80,80,0.08);
+    border: 1px solid rgba(224,80,80,0.2);
+    border-left: 3px solid var(--acc-bad);
+    border-radius: 6px;
+    margin-bottom: 12px;
+    color: var(--cc-muted);
+    font-size: 12px;
+  }
+  .acc__alert strong { color: var(--acc-bad); }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="accounting-actions">
-  <div class="accounting-actions__links">
-    <a class="button default" href="{% url 'admin:tienda_businesspayment_business_calendar' %}">Calendario negocio</a>
-    <a class="button" href="{% url 'admin:tienda_businesspayment_changelist' %}">Pagos programados</a>
-    <a class="button" href="{% url 'admin:tienda_expense_changelist' %}">Ver gastos</a>
-    <a class="button" href="{% url 'admin:tienda_order_changelist' %}?status__exact=Completed">Ver ventas</a>
-    <a class="button" href="{% url 'admin:tienda_inventorymovement_changelist' %}">Ver movimientos</a>
-    <a class="button" href="{% url 'admin:tienda_accountingaccount_changelist' %}">Catálogo de cuentas</a>
-    <a class="button" href="{% url 'admin:tienda_journalentry_changelist' %}">Pólizas</a>
-    <a class="button" href="{% url 'admin:tienda_journalentry_trial_balance' %}?month={{ current_month_value }}">Balanza</a>
-    <a class="button" href="{% url 'admin:tienda_journalentry_unbalanced' %}?month={{ current_month_value }}">Auditoría</a>
-    <a class="button" href="{% url 'admin:tienda_journalentry_income_statement' %}?month={{ current_month_value }}">Resultados pólizas</a>
-    <a class="button" href="{% url 'admin:tienda_journalentry_balance_sheet' %}?month={{ current_month_value }}">Balance general</a>
-    <a class="button" href="{% url 'admin:tienda_journalentry_trial_balance_export' %}?month={{ current_month_value }}">Exportar balanza</a>
-    <a class="button" href="{% url 'admin:tienda_journalentry_entries_export' %}?month={{ current_month_value }}">Exportar pólizas</a>
-    <a class="button" href="{% url 'admin:tienda_accountingperiodclose_changelist' %}">Cierres</a>
-    <a class="button" href="{% url 'admin:tienda_moneyaccount_changelist' %}">Cuentas de dinero</a>
-    <a class="button" href="{% url 'admin:tienda_bankmovement_changelist' %}">Conciliación</a>
-    <form method="post" action="{% url 'admin:tienda_journalentry_generate_missing' %}" style="display:inline-flex;margin:0;">
-      {% csrf_token %}
-      <input type="hidden" name="next" value="{% url 'admin:tienda_expense_accounting_dashboard' %}?month={{ current_month_value }}">
-      <button type="submit" class="button">Generar pólizas faltantes</button>
-    </form>
-  </div>
-  <div class="accounting-month-nav">
-    <a class="button" href="?month={{ previous_month }}">Anterior</a>
-    <strong>{{ month_label }}</strong>
-    <a class="button" href="?month={{ next_month }}">Siguiente</a>
-  </div>
-</div>
+<div class="acc">
 
-<div class="accounting-grid">
-  <div class="accounting-card">
-    <div class="accounting-label">Ventas de producto</div>
-    <div class="accounting-value accounting-value--ok">${{ product_sales|floatformat:2 }}</div>
-    <div>{{ month_orders_count }} pedidos completados</div>
-  </div>
-  <div class="accounting-card">
-    <div class="accounting-label">Gastos totales</div>
-    <div class="accounting-value accounting-value--danger">${{ total_expenses|floatformat:2 }}</div>
-    <div>{{ one_time_expenses_count }} únicos · {{ recurring_expenses_count }} recurrentes</div>
-  </div>
-  <div class="accounting-card">
-    <div class="accounting-label">Costo producto vendido</div>
-    <div class="accounting-value accounting-value--warn">${{ estimated_cogs|floatformat:2 }}</div>
-    <div>Margen bruto: {{ gross_margin|floatformat:1 }}%</div>
-  </div>
-  <div class="accounting-card">
-    <div class="accounting-label">Utilidad neta estimada</div>
-    <div class="accounting-value {% if net_profit >= 0 %}accounting-value--ok{% else %}accounting-value--danger{% endif %}">${{ net_profit|floatformat:2 }}</div>
-    <div>Margen neto: {{ net_margin|floatformat:1 }}%</div>
-  </div>
-</div>
-
-<h2 class="accounting-section-title">Estado de resultados</h2>
-<div class="accounting-panel accounting-statement">
-  {% for row in income_statement %}
-    <div class="accounting-row {% if forloop.last %}accounting-row--total{% endif %}">
-      <div>
-        <strong>{{ row.label }}</strong>
-        {% if row.label == "Ventas de producto" and shipping_income %}
-          <div class="accounting-note">Envío cobrado aparte: ${{ shipping_income|floatformat:2 }}</div>
-        {% endif %}
-      </div>
-      <div class="accounting-amount accounting-amount--{{ row.tone }}">${{ row.amount|floatformat:2 }}</div>
+  {# ── Encabezado: navegación entre meses ────────────── #}
+  <div class="acc__head">
+    <div class="acc__month-nav">
+      <a href="?month={{ previous_month }}">← Anterior</a>
+      <span class="acc__month-label">{{ month_label }}</span>
+      <a href="?month={{ next_month }}">Siguiente →</a>
     </div>
-  {% endfor %}
-</div>
+  </div>
 
-<div class="accounting-panels">
-  <div class="accounting-panel">
-    <h3>Gastos más altos del mes</h3>
-    <div class="accounting-list">
+  {# ── KPIs principales ─────────────────────────────── #}
+  <div class="acc__kpis">
+    <div class="acc__kpi acc__kpi--good">
+      <p class="acc__kpi-label">Ingresos del mes</p>
+      <p class="acc__kpi-value">${{ combined_net_sales|floatformat:0 }}</p>
+      <p class="acc__kpi-sub">Web ${{ product_sales|floatformat:0 }}{% if ml_sales %} · ML neto ${{ ml_net|floatformat:0 }}{% endif %}</p>
+    </div>
+    <div class="acc__kpi acc__kpi--warn">
+      <p class="acc__kpi-label">Costo producto vendido</p>
+      <p class="acc__kpi-value">${{ estimated_cogs|floatformat:0 }}</p>
+      <p class="acc__kpi-sub">Margen bruto: {{ gross_margin|floatformat:1 }}%</p>
+    </div>
+    <div class="acc__kpi acc__kpi--bad">
+      <p class="acc__kpi-label">Gastos totales</p>
+      <p class="acc__kpi-value">${{ total_expenses|floatformat:0 }}</p>
+      <p class="acc__kpi-sub">{{ one_time_expenses_count }} únicos · {{ recurring_expenses_count }} recurrentes</p>
+    </div>
+    <div class="acc__kpi {% if net_profit >= 0 %}acc__kpi--good{% else %}acc__kpi--bad{% endif %}">
+      <p class="acc__kpi-label">Utilidad neta estimada</p>
+      <p class="acc__kpi-value">${{ net_profit|floatformat:0 }}</p>
+      <p class="acc__kpi-sub">Margen neto: {{ net_margin|floatformat:1 }}%</p>
+    </div>
+  </div>
+
+  {% if ml_cancelled_count %}
+    <div class="acc__alert">
+      <strong>{{ ml_cancelled_count }}</strong> pedido{{ ml_cancelled_count|pluralize:"s" }} de ML cancelado{{ ml_cancelled_count|pluralize:"s" }} este mes — excluido{{ ml_cancelled_count|pluralize:"s" }} de los ingresos.
+    </div>
+  {% endif %}
+
+  {# ── Toolbar (colapsable) ────────────────────────── #}
+  <details class="acc__tools">
+    <summary>Acciones contables &amp; reportes</summary>
+    <div class="acc__tools-grid">
+      <a href="{% url 'admin:tienda_businesspayment_business_calendar' %}">📅 Calendario</a>
+      <a href="{% url 'admin:tienda_businesspayment_changelist' %}">💳 Pagos programados</a>
+      <a href="{% url 'admin:tienda_expense_changelist' %}">📋 Ver gastos</a>
+      <a href="{% url 'admin:tienda_order_changelist' %}?status__exact=Completed">🛒 Ver ventas</a>
+      <a href="{% url 'admin:tienda_inventorymovement_changelist' %}">📦 Movimientos</a>
+      <a href="{% url 'admin:tienda_accountingaccount_changelist' %}">📚 Catálogo de cuentas</a>
+      <a href="{% url 'admin:tienda_journalentry_changelist' %}">📝 Pólizas</a>
+      <a href="{% url 'admin:tienda_journalentry_trial_balance' %}?month={{ current_month_value }}">⚖️ Balanza</a>
+      <a href="{% url 'admin:tienda_journalentry_unbalanced' %}?month={{ current_month_value }}">🔍 Auditoría</a>
+      <a href="{% url 'admin:tienda_journalentry_income_statement' %}?month={{ current_month_value }}">📊 Resultados pólizas</a>
+      <a href="{% url 'admin:tienda_journalentry_balance_sheet' %}?month={{ current_month_value }}">📑 Balance general</a>
+      <a href="{% url 'admin:tienda_journalentry_trial_balance_export' %}?month={{ current_month_value }}">⬇️ Exportar balanza</a>
+      <a href="{% url 'admin:tienda_journalentry_entries_export' %}?month={{ current_month_value }}">⬇️ Exportar pólizas</a>
+      <a href="{% url 'admin:tienda_accountingperiodclose_changelist' %}">🔒 Cierres</a>
+      <a href="{% url 'admin:tienda_moneyaccount_changelist' %}">💰 Cuentas dinero</a>
+      <a href="{% url 'admin:tienda_bankmovement_changelist' %}">🏦 Conciliación</a>
+      <form method="post" action="{% url 'admin:tienda_journalentry_generate_missing' %}">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{% url 'admin:tienda_expense_accounting_dashboard' %}?month={{ current_month_value }}">
+        <button type="submit">⚙️ Generar pólizas faltantes</button>
+      </form>
+    </div>
+  </details>
+
+  {# ── Estado de resultados ────────────────────────── #}
+  <p class="acc__section-title">Estado de resultados — {{ month_label }}</p>
+  <div class="acc__statement">
+    {% for row in income_statement %}
+      <div class="acc__row" data-section="{% if row.indent %}indent{% else %}{{ row.section }}{% endif %}">
+        <div>
+          <span class="acc__row-label">{{ row.label }}</span>
+          {% if row.label == "Ventas sitio web" and shipping_income %}
+            <small class="acc__row-note">Envío cobrado aparte: ${{ shipping_income|floatformat:2 }}</small>
+          {% endif %}
+          {% if row.label == "Ventas Mercado Libre (bruto)" %}
+            <small class="acc__row-note">{{ ml_orders_count }} pedido{{ ml_orders_count|pluralize:"s" }} válido{{ ml_orders_count|pluralize:"s" }}</small>
+          {% endif %}
+        </div>
+        <div class="acc__row-amount acc__row-amount--{{ row.tone }}">${{ row.amount|floatformat:2 }}</div>
+      </div>
+    {% endfor %}
+  </div>
+
+  {# ── Detalles por columna ────────────────────────── #}
+  <div class="acc__cols">
+    <div class="acc__panel">
+      <h3>Gastos más altos del mes</h3>
       {% for expense in top_expenses %}
-        <div class="accounting-item">
+        <div class="acc__list-item">
           <div>
             <strong>{{ expense.concepto }}</strong>
             <span>{{ expense.categoria|default:"Sin categoría" }}{% if expense.proveedor %} · {{ expense.proveedor }}{% endif %}</span>
           </div>
-          <strong>${{ expense.monto|floatformat:2 }}</strong>
+          <span class="acc__list-item-amt">${{ expense.monto|floatformat:2 }}</span>
         </div>
       {% empty %}
-        <p>No hay gastos registrados este mes.</p>
+        <div class="acc__empty">No hay gastos registrados este mes.</div>
       {% endfor %}
     </div>
-  </div>
 
-  <div class="accounting-panel">
-    <h3>Gastos recurrentes activos</h3>
-    <div class="accounting-list">
+    <div class="acc__panel">
+      <h3>Gastos recurrentes activos</h3>
       {% for item in active_recurring_expenses %}
-        <div class="accounting-item">
+        <div class="acc__list-item">
           <div>
             <strong>{{ item.expense.concepto }}</strong>
             <span>{{ item.expense.get_recurrencia_display }} · siguiente {{ item.next_date|date:"Y-m-d" }}</span>
           </div>
-          <strong>${{ item.expense.monto|floatformat:2 }}</strong>
+          <span class="acc__list-item-amt">${{ item.expense.monto|floatformat:2 }}</span>
         </div>
       {% empty %}
-        <p>No hay gastos recurrentes activos.</p>
+        <div class="acc__empty">Sin recurrentes activos.</div>
       {% endfor %}
     </div>
   </div>
-</div>
 
-<div class="accounting-panels">
-  <div class="accounting-panel">
-    <h3>Desglose por categoría</h3>
-    <div class="accounting-list">
+  <div class="acc__cols">
+    <div class="acc__panel">
+      <h3>Desglose por categoría</h3>
       {% for item in expense_breakdown %}
-        <div class="accounting-item">
-          <div>
-            <strong>{{ item.label }}</strong>
-          </div>
-          <strong>${{ item.total|floatformat:2 }}</strong>
+        <div class="acc__list-item">
+          <strong>{{ item.label }}</strong>
+          <span class="acc__list-item-amt">${{ item.total|floatformat:2 }}</span>
         </div>
       {% empty %}
-        <p>No hay categorías con gasto todavía.</p>
+        <div class="acc__empty">Sin categorías con gasto todavía.</div>
       {% endfor %}
     </div>
-  </div>
 
-  <div class="accounting-panel">
-    <h3>Ventas recientes del mes</h3>
-    <div class="accounting-list">
+    <div class="acc__panel">
+      <h3>Ventas recientes del mes</h3>
       {% for order in recent_orders %}
-        <div class="accounting-item">
+        <div class="acc__list-item">
           <div>
             <strong>Pedido #{{ order.id }}</strong>
-            <span>{{ order.customer|default:"Sin cliente" }} · {{ order.created_at|date:"Y-m-d H:i" }}</span>
+            <span>{{ order.customer|default:"Sin cliente" }} · {{ order.created_at|date:"d M H:i" }}</span>
           </div>
-          <strong>${{ order.subtotal_price|floatformat:2 }}</strong>
+          <span class="acc__list-item-amt">${{ order.subtotal_price|floatformat:2 }}</span>
         </div>
       {% empty %}
-        <p>No hay ventas completadas este mes.</p>
+        <div class="acc__empty">Sin ventas completadas este mes.</div>
       {% endfor %}
     </div>
   </div>
+
 </div>
 {% endblock %}
