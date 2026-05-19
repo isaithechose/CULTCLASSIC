@@ -191,6 +191,74 @@ def sync_listings(cred, page_size=50):
     return saved
 
 
+def publish_product_to_ml(cred, producto, category_id=None, listing_type=None):
+    """
+    Publica un Producto local como item nuevo en Mercado Libre.
+    Devuelve el MercadoLibreListing creado (con producto enlazado).
+    """
+    from django.conf import settings as _settings
+    cred = _ensure_fresh(cred)
+
+    category_id = category_id or getattr(_settings, "ML_DEFAULT_CATEGORY_ID", "MLM173159")
+    listing_type = listing_type or getattr(_settings, "ML_DEFAULT_LISTING_TYPE", "gold_special")
+    site_url = getattr(_settings, "SITE_URL", "https://cultclassics.shop").rstrip("/")
+
+    # Imágenes — Producto.imagen (FileField) + cualquier ImageMedia relacionado
+    pictures = []
+    if getattr(producto, "imagen", None):
+        try:
+            url = producto.imagen.url
+            if not url.startswith("http"):
+                url = f"{site_url}{url}"
+            pictures.append({"source": url})
+        except Exception:
+            pass
+
+    payload = {
+        "title": (producto.nombre or "Producto")[:60],
+        "category_id": category_id,
+        "price": float(producto.precio or 0),
+        "currency_id": "MXN",
+        "available_quantity": int(getattr(producto, "stock", 0) or 0),
+        "buying_mode": "buy_it_now",
+        "listing_type_id": listing_type,
+        "condition": "new",
+        "description": {"plain_text": (getattr(producto, "descripcion", "") or producto.nombre or "")[:50000]},
+        "pictures": pictures or [{"source": f"{site_url}/static/images/logo.png"}],
+    }
+
+    r = requests.post(
+        f"{API_BASE}/items",
+        headers={**_headers(cred), "Content-Type": "application/json"},
+        json=payload,
+        timeout=30,
+    )
+    if not r.ok:
+        body = r.text[:500]
+        logger.error("ML publish_product %s: %s", r.status_code, body)
+        raise requests.HTTPError(f"{r.status_code} — {body}", response=r)
+    data = r.json()
+
+    listing, _ = MercadoLibreListing.objects.update_or_create(
+        ml_id=data["id"],
+        defaults={
+            "producto": producto,
+            "title": data.get("title", ""),
+            "price": data.get("price", 0),
+            "currency_id": data.get("currency_id", "MXN"),
+            "available_quantity": data.get("available_quantity", 0),
+            "sold_quantity": data.get("sold_quantity", 0),
+            "status": data.get("status", ""),
+            "permalink": data.get("permalink", "") or "",
+            "thumbnail": data.get("thumbnail", "") or "",
+            "listing_type_id": data.get("listing_type_id", "") or "",
+            "last_pushed_stock": data.get("available_quantity", 0),
+            "raw": data,
+        },
+    )
+    return listing
+
+
 def push_tracking_to_ml(cred, shipment_id, tracking_number, carrier=""):
     """
     Envía el número de guía a Mercado Envíos para que el comprador lo vea.

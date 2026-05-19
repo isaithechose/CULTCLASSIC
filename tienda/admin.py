@@ -1243,7 +1243,32 @@ class ProductoAdmin(admin.ModelAdmin):
     list_filter = ("disponible", "categoria", "subcategoria", "fecha_creacion", "fecha_actualizacion")
     search_fields = ("nombre", "descripcion", "slug_imagen")
     autocomplete_fields = ("categoria", "subcategoria")
-    actions = [importar_disenos, marcar_disponibles, marcar_no_disponibles, generar_variantes_faltantes]
+    actions = [importar_disenos, marcar_disponibles, marcar_no_disponibles, generar_variantes_faltantes, "publicar_en_mercadolibre"]
+
+    @admin.action(description="Publicar en Mercado Libre")
+    def publicar_en_mercadolibre(self, request, queryset):
+        from mercadolibre import api as ml_api
+        from mercadolibre.models import MercadoLibreCredential, MercadoLibreListing
+        cred = MercadoLibreCredential.objects.first()
+        if not cred:
+            self.message_user(request, "No hay cuenta de Mercado Libre conectada.", level=messages.ERROR)
+            return
+        ok = skipped = errs = 0
+        for p in queryset:
+            if MercadoLibreListing.objects.filter(producto=p).exists():
+                skipped += 1
+                continue
+            try:
+                listing = ml_api.publish_product_to_ml(cred, p)
+                ok += 1
+            except Exception as exc:
+                errs += 1
+                self.message_user(request, f"{p.nombre}: {str(exc)[:200]}", level=messages.WARNING)
+        self.message_user(
+            request,
+            f"Publicados: {ok} · Saltados (ya estaban): {skipped} · Errores: {errs}",
+            level=messages.SUCCESS if ok > 0 else messages.INFO,
+        )
     list_editable = ("stock", "disponible")
     readonly_fields = (
         "fecha_creacion",

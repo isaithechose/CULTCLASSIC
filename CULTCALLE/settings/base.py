@@ -72,6 +72,10 @@ INSTAGRAM_USERNAME = config('INSTAGRAM_USERNAME', default='cultclasiccs')
 ML_APP_ID = config('ML_APP_ID', default='')
 ML_APP_SECRET = config('ML_APP_SECRET', default='')
 ML_REDIRECT_URI = config('ML_REDIRECT_URI', default='http://127.0.0.1:8000/mercadolibre/callback/')
+# Categoría default para publicar productos (MLM173159 = Ropa en MX).
+ML_DEFAULT_CATEGORY_ID = config('ML_DEFAULT_CATEGORY_ID', default='MLM173159')
+ML_DEFAULT_LISTING_TYPE = config('ML_DEFAULT_LISTING_TYPE', default='gold_special')
+SITE_URL = config('SITE_URL', default='https://cultclassics.shop')
 
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
