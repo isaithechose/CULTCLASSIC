@@ -182,6 +182,29 @@ def design_creator(request):
         reverse=True,
     )[:24]
 
+    import re as _re
+    from collections import defaultdict as _defaultdict
+    catalog_groups = _defaultdict(list)
+    _cat_re = _re.compile(r"^(.+?)_[^_]+\.[A-Za-z0-9]+$")
+    for entry in designs_dir.iterdir():
+        if not entry.is_file():
+            continue
+        name = entry.name
+        if name.startswith(user_prefix):
+            continue
+        match = _cat_re.match(name)
+        category = match.group(1).replace("_", " ") if match else "Otros"
+        catalog_groups[category].append(name)
+    catalog = []
+    for category in sorted(catalog_groups.keys(), key=lambda c: c.lower()):
+        files = sorted(catalog_groups[category])
+        catalog.append({
+            "name": category,
+            "slug": slugify(category),
+            "count": len(files),
+            "files": files,
+        })
+
     context = {
         "form": form,
         "selected_design_name": selected_design_name,
@@ -189,6 +212,7 @@ def design_creator(request):
         "saved_designs": own_designs,
         "selected_product_id": selected_product_id,
         "customizable_products": customizable_products,
+        "catalog": catalog,
     }
     return render(request, "tienda/design_creator.html", context)
 

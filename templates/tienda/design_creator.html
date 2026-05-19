@@ -283,6 +283,103 @@
 
     .design-creator__handoff { display: grid; gap: 0.9rem; }
 
+    /* Catálogo de diseños */
+    .design-catalog__toolbar {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin: 0.65rem 0 0.85rem;
+        flex-wrap: wrap;
+    }
+    .design-catalog__search {
+        flex: 1 1 240px;
+        min-height: 2.55rem;
+        padding: 0.55rem 0.85rem;
+        border: 1px solid rgba(255,255,255,0.18);
+        border-radius: 10px;
+        background: rgba(255,255,255,0.05);
+        color: inherit;
+        font-size: 0.95rem;
+    }
+    .design-catalog__search:focus {
+        outline: none;
+        border-color: #c8a96a;
+        box-shadow: 0 0 0 3px rgba(200,169,106,0.22);
+    }
+    .design-catalog__counter {
+        font-size: 0.78rem;
+        color: rgba(255,255,255,0.55);
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+    }
+    .design-catalog__chips {
+        display: flex;
+        gap: 0.4rem;
+        flex-wrap: wrap;
+        margin-bottom: 0.85rem;
+        max-height: 7.5rem;
+        overflow-y: auto;
+        padding-right: 0.35rem;
+    }
+    .design-catalog__chip {
+        background: rgba(255,255,255,0.05);
+        border: 1px solid rgba(255,255,255,0.14);
+        color: rgba(255,255,255,0.78);
+        font-size: 0.78rem;
+        padding: 0.35rem 0.75rem;
+        border-radius: 999px;
+        cursor: pointer;
+        transition: background 0.15s, color 0.15s, border-color 0.15s;
+        white-space: nowrap;
+    }
+    .design-catalog__chip small { opacity: 0.55; margin-left: 0.25rem; }
+    .design-catalog__chip:hover {
+        background: rgba(200,169,106,0.12);
+        border-color: rgba(200,169,106,0.35);
+        color: #fff;
+    }
+    .design-catalog__chip.is-active {
+        background: #c8a96a;
+        border-color: #c8a96a;
+        color: #111;
+    }
+    .design-catalog__chip.is-active small { opacity: 0.7; }
+    .design-catalog__grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+        gap: 0.55rem;
+        max-height: 28rem;
+        overflow-y: auto;
+        padding: 0.25rem;
+        background: rgba(0,0,0,0.18);
+        border-radius: 12px;
+    }
+    .design-catalog__item {
+        position: relative;
+        display: block;
+        aspect-ratio: 1 / 1;
+        background: #1a1a1a;
+        border: 2px solid transparent;
+        border-radius: 10px;
+        overflow: hidden;
+        transition: transform 0.15s, border-color 0.15s;
+    }
+    .design-catalog__item:hover {
+        transform: translateY(-2px);
+        border-color: rgba(200,169,106,0.55);
+    }
+    .design-catalog__item.is-active {
+        border-color: #c8a96a;
+        box-shadow: 0 0 0 2px rgba(200,169,106,0.35);
+    }
+    .design-catalog__item img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        padding: 4px;
+    }
+    .design-catalog__item.is-hidden { display: none; }
+
     /* Shirt color swatches */
     .shirt-color-btn {
         width: 2rem;
@@ -789,6 +886,35 @@
                         </div>
                     </div>
                 </div>
+
+                {% if catalog %}
+                <div class="design-creator__panel design-catalog">
+                    <p class="design-creator__eyebrow">Catálogo de diseños</p>
+                    <div class="design-catalog__toolbar">
+                        <input type="search" id="catalogSearch" class="design-catalog__search" placeholder="Buscar diseño o categoría…" autocomplete="off">
+                        <span class="design-catalog__counter"><span id="catalogVisibleCount">0</span> visibles</span>
+                    </div>
+                    <div class="design-catalog__chips" id="catalogChips">
+                        <button type="button" class="design-catalog__chip is-active" data-category="">Todas</button>
+                        {% for cat in catalog %}
+                        <button type="button" class="design-catalog__chip" data-category="{{ cat.slug }}">{{ cat.name }} <small>({{ cat.count }})</small></button>
+                        {% endfor %}
+                    </div>
+                    <div class="design-catalog__grid" id="catalogGrid">
+                        {% for cat in catalog %}
+                            {% for design_name in cat.files %}
+                            <a class="design-catalog__item{% if selected_design_url and selected_design_url|urlencode == design_name|urlencode %} is-active{% endif %}"
+                               href="{% url 'tienda:design_creator' %}?file={{ design_name|urlencode }}"
+                               data-category="{{ cat.slug }}"
+                               data-name="{{ design_name|lower }}"
+                               title="{{ design_name }}">
+                                <img loading="lazy" src="{{ MEDIA_URL }}diseños_propios/{{ design_name|urlencode }}" alt="{{ design_name }}">
+                            </a>
+                            {% endfor %}
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
 
                 {% if saved_designs %}
                 <div class="design-creator__panel">
@@ -1631,6 +1757,42 @@
         const file = selectedDesignUrl.split("/").pop();
         if (file) window.location.href = `/producto/${quickProductSelect.value}/?diseño=${encodeURIComponent(file)}`;
     });
+
+    // ── Catálogo de diseños: filtro por categoría + búsqueda ──────────────
+    const catalogGrid    = document.getElementById("catalogGrid");
+    const catalogChips   = document.getElementById("catalogChips");
+    const catalogSearch  = document.getElementById("catalogSearch");
+    const catalogCounter = document.getElementById("catalogVisibleCount");
+    if (catalogGrid && catalogChips) {
+        const items = Array.from(catalogGrid.querySelectorAll(".design-catalog__item"));
+        let activeCategory = "";
+        let query = "";
+        const applyFilter = () => {
+            let visible = 0;
+            for (const item of items) {
+                const cat = item.dataset.category || "";
+                const name = item.dataset.name || "";
+                const okCat = !activeCategory || cat === activeCategory;
+                const okSearch = !query || name.includes(query) || cat.includes(query);
+                const show = okCat && okSearch;
+                item.classList.toggle("is-hidden", !show);
+                if (show) visible++;
+            }
+            if (catalogCounter) catalogCounter.textContent = visible.toLocaleString();
+        };
+        catalogChips.addEventListener("click", (e) => {
+            const btn = e.target.closest(".design-catalog__chip");
+            if (!btn) return;
+            activeCategory = btn.dataset.category || "";
+            catalogChips.querySelectorAll(".design-catalog__chip").forEach(b => b.classList.toggle("is-active", b === btn));
+            applyFilter();
+        });
+        catalogSearch?.addEventListener("input", (e) => {
+            query = (e.target.value || "").trim().toLowerCase();
+            applyFilter();
+        });
+        applyFilter();
+    }
 })();
 </script>
 {% endblock %}
