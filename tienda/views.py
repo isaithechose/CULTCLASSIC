@@ -1395,10 +1395,50 @@ def catalogo_diseños(request):
         'page_obj': page_obj
     })
 def catalogo_diseños_propios(request):
-    nuevos = importar_diseños_propios()
-    productos = Producto.objects.filter(categoria__nombre__iexact="Diseños Propios")
-    return render(request, 'tienda/catalogo_diseños_propios.html', {
-        'productos': productos,
-        'nuevos': nuevos,
+    from collections import defaultdict as _defaultdict
+    from pathlib import Path as _Path
+    designs_dir = _Path(settings.MEDIA_ROOT) / "diseños_propios"
+    designs_dir.mkdir(parents=True, exist_ok=True)
 
+    user_prefix = slugify(request.user.username or "cliente") + "-"
+    _KNOWN_PREFIXES = [
+        ("Angel_Streetwear_", "Angel Streetwear"),
+        ("ANIME_POSTER_", "Anime Poster"),
+        ("Anime_VERSION_6_", "Anime V6"),
+        ("Japanese_Anime_", "Japanese Anime"),
+        ("Premium_Halftone_Designs_", "Premium Halftone"),
+        ("Premium_Motor_Cycle_Designs_", "Premium Motor Cycle"),
+        ("Rockband_Designs_", "Rockband"),
+        ("Samurai_Japones_", "Samurai Japones"),
+    ]
+    catalog_groups = _defaultdict(list)
+    for entry in designs_dir.iterdir():
+        if not entry.is_file():
+            continue
+        name = entry.name
+        if name.startswith(user_prefix):
+            continue
+        category = "Otros"
+        for prefix, label in _KNOWN_PREFIXES:
+            if name.startswith(prefix):
+                category = label
+                break
+        catalog_groups[category].append(name)
+    catalog = []
+    total = 0
+    for category in sorted(catalog_groups.keys(), key=lambda c: c.lower()):
+        files = sorted(catalog_groups[category])
+        total += len(files)
+        catalog.append({
+            "name": category,
+            "slug": slugify(category),
+            "count": len(files),
+            "files": files,
+        })
+
+    customizable_products = Producto.objects.filter(disponible=True, stock__gt=0).order_by("nombre")
+    return render(request, "tienda/catalogo_diseños_propios.html", {
+        "catalog": catalog,
+        "catalog_total": total,
+        "customizable_products": customizable_products,
     })
