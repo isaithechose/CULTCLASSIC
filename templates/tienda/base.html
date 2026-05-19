@@ -83,14 +83,8 @@
                 <li class="nav-item">
                     <a class="nav-link" href="{% url 'tienda:archivo' %}">Archivo</a>
                 </li>
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" id="navbarDesigns" href="#" role="button"
-                       data-bs-toggle="dropdown" aria-expanded="false">Diseños</a>
-                    <ul class="dropdown-menu" aria-labelledby="navbarDesigns">
-                        <li><a class="dropdown-item" href="{% url 'tienda:catalogo_diseños' %}">Diseños Anime</a></li>
-                        <li><a class="dropdown-item" href="{% url 'tienda:catalogo_diseños_propios' %}">Diseños Propios</a></li>
-                        <li><a class="dropdown-item" href="{% url 'tienda:design_creator' %}">Creador</a></li>
-                    </ul>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'tienda:design_creator' %}">Diseños</a>
                 </li>
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" id="navbarDropdown" href="#" role="button"
