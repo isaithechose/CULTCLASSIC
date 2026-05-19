@@ -332,20 +332,25 @@ def update_listing_stock(cred, ml_id, qty_or_producto):
         if not payload_variations:
             logger.warning("No hay match local para variaciones de %s — no se actualiza", ml_id)
             return None
-        payload = {"variations": payload_variations}
         total_to_persist = matched_total
+        # Endpoint dedicado de variaciones: evita re-validación de pictures/categoría
+        r = requests.put(
+            f"{API_BASE}/items/{ml_id}/variations",
+            headers=_headers(cred),
+            json=payload_variations,
+            timeout=15,
+        )
     else:
         # Flat
         qty = int(qty_or_producto.stock) if hasattr(qty_or_producto, "stock") else int(qty_or_producto)
-        payload = {"available_quantity": qty}
         total_to_persist = qty
+        r = requests.put(
+            f"{API_BASE}/items/{ml_id}",
+            headers=_headers(cred),
+            json={"available_quantity": qty},
+            timeout=15,
+        )
 
-    r = requests.put(
-        f"{API_BASE}/items/{ml_id}",
-        headers=_headers(cred),
-        json=payload,
-        timeout=15,
-    )
     if not r.ok:
         logger.error("ML update_listing_stock %s: %s", r.status_code, r.text[:300])
         raise requests.HTTPError(f"{r.status_code} — {r.text[:300]}", response=r)
