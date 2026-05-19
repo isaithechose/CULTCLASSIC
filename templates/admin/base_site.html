@@ -461,6 +461,25 @@
   </div>
 
   <div class="cc-sidebar-section">
+    <span class="cc-section-label">Mercado Libre</span>
+    <a class="cc-nav-item {% if 'mercadolibreorder' in request.path %}active{% endif %}" href="{% url 'admin:mercadolibre_mercadolibreorder_changelist' %}">
+      <i class="ti ti-receipt cc-nav-icon" aria-hidden="true"></i><span class="cc-nav-label">Pedidos ML</span>
+      {% if vb_ml_orders_today > 0 %}<span class="cc-badge cc-badge-info">{{ vb_ml_orders_today }}</span>{% endif %}
+    </a>
+    <a class="cc-nav-item {% if 'mercadolibrelisting' in request.path %}active{% endif %}" href="{% url 'admin:mercadolibre_mercadolibrelisting_changelist' %}">
+      <i class="ti ti-tag cc-nav-icon" aria-hidden="true"></i><span class="cc-nav-label">Publicaciones</span>
+      {% if vb_ml_listings_count > 0 %}<span class="cc-badge cc-badge-ok">{{ vb_ml_listings_count }}</span>{% endif %}
+    </a>
+    <a class="cc-nav-item" href="/mercadolibre/sync/">
+      <i class="ti ti-refresh cc-nav-icon" aria-hidden="true"></i><span class="cc-nav-label">Sincronizar</span>
+    </a>
+    <a class="cc-nav-item {% if 'mercadolibrecredential' in request.path %}active{% endif %}" href="{% url 'admin:mercadolibre_mercadolibrecredential_changelist' %}">
+      <i class="ti ti-key cc-nav-icon" aria-hidden="true"></i><span class="cc-nav-label">Conexión</span>
+      {% if vb_ml_connected %}<span class="cc-badge cc-badge-ok">ON</span>{% else %}<span class="cc-badge cc-badge-warn">OFF</span>{% endif %}
+    </a>
+  </div>
+
+  <div class="cc-sidebar-section">
     <span class="cc-section-label">Sistema</span>
     <a class="cc-nav-item {% if 'auth/user' in request.path %}active{% endif %}" href="{% url 'admin:auth_user_changelist' %}">
       <i class="ti ti-users cc-nav-icon" aria-hidden="true"></i><span class="cc-nav-label">Usuarios</span>
