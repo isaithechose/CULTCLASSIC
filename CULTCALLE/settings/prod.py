@@ -242,6 +242,7 @@ JAZZMIN_SETTINGS = {
         {"name": "Inicio", "url": "/", "permissions": ["auth.view_user"]},
         {"model": "tienda.Producto"},
         {"model": "tienda.Order"},
+        {"name": "Mercado Libre", "url": "/admin/mercadolibre/mercadolibreorder/", "permissions": ["mercadolibre.view_mercadolibreorder"], "icon": "fas fa-store"},
         {"model": "auth.User"},
     ],
     "usermenu_links": [
@@ -268,11 +269,13 @@ JAZZMIN_SETTINGS = {
         "tienda.Reseña": "fas fa-star",
         "tienda.ShippingAddress": "fas fa-location-dot",
         "tienda.ShippingUpdate": "fas fa-truck-fast",
+        "tienda.NewsletterSubscriber": "fas fa-envelope-open-text",
+        "mercadolibre": "fas fa-store",
+        "mercadolibre.MercadoLibreCredential": "fas fa-key",
+        "mercadolibre.MercadoLibreOrder": "fas fa-receipt",
+        "mercadolibre.MercadoLibreListing": "fas fa-tag",
     },
     "order_with_respect_to": [
-        "auth",
-        "sites",
-        "socialaccount",
         "tienda",
         "tienda.Categoria",
         "tienda.Subcategoria",
@@ -286,6 +289,13 @@ JAZZMIN_SETTINGS = {
         "tienda.Order",
         "tienda.Carrito",
         "tienda.Reseña",
+        "mercadolibre",
+        "mercadolibre.MercadoLibreCredential",
+        "mercadolibre.MercadoLibreOrder",
+        "mercadolibre.MercadoLibreListing",
+        "auth",
+        "sites",
+        "socialaccount",
     ],
     "navigation_expanded": True,
     "hide_apps": [],
@@ -330,7 +340,28 @@ JAZZMIN_SETTINGS = {
             "url": "/admin/tienda/expense/",
             "icon": "fas fa-wallet",
             "permissions": ["tienda.view_expense"],
-        }]
+        }],
+        "mercadolibre": [{
+            "name": "Sincronizar ahora",
+            "url": "/mercadolibre/sync/",
+            "icon": "fas fa-rotate",
+            "permissions": ["mercadolibre.view_mercadolibrecredential"],
+        }, {
+            "name": "Reconectar cuenta",
+            "url": "/mercadolibre/connect/",
+            "icon": "fas fa-link",
+            "permissions": ["mercadolibre.view_mercadolibrecredential"],
+        }, {
+            "name": "Pedidos ML",
+            "url": "/admin/mercadolibre/mercadolibreorder/",
+            "icon": "fas fa-receipt",
+            "permissions": ["mercadolibre.view_mercadolibreorder"],
+        }, {
+            "name": "Publicaciones activas",
+            "url": "/admin/mercadolibre/mercadolibrelisting/?status__exact=active",
+            "icon": "fas fa-tag",
+            "permissions": ["mercadolibre.view_mercadolibrelisting"],
+        }],
     },
 }
 

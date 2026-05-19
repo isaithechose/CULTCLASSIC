@@ -148,6 +148,7 @@ JAZZMIN_SETTINGS = {
         {'name': 'Inicio', 'url': '/', 'permissions': ['auth.view_user']},
         {'model': 'tienda.Producto'},
         {'model': 'tienda.Order'},
+        {'name': 'Mercado Libre', 'url': '/admin/mercadolibre/mercadolibreorder/', 'permissions': ['mercadolibre.view_mercadolibreorder'], 'icon': 'fas fa-store'},
         {'model': 'auth.User'},
     ],
     'usermenu_links': [
@@ -181,12 +182,17 @@ JAZZMIN_SETTINGS = {
         'mercadolibre.MercadoLibreListing': 'fas fa-tag',
     },
     'order_with_respect_to': [
-        'auth', 'sites', 'socialaccount', 'tienda',
+        'tienda',
         'tienda.Categoria', 'tienda.Subcategoria', 'tienda.Producto',
         'tienda.ProductVariant', 'tienda.InventoryMovement',
         'tienda.ExpenseCategory', 'tienda.Expense',
         'tienda.CashRegisterClosure', 'tienda.BusinessPayment',
         'tienda.Order', 'tienda.Carrito', 'tienda.Reseña',
+        'mercadolibre',
+        'mercadolibre.MercadoLibreCredential',
+        'mercadolibre.MercadoLibreOrder',
+        'mercadolibre.MercadoLibreListing',
+        'auth', 'sites', 'socialaccount',
     ],
     'navigation_expanded': True,
     'hide_apps': [],
@@ -200,6 +206,12 @@ JAZZMIN_SETTINGS = {
             {'name': 'Pagos programados', 'url': '/admin/tienda/businesspayment/', 'icon': 'fas fa-calendar-check', 'permissions': ['tienda.view_businesspayment']},
             {'name': 'Dashboard contable', 'url': '/admin/tienda/expense/accounting-dashboard/', 'icon': 'fas fa-chart-line', 'permissions': ['tienda.view_expense']},
             {'name': 'Gastos', 'url': '/admin/tienda/expense/', 'icon': 'fas fa-wallet', 'permissions': ['tienda.view_expense']},
-        ]
+        ],
+        'mercadolibre': [
+            {'name': 'Sincronizar ahora', 'url': '/mercadolibre/sync/', 'icon': 'fas fa-rotate', 'permissions': ['mercadolibre.view_mercadolibrecredential']},
+            {'name': 'Reconectar cuenta', 'url': '/mercadolibre/connect/', 'icon': 'fas fa-link', 'permissions': ['mercadolibre.view_mercadolibrecredential']},
+            {'name': 'Pedidos hoy', 'url': '/admin/mercadolibre/mercadolibreorder/', 'icon': 'fas fa-receipt', 'permissions': ['mercadolibre.view_mercadolibreorder']},
+            {'name': 'Publicaciones activas', 'url': '/admin/mercadolibre/mercadolibrelisting/?status__exact=active', 'icon': 'fas fa-tag', 'permissions': ['mercadolibre.view_mercadolibrelisting']},
+        ],
     },
 }
