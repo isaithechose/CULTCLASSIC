@@ -20,8 +20,12 @@ class CredentialAdmin(admin.ModelAdmin):
     )
     actions = ["sync_now"]
 
+    def has_add_permission(self, request):
+        # Las credenciales solo se crean por OAuth, no a mano
+        return False
+
     def reconnect_btn(self, obj):
-        return mark_safe('<a class="button" href="/mercadolibre/connect/">Reconectar</a>')
+        return mark_safe('<a class="button" href="/mercadolibre/connect/" style="background:#3483fa;color:#fff;padding:5px 12px;border-radius:4px;text-decoration:none;">Reconectar</a>')
     reconnect_btn.short_description = "Conexión"
 
     @admin.action(description="Sincronizar pedidos y publicaciones")
@@ -45,12 +49,15 @@ class CredentialAdmin(admin.ModelAdmin):
     def changelist_view(self, request, extra_context=None):
         extra_context = extra_context or {}
         if not MercadoLibreCredential.objects.exists():
-            extra_context["title"] = "Conectar Mercado Libre"
-            messages.info(
+            messages.warning(
                 request,
                 mark_safe(
-                    'Aún no hay cuenta conectada. '
-                    '<a href="/mercadolibre/connect/" class="button">Conectar con Mercado Libre</a>'
+                    '<strong>No hay cuenta conectada.</strong> '
+                    '<a href="/mercadolibre/connect/" '
+                    'style="background:#3483fa;color:#fff;padding:6px 14px;'
+                    'border-radius:4px;text-decoration:none;margin-left:8px;'
+                    'display:inline-block;font-weight:600;">'
+                    '🔗 Conectar con Mercado Libre</a>'
                 ),
             )
         return super().changelist_view(request, extra_context)
