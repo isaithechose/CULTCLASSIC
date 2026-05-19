@@ -182,18 +182,29 @@ def design_creator(request):
         reverse=True,
     )[:24]
 
-    import re as _re
     from collections import defaultdict as _defaultdict
     catalog_groups = _defaultdict(list)
-    _cat_re = _re.compile(r"^(.+?)_[^_]+\.[A-Za-z0-9]+$")
+    _KNOWN_PREFIXES = [
+        ("Angel_Streetwear_", "Angel Streetwear"),
+        ("ANIME_POSTER_", "Anime Poster"),
+        ("Anime_VERSION_6_", "Anime V6"),
+        ("Japanese_Anime_", "Japanese Anime"),
+        ("Premium_Halftone_Designs_", "Premium Halftone"),
+        ("Premium_Motor_Cycle_Designs_", "Premium Motor Cycle"),
+        ("Rockband_Designs_", "Rockband"),
+        ("Samurai_Japones_", "Samurai Japones"),
+    ]
     for entry in designs_dir.iterdir():
         if not entry.is_file():
             continue
         name = entry.name
         if name.startswith(user_prefix):
             continue
-        match = _cat_re.match(name)
-        category = match.group(1).replace("_", " ") if match else "Otros"
+        category = "Otros"
+        for prefix, label in _KNOWN_PREFIXES:
+            if name.startswith(prefix):
+                category = label
+                break
         catalog_groups[category].append(name)
     catalog = []
     for category in sorted(catalog_groups.keys(), key=lambda c: c.lower()):
