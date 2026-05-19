@@ -9,7 +9,7 @@ from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from django.utils import timezone
 
-from tienda.models import Producto
+from tienda.models import Producto, ProductVariant
 
 from . import api
 from .models import MercadoLibreCredential, MercadoLibreListing, MercadoLibreOrder
@@ -58,26 +58,35 @@ def push_tracking_on_save(sender, instance, created, **kwargs):
         logger.exception("Fallo al empujar tracking a ML para envío %s", instance.shipping_id)
 
 
-@receiver(post_save, sender=Producto)
-def push_stock_to_ml_on_save(sender, instance, **kwargs):
-    update_fields = kwargs.get("update_fields") or set()
-    # Si el save vino con update_fields explícito y NO incluye 'stock', salir
-    if update_fields and "stock" not in update_fields:
-        return
-
-    listings = MercadoLibreListing.objects.filter(producto=instance)
+def _push_producto_stock(producto):
+    """Empuja el stock del producto a sus publicaciones ML enlazadas.
+    update_listing_stock detecta variations[] y mapea por color/talla."""
+    listings = MercadoLibreListing.objects.filter(producto=producto)
     if not listings.exists():
         return
-
     cred = MercadoLibreCredential.objects.first()
     if not cred:
         return
-
     for listing in listings:
-        if listing.last_pushed_stock == instance.stock:
-            continue  # ya está sincronizado, evita API call inútil
         try:
-            api.update_listing_stock(cred, listing.ml_id, instance.stock)
-            logger.info("Stock empujado a ML: %s → %s unidades", listing.ml_id, instance.stock)
+            api.update_listing_stock(cred, listing.ml_id, producto)
         except Exception:
-            logger.exception("Fallo al empujar stock a ML para %s", listing.ml_id)
+            logger.exception("Fallo al empujar stock a ML para listing %s", listing.ml_id)
+
+
+@receiver(post_save, sender=Producto)
+def push_stock_to_ml_on_producto_save(sender, instance, **kwargs):
+    update_fields = kwargs.get("update_fields") or set()
+    if update_fields and "stock" not in update_fields:
+        return
+    _push_producto_stock(instance)
+
+
+@receiver(post_save, sender=ProductVariant)
+def push_stock_to_ml_on_variant_save(sender, instance, **kwargs):
+    update_fields = kwargs.get("update_fields") or set()
+    if update_fields and "stock" not in update_fields:
+        return
+    if not instance.product_id:
+        return
+    _push_producto_stock(instance.product)

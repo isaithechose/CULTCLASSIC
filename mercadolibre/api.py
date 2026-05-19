@@ -283,22 +283,77 @@ def push_tracking_to_ml(cred, shipment_id, tracking_number, carrier=""):
     return r.json() if r.text else {"ok": True}
 
 
-def update_listing_stock(cred, ml_id, available_quantity):
-    """Actualiza el stock de una publicación en ML."""
+def _extract_combo_value(combos, *aliases):
+    """Devuelve el value_name del primer attribute_combination cuyo id/name calce."""
+    aliases = [a.lower() for a in aliases]
+    for c in combos or []:
+        cid = (c.get("id") or "").lower()
+        cname = (c.get("name") or "").lower()
+        if cid in aliases or any(a in cname for a in aliases):
+            return c.get("value_name")
+    return None
+
+
+def update_listing_stock(cred, ml_id, qty_or_producto):
+    """
+    Actualiza stock de una publicación. Acepta:
+      - int (flat): publica con available_quantity plano.
+      - Producto: si la publicación tiene variations[], mapea cada variación
+        ML a un ProductVariant local por color+talla y publica por variación.
+    """
     cred = _ensure_fresh(cred)
+    listing = MercadoLibreListing.objects.filter(ml_id=ml_id).first()
+    raw = (listing.raw if listing else {}) or {}
+    variations = raw.get("variations") or []
+
+    # Si recibimos un Producto Y la publicación tiene variaciones, vamos por variación
+    if variations and hasattr(qty_or_producto, "pk") and not isinstance(qty_or_producto, int):
+        from tienda.models import ProductVariant
+        producto = qty_or_producto
+        payload_variations = []
+        matched_total = 0
+        for v in variations:
+            combos = v.get("attribute_combinations", [])
+            color_val = _extract_combo_value(combos, "color")
+            size_val = _extract_combo_value(combos, "size", "tama", "talla")
+            qs = ProductVariant.objects.filter(product=producto, activo=True)
+            if color_val:
+                qs = qs.filter(color__iexact=color_val)
+            if size_val:
+                qs = qs.filter(talla__iexact=size_val)
+            local_v = qs.first()
+            if local_v is None:
+                continue
+            payload_variations.append({
+                "id": v["id"],
+                "available_quantity": int(local_v.stock or 0),
+            })
+            matched_total += int(local_v.stock or 0)
+        if not payload_variations:
+            logger.warning("No hay match local para variaciones de %s — no se actualiza", ml_id)
+            return None
+        payload = {"variations": payload_variations}
+        total_to_persist = matched_total
+    else:
+        # Flat
+        qty = int(qty_or_producto.stock) if hasattr(qty_or_producto, "stock") else int(qty_or_producto)
+        payload = {"available_quantity": qty}
+        total_to_persist = qty
+
     r = requests.put(
         f"{API_BASE}/items/{ml_id}",
         headers=_headers(cred),
-        json={"available_quantity": int(available_quantity)},
+        json=payload,
         timeout=15,
     )
-    r.raise_for_status()
-    listing = MercadoLibreListing.objects.filter(ml_id=ml_id).first()
+    if not r.ok:
+        logger.error("ML update_listing_stock %s: %s", r.status_code, r.text[:300])
+        raise requests.HTTPError(f"{r.status_code} — {r.text[:300]}", response=r)
     if listing:
-        listing.available_quantity = int(available_quantity)
-        listing.last_pushed_stock = int(available_quantity)
+        listing.available_quantity = total_to_persist
+        listing.last_pushed_stock = total_to_persist
         listing.save(update_fields=["available_quantity", "last_pushed_stock", "synced_at"])
-    return r.json()
+    return r.json() if r.text else {"ok": True}
 
 
 def sync_single_order(cred, order_id):
