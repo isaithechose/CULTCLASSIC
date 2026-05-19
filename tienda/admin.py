@@ -293,6 +293,61 @@ def _admin_overview_context():
             today_cogs += _product_unit_cost(item.product) * item.quantity
     today_profit = Decimal(str(today_sales)) - today_cogs - Decimal(str(today_expenses))
 
+    # ── Vision board: serie de últimos 7 días + meta mensual + top productos ──
+    from datetime import timedelta as _td
+    seven_days = []
+    max_day_sales = Decimal("0.00")
+    for i in range(6, -1, -1):
+        d = today - _td(days=i)
+        day_orders = completed_orders.filter(created_at__date=d).prefetch_related("items")
+        day_total = sum((o.total_price for o in day_orders), Decimal("0.00"))
+        seven_days.append({
+            "date": d,
+            "label": d.strftime("%a %d").lower(),
+            "value": float(day_total),
+        })
+        if day_total > max_day_sales:
+            max_day_sales = day_total
+    # Normalizar alturas (0-100) para CSS
+    max_val = max(d["value"] for d in seven_days) or 1
+    for d in seven_days:
+        d["height_pct"] = round((d["value"] / max_val) * 100, 1) if max_val else 0
+
+    yesterday = today - _td(days=1)
+    yesterday_orders = completed_orders.filter(created_at__date=yesterday).prefetch_related("items")
+    yesterday_sales = sum((o.total_price for o in yesterday_orders), Decimal("0.00"))
+    if yesterday_sales > 0:
+        pct_change = float((Decimal(str(today_sales)) - yesterday_sales) / yesterday_sales * 100)
+    else:
+        pct_change = None
+
+    # Meta mensual (configurable vía settings, default $50,000)
+    from django.conf import settings as _settings
+    monthly_goal = Decimal(str(getattr(_settings, "MONTHLY_SALES_GOAL", 50000)))
+    goal_pct = float(min(Decimal(str(monthly_sales)) / monthly_goal * 100, Decimal("100"))) if monthly_goal else 0
+
+    # Top productos del mes (por unidades vendidas)
+    from django.db.models import Count, Sum as _Sum
+    from tienda.models import OrderItem as _OrderItem
+    top_products_qs = (
+        _OrderItem.objects.filter(order__in=monthly_orders)
+        .values("product__id", "product__nombre", "product__imagen", "product__precio")
+        .annotate(units=_Sum("quantity"))
+        .order_by("-units")[:4]
+    )
+    top_products = []
+    for p in top_products_qs:
+        if not p["product__id"]:
+            continue
+        top_products.append({
+            "id": p["product__id"],
+            "nombre": p["product__nombre"],
+            "imagen": p["product__imagen"],
+            "precio": p["product__precio"],
+            "units": p["units"],
+            "url": reverse("admin:tienda_producto_change", args=[p["product__id"]]),
+        })
+
     return {
         "admin_today_summary": [
             {"label": "Ventas hoy", "value": f"${today_sales:.2f}", "tone": "ok"},
@@ -367,6 +422,15 @@ def _admin_overview_context():
             {"label": "Calendario negocio", "url": reverse("admin:tienda_businesspayment_business_calendar"), "description": "Ventas, gastos y pagos por día.", "tone": "neutral"},
             {"label": "Tarjetas de crédito", "url": reverse("admin:tienda_creditcardstatement_changelist"), "description": "Estados de cuenta, vencimientos y saldos por pagar.", "tone": "warn"},
         ],
+        "vb_today_sales": float(today_sales),
+        "vb_today_orders": len(today_orders),
+        "vb_today_profit": float(today_profit),
+        "vb_pct_vs_yesterday": pct_change,
+        "vb_seven_days": seven_days,
+        "vb_monthly_sales": float(monthly_sales),
+        "vb_monthly_goal": float(monthly_goal),
+        "vb_goal_pct": goal_pct,
+        "vb_top_products": top_products,
         "admin_workflow_groups": [
             {
                 "title": "Vender",

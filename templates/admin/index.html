@@ -3,164 +3,547 @@
 
 {% block content %}
 <style>
-  .cc-summary-row {
+  /* ── Vision Board · Cult Clasiccs ─────────────────────────────────────── */
+  :root {
+    --vb-bg: #0a0a0a;
+    --vb-card: #111;
+    --vb-card-hover: #161616;
+    --vb-line: #1c1c1c;
+    --vb-line-strong: #2a2a2a;
+    --vb-ink: #fff;
+    --vb-mute: #777;
+    --vb-faint: #444;
+    --vb-accent: #f4f4f4;
+    --vb-good: #2dbe6c;
+    --vb-warn: #f0a500;
+    --vb-danger: #e05050;
+    --vb-info: #4a9eff;
+  }
+
+  .vb {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 8px 0 40px;
+  }
+  .vb__head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin: 0 0 24px;
+  }
+  .vb__greeting {
+    font-size: 13px;
+    color: var(--vb-faint);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin: 0;
+  }
+  .vb__date {
+    font-size: 12px;
+    color: var(--vb-faint);
+    font-family: ui-monospace, "DM Mono", monospace;
+  }
+
+  /* ── HERO grande ────────────────────────────────────────────────────── */
+  .vb-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  .vb-hero__main,
+  .vb-hero__side {
+    background: var(--vb-card);
+    border: 1px solid var(--vb-line);
+    border-radius: 14px;
+    padding: 28px;
+  }
+  .vb-hero__main {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 240px;
+  }
+  .vb-hero__eyebrow {
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--vb-mute);
+    margin: 0 0 12px;
+    font-weight: 500;
+  }
+  .vb-hero__number {
+    font-size: clamp(48px, 6vw, 80px);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    color: var(--vb-ink);
+    line-height: 1;
+    margin: 0;
+  }
+  .vb-hero__meta {
+    display: flex;
+    gap: 24px;
+    align-items: center;
+    margin-top: 14px;
+  }
+  .vb-hero__meta-item {
+    font-size: 13px;
+    color: var(--vb-mute);
+  }
+  .vb-hero__meta-item strong {
+    color: var(--vb-ink);
+    font-weight: 600;
+  }
+  .vb-hero__delta {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: ui-monospace, monospace;
+  }
+  .vb-hero__delta--up   { background: rgba(45,190,108,0.12); color: var(--vb-good); }
+  .vb-hero__delta--down { background: rgba(224,80,80,0.12);  color: var(--vb-danger); }
+  .vb-hero__delta--flat { background: rgba(255,255,255,0.05); color: var(--vb-mute); }
+
+  /* Sparkline barras */
+  .vb-spark {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    height: 80px;
+    margin-top: 18px;
+  }
+  .vb-spark__col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+  .vb-spark__bar {
+    width: 100%;
+    min-height: 2px;
+    background: linear-gradient(180deg, #2a2a2a 0%, #1a1a1a 100%);
+    border-radius: 3px;
+    transition: background .2s;
+  }
+  .vb-spark__col:last-child .vb-spark__bar {
+    background: linear-gradient(180deg, #fff 0%, #888 100%);
+  }
+  .vb-spark__label {
+    font-size: 9px;
+    color: var(--vb-faint);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    font-family: ui-monospace, monospace;
+  }
+
+  /* Side hero — meta mensual */
+  .vb-hero__side {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 240px;
+  }
+  .vb-ring {
+    position: relative;
+    width: 160px;
+    height: 160px;
+    margin: 8px auto;
+  }
+  .vb-ring svg {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+  }
+  .vb-ring__track {
+    fill: none;
+    stroke: var(--vb-line-strong);
+    stroke-width: 10;
+  }
+  .vb-ring__progress {
+    fill: none;
+    stroke: var(--vb-ink);
+    stroke-width: 10;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 1s ease;
+  }
+  .vb-ring__center {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+  .vb-ring__pct {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--vb-ink);
+    letter-spacing: -0.02em;
+  }
+  .vb-ring__lbl {
+    font-size: 10px;
+    color: var(--vb-faint);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+  .vb-hero__side-foot {
+    text-align: center;
+    color: var(--vb-mute);
+    font-size: 12px;
+  }
+  .vb-hero__side-foot strong { color: var(--vb-ink); }
+
+  /* ── KPI mini-grid ─────────────────────────────────────────────────── */
+  .vb-mini {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 10px;
-    margin-bottom: 20px;
+    gap: 12px;
+    margin-bottom: 16px;
   }
-  .cc-summary-card {
-    background: #141414;
-    border: 1px solid #1e1e1e;
-    border-radius: 8px;
-    padding: 14px;
-    min-width: 0;
+  .vb-mini__card {
+    background: var(--vb-card);
+    border: 1px solid var(--vb-line);
+    border-radius: 12px;
+    padding: 16px 18px;
+    transition: border-color .15s;
   }
-  .cc-summary-label {
-    font-family: "DM Mono", ui-monospace, monospace;
+  .vb-mini__card:hover { border-color: var(--vb-line-strong); }
+  .vb-mini__lbl {
     font-size: 10px;
-    color: #444;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.14em;
     text-transform: uppercase;
-    margin-bottom: 6px;
+    color: var(--vb-mute);
+    margin: 0 0 8px;
   }
-  .cc-summary-value {
-    font-family: "DM Mono", ui-monospace, monospace;
+  .vb-mini__val {
     font-size: 22px;
     font-weight: 600;
-    color: #fff;
-    line-height: 1;
+    color: var(--vb-ink);
+    letter-spacing: -0.01em;
+    font-family: ui-monospace, monospace;
   }
-  .cc-section-title {
-    font-family: "DM Mono", ui-monospace, monospace;
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.8px;
-    text-transform: uppercase;
-    color: #3a3a3a;
-    margin: 0 0 10px;
-  }
-  .cc-quick-grid {
+
+  /* ── Layout fila bottom ─────────────────────────────────────────────── */
+  .vb-row {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
-    margin-bottom: 20px;
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+    gap: 16px;
+    margin-bottom: 16px;
   }
-  .cc-quick-card {
-    background: #141414;
-    border: 1px solid #1e1e1e;
-    border-radius: 8px;
-    padding: 12px 14px;
+  .vb-panel {
+    background: var(--vb-card);
+    border: 1px solid var(--vb-line);
+    border-radius: 14px;
+    padding: 22px;
+  }
+  .vb-panel__head {
     display: flex;
     align-items: center;
-    gap: 10px;
-    text-decoration: none !important;
-    transition: border-color 0.15s, background 0.15s;
-    min-width: 0;
+    justify-content: space-between;
+    margin: 0 0 16px;
   }
-  .cc-quick-card:hover { background: #181818 !important; border-color: #2a2a2a; }
-  .cc-quick-icon {
-    width: 32px;
-    height: 32px;
-    background: #1c1c1c;
-    border-radius: 6px;
+  .vb-panel__title {
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--vb-mute);
+    margin: 0;
+    font-weight: 600;
+  }
+  .vb-panel__link {
+    font-size: 11px;
+    color: var(--vb-faint);
+    text-decoration: none;
+  }
+  .vb-panel__link:hover { color: var(--vb-ink); }
+
+  /* Top productos */
+  .vb-top {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .vb-top__item {
+    display: flex;
+    gap: 12px;
+    padding: 10px;
+    border-radius: 10px;
+    text-decoration: none !important;
+    border: 1px solid transparent;
+    transition: border-color .15s, background .15s;
+  }
+  .vb-top__item:hover {
+    border-color: var(--vb-line-strong);
+    background: rgba(255,255,255,0.02);
+  }
+  .vb-top__media {
+    width: 56px;
+    height: 56px;
+    flex-shrink: 0;
+    background: #1a1a1a;
+    border-radius: 8px;
+    overflow: hidden;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 16px;
-    color: #666;
+  }
+  .vb-top__media img {
+    width: 100%; height: 100%; object-fit: cover;
+  }
+  .vb-top__media-fallback {
+    color: var(--vb-faint);
+    font-size: 18px;
+    font-family: ui-monospace, monospace;
+  }
+  .vb-top__info { min-width: 0; flex: 1; }
+  .vb-top__name {
+    font-size: 13px;
+    color: var(--vb-ink);
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .vb-top__sub {
+    font-size: 11px;
+    color: var(--vb-mute);
+    margin-top: 4px;
+    font-family: ui-monospace, monospace;
+  }
+  .vb-top__sub strong { color: var(--vb-good); font-weight: 600; }
+
+  .vb-top__empty {
+    text-align: center;
+    padding: 36px 12px;
+    color: var(--vb-faint);
+    font-size: 13px;
+  }
+
+  /* Acciones rápidas */
+  .vb-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .vb-action {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border: 1px solid var(--vb-line);
+    border-radius: 10px;
+    text-decoration: none !important;
+    background: rgba(255,255,255,0.01);
+    transition: all .15s;
+  }
+  .vb-action:hover {
+    background: rgba(255,255,255,0.04);
+    border-color: var(--vb-line-strong);
+    transform: translateX(2px);
+  }
+  .vb-action__dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--vb-mute);
     flex-shrink: 0;
   }
-  .cc-quick-label { font-size: 13px; color: #aaa; font-weight: 500; }
-  .cc-quick-sub { font-size: 11px; color: #444; margin-top: 1px; }
-  .cc-alerts-list { display: flex; flex-direction: column; gap: 6px; }
-  .cc-alert-row {
+  .vb-action--ok    .vb-action__dot { background: var(--vb-good); }
+  .vb-action--info  .vb-action__dot { background: var(--vb-info); }
+  .vb-action--warn  .vb-action__dot { background: var(--vb-warn); }
+  .vb-action__lbl {
+    font-size: 13px;
+    color: var(--vb-ink);
+    font-weight: 500;
+    flex: 1;
+  }
+  .vb-action__arrow {
+    color: var(--vb-faint);
+    font-size: 14px;
+  }
+
+  /* Alertas (compactas) */
+  .vb-alert {
     display: flex;
     align-items: center;
     gap: 10px;
-    background: #141414;
-    border: 1px solid #1e1e1e;
-    border-radius: 8px;
     padding: 10px 14px;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid var(--vb-line);
+    border-left: 3px solid var(--vb-warn);
+    border-radius: 8px;
+    margin-bottom: 6px;
     text-decoration: none !important;
+    transition: background .15s;
   }
-  .cc-alert-row:hover { background: #181818 !important; }
-  .cc-alert-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
-  .dot-warn { background: #f0a500; }
-  .dot-danger { background: #e05050; }
-  .dot-ok { background: #2dbe6c; }
-  .dot-info { background: #4a9eff; }
-  .cc-alert-text { font-size: 13px; color: #888; flex: 1; }
-  .cc-alert-text strong { color: #ccc; }
-  .cc-alert-count {
-    font-family: "DM Mono", ui-monospace, monospace;
+  .vb-alert:hover { background: rgba(255,255,255,0.05); }
+  .vb-alert--danger { border-left-color: var(--vb-danger); }
+  .vb-alert--ok     { border-left-color: var(--vb-good); }
+  .vb-alert--info   { border-left-color: var(--vb-info); }
+  .vb-alert__lbl { flex: 1; font-size: 13px; color: var(--vb-ink); }
+  .vb-alert__val {
+    font-family: ui-monospace, monospace;
     font-size: 12px;
-    color: #555;
+    color: var(--vb-mute);
   }
 
   @media (max-width: 1100px) {
-    .cc-summary-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .vb-hero { grid-template-columns: 1fr; }
+    .vb-mini { grid-template-columns: repeat(2, minmax(0,1fr)); }
+    .vb-row  { grid-template-columns: 1fr; }
   }
-  @media (max-width: 720px) {
-    .cc-summary-row, .cc-quick-grid { grid-template-columns: 1fr; }
+  @media (max-width: 600px) {
+    .vb-mini { grid-template-columns: 1fr; }
+    .vb-top  { grid-template-columns: 1fr; }
+    .vb-hero__main, .vb-hero__side { padding: 20px; }
   }
 </style>
 
-<div class="cc-summary-row">
-  {% for stat in admin_today_summary|slice:":4" %}
-    <div class="cc-summary-card">
-      <div class="cc-summary-label">{{ stat.label }}</div>
-      <div class="cc-summary-value">{{ stat.value }}</div>
-    </div>
-  {% empty %}
-    <div class="cc-summary-card">
-      <div class="cc-summary-label">Sin datos</div>
-      <div class="cc-summary-value">-</div>
-    </div>
-  {% endfor %}
-</div>
+<div class="vb">
 
-<div class="cc-section-title">Accesos rapidos</div>
-<div class="cc-quick-grid">
-  {% for link in admin_quick_links|slice:":4" %}
-    <a class="cc-quick-card" href="{{ link.url }}">
-      <div class="cc-quick-icon">
-        {% if 'venta' in link.label|lower or link.tone == 'ok' %}
-          <i class="ti ti-credit-card" aria-hidden="true"></i>
-        {% elif 'caja' in link.label|lower %}
-          <i class="ti ti-cash-register" aria-hidden="true"></i>
-        {% elif 'recepcion' in link.label|lower or 'compra' in link.label|lower %}
-          <i class="ti ti-arrow-up-circle" aria-hidden="true"></i>
-        {% elif link.tone == 'info' %}
-          <i class="ti ti-report-analytics" aria-hidden="true"></i>
-        {% else %}
-          <i class="ti ti-arrow-right" aria-hidden="true"></i>
-        {% endif %}
-      </div>
+  {# Header limpio #}
+  <div class="vb__head">
+    <p class="vb__greeting">{% now "l" %} · Vista del día</p>
+    <p class="vb__date">{% now "j M Y · H:i" %}</p>
+  </div>
+
+  {# ── HERO: Ventas de hoy + Meta mensual ───────────────────────────── #}
+  <div class="vb-hero">
+
+    <div class="vb-hero__main">
       <div>
-        <div class="cc-quick-label">{{ link.label }}</div>
-        {% if link.description %}<div class="cc-quick-sub">{{ link.description }}</div>{% endif %}
+        <p class="vb-hero__eyebrow">Ventas de hoy</p>
+        <p class="vb-hero__number">${{ vb_today_sales|floatformat:0 }}</p>
+        <div class="vb-hero__meta">
+          <span class="vb-hero__meta-item"><strong>{{ vb_today_orders }}</strong> pedidos</span>
+          <span class="vb-hero__meta-item">Utilidad: <strong>${{ vb_today_profit|floatformat:0 }}</strong></span>
+          {% if vb_pct_vs_yesterday is not None %}
+            {% if vb_pct_vs_yesterday > 0 %}
+              <span class="vb-hero__delta vb-hero__delta--up">↑ {{ vb_pct_vs_yesterday|floatformat:0 }}% vs ayer</span>
+            {% elif vb_pct_vs_yesterday < 0 %}
+              <span class="vb-hero__delta vb-hero__delta--down">↓ {{ vb_pct_vs_yesterday|stringformat:".0f"|cut:"-" }}% vs ayer</span>
+            {% else %}
+              <span class="vb-hero__delta vb-hero__delta--flat">= vs ayer</span>
+            {% endif %}
+          {% endif %}
+        </div>
       </div>
-    </a>
-  {% endfor %}
-</div>
-
-<div class="cc-section-title">Alertas activas</div>
-<div class="cc-alerts-list">
-  {% for card in admin_overview_cards %}
-    {% if card.value and card.value != 0 and card.value != '0' and card.value != '$0.00' %}
-      <a class="cc-alert-row" href="{{ card.url }}">
-        <div class="cc-alert-dot {% if card.tone == 'danger' %}dot-danger{% elif card.tone == 'warn' %}dot-warn{% elif card.tone == 'ok' %}dot-ok{% else %}dot-info{% endif %}"></div>
-        <div class="cc-alert-text"><strong>{{ card.label }}</strong>: {{ card.value }}</div>
-        <div class="cc-alert-count">→</div>
-      </a>
-    {% endif %}
-  {% empty %}
-    <div class="cc-alert-row">
-      <div class="cc-alert-dot dot-ok"></div>
-      <div class="cc-alert-text">Sin alertas activas.</div>
-      <div class="cc-alert-count">✓</div>
+      <div class="vb-spark">
+        {% for d in vb_seven_days %}
+          <div class="vb-spark__col" title="${{ d.value|floatformat:0 }}">
+            <div class="vb-spark__bar" style="height: {{ d.height_pct }}%;"></div>
+            <div class="vb-spark__label">{{ d.label }}</div>
+          </div>
+        {% endfor %}
+      </div>
     </div>
-  {% endfor %}
+
+    <div class="vb-hero__side">
+      <p class="vb-hero__eyebrow">Meta del mes</p>
+      <div class="vb-ring">
+        <svg viewBox="0 0 120 120">
+          <circle class="vb-ring__track" cx="60" cy="60" r="52"></circle>
+          <circle class="vb-ring__progress" cx="60" cy="60" r="52"
+                  stroke-dasharray="326.7"
+                  stroke-dashoffset="{% widthratio 326.7 100 vb_goal_pct as off %}{{ 326.7|add:"-1"|add:0|stringformat:'f' }}"
+                  style="stroke-dashoffset: calc(326.7 - (326.7 * {{ vb_goal_pct|floatformat:1 }} / 100));"></circle>
+        </svg>
+        <div class="vb-ring__center">
+          <div class="vb-ring__pct">{{ vb_goal_pct|floatformat:0 }}%</div>
+          <div class="vb-ring__lbl">Cumplido</div>
+        </div>
+      </div>
+      <div class="vb-hero__side-foot">
+        <strong>${{ vb_monthly_sales|floatformat:0 }}</strong> de ${{ vb_monthly_goal|floatformat:0 }}
+      </div>
+    </div>
+
+  </div>
+
+  {# ── KPIs día (4 chiquitos) ──────────────────────────────────────── #}
+  {% if admin_today_summary %}
+  <div class="vb-mini">
+    {% for stat in admin_today_summary %}
+      <div class="vb-mini__card">
+        <p class="vb-mini__lbl">{{ stat.label }}</p>
+        <p class="vb-mini__val">{{ stat.value }}</p>
+      </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {# ── Top productos + Acciones rápidas ──────────────────────────── #}
+  <div class="vb-row">
+
+    <div class="vb-panel">
+      <div class="vb-panel__head">
+        <p class="vb-panel__title">Top del mes</p>
+        <a class="vb-panel__link" href="/admin/tienda/producto/">Ver catálogo →</a>
+      </div>
+      {% if vb_top_products %}
+        <div class="vb-top">
+          {% for p in vb_top_products %}
+            <a class="vb-top__item" href="{{ p.url }}">
+              <div class="vb-top__media">
+                {% if p.imagen %}
+                  <img src="/media/{{ p.imagen }}" alt="{{ p.nombre }}">
+                {% else %}
+                  <span class="vb-top__media-fallback">CC</span>
+                {% endif %}
+              </div>
+              <div class="vb-top__info">
+                <div class="vb-top__name">{{ p.nombre }}</div>
+                <div class="vb-top__sub"><strong>{{ p.units }}</strong> vendidos · ${{ p.precio|floatformat:0 }}</div>
+              </div>
+            </a>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="vb-top__empty">Sin ventas este mes todavía.</div>
+      {% endif %}
+    </div>
+
+    <div class="vb-panel">
+      <p class="vb-panel__title" style="margin-bottom:14px;">Acciones rápidas</p>
+      <div class="vb-actions">
+        {% for link in admin_quick_links|slice:":5" %}
+          <a class="vb-action vb-action--{{ link.tone }}" href="{{ link.url }}">
+            <span class="vb-action__dot"></span>
+            <span class="vb-action__lbl">{{ link.label }}</span>
+            <span class="vb-action__arrow">→</span>
+          </a>
+        {% endfor %}
+      </div>
+    </div>
+
+  </div>
+
+  {# ── Alertas activas ──────────────────────────────────────────── #}
+  <div class="vb-panel">
+    <p class="vb-panel__title" style="margin-bottom:14px;">Alertas activas</p>
+    {% with active_alerts="" %}
+      {% for c in admin_overview_cards %}
+        {% if c.value and c.value != 0 and c.value != '0' and c.value != '$0.00' %}
+          <a class="vb-alert vb-alert--{{ c.tone }}" href="{{ c.url }}">
+            <span class="vb-alert__lbl">{{ c.label }}</span>
+            <span class="vb-alert__val">{{ c.value }}</span>
+          </a>
+        {% endif %}
+      {% empty %}
+        <div class="vb-alert vb-alert--ok">
+          <span class="vb-alert__lbl">Todo en orden.</span>
+          <span class="vb-alert__val">✓</span>
+        </div>
+      {% endfor %}
+    {% endwith %}
+  </div>
+
 </div>
 {% endblock %}
