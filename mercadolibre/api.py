@@ -333,13 +333,25 @@ def update_listing_stock(cred, ml_id, qty_or_producto):
             logger.warning("No hay match local para variaciones de %s — no se actualiza", ml_id)
             return None
         total_to_persist = matched_total
-        # Endpoint dedicado de variaciones: evita re-validación de pictures/categoría
-        r = requests.put(
-            f"{API_BASE}/items/{ml_id}/variations",
-            headers=_headers(cred),
-            json=payload_variations,
-            timeout=15,
-        )
+        # Estrategia: PUT individual por variación (no re-valida pictures globales)
+        errors = []
+        for pv in payload_variations:
+            rv = requests.put(
+                f"{API_BASE}/items/{ml_id}/variations/{pv['id']}",
+                headers=_headers(cred),
+                json={"available_quantity": pv["available_quantity"]},
+                timeout=15,
+            )
+            if not rv.ok:
+                errors.append(f"var {pv['id']}: {rv.status_code} {rv.text[:120]}")
+        if errors:
+            logger.error("ML update variations partial fails: %s", " | ".join(errors[:3]))
+            raise requests.HTTPError(" | ".join(errors[:3]))
+        if listing:
+            listing.available_quantity = total_to_persist
+            listing.last_pushed_stock = total_to_persist
+            listing.save(update_fields=["available_quantity", "last_pushed_stock", "synced_at"])
+        return {"ok": True, "variations_updated": len(payload_variations)}
     else:
         # Flat
         qty = int(qty_or_producto.stock) if hasattr(qty_or_producto, "stock") else int(qty_or_producto)
