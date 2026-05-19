@@ -1125,6 +1125,12 @@ class PointOfSaleHeaderForm(forms.Form):
         required=False,
         label="Nota interna",
     )
+    sale_date = forms.DateField(
+        required=False,
+        label="Fecha de la venta",
+        widget=forms.DateInput(attrs={"type": "date"}),
+        help_text="Deja en blanco para usar hoy.",
+    )
 
 
 class CashRegisterClosureForm(forms.Form):
@@ -2251,6 +2257,16 @@ class OrderAdmin(admin.ModelAdmin):
                                 internal_note=header_form.cleaned_data.get("internal_note", ""),
                                 cashier=request.user if request.user.is_authenticated else None,
                             )
+                            sale_date = header_form.cleaned_data.get("sale_date")
+                            if sale_date and sale_date != timezone.localdate():
+                                now = timezone.now()
+                                backdated = now.replace(
+                                    year=sale_date.year,
+                                    month=sale_date.month,
+                                    day=sale_date.day,
+                                )
+                                Order.objects.filter(pk=order.pk).update(created_at=backdated)
+                                order.refresh_from_db()
                             for line in lines:
                                 OrderItem.objects.create(
                                     order=order,
@@ -2289,7 +2305,7 @@ class OrderAdmin(admin.ModelAdmin):
                         )
                         return HttpResponseRedirect(reverse("admin:tienda_order_change", args=[order.id]))
         else:
-            header_form = PointOfSaleHeaderForm()
+            header_form = PointOfSaleHeaderForm(initial={"sale_date": timezone.localdate()})
             formset = POSLineFormSet(initial=initial, prefix="pos")
 
         rows = []

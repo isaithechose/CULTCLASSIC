@@ -341,6 +341,12 @@
         {{ header_form.internal_note }}
         {{ header_form.internal_note.errors }}
       </div>
+      <div>
+        {{ header_form.sale_date.label_tag }}
+        {{ header_form.sale_date }}
+        {% if header_form.sale_date.help_text %}<small>{{ header_form.sale_date.help_text }}</small>{% endif %}
+        {{ header_form.sale_date.errors }}
+      </div>
     </div>
     <p class="pos-note">Esta pantalla crea un pedido completado, descuenta inventario y registra movimientos de venta.</p>
   </div>
