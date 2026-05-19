@@ -98,7 +98,8 @@ def fetch_me(cred):
 
 
 def sync_orders(cred, limit=50):
-    """Trae los pedidos recientes del vendedor y los guarda en la BD."""
+    """Trae los pedidos recientes del vendedor y los guarda en la BD.
+    Para pedidos NUEVOS y pagados, descuenta stock local de productos enlazados."""
     cred = _ensure_fresh(cred)
     r = requests.get(
         f"{API_BASE}/orders/search",
@@ -110,6 +111,7 @@ def sync_orders(cred, limit=50):
     results = r.json().get("results", [])
     saved = 0
     for o in results:
+        was_new = not MercadoLibreOrder.objects.filter(ml_id=o["id"]).exists()
         order, _ = MercadoLibreOrder.objects.update_or_create(
             ml_id=o["id"],
             defaults={
@@ -125,6 +127,7 @@ def sync_orders(cred, limit=50):
             },
         )
         order.items.all().delete()
+        items_for_stock = []
         for it in o.get("order_items", []):
             item = it.get("item") or {}
             MercadoLibreOrderItem.objects.create(
@@ -134,6 +137,11 @@ def sync_orders(cred, limit=50):
                 quantity=it.get("quantity", 1) or 1,
                 unit_price=it.get("unit_price") or 0,
             )
+            items_for_stock.append((item.get("id"), it.get("quantity", 1) or 1))
+        # Descontar stock local solo para pedidos nuevos y pagados
+        if was_new and o.get("status") in ("paid", "confirmed"):
+            for ml_item_id, qty in items_for_stock:
+                _decrement_local_stock_for_ml_item(ml_item_id, qty)
         saved += 1
     return saved
 
@@ -192,4 +200,105 @@ def update_listing_stock(cred, ml_id, available_quantity):
         timeout=15,
     )
     r.raise_for_status()
+    listing = MercadoLibreListing.objects.filter(ml_id=ml_id).first()
+    if listing:
+        listing.available_quantity = int(available_quantity)
+        listing.last_pushed_stock = int(available_quantity)
+        listing.save(update_fields=["available_quantity", "last_pushed_stock", "synced_at"])
     return r.json()
+
+
+def sync_single_order(cred, order_id):
+    """Trae UN pedido específico de ML por ID y lo guarda."""
+    cred = _ensure_fresh(cred)
+    r = requests.get(
+        f"{API_BASE}/orders/{order_id}",
+        headers=_headers(cred),
+        timeout=15,
+    )
+    r.raise_for_status()
+    o = r.json()
+    was_new = not MercadoLibreOrder.objects.filter(ml_id=o["id"]).exists()
+    order, _ = MercadoLibreOrder.objects.update_or_create(
+        ml_id=o["id"],
+        defaults={
+            "status": o.get("status", ""),
+            "date_created": o.get("date_created"),
+            "date_closed": o.get("date_closed") or None,
+            "total_amount": o.get("total_amount") or 0,
+            "currency_id": o.get("currency_id", "MXN"),
+            "buyer_nickname": (o.get("buyer") or {}).get("nickname", ""),
+            "buyer_id": (o.get("buyer") or {}).get("id"),
+            "shipping_status": (o.get("shipping") or {}).get("status", ""),
+            "raw": o,
+        },
+    )
+    order.items.all().delete()
+    items_for_stock = []
+    for it in o.get("order_items", []):
+        item = it.get("item") or {}
+        MercadoLibreOrderItem.objects.create(
+            order=order,
+            item_id=item.get("id", "") or "",
+            title=item.get("title", "") or "",
+            quantity=it.get("quantity", 1) or 1,
+            unit_price=it.get("unit_price") or 0,
+        )
+        items_for_stock.append((item.get("id"), it.get("quantity", 1) or 1))
+    # Si es pedido nuevo y está pagado, descontar stock local
+    if was_new and o.get("status") in ("paid", "confirmed"):
+        for ml_item_id, qty in items_for_stock:
+            _decrement_local_stock_for_ml_item(ml_item_id, qty)
+    return order, was_new
+
+
+def sync_single_listing(cred, ml_id):
+    """Trae UNA publicación específica de ML por ID."""
+    cred = _ensure_fresh(cred)
+    r = requests.get(
+        f"{API_BASE}/items/{ml_id}",
+        headers=_headers(cred),
+        timeout=15,
+    )
+    r.raise_for_status()
+    b = r.json()
+    listing, _ = MercadoLibreListing.objects.update_or_create(
+        ml_id=b["id"],
+        defaults={
+            "title": b.get("title", ""),
+            "price": b.get("price") or 0,
+            "currency_id": b.get("currency_id", "MXN"),
+            "available_quantity": b.get("available_quantity", 0),
+            "sold_quantity": b.get("sold_quantity", 0),
+            "status": b.get("status", ""),
+            "permalink": b.get("permalink", "") or "",
+            "thumbnail": b.get("thumbnail", "") or "",
+            "listing_type_id": b.get("listing_type_id", "") or "",
+            "raw": b,
+        },
+    )
+    return listing
+
+
+def _decrement_local_stock_for_ml_item(ml_item_id, quantity):
+    """
+    Cuando ML reporta venta de un item, baja el stock del Producto local enlazado.
+    Si no hay enlace, no hace nada (silencioso).
+    """
+    if not ml_item_id or quantity <= 0:
+        return
+    listing = MercadoLibreListing.objects.filter(ml_id=ml_item_id, producto__isnull=False).first()
+    if not listing or not listing.producto:
+        return
+    try:
+        from tienda.models import record_inventory_movement
+        record_inventory_movement(
+            product=listing.producto,
+            variant=None,
+            order=None,
+            movement_type="sale",
+            quantity_change=-int(quantity),
+            note=f"Venta en Mercado Libre (item {ml_item_id})",
+        )
+    except Exception as exc:
+        logger.exception("Failed to decrement local stock for ML item %s: %s", ml_item_id, exc)

@@ -85,16 +85,44 @@ class OrderAdmin(admin.ModelAdmin):
 
 @admin.register(MercadoLibreListing)
 class ListingAdmin(admin.ModelAdmin):
-    list_display = ("ml_id", "title", "price", "available_quantity", "sold_quantity",
-                    "status", "permalink_link")
+    list_display = ("ml_id", "title", "producto_link", "price", "available_quantity",
+                    "sold_quantity", "status", "permalink_link")
     list_filter = ("status",)
-    search_fields = ("ml_id", "title")
+    search_fields = ("ml_id", "title", "producto__nombre")
+    autocomplete_fields = ("producto",)
+    fields = ("ml_id", "producto", "title", "price", "currency_id", "available_quantity",
+              "sold_quantity", "last_pushed_stock", "status", "permalink", "thumbnail",
+              "listing_type_id", "synced_at", "raw")
     readonly_fields = ("ml_id", "title", "price", "currency_id", "available_quantity",
-                       "sold_quantity", "status", "permalink", "thumbnail",
-                       "listing_type_id", "synced_at", "raw")
+                       "sold_quantity", "last_pushed_stock", "status", "permalink",
+                       "thumbnail", "listing_type_id", "synced_at", "raw")
+    actions = ["auto_link_by_title"]
 
     def permalink_link(self, obj):
         if obj.permalink:
             return format_html('<a href="{}" target="_blank" rel="noopener">Ver en ML →</a>', obj.permalink)
         return "—"
     permalink_link.short_description = "Link público"
+
+    def producto_link(self, obj):
+        if not obj.producto:
+            return format_html('<span style="color:#999;">— sin enlazar —</span>')
+        url = f"/admin/tienda/producto/{obj.producto.pk}/change/"
+        return format_html('<a href="{}">{}</a>', url, obj.producto.nombre)
+    producto_link.short_description = "Producto local"
+
+    @admin.action(description="Auto-enlazar al producto local con título parecido")
+    def auto_link_by_title(self, request, queryset):
+        from tienda.models import Producto
+        linked = 0
+        for listing in queryset.filter(producto__isnull=True):
+            # Busca por coincidencia exacta primero, luego case-insensitive
+            match = (
+                Producto.objects.filter(nombre__iexact=listing.title).first()
+                or Producto.objects.filter(nombre__icontains=listing.title[:30]).first()
+            )
+            if match:
+                listing.producto = match
+                listing.save(update_fields=["producto"])
+                linked += 1
+        self.message_user(request, f"Enlazadas {linked} publicaciones automáticamente.", messages.SUCCESS)

@@ -7,4 +7,5 @@ urlpatterns = [
     path("connect/", views.connect, name="connect"),
     path("callback/", views.callback, name="callback"),
     path("sync/", views.sync_now, name="sync"),
+    path("webhook/", views.webhook, name="webhook"),
 ]

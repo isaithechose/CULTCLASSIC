@@ -66,6 +66,11 @@ class MercadoLibreOrderItem(models.Model):
 class MercadoLibreListing(models.Model):
     """Publicación (producto) en Mercado Libre."""
     ml_id = models.CharField(max_length=40, unique=True)
+    producto = models.ForeignKey(
+        "tienda.Producto", on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="ml_listings",
+        help_text="Producto local enlazado para sync de inventario bidireccional",
+    )
     title = models.CharField(max_length=255)
     price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     currency_id = models.CharField(max_length=10, default="MXN")
@@ -77,6 +82,8 @@ class MercadoLibreListing(models.Model):
     listing_type_id = models.CharField(max_length=40, blank=True)
     raw = models.JSONField(default=dict, blank=True)
     synced_at = models.DateTimeField(auto_now=True)
+    last_pushed_stock = models.PositiveIntegerField(null=True, blank=True,
+        help_text="Último stock que enviamos a ML; evita loops de sync")
 
     class Meta:
         ordering = ["-synced_at"]
