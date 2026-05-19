@@ -211,8 +211,28 @@ def delete_design(request, filename):
 
 def detalle_producto(request, producto_id):
     producto = get_object_or_404(Producto, id=producto_id)
-    tallas_disponibles = producto.tallas_disponibles.split(",") if producto.tallas_disponibles else []
-    colores_disponibles = producto.colores_disponibles.split(",") if producto.colores_disponibles else []
+
+    variantes_activas = list(producto.variants.filter(activo=True))
+    if variantes_activas:
+        seen_colores, colores_disponibles = set(), []
+        seen_tallas, tallas_disponibles = set(), []
+        declarados_colores = [c.strip() for c in (producto.colores_disponibles or "").split(",") if c.strip()]
+        declarados_tallas = [t.strip() for t in (producto.tallas_disponibles or "").split(",") if t.strip()]
+        for color in declarados_colores:
+            if any(v.color == color for v in variantes_activas) and color not in seen_colores:
+                seen_colores.add(color); colores_disponibles.append(color)
+        for v in variantes_activas:
+            if v.color and v.color not in seen_colores:
+                seen_colores.add(v.color); colores_disponibles.append(v.color)
+        for talla in declarados_tallas:
+            if any(v.talla == talla for v in variantes_activas) and talla not in seen_tallas:
+                seen_tallas.add(talla); tallas_disponibles.append(talla)
+        for v in variantes_activas:
+            if v.talla and v.talla not in seen_tallas:
+                seen_tallas.add(v.talla); tallas_disponibles.append(v.talla)
+    else:
+        tallas_disponibles = producto.tallas_disponibles.split(",") if producto.tallas_disponibles else []
+        colores_disponibles = producto.colores_disponibles.split(",") if producto.colores_disponibles else []
 
     diseño_seleccionado = request.GET.get("diseño")
     diseños_anime = []
