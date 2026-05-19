@@ -1,0 +1,137 @@
+{% extends "tienda/base.html" %}
+{% load static %}
+
+{% block title %}Aviso de privacidad | Cult Clasiccs{% endblock %}
+{% block meta_description %}Aviso de privacidad de Cult Clasiccs: qué datos recopilamos, para qué los usamos, con quién los compartimos y cómo ejercer tus derechos ARCO.{% endblock %}
+
+{% block hero %}
+<header class="page-hero">
+    <div class="container px-4 px-lg-5">
+        <div class="page-hero__inner">
+            <p class="page-eyebrow">Legal</p>
+            <h1 class="page-hero__title">Aviso de privacidad.</h1>
+            <p class="page-hero__copy">
+                Cómo tratamos tus datos personales y cuáles son tus derechos.
+            </p>
+        </div>
+    </div>
+</header>
+{% endblock %}
+
+{% block content %}
+<style>
+    .legal-page { padding: 4rem 0 6rem; }
+    .legal-layout { max-width: 820px; margin: 0 auto; }
+    .legal-block { margin-bottom: 2.5rem; }
+    .legal-block h2 {
+        margin: 0 0 0.85rem;
+        font-size: clamp(1.4rem, 2.2vw, 1.75rem);
+        letter-spacing: -0.01em;
+    }
+    .legal-block h3 { margin: 1.4rem 0 0.5rem; font-size: 1.05rem; }
+    .legal-block p, .legal-block li { color: var(--cc-muted); line-height: 1.7; }
+    .legal-block ul, .legal-block ol { padding-left: 1.2rem; margin: 0 0 1rem; }
+    .legal-block li { margin-bottom: 0.4rem; }
+    .legal-block strong { color: var(--cc-ink); }
+    .legal-block a { color: var(--cc-ink); text-decoration: underline; }
+    .legal-meta {
+        padding: 1rem 1.25rem;
+        background: rgba(255,255,255,0.03);
+        border: 1px solid var(--cc-line);
+        border-radius: 0.6rem;
+        font-size: 0.85rem;
+        color: var(--cc-muted);
+        margin-bottom: 2rem;
+    }
+    .legal-meta strong { color: var(--cc-ink); }
+</style>
+
+<section class="legal-page">
+    <div class="container px-4 px-lg-5">
+        <div class="legal-layout">
+
+            <div class="legal-meta">
+                <strong>Responsable:</strong> Cult Clasiccs (en lo sucesivo, "Cult Clasiccs", "nosotros").<br>
+                <strong>Sitio:</strong> https://cultclassics.shop<br>
+                <strong>Contacto:</strong> Instagram <a href="https://www.instagram.com/cultclasiccs/" target="_blank" rel="noopener">@cultclasiccs</a>.<br>
+                <strong>Última actualización:</strong> mayo de 2026.
+            </div>
+
+            <section class="legal-block">
+                <h2>1. Datos personales que recabamos</h2>
+                <p>Cuando interactúas con nuestro sitio podemos recabar los siguientes datos:</p>
+                <ul>
+                    <li><strong>Datos de identificación:</strong> nombre, apellido, correo electrónico, teléfono.</li>
+                    <li><strong>Datos de envío:</strong> dirección, código postal, referencias.</li>
+                    <li><strong>Datos de pago:</strong> procesados por Stripe (no almacenamos números de tarjeta).</li>
+                    <li><strong>Datos de navegación:</strong> dirección IP, tipo de navegador, páginas vistas, mediante cookies y herramientas como Meta Pixel.</li>
+                    <li><strong>Datos de tu cuenta de Mercado Libre,</strong> si conectas tu tienda a nuestra app: identificador de usuario y tokens de acceso (no contraseña).</li>
+                </ul>
+            </section>
+
+            <section class="legal-block">
+                <h2>2. Para qué usamos tus datos</h2>
+                <ul>
+                    <li>Procesar tus pedidos y entregarlos.</li>
+                    <li>Comunicarte el estado de tu compra y el seguimiento de envío.</li>
+                    <li>Atender solicitudes de soporte, cambios y devoluciones.</li>
+                    <li>Enviarte ofertas y novedades si te suscribes a nuestra newsletter (puedes darte de baja en cualquier momento).</li>
+                    <li>Cumplir obligaciones fiscales si solicitas factura.</li>
+                    <li>Mejorar el sitio y entender qué productos interesan más, mediante análisis agregado.</li>
+                </ul>
+            </section>
+
+            <section class="legal-block">
+                <h2>3. Con quién compartimos tus datos</h2>
+                <p>Solo compartimos lo estrictamente necesario con los siguientes terceros:</p>
+                <ul>
+                    <li><strong>Stripe</strong> — procesamiento de pagos (PCI DSS Nivel 1).</li>
+                    <li><strong>Skydrop / paqueterías nacionales</strong> — para envíos.</li>
+                    <li><strong>Meta (Facebook/Instagram)</strong> — píxeles de remarketing y métricas anónimas.</li>
+                    <li><strong>Mercado Libre</strong> — únicamente cuando el cliente compra a través de su plataforma.</li>
+                    <li><strong>Hostinger</strong> — proveedor de servidor donde reside el sitio.</li>
+                </ul>
+                <p>No vendemos ni rentamos tus datos a terceros bajo ninguna circunstancia.</p>
+            </section>
+
+            <section class="legal-block">
+                <h2>4. Tus derechos ARCO</h2>
+                <p>De acuerdo con la Ley Federal de Protección de Datos Personales en Posesión de los Particulares (LFPDPPP) tienes derecho a:</p>
+                <ul>
+                    <li><strong>Acceder</strong> a los datos personales que tenemos de ti.</li>
+                    <li><strong>Rectificar</strong> datos incorrectos o desactualizados.</li>
+                    <li><strong>Cancelar</strong> tu información de nuestras bases de datos.</li>
+                    <li><strong>Oponerte</strong> a usos específicos (por ejemplo, marketing).</li>
+                </ul>
+                <p>Para ejercer cualquiera de estos derechos escríbenos por Instagram <a href="https://www.instagram.com/cultclasiccs/" target="_blank" rel="noopener">@cultclasiccs</a> identificándote con el correo asociado a tu cuenta. Atendemos tu solicitud en un plazo máximo de 20 días hábiles.</p>
+            </section>
+
+            <section class="legal-block">
+                <h2>5. Cookies y tecnologías similares</h2>
+                <p>Usamos cookies estrictamente necesarias para el funcionamiento del carrito y la sesión, así como cookies de medición (Meta Pixel). Puedes configurar tu navegador para bloquearlas, aunque algunas funciones podrían dejar de funcionar correctamente.</p>
+            </section>
+
+            <section class="legal-block">
+                <h2>6. Seguridad</h2>
+                <p>Los datos viajan cifrados por HTTPS. Los pagos se procesan en infraestructura PCI DSS de Stripe sin que tu información financiera toque nuestros servidores. Las credenciales de integración con plataformas como Mercado Libre se guardan cifradas y son de uso interno exclusivo.</p>
+            </section>
+
+            <section class="legal-block">
+                <h2>7. Conservación</h2>
+                <p>Conservamos los datos de tus pedidos durante el tiempo necesario para cumplir obligaciones fiscales y de garantía (mínimo 5 años por requerimiento del SAT en México). Los datos de marketing los conservamos hasta que solicites darte de baja.</p>
+            </section>
+
+            <section class="legal-block">
+                <h2>8. Cambios a este aviso</h2>
+                <p>Podemos actualizar este aviso para reflejar cambios en nuestras prácticas o requerimientos legales. La fecha de la última versión aparece arriba. Te recomendamos revisarlo periódicamente.</p>
+            </section>
+
+            <section class="legal-block">
+                <h2>9. Contacto</h2>
+                <p>Para dudas, comentarios o ejercicio de derechos ARCO, escríbenos por Instagram a <a href="https://www.instagram.com/cultclasiccs/" target="_blank" rel="noopener">@cultclasiccs</a>.</p>
+            </section>
+
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -848,6 +848,10 @@ def devoluciones_view(request):
     return render(request, 'tienda/devoluciones.html')
 
 
+def privacidad_view(request):
+    return render(request, 'tienda/privacidad.html')
+
+
 def newsletter_signup(request):
     """Captura email del popup de bienvenida y devuelve el código de cupón."""
     if request.method != "POST":

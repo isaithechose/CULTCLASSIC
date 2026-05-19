@@ -29,6 +29,7 @@ urlpatterns = [
     path('archivo/', views.archivo_view, name='archivo'),
     path('faq/', views.faq_view, name='faq'),
     path('devoluciones/', views.devoluciones_view, name='devoluciones'),
+    path('privacidad/', views.privacidad_view, name='privacidad'),
     path('newsletter/signup/', views.newsletter_signup, name='newsletter_signup'),
     path('proceso_compra/', views.proceso_compra, name='proceso_compra'),
     path('checkout/', views.checkout, name='checkout'),
