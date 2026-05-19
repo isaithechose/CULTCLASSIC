@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     "allauth.socialaccount.providers.facebook",
 
     "tienda",
+    "mercadolibre",
 ]
 
 SITE_ID = config("SITE_ID", default=4, cast=int)
