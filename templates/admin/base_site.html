@@ -339,6 +339,101 @@
   #changelist-filter h2 { background: #0f0f0f !important; color: #aaa !important; }
   #footer { display: none; }
 
+  /* ───────────────── DASHBOARDS — overrides al tema oscuro ───────────────── */
+  /* Tarjetas y paneles de los dashboards (accounting, business, inventory, etc.) */
+  #content [class*="-card"]:not(.cc-summary-card):not(.cc-quick-card):not(.cc-alert-row),
+  #content [class*="-panel"]:not(.cc-quick-card),
+  #content [class*="-tile"]:not(.cc-quick-card),
+  #content [class*="-statement"],
+  #content [class*="-box"]:not(.btn-box) {
+    background: var(--cc-panel) !important;
+    border: 1px solid var(--cc-border) !important;
+    border-radius: 10px !important;
+    box-shadow: none !important;
+    color: var(--cc-text) !important;
+  }
+  #content [class*="-card"] strong,
+  #content [class*="-panel"] strong,
+  #content [class*="-item"] strong,
+  #content [class*="-tile"] strong,
+  #content [class*="-value"]:not(.cc-summary-value),
+  #content [class*="__value"] {
+    color: #fff !important;
+  }
+  #content [class*="-label"]:not(.cc-summary-label):not(.cc-quick-label),
+  #content [class*="__label"],
+  #content [class*="__meta"],
+  #content [class*="-meta"]:not(.site-footer__meta) {
+    color: var(--cc-muted) !important;
+  }
+  /* Items de listas internas (background gris claro → gris oscuro) */
+  #content [class*="-item"]:not(.cc-quick-card):not(.cc-alert-row):not(.cc-nav-item),
+  #content [class*="-row"]:not(.cc-alert-row):not(.cc-nav-item) {
+    background: transparent !important;
+    color: var(--cc-text) !important;
+  }
+  #content [class*="-item"]:hover,
+  #content [class*="-row"]:hover { background: #181818 !important; }
+  /* Tablas dentro de dashboards */
+  #content [class*="-table"],
+  #content [class*="dashboard"] table {
+    background: transparent !important;
+    color: var(--cc-text) !important;
+  }
+  #content [class*="-table"] th,
+  #content [class*="-table"] td,
+  #content [class*="dashboard"] th,
+  #content [class*="dashboard"] td {
+    border-color: var(--cc-border) !important;
+    color: var(--cc-text) !important;
+    background: transparent !important;
+  }
+  #content [class*="-table"] thead th,
+  #content [class*="dashboard"] thead th {
+    background: #0f0f0f !important;
+    color: #aaa !important;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  /* Status/tone variantes */
+  #content [class*="--danger"],
+  #content [class*="--red"] { color: var(--cc-red) !important; }
+  #content [class*="--ok"],
+  #content [class*="--green"],
+  #content [class*="--success"] { color: var(--cc-green) !important; }
+  #content [class*="--warn"],
+  #content [class*="--yellow"] { color: var(--cc-yellow) !important; }
+  #content [class*="--info"],
+  #content [class*="--blue"] { color: var(--cc-blue) !important; }
+  /* Botones y links dentro de dashboards */
+  #content [class*="dashboard"] .button,
+  #content [class*="dashboard"] a.button,
+  #content [class*="-actions"] .button,
+  #content [class*="-actions"] a.button {
+    background: #1a1a1a !important;
+    color: #ddd !important;
+    border: 1px solid var(--cc-border-2) !important;
+    padding: 6px 12px !important;
+    border-radius: 6px !important;
+    text-decoration: none !important;
+  }
+  #content [class*="dashboard"] .button:hover,
+  #content [class*="-actions"] .button:hover { background: #222 !important; color: #fff !important; }
+  /* Headers de sección dentro de dashboards */
+  #content [class*="dashboard"] h2,
+  #content [class*="dashboard"] h3,
+  #content [class*="-title"]:not(.site-footer__brand),
+  #content [class*="-heading"] {
+    color: #fff !important;
+  }
+  /* Texto secundario / placeholders en formularios de dashboard */
+  #content [class*="dashboard"] p,
+  #content [class*="-empty"],
+  #content [class*="-note"] {
+    color: var(--cc-muted);
+  }
+
   @media (max-width: 900px) {
     #main { display: block !important; }
     .cc-sidebar {
