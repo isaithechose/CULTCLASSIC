@@ -171,13 +171,16 @@
 
         <div class="catalog-grid" id="catalogGrid">
             {% for cat in catalog %}
-                {% for design_name in cat.files %}
+                {% for design in cat.items %}
                 <a class="catalog-item"
-                   href="{% url 'tienda:design_creator' %}?file={{ design_name|urlencode }}"
+                   href="{% url 'tienda:design_creator' %}?file={{ design.name|urlencode }}"
                    data-category="{{ cat.slug }}"
-                   data-name="{{ design_name|lower }}"
-                   title="{{ design_name }}">
-                    <img loading="lazy" src="/media/diseños_propios/{{ design_name|urlencode }}" alt="{{ design_name }}">
+                   data-name="{{ design.name|lower }}"
+                   title="{{ design.name }}">
+                    <img loading="lazy" decoding="async"
+                         src="/media/diseños_propios/thumbs/{{ design.thumb|urlencode }}"
+                         alt="{{ design.name }}"
+                         onerror="this.onerror=null;this.src='/media/diseños_propios/{{ design.name|urlencode }}'">
                     <span class="catalog-item__label">{{ cat.name }}</span>
                 </a>
                 {% endfor %}

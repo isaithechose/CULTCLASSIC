@@ -1428,12 +1428,14 @@ def catalogo_diseños_propios(request):
     total = 0
     for category in sorted(catalog_groups.keys(), key=lambda c: c.lower()):
         files = sorted(catalog_groups[category])
+        items = [{"name": fn, "thumb": _Path(fn).stem + ".webp"} for fn in files]
         total += len(files)
         catalog.append({
             "name": category,
             "slug": slugify(category),
             "count": len(files),
             "files": files,
+            "items": items,
         })
 
     customizable_products = Producto.objects.filter(disponible=True, stock__gt=0).order_by("nombre")
