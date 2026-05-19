@@ -47,9 +47,14 @@ def exchange_code_for_token(code):
             "code": code,
             "redirect_uri": settings.ML_REDIRECT_URI,
         },
+        headers={"Accept": "application/json"},
         timeout=15,
     )
-    r.raise_for_status()
+    if not r.ok:
+        # Devuelve el cuerpo real para diagnóstico
+        body = r.text[:500]
+        logger.error("ML token exchange %s: %s", r.status_code, body)
+        raise requests.HTTPError(f"{r.status_code} — {body}", response=r)
     return r.json()
 
 
