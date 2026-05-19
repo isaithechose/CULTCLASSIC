@@ -317,6 +317,9 @@
           {% if row.label == "Ventas Mercado Libre (bruto)" %}
             <small class="acc__row-note">{{ ml_orders_count }} pedido{{ ml_orders_count|pluralize:"s" }} válido{{ ml_orders_count|pluralize:"s" }}</small>
           {% endif %}
+          {% if row.label == "Costo de producto vendido (COGS)" and ml_cogs %}
+            <small class="acc__row-note">Web ${{ web_cogs|floatformat:2 }} · ML ${{ ml_cogs|floatformat:2 }}</small>
+          {% endif %}
         </div>
         <div class="acc__row-amount acc__row-amount--{{ row.tone }}">${{ row.amount|floatformat:2 }}</div>
       </div>

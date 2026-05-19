@@ -4111,9 +4111,9 @@ class ExpenseAdmin(admin.ModelAdmin):
         ml_net = Decimal("0.00")
         ml_orders_count = 0
         ml_cancelled_count = 0
+        VALID_ML = ("paid", "confirmed", "shipped", "delivered")
         try:
             from mercadolibre.models import MercadoLibreOrder
-            VALID_ML = ("paid", "confirmed", "shipped", "delivered")
             ml_qs = MercadoLibreOrder.objects.filter(
                 date_created__date__gte=month_start, date_created__date__lte=month_end,
             )
@@ -4131,6 +4131,30 @@ class ExpenseAdmin(admin.ModelAdmin):
         for order in month_orders:
             for item in order.items.all():
                 estimated_cogs += _product_unit_cost(item.product) * item.quantity
+
+        # COGS de ML: para cada item de pedido ML válido del mes, busca la publicación
+        # enlazada (MercadoLibreListing.producto) y suma el costo unitario × cantidad.
+        ml_cogs = Decimal("0.00")
+        try:
+            from mercadolibre.models import MercadoLibreOrderItem, MercadoLibreListing
+            # Mapa item_id (ML) → Producto local (una sola query)
+            ml_to_producto = {
+                lst.ml_id: lst.producto
+                for lst in MercadoLibreListing.objects.select_related("producto").filter(producto__isnull=False)
+            }
+            ml_items_qs = MercadoLibreOrderItem.objects.filter(
+                order__date_created__date__gte=month_start,
+                order__date_created__date__lte=month_end,
+                order__status__in=VALID_ML,
+            ).only("item_id", "quantity")
+            for it in ml_items_qs:
+                prod = ml_to_producto.get(it.item_id)
+                if prod is not None:
+                    ml_cogs += _product_unit_cost(prod) * Decimal(str(it.quantity or 0))
+        except Exception:
+            pass
+        web_cogs = estimated_cogs
+        estimated_cogs += ml_cogs
 
         # Métricas combinadas web + ML
         combined_sales = Decimal(str(product_sales)) + ml_sales
@@ -4214,6 +4238,8 @@ class ExpenseAdmin(admin.ModelAdmin):
             ml_net=ml_net,
             ml_orders_count=ml_orders_count,
             ml_cancelled_count=ml_cancelled_count,
+            ml_cogs=ml_cogs,
+            web_cogs=web_cogs,
             combined_sales=combined_sales,
             combined_net_sales=combined_net_sales,
             month_expenses_count=month_expenses.count(),
