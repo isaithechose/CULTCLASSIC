@@ -249,6 +249,23 @@ def _is_accounting_period_closed(value):
     return AccountingPeriodClose.objects.filter(month_start=month_start).exists()
 
 
+def _channel_comparison(web_monthly_sales, ml_extras):
+    """Construye los KPIs comparativos sitio vs Mercado Libre del mes."""
+    web = float(web_monthly_sales or 0)
+    ml = float(ml_extras.get("vb_ml_revenue_month", 0) or 0)
+    total = web + ml
+    web_pct = round((web / total * 100), 1) if total > 0 else 0.0
+    ml_pct = round((ml / total * 100), 1) if total > 0 else 0.0
+    return {
+        "vb_channel_total_month": total,
+        "vb_channel_web_month": web,
+        "vb_channel_ml_month": ml,
+        "vb_channel_web_pct": web_pct,
+        "vb_channel_ml_pct": ml_pct,
+        "vb_channel_has_data": total > 0,
+    }
+
+
 def _ml_vision_extras(today, month_start):
     """Datos de Mercado Libre para el vision board del admin."""
     try:
@@ -380,6 +397,12 @@ def _admin_overview_context():
         .annotate(units=_Sum("quantity"))
         .order_by("-units")[:4]
     )
+
+    _ml_extras = _ml_vision_extras(today, month_start)
+    _ml_extras_combined = {
+        **_ml_extras,
+        **_channel_comparison(monthly_sales, _ml_extras),
+    }
     top_products = []
     for p in top_products_qs:
         if not p["product__id"]:
@@ -476,7 +499,7 @@ def _admin_overview_context():
         "vb_monthly_goal": float(monthly_goal),
         "vb_goal_pct": goal_pct,
         "vb_top_products": top_products,
-        **_ml_vision_extras(today, month_start),
+        **_ml_extras_combined,
         "admin_workflow_groups": [
             {
                 "title": "Vender",

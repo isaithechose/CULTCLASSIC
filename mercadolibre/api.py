@@ -123,6 +123,7 @@ def sync_orders(cred, limit=50):
                 "buyer_nickname": (o.get("buyer") or {}).get("nickname", ""),
                 "buyer_id": (o.get("buyer") or {}).get("id"),
                 "shipping_status": (o.get("shipping") or {}).get("status", ""),
+                "shipping_id": (o.get("shipping") or {}).get("id") or None,
                 "raw": o,
             },
         )
@@ -188,6 +189,29 @@ def sync_listings(cred, page_size=50):
             )
             saved += 1
     return saved
+
+
+def push_tracking_to_ml(cred, shipment_id, tracking_number, carrier=""):
+    """
+    Envía el número de guía a Mercado Envíos para que el comprador lo vea.
+    Solo aplica a pedidos que NO van por Mercado Envíos full (es decir,
+    cuando el seller hace su propio envío).
+    """
+    cred = _ensure_fresh(cred)
+    payload = {"tracking_number": tracking_number}
+    if carrier:
+        payload["service_id"] = carrier  # ML expone una lista de carriers, esto es flexible
+    r = requests.put(
+        f"{API_BASE}/shipments/{shipment_id}",
+        headers=_headers(cred),
+        json=payload,
+        timeout=15,
+    )
+    if not r.ok:
+        body = r.text[:300]
+        logger.error("ML push tracking %s: %s", r.status_code, body)
+        raise requests.HTTPError(f"{r.status_code} — {body}", response=r)
+    return r.json() if r.text else {"ok": True}
 
 
 def update_listing_stock(cred, ml_id, available_quantity):

@@ -467,6 +467,44 @@
 
   </div>
 
+  {# ── Canales del mes: Sitio vs Mercado Libre ───────────────────── #}
+  {% if vb_channel_has_data %}
+  <div class="vb-panel" style="margin-bottom:16px;">
+    <div class="vb-panel__head">
+      <p class="vb-panel__title">Canales del mes</p>
+      <span style="font-family:ui-monospace,monospace;font-size:14px;color:var(--vb-ink);font-weight:700;">${{ vb_channel_total_month|floatformat:0 }} total</span>
+    </div>
+
+    {# Barra de split visual #}
+    <div style="display:flex;height:36px;border-radius:8px;overflow:hidden;margin-bottom:14px;background:var(--vb-line);">
+      {% if vb_channel_web_pct > 0 %}
+        <div style="width:{{ vb_channel_web_pct }}%;background:linear-gradient(90deg,#fff 0%,#bbb 100%);display:flex;align-items:center;padding:0 12px;color:#000;font-size:11px;font-weight:700;letter-spacing:0.04em;">
+          {% if vb_channel_web_pct >= 15 %}SITIO · {{ vb_channel_web_pct|floatformat:0 }}%{% endif %}
+        </div>
+      {% endif %}
+      {% if vb_channel_ml_pct > 0 %}
+        <div style="width:{{ vb_channel_ml_pct }}%;background:linear-gradient(90deg,#ffe600 0%,#e6cc00 100%);display:flex;align-items:center;padding:0 12px;color:#000;font-size:11px;font-weight:700;letter-spacing:0.04em;">
+          {% if vb_channel_ml_pct >= 15 %}ML · {{ vb_channel_ml_pct|floatformat:0 }}%{% endif %}
+        </div>
+      {% endif %}
+    </div>
+
+    {# Cards detalle por canal #}
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;">
+      <div style="padding:14px 16px;border:1px solid var(--vb-line);border-radius:10px;border-left:3px solid #fff;">
+        <p style="font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--vb-mute);margin:0 0 6px;">Sitio web</p>
+        <p style="font-size:24px;font-weight:700;color:var(--vb-ink);margin:0;font-family:ui-monospace,monospace;">${{ vb_channel_web_month|floatformat:0 }}</p>
+        <p style="font-size:11px;color:var(--vb-mute);margin:4px 0 0;">{{ vb_channel_web_pct|floatformat:0 }}% del total</p>
+      </div>
+      <div style="padding:14px 16px;border:1px solid var(--vb-line);border-radius:10px;border-left:3px solid #ffe600;">
+        <p style="font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--vb-mute);margin:0 0 6px;">Mercado Libre</p>
+        <p style="font-size:24px;font-weight:700;color:var(--vb-ink);margin:0;font-family:ui-monospace,monospace;">${{ vb_channel_ml_month|floatformat:0 }}</p>
+        <p style="font-size:11px;color:var(--vb-mute);margin:4px 0 0;">{{ vb_channel_ml_pct|floatformat:0 }}% del total · {{ vb_ml_orders_month }} pedidos</p>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
   {# ── KPIs día (4 chiquitos) ──────────────────────────────────────── #}
   {% if admin_today_summary %}
   <div class="vb-mini">

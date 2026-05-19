@@ -73,13 +73,27 @@ class OrderItemInline(admin.TabularInline):
 @admin.register(MercadoLibreOrder)
 class OrderAdmin(admin.ModelAdmin):
     list_display = ("ml_id", "date_created", "status", "buyer_nickname", "total_amount",
-                    "currency_id", "shipping_status")
+                    "currency_id", "shipping_status", "tracking_number")
     list_filter = ("status", "shipping_status", "currency_id")
-    search_fields = ("ml_id", "buyer_nickname")
+    search_fields = ("ml_id", "buyer_nickname", "tracking_number")
     date_hierarchy = "date_created"
+    fieldsets = (
+        ("Datos del pedido", {
+            "fields": ("ml_id", "status", "date_created", "date_closed", "total_amount",
+                       "currency_id", "buyer_nickname", "buyer_id"),
+        }),
+        ("Envío", {
+            "fields": ("shipping_status", "shipping_id", "tracking_number",
+                       "tracking_carrier", "pushed_tracking_at"),
+            "description": "Si llenas <strong>tracking_number</strong> y guardas, "
+                           "se envía automáticamente a Mercado Libre (siempre que "
+                           "el pedido tenga shipping_id).",
+        }),
+        ("Sistema", {"fields": ("synced_at", "raw"), "classes": ("collapse",)}),
+    )
     readonly_fields = ("ml_id", "status", "date_created", "date_closed", "total_amount",
                        "currency_id", "buyer_nickname", "buyer_id", "shipping_status",
-                       "synced_at", "raw")
+                       "shipping_id", "pushed_tracking_at", "synced_at", "raw")
     inlines = [OrderItemInline]
 
 

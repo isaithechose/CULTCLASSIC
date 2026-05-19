@@ -36,6 +36,14 @@ class MercadoLibreOrder(models.Model):
     buyer_nickname = models.CharField(max_length=120, blank=True)
     buyer_id = models.BigIntegerField(null=True, blank=True)
     shipping_status = models.CharField(max_length=40, blank=True)
+    shipping_id = models.BigIntegerField(null=True, blank=True,
+        help_text="ID del envío en Mercado Envíos")
+    tracking_number = models.CharField(max_length=80, blank=True,
+        help_text="Número de guía cuando se envía con paquetería propia")
+    tracking_carrier = models.CharField(max_length=40, blank=True,
+        help_text="Nombre de la paquetería (DHL, Estafeta, etc.)")
+    pushed_tracking_at = models.DateTimeField(null=True, blank=True,
+        help_text="Cuándo enviamos los datos de tracking a ML por última vez")
     raw = models.JSONField(default=dict, blank=True)
     synced_at = models.DateTimeField(auto_now=True)
 
