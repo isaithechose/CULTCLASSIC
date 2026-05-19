@@ -249,6 +249,51 @@ def _is_accounting_period_closed(value):
     return AccountingPeriodClose.objects.filter(month_start=month_start).exists()
 
 
+def _ml_vision_extras(today, month_start):
+    """Datos de Mercado Libre para el vision board del admin."""
+    try:
+        from mercadolibre.models import (
+            MercadoLibreCredential, MercadoLibreOrder, MercadoLibreListing,
+        )
+    except ImportError:
+        return {
+            "vb_ml_connected": False,
+            "vb_ml_orders_today": 0,
+            "vb_ml_orders_month": 0,
+            "vb_ml_revenue_month": 0.0,
+            "vb_ml_listings_count": 0,
+            "vb_ml_recent_orders": [],
+            "vb_ml_last_sync": None,
+        }
+
+    cred = MercadoLibreCredential.objects.first()
+    connected = cred is not None
+
+    today_ct = MercadoLibreOrder.objects.filter(date_created__date=today).count()
+    month_orders = MercadoLibreOrder.objects.filter(date_created__date__gte=month_start)
+    month_ct = month_orders.count()
+    month_revenue = month_orders.aggregate(t=Sum("total_amount"))["t"] or Decimal("0.00")
+    listings_ct = MercadoLibreListing.objects.count()
+    recent = list(
+        MercadoLibreOrder.objects.order_by("-date_created")[:4]
+        .values("ml_id", "date_created", "buyer_nickname", "total_amount", "status")
+    )
+    last_sync = (
+        MercadoLibreOrder.objects.order_by("-synced_at").values_list("synced_at", flat=True).first()
+        or (cred and cred.updated_at)
+    )
+    return {
+        "vb_ml_connected": connected,
+        "vb_ml_nickname": cred.nickname if cred else "",
+        "vb_ml_orders_today": today_ct,
+        "vb_ml_orders_month": month_ct,
+        "vb_ml_revenue_month": float(month_revenue),
+        "vb_ml_listings_count": listings_ct,
+        "vb_ml_recent_orders": recent,
+        "vb_ml_last_sync": last_sync,
+    }
+
+
 def _admin_overview_context():
     today = timezone.localdate()
     month_start = today.replace(day=1)
@@ -431,6 +476,7 @@ def _admin_overview_context():
         "vb_monthly_goal": float(monthly_goal),
         "vb_goal_pct": goal_pct,
         "vb_top_products": top_products,
+        **_ml_vision_extras(today, month_start),
         "admin_workflow_groups": [
             {
                 "title": "Vender",

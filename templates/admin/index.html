@@ -525,6 +525,61 @@
 
   </div>
 
+  {# ── Mercado Libre ──────────────────────────────────────────── #}
+  <div class="vb-panel" style="margin-bottom:16px;">
+    <div class="vb-panel__head">
+      <p class="vb-panel__title">
+        <span style="display:inline-block;width:8px;height:8px;background:#ffe600;border-radius:50%;margin-right:8px;vertical-align:middle;"></span>
+        Mercado Libre
+        {% if vb_ml_connected %}<span style="color:var(--vb-good);font-size:10px;margin-left:8px;">● {{ vb_ml_nickname }}</span>{% endif %}
+      </p>
+      {% if vb_ml_connected %}
+        <a class="vb-panel__link" href="/mercadolibre/sync/" style="color:var(--vb-info);">↻ Sincronizar ahora</a>
+      {% endif %}
+    </div>
+
+    {% if not vb_ml_connected %}
+      <div style="text-align:center;padding:24px;">
+        <p style="color:var(--vb-mute);font-size:13px;margin:0 0 14px;">No hay cuenta de Mercado Libre conectada.</p>
+        <a href="/mercadolibre/connect/" style="background:#ffe600;color:#000;padding:8px 18px;border-radius:6px;text-decoration:none;font-weight:600;font-size:13px;">🔗 Conectar Mercado Libre</a>
+      </div>
+    {% else %}
+      <div class="vb-mini" style="margin-bottom:14px;">
+        <div class="vb-mini__card"><p class="vb-mini__lbl">Pedidos ML hoy</p><p class="vb-mini__val">{{ vb_ml_orders_today }}</p></div>
+        <div class="vb-mini__card"><p class="vb-mini__lbl">Pedidos ML mes</p><p class="vb-mini__val">{{ vb_ml_orders_month }}</p></div>
+        <div class="vb-mini__card"><p class="vb-mini__lbl">Ingresos ML mes</p><p class="vb-mini__val">${{ vb_ml_revenue_month|floatformat:0 }}</p></div>
+        <div class="vb-mini__card"><p class="vb-mini__lbl">Publicaciones</p><p class="vb-mini__val">{{ vb_ml_listings_count }}</p></div>
+      </div>
+
+      {% if vb_ml_recent_orders %}
+        <div style="border-top:1px solid var(--vb-line);padding-top:14px;">
+          <p style="font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--vb-mute);margin:0 0 10px;">Últimos pedidos</p>
+          {% for o in vb_ml_recent_orders %}
+            <a href="/admin/mercadolibre/mercadolibreorder/?q={{ o.ml_id }}" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border:1px solid var(--vb-line);border-radius:8px;text-decoration:none;margin-bottom:6px;background:rgba(255,255,255,0.01);transition:background .15s;" onmouseover="this.style.background='rgba(255,255,255,0.04)'" onmouseout="this.style.background='rgba(255,255,255,0.01)'">
+              <div style="display:flex;align-items:center;gap:12px;min-width:0;flex:1;">
+                <span style="font-family:ui-monospace,monospace;font-size:11px;color:var(--vb-faint);">#{{ o.ml_id }}</span>
+                <span style="color:var(--vb-ink);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ o.buyer_nickname|default:"—" }}</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px;flex-shrink:0;">
+                <span style="font-size:11px;color:var(--vb-mute);padding:2px 8px;background:rgba(255,255,255,0.05);border-radius:4px;text-transform:capitalize;">{{ o.status }}</span>
+                <span style="font-family:ui-monospace,monospace;color:var(--vb-ink);font-weight:600;">${{ o.total_amount|floatformat:0 }}</span>
+              </div>
+            </a>
+          {% endfor %}
+          <a href="/admin/mercadolibre/mercadolibreorder/" style="display:block;text-align:center;color:var(--vb-faint);font-size:11px;margin-top:8px;text-decoration:none;">Ver todos los pedidos →</a>
+        </div>
+      {% else %}
+        <div style="text-align:center;padding:18px;color:var(--vb-faint);font-size:12px;">
+          Sin pedidos sincronizados todavía. Haz click en "Sincronizar ahora" arriba.
+        </div>
+      {% endif %}
+
+      {% if vb_ml_last_sync %}
+        <p style="text-align:right;color:var(--vb-faint);font-size:10px;margin:10px 0 0;font-family:ui-monospace,monospace;">Última sincronización: {{ vb_ml_last_sync|date:"j M H:i" }}</p>
+      {% endif %}
+    {% endif %}
+  </div>
+
   {# ── Alertas activas ──────────────────────────────────────────── #}
   <div class="vb-panel">
     <p class="vb-panel__title" style="margin-bottom:14px;">Alertas activas</p>

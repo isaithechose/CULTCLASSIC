@@ -21,6 +21,26 @@ def connect(request):
 
 
 @staff_member_required
+def sync_now(request):
+    """Sincroniza pedidos y publicaciones de la primera credencial activa."""
+    cred = MercadoLibreCredential.objects.first()
+    if not cred:
+        messages.error(request, "No hay cuenta de Mercado Libre conectada.")
+        return redirect("admin:index")
+    try:
+        orders = api.sync_orders(cred)
+        listings = api.sync_listings(cred)
+        messages.success(
+            request,
+            f"Mercado Libre: {orders} pedidos y {listings} publicaciones sincronizados.",
+        )
+    except Exception as exc:
+        logger.exception("ML sync failed")
+        messages.error(request, f"Error al sincronizar con ML: {exc}")
+    return redirect(request.META.get("HTTP_REFERER") or "admin:index")
+
+
+@staff_member_required
 def callback(request):
     """Callback de OAuth: intercambia el code por token y guarda credenciales."""
     code = request.GET.get("code")
