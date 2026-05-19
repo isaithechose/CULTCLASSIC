@@ -4198,10 +4198,12 @@ class ExpenseAdmin(admin.ModelAdmin):
             {"label": "Ventas sitio web", "amount": product_sales, "tone": "ok", "section": "ingresos"},
         ]
         if ml_sales:
+            ml_fee_pct = (ml_fees / ml_sales * 100) if ml_sales else Decimal("0.00")
+            ml_avg_shipping = (ml_shipping_cost / ml_orders_count) if ml_orders_count else Decimal("0.00")
             income_statement += [
                 {"label": "Ventas Mercado Libre (bruto)", "amount": ml_sales, "tone": "ok", "section": "ingresos"},
-                {"label": "Comisión Mercado Libre", "amount": -ml_fees, "tone": "danger", "section": "ingresos", "indent": True},
-                {"label": "Costo envío Mercado Libre", "amount": -ml_shipping_cost, "tone": "warn", "section": "ingresos", "indent": True},
+                {"label": f"Comisión Mercado Libre ({ml_fee_pct:.1f}% efectivo)", "amount": -ml_fees, "tone": "danger", "section": "ingresos", "indent": True},
+                {"label": f"Costo envío Mercado Libre (${ml_avg_shipping:.2f}/pedido)", "amount": -ml_shipping_cost, "tone": "warn", "section": "ingresos", "indent": True},
             ]
         income_statement += [
             {"label": "Ingresos netos", "amount": combined_net_sales, "tone": "ok", "section": "subtotal"},

@@ -480,7 +480,9 @@ def _decrement_local_stock_for_ml_item(ml_item_id, quantity):
 
 
 def _extract_costs(order_payload):
-    """Extrae fees y costos de payments[] del payload de orden."""
+    """Extrae fees y costos de payments[] del payload de orden.
+    Si el payload aún no trae billing real, aplica fallback configurable
+    (ML_FALLBACK_FEE_PCT, ML_FALLBACK_SHIPPING_COST) para pedidos válidos."""
     fee = Decimal("0.00")
     ship = Decimal("0.00")
     net = Decimal("0.00")
@@ -491,8 +493,25 @@ def _extract_costs(order_payload):
             net += Decimal(str(p["net_received_amount"]))
         else:
             net += Decimal(str(p.get("transaction_amount") or 0)) - Decimal(str(p.get("marketplace_fee") or 0))
-    if net == 0 and order_payload.get("total_amount"):
-        net = Decimal(str(order_payload["total_amount"])) - fee
+
+    total = Decimal(str(order_payload.get("total_amount") or 0))
+    status = order_payload.get("status", "")
+
+    # Fallback: si ML aún no calculó comisión pero el pedido está pagado/activo,
+    # estimamos con la tasa real conocida para no subestimar costos.
+    if fee == 0 and total > 0 and status in ("paid", "confirmed", "shipped", "delivered"):
+        pct = Decimal(str(getattr(settings, "ML_FALLBACK_FEE_PCT", 19.5)))
+        fee = (total * pct / Decimal("100")).quantize(Decimal("0.01"))
+    if ship == 0 and total > 0 and status in ("paid", "confirmed", "shipped", "delivered"):
+        # Solo aplicar costo de envío si el seller lo paga (Mercado Envíos full a veces lo absorbe)
+        # Heurística: si shipping.mode es "me1"/"me2" y logistic_type es "fulfillment", ML cobra;
+        # mientras no podamos detectarlo bien, aplicamos el default y el user ajusta a mano.
+        ship = Decimal(str(getattr(settings, "ML_FALLBACK_SHIPPING_COST", 67.60))).quantize(Decimal("0.01"))
+
+    # Recalcular neto si aplicamos fallback
+    if total > 0:
+        net = (total - fee - ship).quantize(Decimal("0.01"))
+
     return fee, ship, net
 
 

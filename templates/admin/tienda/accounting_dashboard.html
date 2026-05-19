@@ -314,7 +314,7 @@
           {% if row.label == "Ventas sitio web" and shipping_income %}
             <small class="acc__row-note">Envío cobrado aparte: ${{ shipping_income|floatformat:2 }}</small>
           {% endif %}
-          {% if row.label == "Ventas Mercado Libre (bruto)" %}
+          {% if "Ventas Mercado Libre" in row.label %}
             <small class="acc__row-note">{{ ml_orders_count }} pedido{{ ml_orders_count|pluralize:"s" }} válido{{ ml_orders_count|pluralize:"s" }}</small>
           {% endif %}
           {% if row.label == "Costo de producto vendido (COGS)" and ml_cogs %}

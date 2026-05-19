@@ -75,6 +75,10 @@ ML_REDIRECT_URI = config('ML_REDIRECT_URI', default='http://127.0.0.1:8000/merca
 # Categoría default para publicar productos (MLM173159 = Ropa en MX).
 ML_DEFAULT_CATEGORY_ID = config('ML_DEFAULT_CATEGORY_ID', default='MLM173159')
 ML_DEFAULT_LISTING_TYPE = config('ML_DEFAULT_LISTING_TYPE', default='gold_special')
+# Tasas reales que ML cobra a Cult Clasiccs (se aplican como fallback cuando
+# el payload todavía no trae el billing real — p.ej. pedidos del día).
+ML_FALLBACK_FEE_PCT = config('ML_FALLBACK_FEE_PCT', default='19.5', cast=float)
+ML_FALLBACK_SHIPPING_COST = config('ML_FALLBACK_SHIPPING_COST', default='67.60', cast=float)
 SITE_URL = config('SITE_URL', default='https://cultclassics.shop')
 
 AUTHENTICATION_BACKENDS = [
