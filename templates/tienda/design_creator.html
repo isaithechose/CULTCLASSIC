@@ -23,9 +23,41 @@
 
     .design-creator__layout {
         display: grid;
-        grid-template-columns: minmax(320px, 0.95fr) minmax(360px, 1.05fr);
+        grid-template-columns: 1fr;
         gap: 1.6rem;
         align-items: start;
+    }
+    .design-creator__preview { order: 0; }
+    .design-creator__form-col { order: 1; }
+    .design-creator__form-col .design-creator__panel { max-width: 980px; margin: 0 auto; }
+
+    /* Toolbar de corte sobre el mockup */
+    .design-creator__cut-toolbar {
+        display: flex;
+        justify-content: center;
+        gap: 0.5rem;
+        margin: 0 0 0.9rem;
+        flex-wrap: wrap;
+    }
+    .design-creator__cut-toolbar .cut-pill {
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(214,195,161,0.22);
+        color: rgba(255,255,255,0.78);
+        padding: 0.5rem 1.1rem;
+        border-radius: 999px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.15s, color 0.15s, border-color 0.15s;
+    }
+    .design-creator__cut-toolbar .cut-pill:hover {
+        background: rgba(214,195,161,0.12);
+        color: #fff;
+    }
+    .design-creator__cut-toolbar .cut-pill.is-active {
+        background: var(--cc-accent, #d6c3a1);
+        color: #111;
+        border-color: var(--cc-accent, #d6c3a1);
     }
 
     .design-creator__panel {
@@ -134,7 +166,10 @@
     /* Canvas */
     .design-canvas {
         position: relative;
-        min-height: 36rem;
+        min-height: 48rem;
+        max-width: 720px;
+        margin: 0 auto;
+        aspect-ratio: 3 / 4;
         border-radius: 2rem;
         border: 1px solid rgba(214,195,161,0.16);
         background:
@@ -562,7 +597,8 @@
     <div class="container px-4 px-lg-5">
         <div class="design-creator__layout">
 
-            <!-- ── Left: controls ── -->
+            <!-- ── Top: controls ── -->
+            <div class="design-creator__form-col">
             <div class="design-creator__panel">
                 <p class="design-creator__eyebrow">Herramienta</p>
                 <h2 class="design-creator__title">Tu diseño listo para usar</h2>
@@ -605,18 +641,6 @@
                             </div>
                         </div>
 
-                        <!-- Corte de playera -->
-                        <div class="design-creator__tool-group">
-                            <div class="design-creator__tool-head">
-                                <strong>Corte</strong>
-                                <span id="shirtCutLabel">Oversize</span>
-                            </div>
-                            <div class="design-creator__align-grid" style="grid-template-columns:repeat(3,1fr);">
-                                <button type="button" class="align-btn shirt-cut-btn is-active" data-cut="oversize" data-label="Oversize">Oversize</button>
-                                <button type="button" class="align-btn shirt-cut-btn"            data-cut="regular"  data-label="Regular">Regular</button>
-                                <button type="button" class="align-btn shirt-cut-btn"            data-cut="dropshoulder" data-label="Drop Shoulder">Drop</button>
-                            </div>
-                        </div>
 
                         <!-- Opacidad -->
                         <div class="design-creator__tool-group">
@@ -864,10 +888,20 @@
                 </form>
             </div>
 
-            <!-- ── Right: preview ── -->
+            </div><!-- /.design-creator__form-col -->
+
+            <!-- ── Preview (arriba) ── -->
             <div class="design-creator__preview">
                 <div class="design-creator__panel">
-                    <p class="design-creator__eyebrow">Preview</p>
+                    <div style="display:flex;justify-content:space-between;align-items:baseline;gap:1rem;flex-wrap:wrap;margin-bottom:0.4rem;">
+                        <p class="design-creator__eyebrow" style="margin:0;">Preview</p>
+                        <p class="design-creator__copy" style="margin:0;font-size:0.8rem;opacity:0.7;">Cambia el corte para ver tu diseño sobre cada tipo de playera.</p>
+                    </div>
+                    <div class="design-creator__cut-toolbar">
+                        <button type="button" class="cut-pill is-active shirt-cut-btn" data-cut="oversize" data-label="Oversize">Oversize</button>
+                        <button type="button" class="cut-pill shirt-cut-btn"            data-cut="regular"  data-label="Regular">Regular</button>
+                        <button type="button" class="cut-pill shirt-cut-btn"            data-cut="dropshoulder" data-label="Drop Shoulder">Drop Shoulder</button>
+                    </div>
                     <div class="design-canvas" id="designCanvas" data-cut="oversize">
                         <div class="design-canvas__shirt" id="shirtBg"></div>
                         <div class="design-canvas__print-area" id="printArea">
@@ -1336,7 +1370,6 @@
     document.querySelectorAll(".shirt-cut-btn").forEach(btn => {
         btn.addEventListener("click", () => {
             designCanvasEl.dataset.cut = btn.dataset.cut;
-            document.getElementById("shirtCutLabel").textContent = btn.dataset.label;
             document.querySelectorAll(".shirt-cut-btn").forEach(b => b.classList.remove("is-active"));
             btn.classList.add("is-active");
             if (state.artwork) fitArtwork();
