@@ -585,9 +585,31 @@
       <div class="vb-mini" style="margin-bottom:14px;">
         <div class="vb-mini__card"><p class="vb-mini__lbl">Pedidos ML hoy</p><p class="vb-mini__val">{{ vb_ml_orders_today }}</p></div>
         <div class="vb-mini__card"><p class="vb-mini__lbl">Pedidos ML mes</p><p class="vb-mini__val">{{ vb_ml_orders_month }}</p></div>
-        <div class="vb-mini__card"><p class="vb-mini__lbl">Ingresos ML mes</p><p class="vb-mini__val">${{ vb_ml_revenue_month|floatformat:0 }}</p></div>
+        <div class="vb-mini__card"><p class="vb-mini__lbl">Ingresos brutos ML</p><p class="vb-mini__val">${{ vb_ml_revenue_month|floatformat:0 }}</p></div>
         <div class="vb-mini__card"><p class="vb-mini__lbl">Publicaciones</p><p class="vb-mini__val">{{ vb_ml_listings_count }}</p></div>
       </div>
+
+      {# Costos y neto recibido #}
+      <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:14px;padding:12px;background:rgba(255,255,255,0.02);border-radius:8px;border:1px solid var(--vb-line);">
+        <div>
+          <p style="font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:var(--vb-mute);margin:0 0 4px;">Comisión ML</p>
+          <p style="font-size:16px;font-weight:600;color:var(--vb-danger);margin:0;font-family:ui-monospace,monospace;">−${{ vb_ml_fees_month|floatformat:0 }}</p>
+        </div>
+        <div>
+          <p style="font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:var(--vb-mute);margin:0 0 4px;">Costo envío</p>
+          <p style="font-size:16px;font-weight:600;color:var(--vb-warn);margin:0;font-family:ui-monospace,monospace;">−${{ vb_ml_shipping_cost_month|floatformat:0 }}</p>
+        </div>
+        <div>
+          <p style="font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:var(--vb-mute);margin:0 0 4px;">Neto recibido</p>
+          <p style="font-size:16px;font-weight:600;color:var(--vb-good);margin:0;font-family:ui-monospace,monospace;">${{ vb_ml_net_month|floatformat:0 }}</p>
+        </div>
+      </div>
+
+      {% if vb_ml_orders_cancelled > 0 %}
+        <div style="padding:8px 12px;background:rgba(224,80,80,0.08);border-left:3px solid var(--vb-danger);border-radius:6px;margin-bottom:14px;font-size:12px;color:var(--vb-mute);">
+          ⚠️ <strong style="color:var(--vb-danger);">{{ vb_ml_orders_cancelled }}</strong> pedido{{ vb_ml_orders_cancelled|pluralize:"s" }} cancelado{{ vb_ml_orders_cancelled|pluralize:"s" }} este mes (excluidos de ventas, stock revertido).
+        </div>
+      {% endif %}
 
       {% if vb_ml_recent_orders %}
         <div style="border-top:1px solid var(--vb-line);padding-top:14px;">

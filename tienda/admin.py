@@ -250,9 +250,11 @@ def _is_accounting_period_closed(value):
 
 
 def _channel_comparison(web_monthly_sales, ml_extras):
-    """Construye los KPIs comparativos sitio vs Mercado Libre del mes."""
+    """Construye los KPIs comparativos sitio vs Mercado Libre del mes.
+    Para ML usamos el NETO (después de comisiones) para comparación justa."""
     web = float(web_monthly_sales or 0)
-    ml = float(ml_extras.get("vb_ml_revenue_month", 0) or 0)
+    # ML net (después de fees) — si está en 0 caemos al bruto
+    ml = float(ml_extras.get("vb_ml_net_month") or ml_extras.get("vb_ml_revenue_month") or 0)
     total = web + ml
     web_pct = round((web / total * 100), 1) if total > 0 else 0.0
     ml_pct = round((ml / total * 100), 1) if total > 0 else 0.0
@@ -286,10 +288,18 @@ def _ml_vision_extras(today, month_start):
     cred = MercadoLibreCredential.objects.first()
     connected = cred is not None
 
-    today_ct = MercadoLibreOrder.objects.filter(date_created__date=today).count()
-    month_orders = MercadoLibreOrder.objects.filter(date_created__date__gte=month_start)
+    # Excluimos cancelled/invalid de revenue y conteos válidos
+    VALID = ("paid", "confirmed", "shipped", "delivered")
+    today_ct = MercadoLibreOrder.objects.filter(
+        date_created__date=today, status__in=VALID).count()
+    month_orders_all = MercadoLibreOrder.objects.filter(date_created__date__gte=month_start)
+    month_orders = month_orders_all.filter(status__in=VALID)
     month_ct = month_orders.count()
     month_revenue = month_orders.aggregate(t=Sum("total_amount"))["t"] or Decimal("0.00")
+    month_net = month_orders.aggregate(t=Sum("net_received_amount"))["t"] or Decimal("0.00")
+    month_fees = month_orders.aggregate(t=Sum("marketplace_fee"))["t"] or Decimal("0.00")
+    month_shipping_cost = month_orders.aggregate(t=Sum("shipping_cost"))["t"] or Decimal("0.00")
+    cancelled_ct = month_orders_all.filter(status__in=("cancelled", "invalid")).count()
     listings_ct = MercadoLibreListing.objects.count()
     recent = list(
         MercadoLibreOrder.objects.order_by("-date_created")[:4]
@@ -304,7 +314,11 @@ def _ml_vision_extras(today, month_start):
         "vb_ml_nickname": cred.nickname if cred else "",
         "vb_ml_orders_today": today_ct,
         "vb_ml_orders_month": month_ct,
+        "vb_ml_orders_cancelled": cancelled_ct,
         "vb_ml_revenue_month": float(month_revenue),
+        "vb_ml_net_month": float(month_net),
+        "vb_ml_fees_month": float(month_fees),
+        "vb_ml_shipping_cost_month": float(month_shipping_cost),
         "vb_ml_listings_count": listings_ct,
         "vb_ml_recent_orders": recent,
         "vb_ml_last_sync": last_sync,

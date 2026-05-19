@@ -7,6 +7,7 @@ Docs:
 """
 import logging
 from datetime import timedelta
+from decimal import Decimal
 
 import requests
 from django.conf import settings
@@ -111,7 +112,7 @@ def sync_orders(cred, limit=50):
     results = r.json().get("results", [])
     saved = 0
     for o in results:
-        was_new = not MercadoLibreOrder.objects.filter(ml_id=o["id"]).exists()
+        fee, ship, net = _extract_costs(o)
         order, _ = MercadoLibreOrder.objects.update_or_create(
             ml_id=o["id"],
             defaults={
@@ -124,6 +125,9 @@ def sync_orders(cred, limit=50):
                 "buyer_id": (o.get("buyer") or {}).get("id"),
                 "shipping_status": (o.get("shipping") or {}).get("status", ""),
                 "shipping_id": (o.get("shipping") or {}).get("id") or None,
+                "marketplace_fee": fee,
+                "shipping_cost": ship,
+                "net_received_amount": net,
                 "raw": o,
             },
         )
@@ -139,10 +143,7 @@ def sync_orders(cred, limit=50):
                 unit_price=it.get("unit_price") or 0,
             )
             items_for_stock.append((item.get("id"), it.get("quantity", 1) or 1))
-        # Descontar stock local solo para pedidos nuevos y pagados
-        if was_new and o.get("status") in ("paid", "confirmed"):
-            for ml_item_id, qty in items_for_stock:
-                _decrement_local_stock_for_ml_item(ml_item_id, qty)
+        _apply_stock_transition(order, items_for_stock, o.get("status", ""))
         saved += 1
     return saved
 
@@ -311,6 +312,7 @@ def sync_single_order(cred, order_id):
     r.raise_for_status()
     o = r.json()
     was_new = not MercadoLibreOrder.objects.filter(ml_id=o["id"]).exists()
+    fee, ship, net = _extract_costs(o)
     order, _ = MercadoLibreOrder.objects.update_or_create(
         ml_id=o["id"],
         defaults={
@@ -322,6 +324,10 @@ def sync_single_order(cred, order_id):
             "buyer_nickname": (o.get("buyer") or {}).get("nickname", ""),
             "buyer_id": (o.get("buyer") or {}).get("id"),
             "shipping_status": (o.get("shipping") or {}).get("status", ""),
+            "shipping_id": (o.get("shipping") or {}).get("id") or None,
+            "marketplace_fee": fee,
+            "shipping_cost": ship,
+            "net_received_amount": net,
             "raw": o,
         },
     )
@@ -337,10 +343,7 @@ def sync_single_order(cred, order_id):
             unit_price=it.get("unit_price") or 0,
         )
         items_for_stock.append((item.get("id"), it.get("quantity", 1) or 1))
-    # Si es pedido nuevo y está pagado, descontar stock local
-    if was_new and o.get("status") in ("paid", "confirmed"):
-        for ml_item_id, qty in items_for_stock:
-            _decrement_local_stock_for_ml_item(ml_item_id, qty)
+    _apply_stock_transition(order, items_for_stock, o.get("status", ""))
     return order, was_new
 
 
@@ -372,12 +375,12 @@ def sync_single_listing(cred, ml_id):
     return listing
 
 
-def _decrement_local_stock_for_ml_item(ml_item_id, quantity):
+def _adjust_local_stock_for_ml_item(ml_item_id, quantity_delta, note):
     """
-    Cuando ML reporta venta de un item, baja el stock del Producto local enlazado.
-    Si no hay enlace, no hace nada (silencioso).
+    Ajusta stock del Producto local enlazado.
+    quantity_delta negativo = baja stock; positivo = sube stock (revert por cancelación).
     """
-    if not ml_item_id or quantity <= 0:
+    if not ml_item_id or quantity_delta == 0:
         return
     listing = MercadoLibreListing.objects.filter(ml_id=ml_item_id, producto__isnull=False).first()
     if not listing or not listing.producto:
@@ -388,9 +391,61 @@ def _decrement_local_stock_for_ml_item(ml_item_id, quantity):
             product=listing.producto,
             variant=None,
             order=None,
-            movement_type="sale",
-            quantity_change=-int(quantity),
-            note=f"Venta en Mercado Libre (item {ml_item_id})",
+            movement_type="sale" if quantity_delta < 0 else "adjustment",
+            quantity_change=int(quantity_delta),
+            note=note,
         )
     except Exception as exc:
-        logger.exception("Failed to decrement local stock for ML item %s: %s", ml_item_id, exc)
+        logger.exception("Failed to adjust local stock for ML item %s: %s", ml_item_id, exc)
+
+
+def _decrement_local_stock_for_ml_item(ml_item_id, quantity):
+    """Atajo retrocompatible: descuenta `quantity` unidades."""
+    _adjust_local_stock_for_ml_item(
+        ml_item_id, -int(quantity),
+        f"Venta en Mercado Libre (item {ml_item_id})",
+    )
+
+
+def _extract_costs(order_payload):
+    """Extrae fees y costos de payments[] del payload de orden."""
+    fee = Decimal("0.00")
+    ship = Decimal("0.00")
+    net = Decimal("0.00")
+    for p in order_payload.get("payments", []) or []:
+        fee += Decimal(str(p.get("marketplace_fee") or 0))
+        ship += Decimal(str(p.get("shipping_cost") or 0))
+        if p.get("net_received_amount") is not None:
+            net += Decimal(str(p["net_received_amount"]))
+        else:
+            net += Decimal(str(p.get("transaction_amount") or 0)) - Decimal(str(p.get("marketplace_fee") or 0))
+    if net == 0 and order_payload.get("total_amount"):
+        net = Decimal(str(order_payload["total_amount"])) - fee
+    return fee, ship, net
+
+
+def _apply_stock_transition(order, items_data, new_status):
+    """
+    Decide si descontar o revertir stock según el cambio de estado.
+    - Si pasa a (paid/confirmed) y aún no se decrementó → descuenta y marca True.
+    - Si pasa a cancelled y antes se había decrementado → revierte y marca False.
+    """
+    VALID = ("paid", "confirmed")
+    is_valid = new_status in VALID
+    is_cancelled = new_status == "cancelled"
+    if is_valid and not order.stock_decremented:
+        for item_id, qty in items_data:
+            _adjust_local_stock_for_ml_item(
+                item_id, -int(qty),
+                f"Venta en Mercado Libre (pedido {order.ml_id})",
+            )
+        order.stock_decremented = True
+        order.save(update_fields=["stock_decremented"])
+    elif is_cancelled and order.stock_decremented:
+        for item_id, qty in items_data:
+            _adjust_local_stock_for_ml_item(
+                item_id, int(qty),
+                f"Reversión por cancelación en ML (pedido {order.ml_id})",
+            )
+        order.stock_decremented = False
+        order.save(update_fields=["stock_decremented"])

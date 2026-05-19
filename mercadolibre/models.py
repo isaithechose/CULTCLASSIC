@@ -44,6 +44,17 @@ class MercadoLibreOrder(models.Model):
         help_text="Nombre de la paquetería (DHL, Estafeta, etc.)")
     pushed_tracking_at = models.DateTimeField(null=True, blank=True,
         help_text="Cuándo enviamos los datos de tracking a ML por última vez")
+    # ── Costos y comisiones de ML ──
+    marketplace_fee = models.DecimalField(max_digits=12, decimal_places=2, default=0,
+        help_text="Comisión cobrada por Mercado Libre por la venta")
+    shipping_cost = models.DecimalField(max_digits=12, decimal_places=2, default=0,
+        help_text="Costo de envío (cuando lo cubre el vendedor)")
+    net_received_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0,
+        help_text="Dinero neto recibido por el vendedor (después de fees y envío)")
+    # ── Tracking interno de inventario ──
+    stock_decremented = models.BooleanField(default=False,
+        help_text="True si ya descontamos stock local por este pedido. Sirve "
+                  "para revertir si después se cancela.")
     raw = models.JSONField(default=dict, blank=True)
     synced_at = models.DateTimeField(auto_now=True)
 

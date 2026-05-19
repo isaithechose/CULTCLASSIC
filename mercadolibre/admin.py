@@ -72,15 +72,24 @@ class OrderItemInline(admin.TabularInline):
 
 @admin.register(MercadoLibreOrder)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ("ml_id", "date_created", "status", "buyer_nickname", "total_amount",
-                    "currency_id", "shipping_status", "tracking_number")
-    list_filter = ("status", "shipping_status", "currency_id")
+    list_display = ("ml_id", "date_created", "status_badge", "buyer_nickname",
+                    "total_amount", "marketplace_fee", "net_received_amount",
+                    "shipping_status", "tracking_number", "stock_decremented")
+    list_filter = ("status", "shipping_status", "stock_decremented", "currency_id")
     search_fields = ("ml_id", "buyer_nickname", "tracking_number")
     date_hierarchy = "date_created"
     fieldsets = (
         ("Datos del pedido", {
-            "fields": ("ml_id", "status", "date_created", "date_closed", "total_amount",
-                       "currency_id", "buyer_nickname", "buyer_id"),
+            "fields": ("ml_id", "status", "date_created", "date_closed", "buyer_nickname",
+                       "buyer_id", "stock_decremented"),
+        }),
+        ("Importes y comisión ML", {
+            "fields": ("total_amount", "marketplace_fee", "shipping_cost",
+                       "net_received_amount", "currency_id"),
+            "description": "<strong>Total</strong> = lo que pagó el comprador. "
+                           "<strong>Comisión</strong> = fee de ML. "
+                           "<strong>Costo envío</strong> = si lo cubre el vendedor. "
+                           "<strong>Neto</strong> = lo que recibes después de fees.",
         }),
         ("Envío", {
             "fields": ("shipping_status", "shipping_id", "tracking_number",
@@ -93,8 +102,25 @@ class OrderAdmin(admin.ModelAdmin):
     )
     readonly_fields = ("ml_id", "status", "date_created", "date_closed", "total_amount",
                        "currency_id", "buyer_nickname", "buyer_id", "shipping_status",
-                       "shipping_id", "pushed_tracking_at", "synced_at", "raw")
+                       "shipping_id", "pushed_tracking_at", "marketplace_fee",
+                       "shipping_cost", "net_received_amount", "stock_decremented",
+                       "synced_at", "raw")
     inlines = [OrderItemInline]
+
+    @admin.display(description="Status", ordering="status")
+    def status_badge(self, obj):
+        colors = {
+            "paid": "#2dbe6c", "confirmed": "#4a9eff",
+            "shipped": "#4a9eff", "delivered": "#2dbe6c",
+            "cancelled": "#e05050", "invalid": "#999",
+            "pending": "#f0a500",
+        }
+        c = colors.get(obj.status, "#888")
+        return format_html(
+            '<span style="background:{}22;color:{};padding:3px 9px;border-radius:10px;'
+            'font-size:11px;font-weight:600;letter-spacing:0.03em;text-transform:uppercase;">{}</span>',
+            c, c, obj.status or "—"
+        )
 
 
 @admin.register(MercadoLibreListing)
