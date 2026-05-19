@@ -177,7 +177,7 @@
                    data-category="{{ cat.slug }}"
                    data-name="{{ design_name|lower }}"
                    title="{{ design_name }}">
-                    <img loading="lazy" src="{{ MEDIA_URL }}diseños_propios/{{ design_name|urlencode }}" alt="{{ design_name }}">
+                    <img loading="lazy" src="/media/diseños_propios/{{ design_name|urlencode }}" alt="{{ design_name }}">
                     <span class="catalog-item__label">{{ cat.name }}</span>
                 </a>
                 {% endfor %}

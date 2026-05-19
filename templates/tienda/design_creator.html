@@ -908,7 +908,7 @@
                                data-category="{{ cat.slug }}"
                                data-name="{{ design_name|lower }}"
                                title="{{ design_name }}">
-                                <img loading="lazy" src="{{ MEDIA_URL }}diseños_propios/{{ design_name|urlencode }}" alt="{{ design_name }}">
+                                <img loading="lazy" src="/media/diseños_propios/{{ design_name|urlencode }}" alt="{{ design_name }}">
                             </a>
                             {% endfor %}
                         {% endfor %}
@@ -923,7 +923,7 @@
                         {% for design_name in saved_designs %}
                         <div class="design-creator__saved-item{% if selected_design_url and selected_design_url|urlencode == design_name|urlencode %} is-active{% endif %}">
                             <a href="{% url 'tienda:design_creator' %}?file={{ design_name|urlencode }}" style="display:contents;">
-                                <img src="{{ MEDIA_URL }}diseños_propios/{{ design_name|urlencode }}" alt="{{ design_name }}">
+                                <img src="/media/diseños_propios/{{ design_name|urlencode }}" alt="{{ design_name }}">
                                 <span>{{ design_name }}</span>
                             </a>
                             <form method="post" action="{% url 'tienda:delete_design' design_name %}" class="design-delete-form" style="display:contents;">
