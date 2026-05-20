@@ -198,7 +198,8 @@
         left: 50%;
         width: var(--print-w, 24%);
         aspect-ratio: var(--print-aspect, 1);
-        transform: translate(-50%, var(--print-y, -55%));
+        /* --print-x desplaza horizontalmente (0 = centrado, %  del propio ancho del rect) */
+        transform: translate(calc(-50% + var(--print-x, 0%)), var(--print-y, -55%));
         border: 1px dashed rgba(214,195,161,0.28);
         border-radius: 0.45rem;
         overflow: hidden;
@@ -736,9 +737,15 @@
                                     <input type="range" min="20" max="80" step="1" value="44" id="printHRange">
                                 </div>
                             </div>
-                            <div class="design-creator__group">
-                                <label for="printYRange">Posición Y · <span id="printYValue">-55%</span></label>
-                                <input type="range" min="-100" max="20" step="1" value="-55" id="printYRange">
+                            <div class="design-creator__tool-grid">
+                                <div class="design-creator__group">
+                                    <label for="printXRange">Posición X · <span id="printXValue">0%</span></label>
+                                    <input type="range" min="-60" max="60" step="1" value="0" id="printXRange">
+                                </div>
+                                <div class="design-creator__group">
+                                    <label for="printYRange">Posición Y · <span id="printYValue">-55%</span></label>
+                                    <input type="range" min="-100" max="20" step="1" value="-55" id="printYRange">
+                                </div>
                             </div>
                         </div>
 
@@ -1527,20 +1534,23 @@
     });
 
     // ── Área de impresión ajustable (por corte, persistido en localStorage) ───
+    // Versionamos la key porque sumamos 'x' (rompe el esquema viejo)
     const printAreaDefaults = {
-        oversize:     { w: 40, h: 44, y: -55 },
-        regular:      { w: 34, h: 37, y: -48 },
-        dropshoulder: { w: 42, h: 44, y: -52 },
+        oversize:     { w: 40, h: 44, x: 0, y: -55 },
+        regular:      { w: 34, h: 37, x: 0, y: -48 },
+        dropshoulder: { w: 42, h: 44, x: 0, y: -52 },
     };
     const printWRange = document.getElementById("printWRange");
     const printHRange = document.getElementById("printHRange");
+    const printXRange = document.getElementById("printXRange");
     const printYRange = document.getElementById("printYRange");
     const printWValue = document.getElementById("printWValue");
     const printHValue = document.getElementById("printHValue");
+    const printXValue = document.getElementById("printXValue");
     const printYValue = document.getElementById("printYValue");
     const printAreaReset = document.getElementById("printAreaReset");
 
-    const PRINT_AREA_KEY = "cc-print-area-v1";
+    const PRINT_AREA_KEY = "cc-print-area-v2";
 
     function readStoredPrintArea() {
         try { return JSON.parse(localStorage.getItem(PRINT_AREA_KEY) || "{}"); }
@@ -1552,12 +1562,15 @@
     }
 
     function applyPrintArea(values) {
+        const x = Number(values.x ?? 0);
         const aspect = (values.h / values.w).toFixed(3);
         designCanvasEl.style.setProperty("--print-w", values.w + "%");
         designCanvasEl.style.setProperty("--print-aspect", aspect);
+        designCanvasEl.style.setProperty("--print-x", x + "%");
         designCanvasEl.style.setProperty("--print-y", values.y + "%");
         printWRange.value = values.w; printWValue.textContent = values.w + "%";
         printHRange.value = values.h; printHValue.textContent = values.h + "%";
+        printXRange.value = x;        printXValue.textContent = x + "%";
         printYRange.value = values.y; printYValue.textContent = values.y + "%";
     }
 
@@ -1571,6 +1584,7 @@
         const values = {
             w: Number(printWRange.value),
             h: Number(printHRange.value),
+            x: Number(printXRange.value),
             y: Number(printYRange.value),
         };
         applyPrintArea(values);
@@ -1580,13 +1594,15 @@
         if (state.artwork) fitArtwork();
     }
 
-    [printWRange, printHRange, printYRange].forEach(el => {
+    [printWRange, printHRange, printXRange, printYRange].forEach(el => {
         el.addEventListener("input", () => {
             printWValue.textContent = printWRange.value + "%";
             printHValue.textContent = printHRange.value + "%";
+            printXValue.textContent = printXRange.value + "%";
             printYValue.textContent = printYRange.value + "%";
             designCanvasEl.style.setProperty("--print-w", printWRange.value + "%");
             designCanvasEl.style.setProperty("--print-aspect", (Number(printHRange.value) / Number(printWRange.value)).toFixed(3));
+            designCanvasEl.style.setProperty("--print-x", printXRange.value + "%");
             designCanvasEl.style.setProperty("--print-y", printYRange.value + "%");
         });
         el.addEventListener("change", commitPrintArea);
@@ -1627,10 +1643,11 @@
         areaDrag = {
             mode: handle ? "resize" : "move",
             corner: handle,
-            startX: e.clientX,
-            startY: e.clientY,
+            startMouseX: e.clientX,
+            startMouseY: e.clientY,
             startW: Number(printWRange.value),
             startH: Number(printHRange.value),
+            startX_: Number(printXRange.value),
             startY_: Number(printYRange.value),
             canvasW: rect.width,
             canvasH: rect.height,
@@ -1640,33 +1657,35 @@
 
     window.addEventListener("mousemove", (e) => {
         if (!areaDrag) return;
-        const dxPct = ((e.clientX - areaDrag.startX) / areaDrag.canvasW) * 100;
-        const dyPct = ((e.clientY - areaDrag.startY) / areaDrag.canvasH) * 100;
-        let w = areaDrag.startW, h = areaDrag.startH, y = areaDrag.startY_;
+        const dxPct = ((e.clientX - areaDrag.startMouseX) / areaDrag.canvasW) * 100;
+        const dyPct = ((e.clientY - areaDrag.startMouseY) / areaDrag.canvasH) * 100;
+        let w = areaDrag.startW, h = areaDrag.startH, x = areaDrag.startX_, y = areaDrag.startY_;
 
         if (areaDrag.mode === "move") {
-            // Movimiento 1:1 con el cursor: --print-y es % del propio alto del rect, no del canvas
+            // 1:1 con el cursor: --print-x/y son % del propio ancho/alto del rect
+            const ownW = Math.max(w, 1);
             const ownH = Math.max(h, 1);
+            x = clamp(x + (dxPct * 100) / ownW, -200, 200);
             y = clamp(y + (dyPct * 100) / ownH, -200, 80);
         } else {
             const c = areaDrag.corner;
-            // El rect está centrado horizontalmente, así que el cambio se aplica al doble
+            // El rect está centrado en (x, y), así que crecer hacia un lado = doble
             if (c.includes("e")) w = clamp(w + dxPct * 2, 15, 90);
             if (c.includes("w")) w = clamp(w - dxPct * 2, 15, 90);
-            // Verticalmente la posición Y es independiente — al arrastrar borde norte,
-            // mueve Y y reduce alto; borde sur, solo crece alto hacia abajo.
             if (c === "s" || c === "se" || c === "sw") {
                 h = clamp(h + dyPct * 2, 15, 90);
             } else if (c === "n" || c === "ne" || c === "nw") {
                 h = clamp(h - dyPct * 2, 15, 90);
             }
         }
-        const ww = Math.round(w), hh = Math.round(h), yy = Math.round(y);
+        const ww = Math.round(w), hh = Math.round(h), xx = Math.round(x), yy = Math.round(y);
         designCanvasEl.style.setProperty("--print-w", ww + "%");
         designCanvasEl.style.setProperty("--print-aspect", (hh / Math.max(ww, 1)).toFixed(3));
+        designCanvasEl.style.setProperty("--print-x", xx + "%");
         designCanvasEl.style.setProperty("--print-y", yy + "%");
         printWRange.value = ww; printWValue.textContent = ww + "%";
         printHRange.value = hh; printHValue.textContent = hh + "%";
+        printXRange.value = xx; printXValue.textContent = xx + "%";
         printYRange.value = yy; printYValue.textContent = yy + "%";
     });
 
