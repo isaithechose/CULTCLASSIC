@@ -934,34 +934,10 @@
                     </div>
                 </div>
 
-                {% if catalog %}
-                <div class="design-creator__panel design-catalog">
-                    <p class="design-creator__eyebrow">Catálogo de diseños</p>
-                    <div class="design-catalog__toolbar">
-                        <input type="search" id="catalogSearch" class="design-catalog__search" placeholder="Buscar diseño o categoría…" autocomplete="off">
-                        <span class="design-catalog__counter"><span id="catalogVisibleCount">0</span> visibles</span>
-                    </div>
-                    <div class="design-catalog__chips" id="catalogChips">
-                        <button type="button" class="design-catalog__chip is-active" data-category="">Todas</button>
-                        {% for cat in catalog %}
-                        <button type="button" class="design-catalog__chip" data-category="{{ cat.slug }}">{{ cat.name }} <small>({{ cat.count }})</small></button>
-                        {% endfor %}
-                    </div>
-                    <div class="design-catalog__grid" id="catalogGrid">
-                        {% for cat in catalog %}
-                            {% for design_name in cat.files %}
-                            <a class="design-catalog__item{% if selected_design_url and selected_design_url|urlencode == design_name|urlencode %} is-active{% endif %}"
-                               href="{% url 'tienda:design_creator' %}?file={{ design_name|urlencode }}"
-                               data-category="{{ cat.slug }}"
-                               data-name="{{ design_name|lower }}"
-                               title="{{ design_name }}">
-                                <img loading="lazy" src="/media/diseños_propios/{{ design_name|urlencode }}" alt="{{ design_name }}">
-                            </a>
-                            {% endfor %}
-                        {% endfor %}
-                    </div>
+                <div class="design-creator__panel" style="text-align:center;">
+                    <p class="design-creator__eyebrow" style="margin-bottom:0.5rem;">¿No tienes un diseño?</p>
+                    <a href="{% url 'tienda:catalogo_diseños_propios' %}" class="btn site-btn site-btn--accent">Explorar catálogo de diseños</a>
                 </div>
-                {% endif %}
 
                 {% if saved_designs %}
                 <div class="design-creator__panel">
