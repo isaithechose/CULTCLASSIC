@@ -186,9 +186,10 @@
         place-items: center;
         pointer-events: none;
         background:
-            var(--shirt-mockup, url("/media/productos/9_0_garment_dye_designer_tshirt_cream_001.webp"))
+            var(--shirt-mockup, url("/media/productos/max_overweight_oversized_latte_001.webp"))
             center / contain no-repeat;
-        transition: background-image 0.25s ease;
+        transition: opacity 0.18s ease;
+        filter: drop-shadow(0 18px 32px rgba(0,0,0,0.35));
     }
 
     .design-canvas__print-area {
@@ -198,18 +199,67 @@
         width: var(--print-w, 24%);
         aspect-ratio: var(--print-aspect, 1);
         transform: translate(-50%, var(--print-y, -55%));
-        border: 1px dashed rgba(255,255,255,0.45);
-        border-radius: 0.35rem;
-        background:
-            repeating-linear-gradient(0deg, rgba(255,255,255,0.04) 0, rgba(255,255,255,0.04) 1px, transparent 1px, transparent 18px),
-            repeating-linear-gradient(90deg, rgba(255,255,255,0.04) 0, rgba(255,255,255,0.04) 1px, transparent 1px, transparent 18px);
+        border: 1px dashed rgba(214,195,161,0.28);
+        border-radius: 0.45rem;
         overflow: hidden;
-        transition: width 0.25s, transform 0.25s, aspect-ratio 0.25s;
+        transition: width 0.28s ease, transform 0.28s ease, aspect-ratio 0.28s ease, border-color 0.18s ease;
     }
-    /* Cortes: cada uno ajusta width / posicion del area de impresion */
-    .design-canvas[data-cut="oversize"]    { --print-w: 26%; --print-y: -60%; --print-aspect: 1; }
-    .design-canvas[data-cut="regular"]     { --print-w: 22%; --print-y: -55%; --print-aspect: 1.05; }
-    .design-canvas[data-cut="dropshoulder"]{ --print-w: 28%; --print-y: -50%; --print-aspect: 0.95; }
+    .design-canvas:hover .design-canvas__print-area { border-color: rgba(214,195,161,0.55); }
+    .design-canvas.is-dragover .design-canvas__print-area {
+        border-color: var(--cc-accent, #d6c3a1);
+        background: rgba(214,195,161,0.08);
+    }
+
+    /* ── Modo "editar area" con mouse ───────────────────────────────────── */
+    .design-canvas.is-editing-area .design-canvas__print-area {
+        border: 2px solid var(--cc-accent, #d6c3a1);
+        background: rgba(214,195,161,0.08);
+        cursor: move;
+        z-index: 25;
+    }
+    .design-canvas.is-editing-area .design-canvas__surface,
+    .design-canvas.is-editing-area .design-canvas__empty { pointer-events: none; opacity: 0.55; }
+    .design-canvas__area-handle {
+        position: absolute;
+        width: 16px; height: 16px;
+        background: var(--cc-accent, #d6c3a1);
+        border: 2px solid #111;
+        border-radius: 50%;
+        display: none;
+        z-index: 30;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.45);
+    }
+    .design-canvas.is-editing-area .design-canvas__area-handle { display: block; }
+    .design-canvas__area-handle[data-corner="nw"] { top: -9px;    left: -9px;   cursor: nwse-resize; }
+    .design-canvas__area-handle[data-corner="ne"] { top: -9px;    right: -9px;  cursor: nesw-resize; }
+    .design-canvas__area-handle[data-corner="sw"] { bottom: -9px; left: -9px;   cursor: nesw-resize; }
+    .design-canvas__area-handle[data-corner="se"] { bottom: -9px; right: -9px;  cursor: nwse-resize; }
+    .design-canvas__area-handle[data-corner="n"]  { top: -9px;    left: 50%;    transform: translateX(-50%); cursor: ns-resize; }
+    .design-canvas__area-handle[data-corner="s"]  { bottom: -9px; left: 50%;    transform: translateX(-50%); cursor: ns-resize; }
+    .design-canvas__area-handle[data-corner="e"]  { right: -9px;  top: 50%;     transform: translateY(-50%); cursor: ew-resize; }
+    .design-canvas__area-handle[data-corner="w"]  { left: -9px;   top: 50%;     transform: translateY(-50%); cursor: ew-resize; }
+    .design-canvas__drop-hint {
+        position: absolute;
+        inset: 0;
+        display: none;
+        place-items: center;
+        background: rgba(17,17,19,0.72);
+        color: var(--cc-accent, #d6c3a1);
+        font-size: 1.05rem;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        backdrop-filter: blur(2px);
+        pointer-events: none;
+        z-index: 20;
+        border-radius: 2rem;
+    }
+    .design-canvas.is-dragover .design-canvas__drop-hint { display: grid; }
+
+    /* Cortes: area de impresion grande para que el diseno se vea bien sobre el pecho */
+    .design-canvas[data-cut="oversize"]    { --print-w: 40%; --print-y: -55%; --print-aspect: 1.1; }
+    .design-canvas[data-cut="regular"]     { --print-w: 34%; --print-y: -48%; --print-aspect: 1.1; }
+    .design-canvas[data-cut="dropshoulder"]{ --print-w: 42%; --print-y: -52%; --print-aspect: 1.05; }
 
     .design-canvas__surface { width: 100%; height: 100%; display: block; }
 
@@ -667,6 +717,31 @@
                             </div>
                         </div>
 
+                        <!-- Área de impresión (ajustable por corte) -->
+                        <div class="design-creator__tool-group">
+                            <div class="design-creator__tool-head">
+                                <strong>Área de impresión</strong>
+                                <div style="display:flex;gap:0.4rem;">
+                                    <button type="button" class="format-btn" id="printAreaEditBtn" title="Mover y redimensionar el área con el mouse">🖐 Editar</button>
+                                    <button type="button" class="format-btn" id="printAreaReset" title="Restablecer al default del corte">Reset</button>
+                                </div>
+                            </div>
+                            <div class="design-creator__tool-grid">
+                                <div class="design-creator__group">
+                                    <label for="printWRange">Ancho · <span id="printWValue">40%</span></label>
+                                    <input type="range" min="20" max="80" step="1" value="40" id="printWRange">
+                                </div>
+                                <div class="design-creator__group">
+                                    <label for="printHRange">Alto · <span id="printHValue">44%</span></label>
+                                    <input type="range" min="20" max="80" step="1" value="44" id="printHRange">
+                                </div>
+                            </div>
+                            <div class="design-creator__group">
+                                <label for="printYRange">Posición Y · <span id="printYValue">-55%</span></label>
+                                <input type="range" min="-100" max="20" step="1" value="-55" id="printYRange">
+                            </div>
+                        </div>
+
                         <!-- Escala / Rotación -->
                         <div class="design-creator__tool-grid">
                             <div class="design-creator__tool-group">
@@ -904,11 +979,20 @@
                     </div>
                     <div class="design-canvas" id="designCanvas" data-cut="oversize">
                         <div class="design-canvas__shirt" id="shirtBg"></div>
+                        <div class="design-canvas__drop-hint">Suelta tu imagen aquí</div>
                         <div class="design-canvas__print-area" id="printArea">
                             <div class="design-canvas__empty" id="emptyState">Sube un diseño, agrega texto o una forma para empezar.</div>
                             <canvas id="designFabricCanvas" class="design-canvas__surface" width="720" height="720"></canvas>
                             <div id="guideV" style="position:absolute;left:50%;top:0;bottom:0;width:1px;background:rgba(214,195,161,0.9);pointer-events:none;display:none;transform:translateX(-50%);z-index:10;"></div>
                             <div id="guideH" style="position:absolute;top:50%;left:0;right:0;height:1px;background:rgba(214,195,161,0.9);pointer-events:none;display:none;transform:translateY(-50%);z-index:10;"></div>
+                            <div class="design-canvas__area-handle" data-corner="nw"></div>
+                            <div class="design-canvas__area-handle" data-corner="n"></div>
+                            <div class="design-canvas__area-handle" data-corner="ne"></div>
+                            <div class="design-canvas__area-handle" data-corner="e"></div>
+                            <div class="design-canvas__area-handle" data-corner="se"></div>
+                            <div class="design-canvas__area-handle" data-corner="s"></div>
+                            <div class="design-canvas__area-handle" data-corner="sw"></div>
+                            <div class="design-canvas__area-handle" data-corner="w"></div>
                         </div>
                     </div>
                     <div class="design-creator__hud">
@@ -1352,16 +1436,79 @@
         a.click();
     });
 
-    // ── Shirt color ───────────────────────────────────────────────────────────
+    // ── Mockup matrix: corte + color ──────────────────────────────────────────
+    // Cada corte tiene su propio set de archivos en /media/productos/.
+    // Si el color UI no existe en el set del corte, hacemos fallback al tono
+    // mas cercano (sin romper la vista).
+    const MOCKUP_SETS = {
+        oversize: {
+            prefix: "/media/productos/max_overweight_oversized_",
+            suffix: "_001.webp",
+            available: ["black", "burgundy", "latte", "off_black", "offwhite", "slate_blue", "white"],
+        },
+        regular: {
+            prefix: "/media/productos/9_0_garment_dye_designer_tshirt_",
+            suffix: "_001.webp",
+            available: ["black", "camo", "cream", "darkgrey", "mocha", "shadow", "white"],
+        },
+        dropshoulder: {
+            prefix: "/media/productos/dropshoulder_",
+            suffix: "_001.webp",
+            available: ["black", "brown", "coral", "cream", "grey", "tan", "white"],
+        },
+    };
 
-    const MOCKUP_BASE = "/media/productos/9_0_garment_dye_designer_tshirt_";
+    // Mapeo color UI -> color real de archivo, por corte. Si una celda falta,
+    // se usa el mismo color UI como fallback (y si tampoco existe, el primero del set).
+    const COLOR_TO_CUT = {
+        cream:    { oversize: "latte",     regular: "cream",    dropshoulder: "cream" },
+        black:    { oversize: "black",     regular: "black",    dropshoulder: "black" },
+        white:    { oversize: "white",     regular: "white",    dropshoulder: "white" },
+        darkgrey: { oversize: "off_black", regular: "darkgrey", dropshoulder: "grey"  },
+        shadow:   { oversize: "off_black", regular: "shadow",   dropshoulder: "grey"  },
+        camo:     { oversize: "burgundy",  regular: "camo",     dropshoulder: "brown" },
+        mocha:    { oversize: "latte",     regular: "mocha",    dropshoulder: "tan"   },
+    };
+
+    const mockupState = { color: "cream", cut: "oversize" };
+    const mockupPreloadCache = new Set();
+
+    function resolveMockupUrl(color, cut) {
+        const set = MOCKUP_SETS[cut] || MOCKUP_SETS.regular;
+        const mapped = COLOR_TO_CUT[color]?.[cut];
+        const name = (mapped && set.available.includes(mapped))
+            ? mapped
+            : (set.available.includes(color) ? color : set.available[0]);
+        return `${set.prefix}${name}${set.suffix}`;
+    }
+
+    function preloadMockup(url) {
+        if (mockupPreloadCache.has(url)) return;
+        mockupPreloadCache.add(url);
+        const img = new Image();
+        img.src = url;
+    }
+
+    function applyMockup() {
+        const url = resolveMockupUrl(mockupState.color, mockupState.cut);
+        preloadMockup(url);
+        shirtBg.style.setProperty("--shirt-mockup", `url("${url}")`);
+    }
+
+    // Precarga los mockups de todos los cortes para el color activo (sin flash al cambiar corte)
+    function preloadForColor(color) {
+        Object.keys(MOCKUP_SETS).forEach(cut => preloadMockup(resolveMockupUrl(color, cut)));
+    }
+
+    // ── Shirt color ───────────────────────────────────────────────────────────
     document.querySelectorAll(".shirt-color-btn").forEach(btn => {
         btn.addEventListener("click", () => {
-            const mockup = btn.dataset.mockup || "cream";
-            shirtBg.style.setProperty("--shirt-mockup", `url("${MOCKUP_BASE}${mockup}_001.webp")`);
+            mockupState.color = btn.dataset.mockup || "cream";
             document.getElementById("shirtColorLabel").textContent = btn.dataset.label;
             document.querySelectorAll(".shirt-color-btn").forEach(b => b.classList.remove("is-active"));
             btn.classList.add("is-active");
+            applyMockup();
+            preloadForColor(mockupState.color);
         });
     });
 
@@ -1369,12 +1516,176 @@
     const designCanvasEl = document.getElementById("designCanvas");
     document.querySelectorAll(".shirt-cut-btn").forEach(btn => {
         btn.addEventListener("click", () => {
-            designCanvasEl.dataset.cut = btn.dataset.cut;
+            mockupState.cut = btn.dataset.cut;
+            designCanvasEl.dataset.cut = mockupState.cut;
             document.querySelectorAll(".shirt-cut-btn").forEach(b => b.classList.remove("is-active"));
             btn.classList.add("is-active");
+            applyMockup();
+            loadPrintAreaForCut(mockupState.cut);
             if (state.artwork) fitArtwork();
         });
     });
+
+    // ── Área de impresión ajustable (por corte, persistido en localStorage) ───
+    const printAreaDefaults = {
+        oversize:     { w: 40, h: 44, y: -55 },
+        regular:      { w: 34, h: 37, y: -48 },
+        dropshoulder: { w: 42, h: 44, y: -52 },
+    };
+    const printWRange = document.getElementById("printWRange");
+    const printHRange = document.getElementById("printHRange");
+    const printYRange = document.getElementById("printYRange");
+    const printWValue = document.getElementById("printWValue");
+    const printHValue = document.getElementById("printHValue");
+    const printYValue = document.getElementById("printYValue");
+    const printAreaReset = document.getElementById("printAreaReset");
+
+    const PRINT_AREA_KEY = "cc-print-area-v1";
+
+    function readStoredPrintArea() {
+        try { return JSON.parse(localStorage.getItem(PRINT_AREA_KEY) || "{}"); }
+        catch (_) { return {}; }
+    }
+    function writeStoredPrintArea(map) {
+        try { localStorage.setItem(PRINT_AREA_KEY, JSON.stringify(map)); }
+        catch (_) { /* quota / disabled */ }
+    }
+
+    function applyPrintArea(values) {
+        const aspect = (values.h / values.w).toFixed(3);
+        designCanvasEl.style.setProperty("--print-w", values.w + "%");
+        designCanvasEl.style.setProperty("--print-aspect", aspect);
+        designCanvasEl.style.setProperty("--print-y", values.y + "%");
+        printWRange.value = values.w; printWValue.textContent = values.w + "%";
+        printHRange.value = values.h; printHValue.textContent = values.h + "%";
+        printYRange.value = values.y; printYValue.textContent = values.y + "%";
+    }
+
+    function loadPrintAreaForCut(cut) {
+        const stored = readStoredPrintArea();
+        const values = stored[cut] || printAreaDefaults[cut] || printAreaDefaults.oversize;
+        applyPrintArea(values);
+    }
+
+    function commitPrintArea() {
+        const values = {
+            w: Number(printWRange.value),
+            h: Number(printHRange.value),
+            y: Number(printYRange.value),
+        };
+        applyPrintArea(values);
+        const stored = readStoredPrintArea();
+        stored[mockupState.cut] = values;
+        writeStoredPrintArea(stored);
+        if (state.artwork) fitArtwork();
+    }
+
+    [printWRange, printHRange, printYRange].forEach(el => {
+        el.addEventListener("input", () => {
+            printWValue.textContent = printWRange.value + "%";
+            printHValue.textContent = printHRange.value + "%";
+            printYValue.textContent = printYRange.value + "%";
+            designCanvasEl.style.setProperty("--print-w", printWRange.value + "%");
+            designCanvasEl.style.setProperty("--print-aspect", (Number(printHRange.value) / Number(printWRange.value)).toFixed(3));
+            designCanvasEl.style.setProperty("--print-y", printYRange.value + "%");
+        });
+        el.addEventListener("change", commitPrintArea);
+    });
+
+    printAreaReset?.addEventListener("click", () => {
+        const stored = readStoredPrintArea();
+        delete stored[mockupState.cut];
+        writeStoredPrintArea(stored);
+        applyPrintArea(printAreaDefaults[mockupState.cut]);
+        if (state.artwork) fitArtwork();
+    });
+
+    // ── Edición del área con mouse (toggle + drag/resize) ─────────────────────
+    const printAreaEl = document.getElementById("printArea");
+    const printAreaEditBtn = document.getElementById("printAreaEditBtn");
+    const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+    let editingArea = false;
+    let areaDrag = null;
+
+    function setEditMode(on) {
+        editingArea = on;
+        designCanvasEl.classList.toggle("is-editing-area", on);
+        printAreaEditBtn.classList.toggle("is-active", on);
+        printAreaEditBtn.textContent = on ? "✓ Listo" : "🖐 Editar";
+    }
+
+    printAreaEditBtn?.addEventListener("click", () => setEditMode(!editingArea));
+
+    printAreaEl.addEventListener("mousedown", (e) => {
+        if (!editingArea) return;
+        e.preventDefault();
+        e.stopPropagation();
+        const handle = e.target.classList?.contains("design-canvas__area-handle")
+            ? e.target.dataset.corner
+            : null;
+        const rect = designCanvasEl.getBoundingClientRect();
+        areaDrag = {
+            mode: handle ? "resize" : "move",
+            corner: handle,
+            startX: e.clientX,
+            startY: e.clientY,
+            startW: Number(printWRange.value),
+            startH: Number(printHRange.value),
+            startY_: Number(printYRange.value),
+            canvasW: rect.width,
+            canvasH: rect.height,
+        };
+        document.body.style.userSelect = "none";
+    });
+
+    window.addEventListener("mousemove", (e) => {
+        if (!areaDrag) return;
+        const dxPct = ((e.clientX - areaDrag.startX) / areaDrag.canvasW) * 100;
+        const dyPct = ((e.clientY - areaDrag.startY) / areaDrag.canvasH) * 100;
+        let w = areaDrag.startW, h = areaDrag.startH, y = areaDrag.startY_;
+
+        if (areaDrag.mode === "move") {
+            // Movimiento 1:1 con el cursor: --print-y es % del propio alto del rect, no del canvas
+            const ownH = Math.max(h, 1);
+            y = clamp(y + (dyPct * 100) / ownH, -200, 80);
+        } else {
+            const c = areaDrag.corner;
+            // El rect está centrado horizontalmente, así que el cambio se aplica al doble
+            if (c.includes("e")) w = clamp(w + dxPct * 2, 15, 90);
+            if (c.includes("w")) w = clamp(w - dxPct * 2, 15, 90);
+            // Verticalmente la posición Y es independiente — al arrastrar borde norte,
+            // mueve Y y reduce alto; borde sur, solo crece alto hacia abajo.
+            if (c === "s" || c === "se" || c === "sw") {
+                h = clamp(h + dyPct * 2, 15, 90);
+            } else if (c === "n" || c === "ne" || c === "nw") {
+                h = clamp(h - dyPct * 2, 15, 90);
+            }
+        }
+        const ww = Math.round(w), hh = Math.round(h), yy = Math.round(y);
+        designCanvasEl.style.setProperty("--print-w", ww + "%");
+        designCanvasEl.style.setProperty("--print-aspect", (hh / Math.max(ww, 1)).toFixed(3));
+        designCanvasEl.style.setProperty("--print-y", yy + "%");
+        printWRange.value = ww; printWValue.textContent = ww + "%";
+        printHRange.value = hh; printHValue.textContent = hh + "%";
+        printYRange.value = yy; printYValue.textContent = yy + "%";
+    });
+
+    window.addEventListener("mouseup", () => {
+        if (!areaDrag) return;
+        areaDrag = null;
+        document.body.style.userSelect = "";
+        commitPrintArea();
+    });
+
+    // Esc sale del modo edición
+    window.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && editingArea) setEditMode(false);
+    });
+
+    // Inicializa el mockup correcto al cargar (no solo CSS default)
+    applyMockup();
+    preloadForColor(mockupState.color);
+    loadPrintAreaForCut(mockupState.cut);
 
     // ── Canvas state ──────────────────────────────────────────────────────────
 
@@ -1488,7 +1799,8 @@
         if (!state.artwork) return;
         const maxW = fabricCanvas.getWidth() * 0.95;
         const maxH = fabricCanvas.getHeight() * 0.95;
-        const s = Math.min(maxW / state.artwork.width, maxH / state.artwork.height, 1);
+        // Escalar SIEMPRE al area (sin cap en 1) para que disenos chicos tambien se vean grandes
+        const s = Math.min(maxW / state.artwork.width, maxH / state.artwork.height);
         state.artwork.set({ scaleX: s, scaleY: s, angle: 0, flipX: false, flipY: false,
             left: fabricCanvas.getWidth() / 2, top: fabricCanvas.getHeight() / 2,
             originX: "center", originY: "center" });
@@ -1757,28 +2069,134 @@
         obj.set("fill", textColorInput.value); fabricCanvas.requestRenderAll();
     });
 
-    // ── File input ────────────────────────────────────────────────────────────
+    // ── File input + Drag & drop ──────────────────────────────────────────────
 
-    fileInput?.addEventListener("change", (e) => {
-        const file = e.target.files?.[0]; if (!file) return;
-        if (file.size > 15 * 1024 * 1024) { alert("El archivo es demasiado grande. El límite es 15 MB."); e.target.value = ""; return; }
+    const ALLOWED_IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp"];
+
+    function ingestImageFile(file) {
+        if (!file) return false;
+        if (file.type && !ALLOWED_IMAGE_TYPES.includes(file.type)) {
+            alert("Formato no soportado. Usa PNG, JPG o WebP.");
+            return false;
+        }
+        if (file.size > 15 * 1024 * 1024) {
+            alert("El archivo es demasiado grande. El límite es 15 MB.");
+            return false;
+        }
         const reader = new FileReader();
         reader.onload = () => loadArtwork(reader.result);
         reader.readAsDataURL(file);
+        return true;
+    }
+
+    fileInput?.addEventListener("change", (e) => {
+        const file = e.target.files?.[0];
+        if (!ingestImageFile(file)) e.target.value = "";
+    });
+
+    // Drag & drop sobre el canvas (y todo el panel preview)
+    let dragDepth = 0;
+    function hasFiles(e) {
+        return Array.from(e.dataTransfer?.types || []).includes("Files");
+    }
+    designCanvasEl.addEventListener("dragenter", (e) => {
+        if (!hasFiles(e)) return;
+        e.preventDefault();
+        dragDepth++;
+        designCanvasEl.classList.add("is-dragover");
+    });
+    designCanvasEl.addEventListener("dragover", (e) => {
+        if (!hasFiles(e)) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "copy";
+    });
+    designCanvasEl.addEventListener("dragleave", (e) => {
+        if (!hasFiles(e)) return;
+        dragDepth = Math.max(0, dragDepth - 1);
+        if (dragDepth === 0) designCanvasEl.classList.remove("is-dragover");
+    });
+    designCanvasEl.addEventListener("drop", (e) => {
+        if (!hasFiles(e)) return;
+        e.preventDefault();
+        dragDepth = 0;
+        designCanvasEl.classList.remove("is-dragover");
+        const file = e.dataTransfer.files?.[0];
+        if (ingestImageFile(file) && fileInput) {
+            // Sincroniza el input file para que el form lo mande al backend
+            try {
+                const dt = new DataTransfer();
+                dt.items.add(file);
+                fileInput.files = dt.files;
+            } catch (_) { /* algunos browsers no permiten setear .files */ }
+        }
+    });
+    // Evita que el navegador abra el archivo si se suelta fuera del canvas
+    ["dragover", "drop"].forEach(ev => {
+        window.addEventListener(ev, (e) => { if (hasFiles(e)) e.preventDefault(); });
     });
 
     productSelect?.addEventListener("change", () => { productIdInput.value = productSelect.value; });
 
     // ── Keyboard shortcuts ────────────────────────────────────────────────────
 
+    function duplicateSelected() {
+        const obj = fabricCanvas.getActiveObject();
+        if (!obj) return;
+        obj.clone((clone) => {
+            clone.set({ left: (obj.left || 0) + 20, top: (obj.top || 0) + 20, evented: true });
+            fabricCanvas.add(clone);
+            fabricCanvas.setActiveObject(clone);
+            fabricCanvas.requestRenderAll();
+            pushHistory();
+        });
+    }
+
+    function nudgeSelected(dx, dy) {
+        const obj = fabricCanvas.getActiveObject();
+        if (!obj) return;
+        obj.set({ left: (obj.left || 0) + dx, top: (obj.top || 0) + dy });
+        obj.setCoords();
+        fabricCanvas.requestRenderAll();
+    }
+
+    let nudgeTimer = null;
+    function debouncedNudgeHistory() {
+        clearTimeout(nudgeTimer);
+        nudgeTimer = setTimeout(() => pushHistory(), 350);
+    }
+
     window.addEventListener("keydown", (e) => {
-        if (e.ctrlKey || e.metaKey) {
-            if (e.key === "z") { e.preventDefault(); undoButton.click(); return; }
-            if (e.key === "y" || (e.shiftKey && e.key === "z")) { e.preventDefault(); redoButton.click(); return; }
+        const mod = e.ctrlKey || e.metaKey;
+        if (mod) {
+            if (e.key === "z" || e.key === "Z") {
+                e.preventDefault();
+                (e.shiftKey ? redoButton : undoButton)?.click();
+                return;
+            }
+            if (e.key === "y" || e.key === "Y") { e.preventDefault(); redoButton?.click(); return; }
+            if (e.key === "d" || e.key === "D") { e.preventDefault(); duplicateSelected(); return; }
         }
         const tag = document.activeElement?.tagName;
-        if (tag === "INPUT" || tag === "TEXTAREA") return;
-        if (e.key === "Delete" || e.key === "Backspace") removeSelectedObject();
+        if (tag === "INPUT" || tag === "TEXTAREA" || document.activeElement?.isContentEditable) return;
+
+        if (e.key === "Delete" || e.key === "Backspace") {
+            e.preventDefault();
+            removeSelectedObject();
+            return;
+        }
+        if (e.key === "Escape") {
+            fabricCanvas.discardActiveObject();
+            fabricCanvas.requestRenderAll();
+            return;
+        }
+        const arrowMap = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
+        const arrow = arrowMap[e.key];
+        if (arrow) {
+            e.preventDefault();
+            const step = e.shiftKey ? 10 : 1;
+            nudgeSelected(arrow[0] * step, arrow[1] * step);
+            debouncedNudgeHistory();
+        }
     });
 
     // ── Form submit ───────────────────────────────────────────────────────────
