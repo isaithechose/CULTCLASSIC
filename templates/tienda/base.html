@@ -260,6 +260,67 @@
 </div>
 
 <style>
+/* ── Navbar movil ────────────────────────────────────────────────────── */
+@media (max-width: 991.98px) {
+    .site-navbar .navbar-toggler {
+        border: 1px solid rgba(255,255,255,0.18);
+        padding: 0.35rem 0.55rem;
+        border-radius: 8px;
+    }
+    .site-navbar .navbar-toggler:focus { box-shadow: 0 0 0 2px rgba(214,195,161,0.35); }
+    .site-navbar .navbar-toggler-icon {
+        filter: invert(1) opacity(0.85);
+    }
+    .site-navbar .navbar-collapse {
+        margin-top: 0.85rem;
+        padding: 1rem;
+        background: rgba(15,15,17,0.97);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 16px;
+    }
+    .site-navbar__links { gap: 0.15rem; }
+    .site-navbar__links .nav-link {
+        padding: 0.7rem 0.4rem;
+        font-size: 0.85rem;
+        border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .site-navbar__links .dropdown-menu {
+        position: static;
+        float: none;
+        margin: 0.25rem 0 0.6rem 0.6rem;
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 10px;
+        padding: 0.4rem;
+    }
+    .site-navbar__links .dropdown-item {
+        color: rgba(255,255,255,0.85);
+        padding: 0.55rem 0.85rem;
+        border-radius: 8px;
+        font-size: 0.85rem;
+    }
+    .site-navbar__links .dropdown-item:hover,
+    .site-navbar__links .dropdown-item:focus {
+        background: rgba(214,195,161,0.15);
+        color: var(--cc-accent);
+    }
+    .site-navbar .navbar-collapse > .d-flex {
+        margin-top: 0.9rem;
+        padding-top: 0.9rem;
+        border-top: 1px solid rgba(255,255,255,0.08);
+        flex-direction: column;
+        align-items: stretch !important;
+        gap: 0.5rem !important;
+    }
+    .site-navbar .navbar-collapse > .d-flex form { width: 100%; }
+    .site-navbar .navbar-collapse > .d-flex form .form-control { min-width: 0 !important; flex: 1; }
+    .site-navbar .navbar-collapse > .d-flex .site-btn {
+        width: 100%;
+        text-align: center;
+        padding: 0.7rem 1rem;
+    }
+}
+
 .cc-newsletter {
     position: fixed; inset: 0; z-index: 1080;
     display: flex; align-items: center; justify-content: center;
