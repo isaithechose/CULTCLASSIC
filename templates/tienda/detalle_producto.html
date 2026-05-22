@@ -1057,13 +1057,21 @@
                 </div>
 
             <div class="detail-thumbs mt-3" id="detailThumbs">
-                {% for color in colores_disponibles %}
-                    <img src="/media/productos/{{ producto.slug_imagen }}_{{ color|lower }}_001.webp"
-                         class="miniatura"
+                {% if producto.slug_imagen %}
+                    {% for color in colores_disponibles %}
+                        <img src="/media/productos/{{ producto.slug_imagen }}_{{ color|lower }}_001.webp"
+                             class="miniatura"
+                             loading="lazy"
+                             decoding="async"
+                             alt="{{ producto.nombre }} {{ color }}">
+                    {% endfor %}
+                {% elif producto.imagen %}
+                    <img src="{{ producto.imagen.url }}"
+                         class="miniatura is-active"
                          loading="lazy"
                          decoding="async"
-                         alt="{{ producto.nombre }} {{ color }}">
-                {% endfor %}
+                         alt="{{ producto.nombre }}">
+                {% endif %}
             </div>
         </div>
         </div>
@@ -1072,6 +1080,7 @@
         <div class="product-detail-col">
             <div class="detail-content-pane">
                 <div class="detail-kicker">
+                    {% if producto.slug_imagen %}
                     <div class="detail-kicker__weight">
                         {% if producto.slug_imagen == "max_overweight_oversized" or producto.slug_imagen == "dropshoulder" %}
                             7.5<br>OZ
@@ -1079,8 +1088,9 @@
                             9.0<br>OZ
                         {% endif %}
                     </div>
+                    {% endif %}
                     <div class="detail-kicker__stack">
-                        {% if producto.slug_imagen != "max_overweight_oversized" %}
+                        {% if producto.slug_imagen and producto.slug_imagen != "max_overweight_oversized" %}
                             <div class="detail-kicker__line">Garment Dye</div>
                         {% endif %}
                         <h2 class="detail-title">{{ producto.nombre }}</h2>
@@ -1623,7 +1633,11 @@ document.addEventListener("DOMContentLoaded", function () {
       const colorEsp = circle.dataset.color;
       const colorEng = colorMap[colorEsp] || colorEsp;
       const nombreBase = "{{ producto.slug_imagen }}";
-      renderThumbs(nombreBase, colorEng);
+      // Solo intentar cargar imagenes por color si el producto tiene slug definido
+      // (productos sin galeria por color usan solo producto.imagen)
+      if (nombreBase) {
+        renderThumbs(nombreBase, colorEng);
+      }
       document.getElementById("colorInput").value = colorEsp;
       document.getElementById("colorLabel").textContent = colorEsp;
 
