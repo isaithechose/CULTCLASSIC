@@ -808,6 +808,71 @@
         border-radius: 1.35rem;
         background: rgba(255,255,255,0.02);
     }
+    .design-picker__toolbar {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        flex-wrap: wrap;
+    }
+    .design-picker__search {
+        flex: 1 1 220px;
+        min-height: 2.55rem;
+        padding: 0.55rem 0.85rem;
+        border: 1px solid rgba(255,255,255,0.16);
+        border-radius: 10px;
+        background: rgba(255,255,255,0.04);
+        color: var(--cc-ink);
+        font-size: 0.9rem;
+    }
+    .design-picker__search:focus {
+        outline: none;
+        border-color: var(--cc-accent);
+        box-shadow: 0 0 0 3px rgba(214,195,161,0.18);
+    }
+    .design-picker__counter {
+        font-size: 0.75rem;
+        color: rgba(255,255,255,0.55);
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+    }
+    .design-picker__chips {
+        display: flex;
+        gap: 0.4rem;
+        flex-wrap: wrap;
+        max-height: 6.5rem;
+        overflow-y: auto;
+        padding-right: 0.3rem;
+    }
+    .design-picker__chip {
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(255,255,255,0.12);
+        color: rgba(255,255,255,0.78);
+        font-size: 0.76rem;
+        padding: 0.35rem 0.75rem;
+        border-radius: 999px;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: background 0.15s, color 0.15s, border-color 0.15s;
+    }
+    .design-picker__chip small { opacity: 0.5; margin-left: 0.22rem; }
+    .design-picker__chip:hover {
+        background: rgba(214,169,106,0.12);
+        border-color: rgba(214,195,161,0.35);
+        color: #fff;
+    }
+    .design-picker__chip.is-active {
+        background: var(--cc-accent, #d6c3a1);
+        border-color: var(--cc-accent, #d6c3a1);
+        color: #111;
+    }
+    .design-pick.is-hidden { display: none; }
+    .design-pick__grid-empty {
+        text-align: center;
+        padding: 1.5rem;
+        color: rgba(255,255,255,0.5);
+        font-size: 0.88rem;
+        grid-column: 1 / -1;
+    }
     .design-picker__head {
         display: flex;
         align-items: center;
@@ -1196,67 +1261,66 @@
                           </div>
                       </div>
 
-                      <!-- Catálogo (un solo grid, cada card tiene 2 botones) -->
-                      <div class="design-picker" id="designPickerCatalog">
+                      <!-- Selector unificado: tus diseños + catalogo con categorias -->
+                      <div class="design-picker" id="designPicker">
                           <div class="design-picker__head">
                               <div>
-                                  <strong>Catálogo</strong>
-                                  <small>$200 MXN por lado</small>
+                                  <strong>Catálogo de diseños</strong>
+                                  <small>{{ catalog_total }} diseños · $200 MXN por lado</small>
                               </div>
-                              <button type="button" class="btn site-btn site-btn--ghost" onclick="limpiarDisenos()">Limpiar todo</button>
+                              <div style="display:flex;gap:0.4rem;flex-wrap:wrap;">
+                                  <a class="btn site-btn site-btn--ghost" href="{% url 'tienda:design_creator' %}?product_id={{ producto.id }}">+ Subir el mío</a>
+                                  <button type="button" class="btn site-btn site-btn--ghost" onclick="limpiarDisenos()">Limpiar</button>
+                              </div>
                           </div>
-                          {% if diseños_anime %}
-                          <div class="design-picker__grid">
-                              {% for diseño in diseños_anime %}
-                                  {% get_media_prefix as MEDIA_URL %}
-                                  <div class="design-pick" data-name="{{ diseño|escapejs }}" data-src="{{ MEDIA_URL }}diseños_nuevos/{{ diseño|urlencode }}">
-                                      <div class="design-pick__thumb">
-                                          <img src="{{ MEDIA_URL }}diseños_nuevos/{{ diseño|urlencode }}" alt="{{ diseño }}" loading="lazy">
-                                          <span class="design-pick__badge" data-frente>F</span>
-                                          <span class="design-pick__badge" data-espalda>E</span>
-                                      </div>
-                                      <small class="design-pick__name" title="{{ diseño }}">{{ diseño }}</small>
-                                      <div class="design-pick__actions">
-                                          <button type="button" class="design-pick__btn" data-side="frente" aria-label="Usar {{ diseño }} en el frente">↑ Frente</button>
-                                          <button type="button" class="design-pick__btn" data-side="espalda" aria-label="Usar {{ diseño }} en la espalda">↓ Espalda</button>
-                                      </div>
-                                  </div>
-                              {% endfor %}
-                          </div>
-                          {% else %}
-                          <p class="design-picker__empty">No hay diseños disponibles por ahora.</p>
-                          {% endif %}
-                      </div>
 
-                      <!-- Diseños propios -->
-                      <div class="design-picker" id="designPickerOwn">
-                          <div class="design-picker__head">
-                              <div>
-                                  <strong>Tus diseños</strong>
-                                  <small>Los que has subido o creado</small>
-                              </div>
-                              <a class="btn site-btn site-btn--ghost" href="{% url 'tienda:design_creator' %}?product_id={{ producto.id }}">+ Crear nuevo</a>
+                          <div class="design-picker__toolbar">
+                              <input type="search" id="designPickerSearch" class="design-picker__search" placeholder="Buscar diseño o categoría…" autocomplete="off">
+                              <span class="design-picker__counter"><span id="designPickerVisible">{{ catalog_total }}</span> visibles</span>
                           </div>
-                          {% if diseños_personalizados %}
-                          <div class="design-picker__grid">
-                              {% for diseño in diseños_personalizados %}
-                                  {% get_media_prefix as MEDIA_URL %}
-                                  <div class="design-pick" data-name="{{ diseño|escapejs }}" data-src="{{ MEDIA_URL }}diseños_propios/{{ diseño|urlencode }}" data-own="1">
+
+                          <div class="design-picker__chips" id="designPickerChips">
+                              <button type="button" class="design-picker__chip is-active" data-category="">Todas</button>
+                              {% if own_designs_items %}
+                              <button type="button" class="design-picker__chip" data-category="__own">Tus diseños <small>({{ own_designs_items|length }})</small></button>
+                              {% endif %}
+                              {% for cat in catalog_picker %}
+                              <button type="button" class="design-picker__chip" data-category="{{ cat.slug }}">{{ cat.name }} <small>({{ cat.count }})</small></button>
+                              {% endfor %}
+                          </div>
+
+                          <div class="design-picker__grid" id="designPickerGrid">
+                              {% for d in own_designs_items %}
+                              <div class="design-pick" data-name="{{ d.name|escapejs }}" data-src="/media/diseños_propios/{{ d.name|urlencode }}" data-category="__own" data-search="{{ d.name|lower }}" data-own="1">
+                                  <div class="design-pick__thumb">
+                                      <img src="/media/diseños_propios/thumbs/{{ d.thumb|urlencode }}" alt="{{ d.name }}" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='/media/diseños_propios/{{ d.name|urlencode }}'">
+                                      <span class="design-pick__badge" data-frente>F</span>
+                                      <span class="design-pick__badge" data-espalda>E</span>
+                                  </div>
+                                  <div class="design-pick__actions">
+                                      <button type="button" class="design-pick__btn" data-side="frente">Frente</button>
+                                      <button type="button" class="design-pick__btn" data-side="espalda">Espalda</button>
+                                  </div>
+                              </div>
+                              {% endfor %}
+                              {% for cat in catalog_picker %}
+                                  {% for d in cat.items %}
+                                  <div class="design-pick" data-name="{{ d.name|escapejs }}" data-src="/media/diseños_propios/{{ d.name|urlencode }}" data-category="{{ cat.slug }}" data-search="{{ d.name|lower }} {{ cat.name|lower }}">
                                       <div class="design-pick__thumb">
-                                          <img src="{{ MEDIA_URL }}diseños_propios/{{ diseño|urlencode }}" alt="{{ diseño }}" loading="lazy">
+                                          <img src="/media/diseños_propios/thumbs/{{ d.thumb|urlencode }}" alt="{{ d.name }}" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='/media/diseños_propios/{{ d.name|urlencode }}'">
                                           <span class="design-pick__badge" data-frente>F</span>
                                           <span class="design-pick__badge" data-espalda>E</span>
                                       </div>
-                                      <small class="design-pick__name" title="{{ diseño }}">{{ diseño }}</small>
                                       <div class="design-pick__actions">
-                                          <button type="button" class="design-pick__btn" data-side="frente" aria-label="Usar {{ diseño }} en el frente">↑ Frente</button>
-                                          <button type="button" class="design-pick__btn" data-side="espalda" aria-label="Usar {{ diseño }} en la espalda">↓ Espalda</button>
+                                          <button type="button" class="design-pick__btn" data-side="frente">Frente</button>
+                                          <button type="button" class="design-pick__btn" data-side="espalda">Espalda</button>
                                       </div>
                                   </div>
+                                  {% endfor %}
                               {% endfor %}
                           </div>
-                          {% else %}
-                          <p class="design-picker__empty">Aún no tienes diseños propios.</p>
+                          {% if not catalog_picker and not own_designs_items %}
+                          <p class="design-picker__empty">No hay diseños disponibles por ahora.</p>
                           {% endif %}
                       </div>
                   </section>
@@ -1708,6 +1772,44 @@ document.addEventListener("DOMContentLoaded", function () {
     removeDesign('espalda');
     setView('frente');
   };
+
+  // ── Filtro del picker: chips de categoria + buscador ──────────────────
+  (() => {
+    const grid    = document.getElementById('designPickerGrid');
+    const chips   = document.getElementById('designPickerChips');
+    const search  = document.getElementById('designPickerSearch');
+    const counter = document.getElementById('designPickerVisible');
+    if (!grid || !chips) return;
+
+    const items = Array.from(grid.querySelectorAll('.design-pick'));
+    let activeCategory = '';
+    let query = '';
+    const applyFilter = () => {
+      let visible = 0;
+      for (const item of items) {
+        const cat = item.dataset.category || '';
+        const txt = item.dataset.search || '';
+        const okCat = !activeCategory || cat === activeCategory;
+        const okQ = !query || txt.includes(query);
+        const show = okCat && okQ;
+        item.classList.toggle('is-hidden', !show);
+        if (show) visible++;
+      }
+      if (counter) counter.textContent = visible.toLocaleString();
+    };
+    chips.addEventListener('click', (e) => {
+      const btn = e.target.closest('.design-picker__chip');
+      if (!btn) return;
+      activeCategory = btn.dataset.category || '';
+      chips.querySelectorAll('.design-picker__chip').forEach(b => b.classList.toggle('is-active', b === btn));
+      applyFilter();
+    });
+    search?.addEventListener('input', (e) => {
+      query = (e.target.value || '').trim().toLowerCase();
+      applyFilter();
+    });
+    applyFilter();
+  })();
 
   actualizarPrecio();
   actualizarResumen();

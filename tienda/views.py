@@ -281,33 +281,59 @@ def detalle_producto(request, producto_id):
         colores_disponibles = producto.colores_disponibles.split(",") if producto.colores_disponibles else []
 
     diseño_seleccionado = request.GET.get("diseño")
-    diseños_anime = []
-    diseños_personalizados = []
+    designs_dir = Path(settings.MEDIA_ROOT) / "diseños_propios"
+    designs_dir.mkdir(parents=True, exist_ok=True)
 
-    try:
-        ruta_anime = os.path.join(settings.MEDIA_ROOT, 'diseños_nuevos')
-        ruta_personalizados = os.path.join(settings.MEDIA_ROOT, 'diseños_propios')
+    _KNOWN_PREFIXES = [
+        ("Angel_Streetwear_", "Angel Streetwear"),
+        ("ANIME_POSTER_", "Anime Poster"),
+        ("Anime_VERSION_6_", "Anime V6"),
+        ("Japanese_Anime_", "Japanese Anime"),
+        ("Premium_Halftone_Designs_", "Premium Halftone"),
+        ("Premium_Motor_Cycle_Designs_", "Premium Motor Cycle"),
+        ("Rockband_Designs_", "Rockband"),
+        ("Samurai_Japones_", "Samurai Japones"),
+    ]
+    user_prefix = slugify(request.user.username if request.user.is_authenticated else "cliente") + "-"
 
-        diseños_anime = os.listdir(ruta_anime)
-        diseños_personalizados = os.listdir(ruta_personalizados)
-    except FileNotFoundError:
-        pass
+    from collections import defaultdict as _defaultdict
+    catalog_groups = _defaultdict(list)
+    own_designs_names = []
+    todos_names = []
+    for entry in designs_dir.iterdir():
+        if not entry.is_file():
+            continue
+        name = entry.name
+        todos_names.append(name)
+        if name.startswith(user_prefix):
+            own_designs_names.append(name)
+            continue
+        category = "Otros"
+        for prefix, label in _KNOWN_PREFIXES:
+            if name.startswith(prefix):
+                category = label
+                break
+        catalog_groups[category].append(name)
+
+    catalog_picker = []
+    catalog_total = 0
+    for category in sorted(catalog_groups.keys(), key=lambda c: c.lower()):
+        files = sorted(catalog_groups[category])
+        items = [{"name": fn, "thumb": Path(fn).stem + ".webp"} for fn in files]
+        catalog_total += len(files)
+        catalog_picker.append({
+            "name": category,
+            "slug": slugify(category),
+            "count": len(files),
+            "items": items,
+        })
+
+    own_designs = sorted(own_designs_names, key=lambda n: (designs_dir / n).stat().st_mtime, reverse=True)[:24]
+    own_designs_items = [{"name": fn, "thumb": Path(fn).stem + ".webp"} for fn in own_designs]
 
     selected_custom_design = ""
-    if diseño_seleccionado and diseño_seleccionado in diseños_personalizados:
+    if diseño_seleccionado and diseño_seleccionado in todos_names:
         selected_custom_design = diseño_seleccionado
-
-    # Paginación de diseños anime
-    page_anime = request.GET.get("page_anime", 1)
-    anime_paginator = Paginator(diseños_anime, 10)
-    anime_page = anime_paginator.get_page(page_anime)
-
-    # Paginación para personalizados
-    page_personalizado = request.GET.get("page_personalizado", 1)
-    personalizado_paginator = Paginator(diseños_personalizados, 10)
-    personalizado_page = personalizado_paginator.get_page(page_personalizado)
-
-    # ...
 
     _track_meta_pixel_event(
         request,
@@ -327,8 +353,9 @@ def detalle_producto(request, producto_id):
         'producto': producto,
         'tallas_disponibles': tallas_disponibles,
         'colores_disponibles': colores_disponibles,
-        'diseños_anime': anime_page,
-        'diseños_personalizados': personalizado_page,
+        'catalog_picker': catalog_picker,
+        'catalog_total': catalog_total,
+        'own_designs_items': own_designs_items,
         'selected_custom_design': selected_custom_design,
         'reseña_form': ReseñaForm(),
         'reseñas': reseñas,
