@@ -179,6 +179,7 @@ TEMPLATES = [
                 "django.contrib.messages.context_processors.messages",
                 "tienda.context_processors.meta_pixel",
                 "tienda.context_processors.admin_nav_context",
+                "tienda.context_processors.instagram_feed",
             ],
         },
     },
