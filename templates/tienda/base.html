@@ -33,6 +33,19 @@
     <meta property="og:description" content="{% block og_description %}Cult Clasiccs - Ropa y diseños con estilo limpio, compra simple y envío claro.{% endblock %}" />
     <meta property="og:image" content="{% block og_image %}{% endblock %}" />
     <meta property="og:url" content="{{ request.build_absolute_uri }}" />
+    <meta property="og:locale" content="es_MX" />
+
+    <!-- Twitter card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="{% block twitter_title %}{% block twitter_title_default %}Cult Clasiccs{% endblock %}{% endblock %}" />
+    <meta name="twitter:description" content="{% block twitter_description %}Ropa y diseños con estilo limpio, compra simple y envío claro.{% endblock %}" />
+    <meta name="twitter:image" content="{% block twitter_image %}{% endblock %}" />
+
+    <!-- Canonical y robots -->
+    <link rel="canonical" href="{{ request.scheme }}://{{ request.get_host }}{{ request.path }}" />
+    <meta name="robots" content="{% block robots %}index, follow{% endblock %}" />
+
+    {% block extra_head %}{% endblock %}
 
     <!-- Favicon -->
     <link rel="icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}" />

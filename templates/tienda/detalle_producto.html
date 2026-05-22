@@ -8,6 +8,33 @@
 {% block og_description %}{{ producto.descripcion|truncatewords:20 }}{% endblock %}
 {% block og_image %}{% if producto.imagen %}{{ request.scheme }}://{{ request.get_host }}{{ producto.imagen.url }}{% endif %}{% endblock %}
 
+{% block extra_head %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org/",
+  "@type": "Product",
+  "name": "{{ producto.nombre|escapejs }}",
+  "description": "{{ producto.descripcion|truncatewords:40|escapejs }}",
+  {% if producto.imagen %}"image": ["{{ request.scheme }}://{{ request.get_host }}{{ producto.imagen.url }}"],{% endif %}
+  "sku": "{{ producto.id }}",
+  "brand": { "@type": "Brand", "name": "Cult Clasiccs" },
+  "offers": {
+    "@type": "Offer",
+    "url": "{{ request.scheme }}://{{ request.get_host }}{{ request.path }}",
+    "priceCurrency": "MXN",
+    "price": "{{ producto.precio }}",
+    "availability": "{% if producto.stock > 0 %}https://schema.org/InStock{% else %}https://schema.org/OutOfStock{% endif %}",
+    "itemCondition": "https://schema.org/NewCondition"
+  }{% if reseñas %},
+  "aggregateRating": {
+    "@type": "AggregateRating",
+    "ratingValue": "{{ reseñas|length|stringformat:'.1f' }}",
+    "reviewCount": "{{ reseñas|length }}"
+  }{% endif %}
+}
+</script>
+{% endblock %}
+
 {% block content %}
 <style>
     main {
