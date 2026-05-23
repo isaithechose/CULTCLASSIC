@@ -6,6 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
     <meta name="description" content="{% block meta_description %}Cult Clasiccs - Ropa y diseños con estilo limpio, compra simple y envío claro.{% endblock %}" />
     <meta name="author" content="Cult Clasiccs" />
+    {% if facebook_domain_verification %}
+    <meta name="facebook-domain-verification" content="{{ facebook_domain_verification }}" />
+    {% endif %}
     <title>{% block title %}Cult Clasiccs | Ropa y diseños con estilo limpio{% endblock %}</title>
     <!-- Open Graph -->
     <meta property="og:site_name" content="Cult Clasiccs" />

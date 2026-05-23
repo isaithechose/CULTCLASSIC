@@ -18,6 +18,7 @@ def meta_pixel(request):
     return {
         "meta_pixel_id": getattr(settings, "META_PIXEL_ID", ""),
         "meta_pixel_events": queued_events + inline_events,
+        "facebook_domain_verification": getattr(settings, "FACEBOOK_DOMAIN_VERIFICATION", ""),
     }
 
 
