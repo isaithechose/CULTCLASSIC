@@ -891,6 +891,68 @@ def archivo_view(request):
     productos = Producto.objects.filter(categoria__nombre="archivo")
     return render(request, 'tienda/archivo.html', {'productos': productos})
 
+
+# ── Mayoreo ──────────────────────────────────────────────────────────────
+# Tiers por volumen. El % de descuento aplica al precio retail del producto.
+MAYOREO_TIERS = [
+    {"min": 12,  "max": 23,   "label": "Mayoreo 12+",    "discount": 0.20},
+    {"min": 24,  "max": 49,   "label": "Mayoreo 24+",    "discount": 0.30},
+    {"min": 50,  "max": 99,   "label": "Mayoreo 50+",    "discount": 0.38},
+    {"min": 100, "max": None, "label": "Distribuidor",   "discount": 0.45},
+]
+
+
+def mayoreo_view(request):
+    """Pagina publica con tiers de mayoreo y catalogo de productos disponibles."""
+    from decimal import Decimal
+    from collections import defaultdict
+    from django.db.models import Sum, Min
+
+    # Productos con variantes Shaka (SHK-) que esten activos y tengan stock
+    productos = (
+        Producto.objects
+        .filter(variants__sku__startswith="SHK-", variants__activo=True)
+        .annotate(
+            stock_total=Sum("variants__stock"),
+            costo_min=Min("variants__costo"),
+        )
+        .distinct()
+        .order_by("-stock_total", "nombre")
+    )
+
+    # Para cada producto, calcular precios por tier
+    productos_data = []
+    for p in productos:
+        precio_retail = p.precio or Decimal("250")
+        precios_tier = [
+            {
+                "label": t["label"],
+                "min": t["min"],
+                "discount_pct": int(t["discount"] * 100),
+                "precio": (precio_retail * Decimal(1 - t["discount"])).quantize(Decimal("0.01")),
+            }
+            for t in MAYOREO_TIERS
+        ]
+        productos_data.append({
+            "producto": p,
+            "stock_total": p.stock_total or 0,
+            "costo": p.costo_min,
+            "precio_retail": precio_retail,
+            "precios": precios_tier,
+        })
+
+    tiers_ctx = [
+        {**t, "discount_pct": int(t["discount"] * 100)}
+        for t in MAYOREO_TIERS
+    ]
+    context = {
+        "tiers": tiers_ctx,
+        "productos_data": productos_data,
+        "total_productos": len(productos_data),
+        "total_stock": sum(d["stock_total"] for d in productos_data),
+    }
+    return render(request, "tienda/mayoreo.html", context)
+
 def proceso_compra(request):
     return redirect('tienda:checkout')
 
