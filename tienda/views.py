@@ -39,14 +39,25 @@ from .models import (
     record_inventory_movement,
 )
 from .skydrop import SkydropError, map_skydrop_status, quote_order, sync_shipment
+from .meta_capi import track_capi_event
 
 logger = logging.getLogger(__name__)
 
 
-def _track_meta_pixel_event(request, event_name, payload=None, persist=False):
+def _track_meta_pixel_event(request, event_name, payload=None, persist=False, user=None):
+    """Dispara un evento Meta por DOS canales con el mismo event_id:
+      1) Pixel browser (vía template, leído por base.html desde el context)
+      2) Conversions API server-side (async, no bloquea response)
+    Meta deduplica ambos por el event_id compartido.
+    """
+    # Dispara CAPI server-side y obtiene event_id
+    capi_user = user or getattr(request, "user", None)
+    event_id = track_capi_event(request, event_name, custom_data=payload or {}, user=capi_user)
+
     event = {
         "name": event_name,
         "payload": payload or {},
+        "event_id": event_id,
     }
     if persist:
         events = request.session.get("meta_pixel_events", [])

@@ -49,7 +49,13 @@
                     const metaPixelEvents = JSON.parse(metaPixelEventsNode.textContent);
                     metaPixelEvents.forEach((eventItem) => {
                         if (eventItem && eventItem.name) {
-                            fbq('track', eventItem.name, eventItem.payload || {});
+                            // event_id se pasa para que Meta deduplique entre pixel browser y CAPI server-side
+                            const opts = eventItem.event_id ? { eventID: eventItem.event_id } : undefined;
+                            if (opts) {
+                                fbq('track', eventItem.name, eventItem.payload || {}, opts);
+                            } else {
+                                fbq('track', eventItem.name, eventItem.payload || {});
+                            }
                         }
                     });
                 } catch (error) {

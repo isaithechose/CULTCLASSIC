@@ -10,6 +10,8 @@ STRIPE_PUBLIC_KEY = config('STRIPE_PUBLIC_KEY', default='')
 STRIPE_SECRET_KEY = config('STRIPE_SECRET_KEY', default='')
 STRIPE_WEBHOOK_SECRET = config('STRIPE_WEBHOOK_SECRET', default='')
 META_PIXEL_ID = config('META_PIXEL_ID', default='')
+META_PIXEL_ACCESS_TOKEN = config('META_PIXEL_ACCESS_TOKEN', default='')
+META_PIXEL_TEST_EVENT_CODE = config('META_PIXEL_TEST_EVENT_CODE', default='')
 
 # --- Skydrop ---
 SKYDROP_CLIENT_ID = config('SKYDROP_CLIENT_ID', default='')
