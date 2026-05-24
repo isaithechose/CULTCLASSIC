@@ -9,6 +9,22 @@
     {% if facebook_domain_verification %}
     <meta name="facebook-domain-verification" content="{{ facebook_domain_verification }}" />
     {% endif %}
+    {% if google_site_verification %}
+    <meta name="google-site-verification" content="{{ google_site_verification }}" />
+    {% endif %}
+    {% if google_merchant_verification %}
+    <meta name="google-merchant-center-verification" content="{{ google_merchant_verification }}" />
+    {% endif %}
+    {% if ga4_measurement_id %}
+    <!-- Google Analytics 4 -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id={{ ga4_measurement_id }}"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', '{{ ga4_measurement_id }}', { anonymize_ip: true });
+    </script>
+    {% endif %}
     <title>{% block title %}Cult Clasiccs | Ropa y diseños con estilo limpio{% endblock %}</title>
     <!-- Open Graph -->
     <meta property="og:site_name" content="Cult Clasiccs" />

@@ -19,6 +19,9 @@ def meta_pixel(request):
         "meta_pixel_id": getattr(settings, "META_PIXEL_ID", ""),
         "meta_pixel_events": queued_events + inline_events,
         "facebook_domain_verification": getattr(settings, "FACEBOOK_DOMAIN_VERIFICATION", ""),
+        "ga4_measurement_id": getattr(settings, "GA4_MEASUREMENT_ID", ""),
+        "google_site_verification": getattr(settings, "GOOGLE_SITE_VERIFICATION", ""),
+        "google_merchant_verification": getattr(settings, "GOOGLE_MERCHANT_VERIFICATION", ""),
     }
 
 
