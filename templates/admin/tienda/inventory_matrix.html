@@ -3,191 +3,384 @@
 {% block extrastyle %}
 {{ block.super }}
 <style>
-  .matrix-wrap {
-    max-width: 1280px;
-  }
-  .matrix-card {
+  .mx-wrap { max-width: 1320px; }
+
+  /* ── header card ── */
+  .mx-header {
     background: #fff;
     border: 1px solid #e8e8ef;
     border-radius: 18px;
-    box-shadow: 0 12px 30px rgba(16, 24, 40, 0.06);
-    padding: 1.2rem;
-  }
-  .matrix-actions {
-    display: flex;
-    gap: 0.75rem;
-    flex-wrap: wrap;
+    box-shadow: 0 12px 30px rgba(16,24,40,.06);
+    padding: 1.3rem 1.5rem;
     margin-bottom: 1rem;
-  }
-  .matrix-table {
-    width: 100%;
-    border-collapse: collapse;
-  }
-  .matrix-table th,
-  .matrix-table td {
-    padding: 0.75rem 0.7rem;
-    border-bottom: 1px solid #ececf3;
-    text-align: left;
-    vertical-align: middle;
-  }
-  .matrix-table th {
-    color: #6b7280;
-    font-size: 0.82rem;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-  }
-  .matrix-product {
     display: flex;
-    align-items: center;
-    gap: 0.85rem;
-    min-width: 240px;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
   }
-  .matrix-product__thumb,
-  .matrix-product__fallback {
-    width: 56px;
-    height: 56px;
-    border-radius: 12px;
-    flex: 0 0 56px;
-  }
-  .matrix-product__thumb {
-    object-fit: cover;
-    border: 1px solid #e5e7eb;
-    background: #f8f8fb;
-  }
-  .matrix-product__fallback {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 1px dashed #d1d5db;
-    color: #9ca3af;
-    background: #f8f8fb;
-    font-size: 0.78rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-  .matrix-product__meta strong {
-    display: block;
-    margin-bottom: 0.18rem;
-  }
-  .matrix-input input {
-    width: 90px;
-    padding: 0.5rem 0.6rem;
-    border: 1px solid #d7d7e2;
-    border-radius: 10px;
-  }
-  .matrix-note {
-    width: 100%;
-    min-height: 88px;
-    padding: 0.8rem 0.9rem;
-    border: 1px solid #d7d7e2;
-    border-radius: 12px;
-    margin-top: 1rem;
-    resize: vertical;
-  }
-  .matrix-muted {
-    color: #6b7280;
-  }
-  .matrix-guide {
-    margin: 1rem 0 1.2rem;
-    padding: 1rem 1.1rem;
-    border-radius: 16px;
+  .mx-header h1 { margin: 0 0 .25rem; font-size: 1.25rem; }
+  .mx-header p  { margin: 0; color: #6b7280; font-size: .9rem; }
+  .mx-actions { display: flex; gap: .6rem; flex-wrap: wrap; align-items: center; }
+
+  /* ── guide ── */
+  .mx-guide {
+    padding: .85rem 1.1rem;
+    border-radius: 14px;
     background: #f8fafc;
     border: 1px solid #e2e8f0;
-  }
-  .matrix-empty {
-    padding: 1rem 0;
+    margin-bottom: 1rem;
+    font-size: .88rem;
     color: #6b7280;
   }
+  .mx-guide strong { color: #111827; }
+
+  /* ── table card ── */
+  .mx-card {
+    background: #fff;
+    border: 1px solid #e8e8ef;
+    border-radius: 18px;
+    box-shadow: 0 12px 30px rgba(16,24,40,.06);
+    overflow: hidden;
+    margin-bottom: 1.2rem;
+  }
+  .mx-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 780px;
+  }
+  .mx-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: #f8fafc;
+    border-bottom: 1px solid #e8e8ef;
+    padding: .7rem 1rem;
+    text-align: left;
+    font-size: .78rem;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    color: #6b7280;
+    white-space: nowrap;
+  }
+  .mx-table tbody tr { transition: background .1s; }
+  .mx-table tbody tr:hover { background: #fafafa; }
+  .mx-table td {
+    padding: .85rem 1rem;
+    border-bottom: 1px solid #f3f4f6;
+    vertical-align: middle;
+  }
+  .mx-table tbody tr:last-child td { border-bottom: none; }
+
+  /* row accent by status */
+  .mx-table tbody tr td:first-child { padding-left: 0; }
+  .mx-row-stripe {
+    display: block;
+    width: 4px;
+    height: 100%;
+    min-height: 56px;
+    border-radius: 0 4px 4px 0;
+    flex-shrink: 0;
+  }
+  .mx-cell-stripe { padding: 0 !important; width: 4px; }
+
+  /* ── product cell ── */
+  .mx-product {
+    display: flex;
+    align-items: center;
+    gap: .85rem;
+    min-width: 220px;
+  }
+  .mx-thumb, .mx-thumb-fallback {
+    width: 52px; height: 52px;
+    border-radius: 12px;
+    flex: 0 0 52px;
+  }
+  .mx-thumb { object-fit: cover; border: 1px solid #e5e7eb; background: #f8f8fb; }
+  .mx-thumb-fallback {
+    display: flex; align-items: center; justify-content: center;
+    border: 1px dashed #d1d5db; color: #9ca3af;
+    background: #f8f8fb; font-size: .72rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .04em;
+  }
+  .mx-product-name { font-weight: 700; color: #111827; font-size: .92rem; line-height: 1.25; }
+  .mx-product-sub  { font-size: .78rem; color: #9ca3af; margin-top: 2px; }
+
+  /* ── color cell ── */
+  .mx-color-cell {
+    display: flex;
+    align-items: center;
+    gap: .55rem;
+    white-space: nowrap;
+  }
+  .mx-swatch {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    box-shadow: 0 0 0 2px #fff, 0 0 0 3.5px rgba(0,0,0,.13);
+  }
+  .mx-color-name { font-size: .88rem; color: #374151; font-weight: 500; }
+
+  /* ── talla chip ── */
+  .mx-talla {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 34px; height: 34px;
+    padding: 0 .5rem;
+    border-radius: 9px;
+    background: #f3f4f6;
+    font-weight: 700;
+    font-size: .82rem;
+    color: #374151;
+  }
+
+  /* ── current stock cell ── */
+  .mx-stock-cell { min-width: 120px; }
+  .mx-stock-row  { display: flex; align-items: center; gap: .55rem; margin-bottom: 5px; }
+  .mx-stock-num  { font-size: 1.15rem; font-weight: 800; color: #111827; min-width: 24px; }
+  .mx-badge {
+    display: inline-flex; align-items: center; gap: .28rem;
+    padding: .22rem .55rem;
+    border-radius: 999px;
+    font-weight: 700; font-size: .75rem; white-space: nowrap;
+  }
+  .mx-badge::before { content:''; width:5px; height:5px; border-radius:50%; display:inline-block; }
+  .mx-badge--ok   { color:#065f46; background:#d1fae5; } .mx-badge--ok::before   { background:#10b981; }
+  .mx-badge--low  { color:#92400e; background:#fef3c7; } .mx-badge--low::before  { background:#f59e0b; }
+  .mx-badge--out  { color:#991b1b; background:#fee2e2; } .mx-badge--out::before  { background:#ef4444; }
+  .mx-bar-wrap { flex:1; background:#f3f4f6; border-radius:999px; height:5px; overflow:hidden; }
+  .mx-bar { height:100%; border-radius:999px; }
+  .mx-bar--ok  { background: linear-gradient(90deg,#34d399,#059669); }
+  .mx-bar--low { background: linear-gradient(90deg,#fbbf24,#d97706); }
+  .mx-bar--out { background:#fca5a5; }
+
+  /* ── stepper ── */
+  .mx-stepper {
+    display: inline-flex;
+    align-items: center;
+    border: 1.5px solid #d7d7e2;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #fff;
+  }
+  .mx-stepper button {
+    background: #f8f8fb;
+    border: none;
+    width: 32px; height: 38px;
+    font-size: 1.15rem;
+    color: #6b7280;
+    cursor: pointer;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: background .1s, color .1s;
+  }
+  .mx-stepper button:hover { background: #e5e7eb; color: #111827; }
+  .mx-stepper input {
+    width: 54px;
+    border: none;
+    border-left: 1px solid #e5e7eb;
+    border-right: 1px solid #e5e7eb;
+    text-align: center;
+    font-size: .9rem;
+    font-weight: 700;
+    color: #111827;
+    padding: .4rem 0;
+    background: #fff;
+  }
+  .mx-stepper input:focus { outline: none; background: #f0f9ff; }
+
+  /* ── note + submit ── */
+  .mx-footer {
+    background: #fff;
+    border: 1px solid #e8e8ef;
+    border-radius: 18px;
+    box-shadow: 0 12px 30px rgba(16,24,40,.06);
+    padding: 1.2rem 1.5rem;
+  }
+  .mx-note {
+    width: 100%;
+    min-height: 80px;
+    padding: .8rem 1rem;
+    border: 1.5px solid #d7d7e2;
+    border-radius: 12px;
+    margin-bottom: 1rem;
+    resize: vertical;
+    font-size: .9rem;
+    color: #374151;
+    transition: border-color .15s;
+  }
+  .mx-note:focus { outline: none; border-color: #6366f1; }
+  .mx-submit-row { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+  .mx-submit-row .button.default { padding: .6rem 1.4rem; font-size: .9rem; }
+  .mx-muted { font-size: .82rem; color: #9ca3af; }
+
+  .mx-empty { padding: 2rem; text-align: center; color: #9ca3af; }
+  @media (max-width: 900px) { .mx-header { flex-direction: column; } }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="matrix-wrap">
-  <div class="matrix-card">
-    <div style="display:flex;justify-content:space-between;gap:1rem;align-items:flex-start;">
-      <div>
-        <h1 style="margin:0 0 0.35rem;">Inventario por variantes</h1>
-        <p class="matrix-muted" style="margin:0;">Aquí puedes mover el inventario de todos los cortes, variantes y tallas desde una sola pantalla.</p>
-      </div>
-      <a class="button" href="{% url 'admin:tienda_producto_inventory_dashboard' %}">Volver al dashboard</a>
-    </div>
+<div class="mx-wrap">
 
-    <div class="matrix-actions">
+  <div class="mx-header">
+    <div>
+      <h1>Mesa de inventario</h1>
+      <p>Ajusta el stock real de cada variante desde una sola pantalla. Cada cambio genera un movimiento.</p>
+    </div>
+    <div class="mx-actions">
       <a class="button" href="{% url 'admin:tienda_inventorymovement_changelist' %}">Ver movimientos</a>
-      <a class="button" href="{% url 'admin:tienda_producto_stock_count_bulk' %}">Conteo físico masivo</a>
+      <a class="button" href="{% url 'admin:tienda_producto_stock_count_bulk' %}">Conteo masivo</a>
+      <a class="button default" href="{% url 'admin:tienda_producto_inventory_dashboard' %}">Dashboard</a>
     </div>
-
-    <div class="matrix-guide">
-      <strong>Qué cambia aquí</strong>
-      <div class="matrix-muted">
-        Esta mesa edita el stock real de cada <strong>variante</strong> (producto + color + talla). Si un producto todavía usa stock general y no tiene variantes, no aparece aquí. Cada cambio guardado genera un movimiento de ajuste.
-      </div>
-    </div>
-
-    {% if rows %}
-      <form method="post">
-        {% csrf_token %}
-        {{ formset.management_form }}
-
-        <table class="matrix-table">
-          <thead>
-            <tr>
-              <th>Producto</th>
-              <th>Categoría</th>
-              <th>Color</th>
-              <th>Talla</th>
-              <th>SKU</th>
-              <th>Stock actual</th>
-              <th>Nuevo stock</th>
-              <th>Costo</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for row in rows %}
-              <tr>
-                <td>
-                  <div class="matrix-product">
-                    {% if row.variant.display_image_url %}
-                      <img
-                        src="{{ row.variant.display_image_url }}"
-                        alt="{{ row.variant.product.nombre }} {{ row.variant.color }}"
-                        class="matrix-product__thumb"
-                      >
-                    {% else %}
-                      <div class="matrix-product__fallback">Sin img</div>
-                    {% endif %}
-                    <div class="matrix-product__meta">
-                      <strong>{{ row.variant.product.nombre }}</strong>
-                      <span class="matrix-muted">{{ row.variant.product.subcategoria|default:"Sin subcategoría" }}</span>
-                    </div>
-                  </div>
-                  {{ row.form.variant_id }}
-                </td>
-                <td>{{ row.variant.product.categoria|default:"-" }}</td>
-                <td>{{ row.variant.color }}</td>
-                <td>{{ row.variant.talla }}</td>
-                <td>{{ row.variant.sku|default:"-" }}</td>
-                <td>{{ row.variant.stock }}</td>
-                <td class="matrix-input">{{ row.form.stock }}</td>
-                <td>${{ row.variant.costo|default:row.variant.product.precio|floatformat:2 }}</td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-
-        <textarea name="note" class="matrix-note" placeholder="Ej. Ajuste general de rack y bodega.">Ajuste desde mesa de inventario.</textarea>
-
-        <div style="display:flex;gap:0.8rem;align-items:center;margin-top:1rem;">
-          <button type="submit" class="default">Guardar cambios de inventario</button>
-          <span class="matrix-muted">Solo se registran movimientos donde el stock cambia.</span>
-        </div>
-      </form>
-    {% else %}
-      <div class="matrix-empty">
-        Todavía no hay variantes activas para mostrar aquí. Primero genera variantes en tus productos o crea algunas desde el admin de variantes.
-      </div>
-    {% endif %}
   </div>
+
+  <div class="mx-guide">
+    <strong>Qué cambia aquí —</strong> edita el stock real por <strong>variante</strong> (producto + color + talla). Solo se registran movimientos donde el número cambia. Productos sin variantes no aparecen aquí.
+  </div>
+
+  {% if rows %}
+  <form method="post">
+    {% csrf_token %}
+    {{ formset.management_form }}
+
+    <div class="mx-card" style="overflow-x:auto;">
+      <table class="mx-table" id="mx-table">
+        <thead>
+          <tr>
+            <th style="width:4px;padding:0"></th>
+            <th>Producto</th>
+            <th>Color</th>
+            <th>Talla</th>
+            <th>SKU</th>
+            <th>Stock actual</th>
+            <th>Nuevo stock</th>
+            <th>Costo</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in rows %}
+          <tr data-stock="{{ row.variant.stock }}">
+            <td class="mx-cell-stripe"><span class="mx-row-stripe"></span></td>
+            <td>
+              <div class="mx-product">
+                {% if row.variant.display_image_url %}
+                  <img src="{{ row.variant.display_image_url }}"
+                       alt="{{ row.variant.product.nombre }}"
+                       class="mx-thumb">
+                {% else %}
+                  <div class="mx-thumb-fallback">Sin img</div>
+                {% endif %}
+                <div>
+                  <div class="mx-product-name">{{ row.variant.product.nombre }}</div>
+                  <div class="mx-product-sub">{{ row.variant.product.subcategoria|default:"Sin subcategoría" }}</div>
+                </div>
+              </div>
+              {{ row.form.variant_id }}
+            </td>
+            <td>
+              <div class="mx-color-cell">
+                <div class="mx-swatch" data-color="{{ row.variant.color }}"></div>
+                <span class="mx-color-name">{{ row.variant.color }}</span>
+              </div>
+            </td>
+            <td><span class="mx-talla">{{ row.variant.talla }}</span></td>
+            <td style="color:#9ca3af;font-size:.84rem;">{{ row.variant.sku|default:"—" }}</td>
+            <td class="mx-stock-cell" data-cur="{{ row.variant.stock }}">
+              <div class="mx-stock-row">
+                <span class="mx-stock-num">{{ row.variant.stock }}</span>
+                <span class="mx-badge"></span>
+              </div>
+              <div style="display:flex;align-items:center;gap:.4rem;">
+                <div class="mx-bar-wrap"><div class="mx-bar"></div></div>
+              </div>
+            </td>
+            <td>
+              <div class="mx-stepper">
+                <button type="button" class="mx-dec">−</button>
+                {{ row.form.stock }}
+                <button type="button" class="mx-inc">+</button>
+              </div>
+            </td>
+            <td style="font-size:.88rem;color:#374151;">${{ row.variant.costo|default:row.variant.product.precio|floatformat:2 }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="mx-footer">
+      <textarea name="note" class="mx-note" placeholder="Nota del ajuste (ej. Conteo físico de bodega)">Ajuste desde mesa de inventario.</textarea>
+      <div class="mx-submit-row">
+        <button type="submit" class="button default">Guardar cambios</button>
+        <span class="mx-muted">Solo se registran filas donde el stock cambia.</span>
+      </div>
+    </div>
+  </form>
+
+  {% else %}
+  <div class="mx-card">
+    <div class="mx-empty">
+      Todavía no hay variantes activas. Genera variantes en tus productos para usar esta mesa.
+    </div>
+  </div>
+  {% endif %}
+
 </div>
+
+<script>
+(function() {
+  const COLOR_MAP = {
+    black:'#111827', negro:'#111827', white:'#f3f4f6', blanco:'#f3f4f6',
+    cream:'#fef08a', beige:'#e5d8b0', mocha:'#6b3f2a', shadow:'#374151',
+    grey:'#9ca3af',  gray:'#9ca3af',  gris:'#9ca3af',
+    navy:'#1e3a5f',  darknavy:'#1e3a5f', blue:'#3b82f6', azul:'#3b82f6',
+    red:'#ef4444',   rojo:'#ef4444',  burgundy:'#7f1d1d', darkburgundy:'#7f1d1d',
+    concrete:'#d1d5db', green:'#16a34a', olive:'#65a30d',
+    sand:'#d6c9a6',  camel:'#c49a6c', tan:'#c49a6c', brown:'#92400e',
+  };
+  function swatchColor(c) {
+    return COLOR_MAP[(c||'').toLowerCase().replace(/[\s_-]/g,'')] || '#e5e7eb';
+  }
+
+  // Paint swatches
+  document.querySelectorAll('.mx-swatch[data-color]').forEach(el => {
+    el.style.background = swatchColor(el.dataset.color);
+  });
+
+  // Paint stock bars + badges + row stripes
+  const MAX_STOCK = Math.max(
+    ...[...document.querySelectorAll('[data-cur]')].map(el => +el.dataset.cur), 1
+  );
+
+  document.querySelectorAll('tr[data-stock]').forEach(tr => {
+    const s     = +tr.dataset.stock;
+    const sk    = s === 0 ? 'out' : s <= 3 ? 'low' : 'ok';
+    const pct   = s === 0 ? 0 : Math.max(4, Math.round((s / MAX_STOCK) * 100));
+    const STRIPE = { ok:'#10b981', low:'#f59e0b', out:'#ef4444' };
+    const LABEL  = { ok:'OK', low:'Bajo', out:'Agotado' };
+
+    const stripe = tr.querySelector('.mx-row-stripe');
+    if (stripe) stripe.style.background = STRIPE[sk];
+
+    const bar = tr.querySelector('.mx-bar');
+    if (bar) { bar.className = `mx-bar mx-bar--${sk}`; bar.style.width = pct + '%'; }
+
+    const badge = tr.querySelector('.mx-badge');
+    if (badge) { badge.className = `mx-badge mx-badge--${sk}`; badge.textContent = LABEL[sk]; }
+  });
+
+  // Stepper buttons
+  document.querySelectorAll('.mx-stepper').forEach(stepper => {
+    const input = stepper.querySelector('input');
+    stepper.querySelector('.mx-dec').addEventListener('click', () => {
+      const v = parseInt(input.value) || 0;
+      if (v > 0) input.value = v - 1;
+    });
+    stepper.querySelector('.mx-inc').addEventListener('click', () => {
+      input.value = (parseInt(input.value) || 0) + 1;
+    });
+  });
+})();
+</script>
 {% endblock %}
