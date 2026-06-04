@@ -1880,7 +1880,7 @@ class ProductoAdmin(admin.ModelAdmin):
                         creados += 1
                 msg_ok = f"{creados} diseño(s) importado(s) como productos."
 
-            # ── delete ──
+            # ── delete file ──
             elif action == "delete":
                 filename = request.POST.get("file", "").strip()
                 filepath = os.path.join(CATALOG_DIR, filename)
@@ -1890,22 +1890,64 @@ class ProductoAdmin(admin.ModelAdmin):
                 else:
                     msg_err = "Archivo no encontrado."
 
+            # ── edit product ──
+            elif action == "edit":
+                pid = request.POST.get("product_id")
+                try:
+                    p = Producto.objects.get(pk=pid, categoria=categoria)
+                    p.nombre = request.POST.get("nombre", p.nombre).strip() or p.nombre
+                    raw_precio = request.POST.get("precio", "").strip()
+                    if raw_precio:
+                        p.precio = Decimal(raw_precio)
+                    p.descripcion = request.POST.get("descripcion", p.descripcion).strip()
+                    p.disponible = request.POST.get("disponible") == "1"
+                    p.save()
+                    msg_ok = f'"{p.nombre}" actualizado.'
+                except Producto.DoesNotExist:
+                    msg_err = "Producto no encontrado."
+
+            # ── toggle disponible ──
+            elif action == "toggle":
+                pid = request.POST.get("product_id")
+                try:
+                    p = Producto.objects.get(pk=pid, categoria=categoria)
+                    p.disponible = not p.disponible
+                    p.save(update_fields=["disponible"])
+                    estado = "activado" if p.disponible else "desactivado"
+                    msg_ok = f'"{p.nombre}" {estado}.'
+                except Producto.DoesNotExist:
+                    msg_err = "Producto no encontrado."
+
+            # ── bulk price ──
+            elif action == "bulk_price":
+                nuevo_precio = request.POST.get("precio", "").strip()
+                solo_inactivos = request.POST.get("solo_inactivos") == "1"
+                if nuevo_precio:
+                    qs = Producto.objects.filter(categoria=categoria)
+                    if solo_inactivos:
+                        qs = qs.filter(disponible=False)
+                    updated = qs.update(precio=Decimal(nuevo_precio))
+                    msg_ok = f"Precio actualizado a ${nuevo_precio} en {updated} diseño(s)."
+                else:
+                    msg_err = "Ingresa un precio válido."
+
         # build file list
-        imported_names = set(
-            Producto.objects.filter(categoria=categoria)
-            .values_list("nombre", flat=True)
-        )
+        productos_map = {
+            p.nombre: p
+            for p in Producto.objects.filter(categoria=categoria)
+        }
         files = []
         for f in sorted(os.listdir(CATALOG_DIR)):
             if os.path.splitext(f)[1].lower() not in EXTS:
                 continue
             nombre = os.path.splitext(f)[0]
+            product = productos_map.get(nombre)
             files.append({
                 "filename": f,
                 "nombre": nombre,
                 "url": f"{settings.MEDIA_URL}diseños_nuevos/{f}",
-                "imported": nombre in imported_names,
-                "product": Producto.objects.filter(nombre=nombre).first(),
+                "imported": product is not None,
+                "product": product,
             })
 
         context = dict(
