@@ -146,6 +146,45 @@
     margin: 0 0 1rem;
     font-size: 1rem;
   }
+  #chart-detail {
+    display: none;
+    background: #fff;
+    border: 1px solid #e8e8ef;
+    border-radius: 18px;
+    box-shadow: 0 12px 30px rgba(16,24,40,0.06);
+    padding: 1.2rem 1.4rem;
+    margin-bottom: 1.2rem;
+  }
+  #chart-detail h3 {
+    margin: 0 0 1rem;
+    font-size: 1rem;
+  }
+  #chart-detail table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  #chart-detail th, #chart-detail td {
+    padding: 0.6rem 0.8rem;
+    border-bottom: 1px solid #ececf3;
+    text-align: left;
+    font-size: 0.9rem;
+  }
+  #chart-detail th {
+    color: #6b7280;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .detail-badge {
+    display: inline-block;
+    padding: 0.2rem 0.55rem;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 0.82rem;
+  }
+  .detail-badge--ok   { color: #05603a; background: #d1fadf; }
+  .detail-badge--low  { color: #9a6700; background: #fff4d6; }
+  .detail-badge--out  { color: #b42318; background: #fee4e2; }
   @media (max-width: 1120px) {
     .inventory-panels {
       grid-template-columns: 1fr;
@@ -203,6 +242,14 @@
     <div class="inventory-value">${{ total_inventory_profit_value|floatformat:2 }}</div>
     <div class="inventory-subvalue">Venta potencial menos valor al costo.</div>
   </div>
+</div>
+
+<div id="chart-detail">
+  <h3 id="chart-detail-title"></h3>
+  <table>
+    <thead><tr><th>Producto</th><th>Color</th><th>Talla</th><th>Stock</th></tr></thead>
+    <tbody id="chart-detail-body"></tbody>
+  </table>
 </div>
 
 <div class="inventory-charts">
@@ -314,9 +361,33 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
 (function() {
-  const labels = {{ chart_labels_json|safe }};
-  const stock  = {{ chart_stock_json|safe }};
-  const health = {{ chart_health_json|safe }};
+  const labels        = {{ chart_labels_json|safe }};
+  const stock         = {{ chart_stock_json|safe }};
+  const health        = {{ chart_health_json|safe }};
+  const byProduct     = {{ chart_variants_by_product_json|safe }};
+  const allVariants   = {{ all_variants_data_json|safe }};
+
+  const detail      = document.getElementById('chart-detail');
+  const detailTitle = document.getElementById('chart-detail-title');
+  const detailBody  = document.getElementById('chart-detail-body');
+
+  function badgeClass(s) {
+    return s === 0 ? 'detail-badge--out' : s <= 3 ? 'detail-badge--low' : 'detail-badge--ok';
+  }
+
+  function showVariants(title, rows) {
+    detailTitle.textContent = title;
+    detailBody.innerHTML = rows.map(r =>
+      `<tr>
+        <td>${r.producto || ''}</td>
+        <td>${r.color}</td>
+        <td>${r.talla}</td>
+        <td><span class="detail-badge ${badgeClass(r.stock)}">${r.stock} pzs</span></td>
+      </tr>`
+    ).join('');
+    detail.style.display = 'block';
+    detail.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
 
   const barColors = stock.map(v => v === 0 ? '#fee4e2' : v <= 3 ? '#fff4d6' : '#d1fadf');
   const barBorder = stock.map(v => v === 0 ? '#b42318' : v <= 3 ? '#9a6700' : '#05603a');
@@ -341,14 +412,26 @@
       scales: {
         x: { beginAtZero: true, grid: { color: '#f3f4f6' }, ticks: { precision: 0 } },
         y: { grid: { display: false } }
+      },
+      onClick(_, elements) {
+        if (!elements.length) return;
+        const producto = labels[elements[0].index];
+        const variants = (byProduct[producto] || []).map(v => ({ ...v, producto }));
+        showVariants(`Variantes — ${producto}`, variants);
+      },
+      onHover(e, elements) {
+        e.native.target.style.cursor = elements.length ? 'pointer' : 'default';
       }
     }
   });
 
+  const healthLabels = ['OK (>3)', 'Bajo (1-3)', 'Agotado'];
+  const healthThresholds = [v => v.stock > 3, v => v.stock > 0 && v.stock <= 3, v => v.stock === 0];
+
   new Chart(document.getElementById('chartHealth'), {
     type: 'doughnut',
     data: {
-      labels: ['OK (>3)', 'Bajo (1-3)', 'Agotado'],
+      labels: healthLabels,
       datasets: [{
         data: health,
         backgroundColor: ['#d1fadf', '#fff4d6', '#fee4e2'],
@@ -361,6 +444,15 @@
       cutout: '68%',
       plugins: {
         legend: { position: 'bottom', labels: { padding: 16, font: { size: 13 } } }
+      },
+      onClick(_, elements) {
+        if (!elements.length) return;
+        const idx = elements[0].index;
+        const filtered = allVariants.filter(healthThresholds[idx]);
+        showVariants(`Variantes ${healthLabels[idx]}`, filtered);
+      },
+      onHover(e, elements) {
+        e.native.target.style.cursor = elements.length ? 'pointer' : 'default';
       }
     }
   });
