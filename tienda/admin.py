@@ -30,8 +30,12 @@ from .models import (
     BankMovement,
     Order,
     OrderItem,
+    OrderReturn,
     Producto,
+    ProductImage,
     ProductVariant,
+    PromoCode,
+    SizeChart,
     InventoryMovement,
     ExpenseCategory,
     Expense,
@@ -1143,6 +1147,35 @@ class CashRegisterClosureForm(forms.Form):
     nota = forms.CharField(widget=forms.Textarea(attrs={"rows": 3}), required=False, label="Nota")
 
 
+class ProductImageInline(admin.TabularInline):
+    model = ProductImage
+    extra = 1
+    fields = ("image", "image_preview", "alt_text", "order")
+    readonly_fields = ("image_preview",)
+
+    @admin.display(description="Vista previa")
+    def image_preview(self, obj):
+        if obj.image:
+            return format_html('<img src="{}" style="height:56px;border-radius:8px;object-fit:cover;">', obj.image.url)
+        return "—"
+
+
+class SizeChartInline(admin.TabularInline):
+    model = SizeChart
+    extra = 1
+    fields = ("talla", "pecho", "cintura", "largo", "hombro", "manga")
+    verbose_name = "Medida"
+    verbose_name_plural = "Tabla de tallas"
+
+
+class OrderReturnInline(admin.TabularInline):
+    model = OrderReturn
+    extra = 0
+    fields = ("reason", "status", "refund_amount", "restock", "notes")
+    readonly_fields = ()
+    show_change_link = True
+
+
 class ProductVariantInline(admin.TabularInline):
     model = ProductVariant
     extra = 0
@@ -1300,7 +1333,7 @@ class ProductoAdmin(admin.ModelAdmin):
         "variant_generation_panel",
         "stock_count_panel",
     )
-    inlines = [ProductVariantInline, InventoryMovementInline]
+    inlines = [ProductImageInline, SizeChartInline, ProductVariantInline, InventoryMovementInline]
     fieldsets = (
         ("Base del producto", {
             "fields": ("nombre", "slug_imagen", "descripcion")
@@ -1944,7 +1977,7 @@ class OrderAdmin(admin.ModelAdmin):
         "skydrop_summary",
     )
     autocomplete_fields = ("customer", "cashier")
-    inlines = [OrderItemInline, ShippingAddressInline, ShippingUpdateInline]
+    inlines = [OrderItemInline, ShippingAddressInline, ShippingUpdateInline, OrderReturnInline]
     actions = [
         marcar_pedidos_completados,
         marcar_pedidos_enviados,
@@ -4574,3 +4607,151 @@ class NewsletterSubscriberAdmin(admin.ModelAdmin):
     search_fields = ("email",)
     date_hierarchy = "created_at"
     ordering = ("-created_at",)
+
+
+# ─────────────────────────────────────────────
+#  PROMO CODES
+# ─────────────────────────────────────────────
+
+@admin.register(PromoCode)
+class PromoCodeAdmin(admin.ModelAdmin):
+    list_display = (
+        "code", "discount_type_display", "discount_value_display",
+        "min_purchase", "uses_count", "max_uses_display",
+        "expiration_date", "active",
+    )
+    list_filter = ("active", "discount_type", "created_at")
+    search_fields = ("code", "description")
+    list_editable = ("active",)
+    readonly_fields = ("uses_count", "created_at", "promo_stats")
+    ordering = ("-created_at",)
+    fieldsets = (
+        ("Código", {"fields": ("code", "description", "active")}),
+        ("Descuento", {"fields": ("discount_type", "discount_value", "min_purchase")}),
+        ("Límites", {"fields": ("max_uses", "uses_count", "expiration_date")}),
+        ("Estadísticas", {"fields": ("promo_stats", "created_at")}),
+    )
+
+    @admin.display(description="Tipo")
+    def discount_type_display(self, obj):
+        icons = {"percentage": "％", "fixed": "$", "free_shipping": "🚚"}
+        return format_html("{} {}", icons.get(obj.discount_type, ""), obj.get_discount_type_display())
+
+    @admin.display(description="Descuento")
+    def discount_value_display(self, obj):
+        if obj.discount_type == "percentage":
+            return f"{obj.discount_value:.0f}%"
+        if obj.discount_type == "fixed":
+            return f"${obj.discount_value:.2f}"
+        return "Envío gratis"
+
+    @admin.display(description="Usos máx.")
+    def max_uses_display(self, obj):
+        return obj.max_uses if obj.max_uses is not None else "∞"
+
+    @admin.display(description="Resumen de uso")
+    def promo_stats(self, obj):
+        if not obj.pk:
+            return "Guarda el código primero."
+        total_orders = obj.orders.count()
+        total_discount = sum(o.discount_amount for o in obj.orders.all())
+        return format_html(
+            "<strong>{}</strong> órdenes · <strong>${:.2f}</strong> en descuentos aplicados",
+            total_orders, total_discount,
+        )
+
+    @admin.action(description="Activar códigos seleccionados")
+    def activar(self, request, queryset):
+        queryset.update(active=True)
+        self.message_user(request, f"{queryset.count()} código(s) activados.")
+
+    @admin.action(description="Desactivar códigos seleccionados")
+    def desactivar(self, request, queryset):
+        queryset.update(active=False)
+        self.message_user(request, f"{queryset.count()} código(s) desactivados.")
+
+    @admin.action(description="Resetear conteo de usos")
+    def resetear_usos(self, request, queryset):
+        queryset.update(uses_count=0)
+        self.message_user(request, f"Conteo reseteado en {queryset.count()} código(s).")
+
+    actions = [activar, desactivar, resetear_usos]
+
+
+# ─────────────────────────────────────────────
+#  DEVOLUCIONES / RMA
+# ─────────────────────────────────────────────
+
+@admin.register(OrderReturn)
+class OrderReturnAdmin(admin.ModelAdmin):
+    list_display = (
+        "id", "order_link", "reason_display", "status_badge",
+        "refund_amount", "restock", "created_at",
+    )
+    list_filter = ("status", "reason", "restock", "created_at")
+    search_fields = ("order__id", "notes")
+    readonly_fields = ("created_at", "updated_at", "order_summary")
+    ordering = ("-created_at",)
+    fieldsets = (
+        ("Devolución", {"fields": ("order", "order_summary", "reason", "status", "restock")}),
+        ("Reembolso", {"fields": ("refund_amount", "notes")}),
+        ("Fechas", {"fields": ("created_at", "updated_at")}),
+    )
+
+    @admin.display(description="Orden", ordering="order__id")
+    def order_link(self, obj):
+        url = reverse("admin:tienda_order_change", args=[obj.order_id])
+        return format_html('<a href="{}">#{}</a>', url, obj.order_id)
+
+    @admin.display(description="Razón")
+    def reason_display(self, obj):
+        return obj.get_reason_display()
+
+    @admin.display(description="Estado")
+    def status_badge(self, obj):
+        colors = {
+            "requested": ("#92400e", "#fef3c7"),
+            "approved":  ("#1e40af", "#dbeafe"),
+            "received":  ("#065f46", "#d1fae5"),
+            "restocked": ("#065f46", "#d1fae5"),
+            "refunded":  ("#374151", "#f3f4f6"),
+            "rejected":  ("#991b1b", "#fee2e2"),
+        }
+        fg, bg = colors.get(obj.status, ("#374151", "#f3f4f6"))
+        return format_html(
+            '<span style="padding:3px 10px;border-radius:999px;font-size:12px;'
+            'font-weight:700;background:{};color:{}">{}</span>',
+            bg, fg, obj.get_status_display(),
+        )
+
+    @admin.display(description="Resumen de la orden")
+    def order_summary(self, obj):
+        if not obj.order_id:
+            return "—"
+        order = obj.order
+        items_html = "".join(
+            f"<li>{i.product.nombre} × {i.quantity} (${i.price})</li>"
+            for i in order.items.all()
+        )
+        return format_html(
+            "<ul style='margin:0;padding-left:1.2rem'>{}</ul>"
+            "<p style='margin:.5rem 0 0'>Total orden: <strong>${}</strong></p>",
+            items_html, order.total_price,
+        )
+
+    @admin.action(description="Aprobar devoluciones seleccionadas")
+    def aprobar(self, request, queryset):
+        queryset.filter(status="requested").update(status="approved")
+        self.message_user(request, "Devoluciones aprobadas.")
+
+    @admin.action(description="Marcar como recibidas en bodega")
+    def recibir(self, request, queryset):
+        queryset.filter(status="approved").update(status="received")
+        self.message_user(request, "Marcadas como recibidas.")
+
+    @admin.action(description="Rechazar devoluciones seleccionadas")
+    def rechazar(self, request, queryset):
+        queryset.filter(status="requested").update(status="rejected")
+        self.message_user(request, "Devoluciones rechazadas.")
+
+    actions = [aprobar, recibir, rechazar]
