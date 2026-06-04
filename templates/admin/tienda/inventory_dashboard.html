@@ -152,16 +152,56 @@
     border: 1px solid #e8e8ef;
     border-radius: 18px;
     box-shadow: 0 12px 30px rgba(16,24,40,0.06);
-    padding: 1.2rem 1.4rem;
+    overflow: hidden;
     margin-bottom: 1.2rem;
+    animation: detailIn .2s ease;
+  }
+  @keyframes detailIn {
+    from { opacity:0; transform:translateY(-6px); }
+    to   { opacity:1; transform:translateY(0); }
   }
   #chart-detail-header {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    margin-bottom: 1rem;
+    gap: 1rem;
+    padding: 1rem 1.3rem;
+    background: #f8fafc;
+    border-bottom: 1px solid #e8e8ef;
+    flex-wrap: wrap;
   }
-  #chart-detail-header h3 { margin: 0; font-size: 1rem; }
+  #chart-detail-title {
+    font-size: 0.97rem;
+    font-weight: 700;
+    color: #111827;
+    flex: 1;
+    min-width: 160px;
+  }
+  .detail-filters {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .detail-filters select {
+    padding: 0.35rem 0.7rem;
+    border: 1px solid #d7d7e2;
+    border-radius: 10px;
+    font-size: 0.84rem;
+    color: #374151;
+    background: #fff;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.5rem center;
+    padding-right: 1.8rem;
+  }
+  .detail-filters select:focus { outline: none; border-color: #6366f1; }
+  #detail-count {
+    font-size: 0.82rem;
+    color: #6b7280;
+    white-space: nowrap;
+  }
   #chart-detail-close {
     cursor: pointer;
     color: #6b7280;
@@ -170,61 +210,109 @@
     border-radius: 50%;
     width: 28px; height: 28px;
     display: flex; align-items: center; justify-content: center;
-    font-size: 1rem;
+    font-size: 0.95rem;
+    flex-shrink: 0;
   }
-  #chart-detail-close:hover { background: #e5e7eb; }
+  #chart-detail-close:hover { background: #e5e7eb; color: #111827; }
+  #chart-detail-body { overflow-x: auto; }
   .detail-table {
     width: 100%;
     border-collapse: collapse;
+    min-width: 480px;
   }
-  .detail-table th {
+  .detail-table thead th {
+    position: sticky;
+    top: 0;
+    background: #fff;
     color: #6b7280;
-    font-size: 0.82rem;
+    font-size: 0.79rem;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
-    padding: 0 0.7rem 0.7rem;
+    letter-spacing: 0.07em;
+    padding: 0.65rem 1rem;
     text-align: left;
     border-bottom: 1px solid #ececf3;
+    white-space: nowrap;
   }
+  .detail-table tbody tr { transition: background .12s; }
+  .detail-table tbody tr:hover { background: #f8fafc; }
   .detail-table td {
-    padding: 0.75rem 0.7rem;
-    border-bottom: 1px solid #ececf3;
+    padding: 0.8rem 1rem;
+    border-bottom: 1px solid #f3f4f6;
     vertical-align: middle;
   }
-  .detail-table tr:last-child td { border-bottom: none; }
+  .detail-table tbody tr:last-child td { border-bottom: none; }
   .dv-meta {
     display: flex;
     align-items: center;
-    gap: 0.85rem;
-    min-width: 180px;
+    gap: 0.75rem;
   }
   .dv-swatch {
-    width: 44px; height: 44px;
-    border-radius: 12px;
-    flex: 0 0 44px;
-    border: 1px solid rgba(0,0,0,0.10);
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    flex: 0 0 36px;
+    box-shadow: 0 0 0 3px #fff, 0 0 0 4.5px rgba(0,0,0,0.12);
   }
-  .dv-name { font-weight: 700; color: #111827; display: block; }
-  .dv-sub  { font-size: 0.82rem; color: #6b7280; }
-  .dv-stock-wrap { min-width: 100px; }
+  .dv-name { font-weight: 600; color: #111827; font-size: 0.92rem; }
+  .dv-sub  { font-size: 0.79rem; color: #9ca3af; margin-top: 1px; }
+  .dv-talla {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    background: #f3f4f6;
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: #374151;
+    letter-spacing: 0.02em;
+  }
+  .dv-stock-cell { min-width: 140px; }
+  .dv-stock-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
   .dv-stock-num {
-    font-size: 1.35rem;
+    font-size: 1.25rem;
     font-weight: 800;
     color: #111827;
     line-height: 1;
+    min-width: 28px;
   }
   .dv-bar-wrap {
-    margin-top: 5px;
+    flex: 1;
     background: #f3f4f6;
     border-radius: 999px;
-    height: 5px;
+    height: 6px;
     overflow: hidden;
-    width: 100%;
   }
-  .dv-bar { height: 100%; border-radius: 999px; transition: width 0.35s ease; }
-  .dv-bar--ok  { background: #16a34a; }
-  .dv-bar--low { background: #d97706; }
-  .dv-bar--out { background: #e11d48; width: 100% !important; }
+  .dv-bar { height: 100%; border-radius: 999px; transition: width .4s cubic-bezier(.4,0,.2,1); }
+  .dv-bar--ok  { background: linear-gradient(90deg, #34d399, #059669); }
+  .dv-bar--low { background: linear-gradient(90deg, #fbbf24, #d97706); }
+  .dv-bar--out { background: #fca5a5; }
+  .dv-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.28rem 0.65rem;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 0.8rem;
+    white-space: nowrap;
+  }
+  .dv-badge::before { content:''; width:6px; height:6px; border-radius:50%; display:inline-block; }
+  .dv-badge--ok   { color:#065f46; background:#d1fae5; }
+  .dv-badge--ok::before { background:#10b981; }
+  .dv-badge--low  { color:#92400e; background:#fef3c7; }
+  .dv-badge--low::before { background:#f59e0b; }
+  .dv-badge--out  { color:#991b1b; background:#fee2e2; }
+  .dv-badge--out::before { background:#ef4444; }
+  .detail-empty {
+    text-align: center;
+    padding: 2rem;
+    color: #9ca3af;
+    font-size: 0.9rem;
+  }
   @media (max-width: 1120px) {
     .inventory-panels {
       grid-template-columns: 1fr;
@@ -286,14 +374,19 @@
 
 <div id="chart-detail">
   <div id="chart-detail-header">
-    <h3 id="chart-detail-title"></h3>
+    <span id="chart-detail-title"></span>
+    <div class="detail-filters">
+      <select id="filter-color"><option value="">Todos los colores</option></select>
+      <select id="filter-talla"><option value="">Todas las tallas</option></select>
+      <span id="detail-count"></span>
+    </div>
     <button id="chart-detail-close" title="Cerrar">✕</button>
   </div>
   <div id="chart-detail-body">
     <table class="detail-table">
       <thead>
         <tr>
-          <th>Color / Producto</th>
+          <th>Color</th>
           <th>Talla</th>
           <th>Stock</th>
           <th>Estado</th>
@@ -421,64 +514,88 @@
 
   const detail      = document.getElementById('chart-detail');
   const detailTitle = document.getElementById('chart-detail-title');
-  const detailBody  = document.getElementById('chart-detail-body');
+  const selColor    = document.getElementById('filter-color');
+  const selTalla    = document.getElementById('filter-talla');
+  const countEl     = document.getElementById('detail-count');
+  const tbody       = document.getElementById('chart-detail-rows');
 
   document.getElementById('chart-detail-close').onclick = () => { detail.style.display = 'none'; };
 
   const COLOR_MAP = {
-    black:'#111827', negro:'#111827', white:'#f9fafb', blanco:'#f9fafb',
-    cream:'#fef9c3', beige:'#e5d8b0', mocha:'#6b3f2a', shadow:'#374151',
-    grey:'#9ca3af', gray:'#9ca3af', gris:'#9ca3af',
-    navy:'#1e3a5f', darknavy:'#1e3a5f', blue:'#3b82f6', azul:'#3b82f6',
-    red:'#ef4444', rojo:'#ef4444', burgundy:'#7f1d1d', darkburgundy:'#7f1d1d',
+    black:'#111827', negro:'#111827', white:'#f3f4f6', blanco:'#f3f4f6',
+    cream:'#fef08a', beige:'#e5d8b0', mocha:'#6b3f2a', shadow:'#374151',
+    grey:'#9ca3af',  gray:'#9ca3af',  gris:'#9ca3af',
+    navy:'#1e3a5f',  darknavy:'#1e3a5f', blue:'#3b82f6', azul:'#3b82f6',
+    red:'#ef4444',   rojo:'#ef4444',  burgundy:'#7f1d1d', darkburgundy:'#7f1d1d',
     concrete:'#d1d5db', green:'#16a34a', olive:'#65a30d',
-    sand:'#d6c9a6', camel:'#c49a6c', tan:'#c49a6c', brown:'#92400e',
+    sand:'#d6c9a6',  camel:'#c49a6c', tan:'#c49a6c', brown:'#92400e',
   };
 
-  const BADGE = {
-    ok:  { cls:'inventory-badge inventory-badge--ok',     label:'OK'      },
-    low: { cls:'inventory-badge inventory-badge--warn',   label:'Bajo'    },
-    out: { cls:'inventory-badge inventory-badge--danger', label:'Agotado' },
-  };
-
-  function swatchColor(colorName) {
-    const key = (colorName || '').toLowerCase().replace(/[\s_-]/g, '');
-    return COLOR_MAP[key] || '#e5e7eb';
+  function swatchColor(c) {
+    return COLOR_MAP[(c||'').toLowerCase().replace(/[\s_-]/g,'')] || '#e5e7eb';
   }
+  function sk(s) { return s === 0 ? 'out' : s <= 3 ? 'low' : 'ok'; }
+  const BADGE_LABEL = { ok:'OK', low:'Bajo', out:'Agotado' };
 
-  function statusKey(s) { return s === 0 ? 'out' : s <= 3 ? 'low' : 'ok'; }
+  let _allRows = [];
 
-  function showVariants(title, rows) {
+  function renderRows(rows) {
     const maxStock = Math.max(...rows.map(r => r.stock), 1);
-    detailTitle.textContent = title;
-    const tbody = document.getElementById('chart-detail-rows');
+    if (!rows.length) {
+      tbody.innerHTML = `<tr><td colspan="4" class="detail-empty">Sin variantes para este filtro.</td></tr>`;
+      countEl.textContent = '0 variantes';
+      return;
+    }
+    countEl.textContent = `${rows.length} variante${rows.length !== 1 ? 's' : ''}`;
     tbody.innerHTML = rows.map(r => {
-      const sk  = statusKey(r.stock);
-      const pct = r.stock === 0 ? 100 : Math.max(6, Math.round((r.stock / maxStock) * 100));
+      const s   = sk(r.stock);
+      const pct = r.stock === 0 ? 0 : Math.max(4, Math.round((r.stock / maxStock) * 100));
       const bg  = swatchColor(r.color);
-      const subLine = r.producto ? `<span class="dv-sub">${r.producto}</span>` : '';
+      const sub = r.producto ? `<div class="dv-sub">${r.producto}</div>` : '';
       return `<tr>
         <td>
           <div class="dv-meta">
             <div class="dv-swatch" style="background:${bg}"></div>
-            <div>
-              <span class="dv-name">${r.color}</span>
-              ${subLine}
-            </div>
+            <div><div class="dv-name">${r.color}</div>${sub}</div>
           </div>
         </td>
-        <td><span style="font-weight:600">${r.talla}</span></td>
-        <td>
-          <div class="dv-stock-wrap">
-            <div class="dv-stock-num">${r.stock}</div>
-            <div class="dv-bar-wrap">
-              <div class="dv-bar dv-bar--${sk}" style="width:${pct}%"></div>
-            </div>
+        <td><span class="dv-talla">${r.talla}</span></td>
+        <td class="dv-stock-cell">
+          <div class="dv-stock-row">
+            <span class="dv-stock-num">${r.stock}</span>
+            <div class="dv-bar-wrap"><div class="dv-bar dv-bar--${s}" style="width:${pct}%"></div></div>
           </div>
         </td>
-        <td><span class="${BADGE[sk].cls}">${BADGE[sk].label}</span></td>
+        <td><span class="dv-badge dv-badge--${s}">${BADGE_LABEL[s]}</span></td>
       </tr>`;
     }).join('');
+  }
+
+  function applyFilters() {
+    const fc = selColor.value;
+    const ft = selTalla.value;
+    const filtered = _allRows.filter(r =>
+      (!fc || r.color === fc) && (!ft || r.talla === ft)
+    );
+    renderRows(filtered);
+  }
+
+  selColor.onchange = applyFilters;
+  selTalla.onchange = applyFilters;
+
+  function showVariants(title, rows) {
+    _allRows = rows;
+    detailTitle.textContent = title;
+
+    const colors = [...new Set(rows.map(r => r.color))].sort();
+    const tallas = [...new Set(rows.map(r => r.talla))].sort();
+
+    selColor.innerHTML = `<option value="">Todos los colores</option>` +
+      colors.map(c => `<option value="${c}">${c}</option>`).join('');
+    selTalla.innerHTML = `<option value="">Todas las tallas</option>` +
+      tallas.map(t => `<option value="${t}">${t}</option>`).join('');
+
+    renderRows(rows);
     detail.style.display = 'block';
     detail.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
