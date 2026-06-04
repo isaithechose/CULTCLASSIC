@@ -152,96 +152,79 @@
     border: 1px solid #e8e8ef;
     border-radius: 18px;
     box-shadow: 0 12px 30px rgba(16,24,40,0.06);
-    padding: 1.4rem 1.6rem;
+    padding: 1.2rem 1.4rem;
     margin-bottom: 1.2rem;
   }
   #chart-detail-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 1.2rem;
+    margin-bottom: 1rem;
   }
-  #chart-detail-header h3 {
-    margin: 0;
-    font-size: 1.05rem;
-  }
+  #chart-detail-header h3 { margin: 0; font-size: 1rem; }
   #chart-detail-close {
     cursor: pointer;
     color: #6b7280;
-    font-size: 1.3rem;
-    line-height: 1;
     background: #f3f4f6;
     border: none;
     border-radius: 50%;
     width: 28px; height: 28px;
     display: flex; align-items: center; justify-content: center;
+    font-size: 1rem;
   }
   #chart-detail-close:hover { background: #e5e7eb; }
-  #chart-detail-body {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    gap: 0.85rem;
+  .detail-table {
+    width: 100%;
+    border-collapse: collapse;
   }
-  .vcard {
-    border-radius: 14px;
-    padding: 1rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    border: 1.5px solid;
-    position: relative;
-    overflow: hidden;
+  .detail-table th {
+    color: #6b7280;
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 0 0.7rem 0.7rem;
+    text-align: left;
+    border-bottom: 1px solid #ececf3;
   }
-  .vcard--ok  { background: #f0fdf4; border-color: #86efac; }
-  .vcard--low { background: #fffbeb; border-color: #fcd34d; }
-  .vcard--out { background: #fff1f2; border-color: #fda4af; }
-  .vcard-swatch {
-    width: 28px; height: 28px;
-    border-radius: 50%;
-    border: 2px solid rgba(0,0,0,0.12);
-    flex-shrink: 0;
+  .detail-table td {
+    padding: 0.75rem 0.7rem;
+    border-bottom: 1px solid #ececf3;
+    vertical-align: middle;
   }
-  .vcard-top {
+  .detail-table tr:last-child td { border-bottom: none; }
+  .dv-meta {
     display: flex;
     align-items: center;
-    gap: 0.55rem;
+    gap: 0.85rem;
+    min-width: 180px;
   }
-  .vcard-name {
-    font-weight: 700;
-    font-size: 0.85rem;
+  .dv-swatch {
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    flex: 0 0 44px;
+    border: 1px solid rgba(0,0,0,0.10);
+  }
+  .dv-name { font-weight: 700; color: #111827; display: block; }
+  .dv-sub  { font-size: 0.82rem; color: #6b7280; }
+  .dv-stock-wrap { min-width: 100px; }
+  .dv-stock-num {
+    font-size: 1.35rem;
+    font-weight: 800;
     color: #111827;
-    line-height: 1.2;
-  }
-  .vcard-sub {
-    font-size: 0.78rem;
-    color: #6b7280;
-  }
-  .vcard-stock {
-    font-size: 2rem;
-    font-weight: 900;
     line-height: 1;
-    color: #111827;
   }
-  .vcard-stock-label {
-    font-size: 0.72rem;
-    color: #6b7280;
-    text-transform: uppercase;
-    letter-spacing: 0.07em;
-  }
-  .vcard-bar-wrap {
-    background: rgba(0,0,0,0.07);
+  .dv-bar-wrap {
+    margin-top: 5px;
+    background: #f3f4f6;
     border-radius: 999px;
-    height: 6px;
+    height: 5px;
     overflow: hidden;
+    width: 100%;
   }
-  .vcard-bar {
-    height: 100%;
-    border-radius: 999px;
-    transition: width 0.4s ease;
-  }
-  .vcard--ok  .vcard-bar { background: #16a34a; }
-  .vcard--low .vcard-bar { background: #d97706; }
-  .vcard--out .vcard-bar { background: #e11d48; }
+  .dv-bar { height: 100%; border-radius: 999px; transition: width 0.35s ease; }
+  .dv-bar--ok  { background: #16a34a; }
+  .dv-bar--low { background: #d97706; }
+  .dv-bar--out { background: #e11d48; width: 100% !important; }
   @media (max-width: 1120px) {
     .inventory-panels {
       grid-template-columns: 1fr;
@@ -306,7 +289,19 @@
     <h3 id="chart-detail-title"></h3>
     <button id="chart-detail-close" title="Cerrar">✕</button>
   </div>
-  <div id="chart-detail-body"></div>
+  <div id="chart-detail-body">
+    <table class="detail-table">
+      <thead>
+        <tr>
+          <th>Color / Producto</th>
+          <th>Talla</th>
+          <th>Stock</th>
+          <th>Estado</th>
+        </tr>
+      </thead>
+      <tbody id="chart-detail-rows"></tbody>
+    </table>
+  </div>
 </div>
 
 <div class="inventory-charts">
@@ -440,41 +435,49 @@
     sand:'#d6c9a6', camel:'#c49a6c', tan:'#c49a6c', brown:'#92400e',
   };
 
+  const BADGE = {
+    ok:  { cls:'inventory-badge inventory-badge--ok',     label:'OK'      },
+    low: { cls:'inventory-badge inventory-badge--warn',   label:'Bajo'    },
+    out: { cls:'inventory-badge inventory-badge--danger', label:'Agotado' },
+  };
+
   function swatchColor(colorName) {
     const key = (colorName || '').toLowerCase().replace(/[\s_-]/g, '');
     return COLOR_MAP[key] || '#e5e7eb';
   }
 
-  function statusClass(s) {
-    return s === 0 ? 'out' : s <= 3 ? 'low' : 'ok';
-  }
+  function statusKey(s) { return s === 0 ? 'out' : s <= 3 ? 'low' : 'ok'; }
 
   function showVariants(title, rows) {
     const maxStock = Math.max(...rows.map(r => r.stock), 1);
     detailTitle.textContent = title;
-    detailBody.innerHTML = rows.map(r => {
-      const sc = statusClass(r.stock);
-      const pct = Math.round((r.stock / maxStock) * 100);
-      const swatch = swatchColor(r.color);
-      const productLine = r.producto ? `<div class="vcard-sub">${r.producto}</div>` : '';
-      return `
-        <div class="vcard vcard--${sc}">
-          <div class="vcard-top">
-            <div class="vcard-swatch" style="background:${swatch}"></div>
+    const tbody = document.getElementById('chart-detail-rows');
+    tbody.innerHTML = rows.map(r => {
+      const sk  = statusKey(r.stock);
+      const pct = r.stock === 0 ? 100 : Math.max(6, Math.round((r.stock / maxStock) * 100));
+      const bg  = swatchColor(r.color);
+      const subLine = r.producto ? `<span class="dv-sub">${r.producto}</span>` : '';
+      return `<tr>
+        <td>
+          <div class="dv-meta">
+            <div class="dv-swatch" style="background:${bg}"></div>
             <div>
-              <div class="vcard-name">${r.color}</div>
-              <div class="vcard-sub">Talla ${r.talla}</div>
-              ${productLine}
+              <span class="dv-name">${r.color}</span>
+              ${subLine}
             </div>
           </div>
-          <div>
-            <div class="vcard-stock">${r.stock}</div>
-            <div class="vcard-stock-label">piezas</div>
+        </td>
+        <td><span style="font-weight:600">${r.talla}</span></td>
+        <td>
+          <div class="dv-stock-wrap">
+            <div class="dv-stock-num">${r.stock}</div>
+            <div class="dv-bar-wrap">
+              <div class="dv-bar dv-bar--${sk}" style="width:${pct}%"></div>
+            </div>
           </div>
-          <div class="vcard-bar-wrap">
-            <div class="vcard-bar" style="width:${pct}%"></div>
-          </div>
-        </div>`;
+        </td>
+        <td><span class="${BADGE[sk].cls}">${BADGE[sk].label}</span></td>
+      </tr>`;
     }).join('');
     detail.style.display = 'block';
     detail.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
