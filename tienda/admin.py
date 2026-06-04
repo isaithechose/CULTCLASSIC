@@ -2032,12 +2032,24 @@ class ProductoAdmin(admin.ModelAdmin):
                 }
             )
 
+        all_colors = sorted({v.color for v in variants if v.color})
+        all_tallas = sorted({v.talla for v in variants if v.talla})
+        all_categorias = sorted({
+            v.product.categoria.nombre
+            for v in variants
+            if v.product.categoria
+        })
+
         context = dict(
             self.admin_site.each_context(request),
             title="Inventario por variantes",
             rows=rows,
             formset=formset,
             opts=self.model._meta,
+            filter_colors=all_colors,
+            filter_tallas=all_tallas,
+            filter_categorias=all_categorias,
+            total_variants=len(variants),
         )
         return TemplateResponse(request, "admin/tienda/inventory_matrix.html", context)
 

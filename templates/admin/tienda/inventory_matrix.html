@@ -216,6 +216,69 @@
   .mx-muted { font-size: .82rem; color: #9ca3af; }
 
   .mx-empty { padding: 2rem; text-align: center; color: #9ca3af; }
+
+  /* ── filter bar ── */
+  .mx-filters {
+    background: #fff;
+    border: 1px solid #e8e8ef;
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(16,24,40,.04);
+    padding: .85rem 1.1rem;
+    display: flex;
+    gap: .6rem;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+  }
+  .mx-search {
+    flex: 1; min-width: 180px;
+    padding: .42rem .9rem;
+    border: 1.5px solid #d7d7e2;
+    border-radius: 10px;
+    font-size: .88rem;
+    background: #f9fafb;
+    color: #111827;
+  }
+  .mx-search:focus { outline: none; border-color: #6366f1; background: #fff; }
+  .mx-select {
+    padding: .4rem .8rem;
+    border: 1.5px solid #d7d7e2;
+    border-radius: 10px;
+    font-size: .84rem;
+    color: #374151;
+    background: #f9fafb;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right .55rem center;
+    padding-right: 1.8rem;
+  }
+  .mx-select:focus { outline: none; border-color: #6366f1; }
+  .mx-estado-btns { display: flex; gap: .35rem; }
+  .mx-estado-btn {
+    padding: .35rem .75rem;
+    border-radius: 9px;
+    font-size: .78rem;
+    font-weight: 700;
+    cursor: pointer;
+    border: 1.5px solid transparent;
+    transition: .12s;
+    white-space: nowrap;
+  }
+  .mx-estado-btn[data-estado="all"]  { background:#f3f4f6; color:#374151; border-color:#e5e7eb; }
+  .mx-estado-btn[data-estado="ok"]   { background:#d1fae5; color:#065f46; border-color:#6ee7b7; }
+  .mx-estado-btn[data-estado="low"]  { background:#fef3c7; color:#92400e; border-color:#fcd34d; }
+  .mx-estado-btn[data-estado="out"]  { background:#fee2e2; color:#991b1b; border-color:#fca5a5; }
+  .mx-estado-btn.active { box-shadow: 0 0 0 2px currentColor; }
+  .mx-filter-count { font-size: .82rem; color: #9ca3af; white-space: nowrap; margin-left: auto; }
+  .mx-clear-btn {
+    font-size: .8rem; color: #6b7280; cursor: pointer;
+    background: none; border: none; text-decoration: underline;
+    white-space: nowrap;
+  }
+  .mx-clear-btn:hover { color: #111827; }
+
   @media (max-width: 900px) { .mx-header { flex-direction: column; } }
 </style>
 {% endblock %}
@@ -239,6 +302,35 @@
     <strong>Qué cambia aquí —</strong> edita el stock real por <strong>variante</strong> (producto + color + talla). Solo se registran movimientos donde el número cambia. Productos sin variantes no aparecen aquí.
   </div>
 
+  <div class="mx-filters">
+    <input class="mx-search" id="mx-search" type="search" placeholder="Buscar producto o color…" autocomplete="off">
+
+    <select class="mx-select" id="mx-cat">
+      <option value="">Todas las categorías</option>
+      {% for cat in filter_categorias %}<option value="{{ cat|lower }}">{{ cat }}</option>{% endfor %}
+    </select>
+
+    <select class="mx-select" id="mx-color">
+      <option value="">Todos los colores</option>
+      {% for c in filter_colors %}<option value="{{ c|lower }}">{{ c }}</option>{% endfor %}
+    </select>
+
+    <select class="mx-select" id="mx-talla">
+      <option value="">Todas las tallas</option>
+      {% for t in filter_tallas %}<option value="{{ t|lower }}">{{ t }}</option>{% endfor %}
+    </select>
+
+    <div class="mx-estado-btns">
+      <button class="mx-estado-btn active" data-estado="all">Todos</button>
+      <button class="mx-estado-btn" data-estado="ok">OK</button>
+      <button class="mx-estado-btn" data-estado="low">Bajo</button>
+      <button class="mx-estado-btn" data-estado="out">Agotado</button>
+    </div>
+
+    <button class="mx-clear-btn" id="mx-clear">Limpiar filtros</button>
+    <span class="mx-filter-count" id="mx-count">{{ total_variants }} variantes</span>
+  </div>
+
   {% if rows %}
   <form method="post">
     {% csrf_token %}
@@ -260,7 +352,11 @@
         </thead>
         <tbody>
           {% for row in rows %}
-          <tr data-stock="{{ row.variant.stock }}">
+          <tr data-stock="{{ row.variant.stock }}"
+              data-product="{{ row.variant.product.nombre|lower }}"
+              data-color="{{ row.variant.color|lower }}"
+              data-talla="{{ row.variant.talla|lower }}"
+              data-cat="{{ row.variant.product.categoria.nombre|lower|default:'' }}">
             <td class="mx-cell-stripe"><span class="mx-row-stripe"></span></td>
             <td>
               <div class="mx-product">
@@ -380,6 +476,56 @@
     stepper.querySelector('.mx-inc').addEventListener('click', () => {
       input.value = (parseInt(input.value) || 0) + 1;
     });
+  });
+
+  // Filters
+  const mxRows     = Array.from(document.querySelectorAll('#mx-table tbody tr'));
+  const mxSearch   = document.getElementById('mx-search');
+  const mxCat      = document.getElementById('mx-cat');
+  const mxColor    = document.getElementById('mx-color');
+  const mxTalla    = document.getElementById('mx-talla');
+  const mxCount    = document.getElementById('mx-count');
+  const mxEstados  = Array.from(document.querySelectorAll('.mx-estado-btn'));
+  let   mxEstado   = 'all';
+
+  function skStatus(s) { return s === 0 ? 'out' : s <= 3 ? 'low' : 'ok'; }
+
+  function mxApply() {
+    const q     = (mxSearch.value || '').toLowerCase();
+    const cat   = mxCat.value;
+    const color = mxColor.value;
+    const talla = mxTalla.value;
+    let vis = 0;
+    mxRows.forEach(tr => {
+      const s = parseInt(tr.dataset.stock) || 0;
+      const ok =
+        (!q     || tr.dataset.product.includes(q) || tr.dataset.color.includes(q)) &&
+        (!cat   || tr.dataset.cat   === cat)   &&
+        (!color || tr.dataset.color === color) &&
+        (!talla || tr.dataset.talla === talla) &&
+        (mxEstado === 'all' || skStatus(s) === mxEstado);
+      tr.style.display = ok ? '' : 'none';
+      if (ok) vis++;
+    });
+    mxCount.textContent = vis + ' variante' + (vis !== 1 ? 's' : '');
+  }
+
+  [mxSearch, mxCat, mxColor, mxTalla].forEach(el => el.addEventListener('input', mxApply));
+
+  mxEstados.forEach(btn => {
+    btn.addEventListener('click', () => {
+      mxEstados.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      mxEstado = btn.dataset.estado;
+      mxApply();
+    });
+  });
+
+  document.getElementById('mx-clear').addEventListener('click', () => {
+    mxSearch.value = ''; mxCat.value = ''; mxColor.value = ''; mxTalla.value = '';
+    mxEstado = 'all';
+    mxEstados.forEach(b => b.classList.toggle('active', b.dataset.estado === 'all'));
+    mxApply();
   });
 })();
 </script>
