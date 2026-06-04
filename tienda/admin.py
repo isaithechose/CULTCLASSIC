@@ -11,6 +11,7 @@ from django.template.response import TemplateResponse
 from django.urls import path, reverse
 from django.utils.html import escape, format_html
 import calendar
+import json
 from datetime import date, timedelta
 
 from .skydrop import SkydropError, create_shipment, map_skydrop_status, quote_order, sync_shipment
@@ -1695,19 +1696,30 @@ class ProductoAdmin(admin.ModelAdmin):
         total_inventory_sale_value = Decimal("0.00")
         products_using_variants = 0
         products_using_general_stock = 0
+        chart_labels = []
+        chart_stock = []
 
         for product in active_products.prefetch_related("variants"):
             variants = [variant for variant in product.variants.all() if variant.activo]
             if variants:
                 products_using_variants += 1
-                total_units += sum(variant.stock for variant in variants)
+                p_stock = sum(variant.stock for variant in variants)
+                total_units += p_stock
                 total_inventory_cost_value += sum(_variant_unit_cost(variant) * Decimal(str(variant.stock)) for variant in variants)
                 total_inventory_sale_value += sum(_variant_sale_price(variant) * Decimal(str(variant.stock)) for variant in variants)
             else:
                 products_using_general_stock += 1
-                total_units += product.stock
+                p_stock = product.stock
+                total_units += p_stock
                 total_inventory_cost_value += _product_unit_cost(product) * Decimal(str(product.stock))
                 total_inventory_sale_value += _money(product.precio) * Decimal(str(product.stock))
+            chart_labels.append(product.nombre)
+            chart_stock.append(p_stock)
+
+        all_variants_list = list(active_variants)
+        variants_ok = sum(1 for v in all_variants_list if v.stock > 3)
+        variants_low = sum(1 for v in all_variants_list if 0 < v.stock <= 3)
+        variants_out = sum(1 for v in all_variants_list if v.stock == 0)
 
         context = dict(
             self.admin_site.each_context(request),
@@ -1729,6 +1741,9 @@ class ProductoAdmin(admin.ModelAdmin):
             stock_count_bulk_url=reverse("admin:tienda_producto_stock_count_bulk"),
             inventory_matrix_url=reverse("admin:tienda_producto_inventory_matrix"),
             opts=self.model._meta,
+            chart_labels_json=json.dumps(chart_labels),
+            chart_stock_json=json.dumps(chart_stock),
+            chart_health_json=json.dumps([variants_ok, variants_low, variants_out]),
         )
         return TemplateResponse(request, "admin/tienda/inventory_dashboard.html", context)
 

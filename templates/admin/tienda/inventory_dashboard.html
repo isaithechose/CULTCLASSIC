@@ -129,8 +129,28 @@
     color: #6b7280;
     margin: 0;
   }
+  .inventory-charts {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1.2rem;
+  }
+  .inventory-chart-panel {
+    background: #fff;
+    border: 1px solid #e8e8ef;
+    border-radius: 18px;
+    box-shadow: 0 12px 30px rgba(16, 24, 40, 0.06);
+    padding: 1.2rem 1.4rem;
+  }
+  .inventory-chart-panel h3 {
+    margin: 0 0 1rem;
+    font-size: 1rem;
+  }
   @media (max-width: 1120px) {
     .inventory-panels {
+      grid-template-columns: 1fr;
+    }
+    .inventory-charts {
       grid-template-columns: 1fr;
     }
   }
@@ -182,6 +202,17 @@
     <div class="inventory-label">Utilidad potencial</div>
     <div class="inventory-value">${{ total_inventory_profit_value|floatformat:2 }}</div>
     <div class="inventory-subvalue">Venta potencial menos valor al costo.</div>
+  </div>
+</div>
+
+<div class="inventory-charts">
+  <div class="inventory-chart-panel">
+    <h3>Stock por producto</h3>
+    <canvas id="chartStock" height="110"></canvas>
+  </div>
+  <div class="inventory-chart-panel">
+    <h3>Estado de variantes</h3>
+    <canvas id="chartHealth"></canvas>
   </div>
 </div>
 
@@ -279,4 +310,60 @@
     <p class="inventory-empty">Todavía no hay movimientos registrados.</p>
   {% endif %}
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+(function() {
+  const labels = {{ chart_labels_json|safe }};
+  const stock  = {{ chart_stock_json|safe }};
+  const health = {{ chart_health_json|safe }};
+
+  const barColors = stock.map(v => v === 0 ? '#fee4e2' : v <= 3 ? '#fff4d6' : '#d1fadf');
+  const barBorder = stock.map(v => v === 0 ? '#b42318' : v <= 3 ? '#9a6700' : '#05603a');
+
+  new Chart(document.getElementById('chartStock'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Piezas',
+        data: stock,
+        backgroundColor: barColors,
+        borderColor: barBorder,
+        borderWidth: 1.5,
+        borderRadius: 8,
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { beginAtZero: true, grid: { color: '#f3f4f6' }, ticks: { precision: 0 } },
+        y: { grid: { display: false } }
+      }
+    }
+  });
+
+  new Chart(document.getElementById('chartHealth'), {
+    type: 'doughnut',
+    data: {
+      labels: ['OK (>3)', 'Bajo (1-3)', 'Agotado'],
+      datasets: [{
+        data: health,
+        backgroundColor: ['#d1fadf', '#fff4d6', '#fee4e2'],
+        borderColor: ['#05603a', '#9a6700', '#b42318'],
+        borderWidth: 2,
+      }]
+    },
+    options: {
+      responsive: true,
+      cutout: '68%',
+      plugins: {
+        legend: { position: 'bottom', labels: { padding: 16, font: { size: 13 } } }
+      }
+    }
+  });
+})();
+</script>
 {% endblock %}
