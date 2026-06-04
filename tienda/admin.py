@@ -1378,6 +1378,11 @@ class ProductoAdmin(admin.ModelAdmin):
         urls = super().get_urls()
         custom_urls = [
             path(
+                "design-catalog/",
+                self.admin_site.admin_view(self.design_catalog_view),
+                name="tienda_producto_design_catalog",
+            ),
+            path(
                 "inventory-matrix/",
                 self.admin_site.admin_view(self.inventory_matrix_view),
                 name="tienda_producto_inventory_matrix",
@@ -1792,6 +1797,128 @@ class ProductoAdmin(admin.ModelAdmin):
             all_variants_data_json=json.dumps(all_variants_data),
         )
         return TemplateResponse(request, "admin/tienda/inventory_dashboard.html", context)
+
+    def design_catalog_view(self, request):
+        import shutil
+        from django.utils.text import slugify
+
+        CATALOG_DIR = os.path.join(settings.MEDIA_ROOT, "diseños_nuevos")
+        EXTS = {".jpg", ".jpeg", ".png", ".gif", ".webp"}
+        os.makedirs(CATALOG_DIR, exist_ok=True)
+
+        categoria, _ = Categoria.objects.get_or_create(nombre="Diseños")
+        precio_default = Decimal(str(getattr(settings, "IMPORT_DISENO_PRECIO_DEFAULT", "199.00")))
+        stock_default = getattr(settings, "IMPORT_DISENO_STOCK_DEFAULT", 10)
+
+        msg_ok = msg_err = ""
+
+        if request.method == "POST":
+            action = request.POST.get("action")
+
+            # ── upload ──
+            if action == "upload":
+                uploaded = request.FILES.getlist("files")
+                saved = 0
+                for f in uploaded:
+                    ext = os.path.splitext(f.name)[1].lower()
+                    if ext not in EXTS:
+                        continue
+                    dest = os.path.join(CATALOG_DIR, f.name)
+                    with open(dest, "wb") as out:
+                        for chunk in f.chunks():
+                            out.write(chunk)
+                    saved += 1
+                msg_ok = f"{saved} archivo(s) subido(s)." if saved else "Ningún archivo válido."
+
+            # ── import single ──
+            elif action == "import":
+                filename = request.POST.get("file", "").strip()
+                filepath = os.path.join(CATALOG_DIR, filename)
+                if filename and os.path.exists(filepath):
+                    nombre = os.path.splitext(filename)[0]
+                    precio = Decimal(request.POST.get("precio", str(precio_default)))
+                    if not Producto.objects.filter(nombre=nombre).exists():
+                        Producto.objects.create(
+                            nombre=nombre,
+                            descripcion="Diseño del catálogo.",
+                            precio=precio,
+                            costo=0,
+                            stock=stock_default,
+                            imagen=f"diseños_nuevos/{filename}",
+                            categoria=categoria,
+                            tallas_disponibles="S,M,L,XL",
+                            colores_disponibles="Negro,Blanco",
+                            disponible=True,
+                        )
+                        msg_ok = f'"{nombre}" importado como producto.'
+                    else:
+                        msg_err = f'"{nombre}" ya existe como producto.'
+                else:
+                    msg_err = "Archivo no encontrado."
+
+            # ── import all ──
+            elif action == "import_all":
+                precio = Decimal(request.POST.get("precio", str(precio_default)))
+                creados = 0
+                for f in os.listdir(CATALOG_DIR):
+                    if os.path.splitext(f)[1].lower() not in EXTS:
+                        continue
+                    nombre = os.path.splitext(f)[0]
+                    if not Producto.objects.filter(nombre=nombre).exists():
+                        Producto.objects.create(
+                            nombre=nombre,
+                            descripcion="Diseño del catálogo.",
+                            precio=precio,
+                            costo=0,
+                            stock=stock_default,
+                            imagen=f"diseños_nuevos/{f}",
+                            categoria=categoria,
+                            tallas_disponibles="S,M,L,XL",
+                            colores_disponibles="Negro,Blanco",
+                            disponible=True,
+                        )
+                        creados += 1
+                msg_ok = f"{creados} diseño(s) importado(s) como productos."
+
+            # ── delete ──
+            elif action == "delete":
+                filename = request.POST.get("file", "").strip()
+                filepath = os.path.join(CATALOG_DIR, filename)
+                if filename and os.path.exists(filepath):
+                    os.remove(filepath)
+                    msg_ok = f'"{filename}" eliminado.'
+                else:
+                    msg_err = "Archivo no encontrado."
+
+        # build file list
+        imported_names = set(
+            Producto.objects.filter(categoria=categoria)
+            .values_list("nombre", flat=True)
+        )
+        files = []
+        for f in sorted(os.listdir(CATALOG_DIR)):
+            if os.path.splitext(f)[1].lower() not in EXTS:
+                continue
+            nombre = os.path.splitext(f)[0]
+            files.append({
+                "filename": f,
+                "nombre": nombre,
+                "url": f"{settings.MEDIA_URL}diseños_nuevos/{f}",
+                "imported": nombre in imported_names,
+                "product": Producto.objects.filter(nombre=nombre).first(),
+            })
+
+        context = dict(
+            self.admin_site.each_context(request),
+            title="Catálogo de Diseños",
+            subtitle=f"{len(files)} diseños en disco · {sum(1 for f in files if f['imported'])} importados",
+            files=files,
+            precio_default=precio_default,
+            msg_ok=msg_ok,
+            msg_err=msg_err,
+            opts=self.model._meta,
+        )
+        return TemplateResponse(request, "admin/tienda/design_catalog.html", context)
 
     def inventory_matrix_view(self, request):
         variants = list(

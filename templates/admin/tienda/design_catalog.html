@@ -1,0 +1,423 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+  .dc-wrap { max-width: 1400px; }
+
+  .dc-header {
+    background: #fff;
+    border: 1px solid #e8e8ef;
+    border-radius: 18px;
+    box-shadow: 0 12px 30px rgba(16,24,40,.06);
+    padding: 1.3rem 1.5rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .dc-header h1 { margin: 0 0 .2rem; font-size: 1.2rem; }
+  .dc-header p  { margin: 0; color: #6b7280; font-size: .88rem; }
+  .dc-actions   { display: flex; gap: .6rem; flex-wrap: wrap; align-items: center; }
+
+  /* upload zone */
+  .dc-upload-zone {
+    background: #fff;
+    border: 2px dashed #d1d5db;
+    border-radius: 16px;
+    padding: 2rem 1.5rem;
+    text-align: center;
+    margin-bottom: 1rem;
+    transition: border-color .15s, background .15s;
+    cursor: pointer;
+  }
+  .dc-upload-zone.drag-over { border-color: #6366f1; background: #eef2ff; }
+  .dc-upload-zone i { font-size: 2rem; color: #9ca3af; display: block; margin-bottom: .5rem; }
+  .dc-upload-zone p { margin: 0 0 .75rem; color: #6b7280; font-size: .9rem; }
+  #dc-file-input { display: none; }
+
+  /* filters bar */
+  .dc-bar {
+    display: flex;
+    gap: .75rem;
+    align-items: center;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+  }
+  .dc-bar input[type=search] {
+    flex: 1;
+    min-width: 200px;
+    padding: .45rem .9rem;
+    border: 1.5px solid #d7d7e2;
+    border-radius: 10px;
+    font-size: .88rem;
+    background: #fff;
+    color: #111827;
+  }
+  .dc-bar input[type=search]:focus { outline: none; border-color: #6366f1; }
+  .dc-filter-btn {
+    padding: .4rem .9rem;
+    border-radius: 10px;
+    font-size: .82rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1.5px solid #e5e7eb;
+    background: #fff;
+    color: #6b7280;
+    transition: .12s;
+  }
+  .dc-filter-btn.active, .dc-filter-btn:hover { background: #111827; color: #fff; border-color: #111827; }
+  .dc-count { font-size: .82rem; color: #9ca3af; white-space: nowrap; }
+
+  /* grid */
+  .dc-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  .dc-card {
+    background: #fff;
+    border: 1px solid #e8e8ef;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(16,24,40,.05);
+    display: flex;
+    flex-direction: column;
+    transition: box-shadow .15s, transform .15s;
+    position: relative;
+  }
+  .dc-card:hover { box-shadow: 0 8px 24px rgba(16,24,40,.1); transform: translateY(-2px); }
+  .dc-card.is-imported { border-color: #86efac; }
+  .dc-card.is-imported::after {
+    content: '✓ Importado';
+    position: absolute;
+    top: 8px; left: 8px;
+    background: #065f46;
+    color: #fff;
+    font-size: .72rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 999px;
+  }
+  .dc-thumb-wrap {
+    aspect-ratio: 1;
+    background: #f8f8fb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  .dc-thumb-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    padding: .5rem;
+  }
+  .dc-card-body {
+    padding: .7rem .85rem;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: .45rem;
+  }
+  .dc-name {
+    font-size: .82rem;
+    font-weight: 600;
+    color: #111827;
+    line-height: 1.3;
+    word-break: break-word;
+  }
+  .dc-card-actions {
+    display: flex;
+    gap: .4rem;
+    flex-wrap: wrap;
+    margin-top: auto;
+    padding-top: .35rem;
+  }
+  .dc-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: .3rem;
+    padding: .3rem .65rem;
+    border-radius: 8px;
+    font-size: .78rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    white-space: nowrap;
+    text-decoration: none;
+  }
+  .dc-btn-import { background: #111827; color: #fff; }
+  .dc-btn-import:hover { background: #374151; color: #fff; }
+  .dc-btn-view { background: #f3f4f6; color: #374151; }
+  .dc-btn-view:hover { background: #e5e7eb; }
+  .dc-btn-del  { background: #fee2e2; color: #991b1b; margin-left: auto; }
+  .dc-btn-del:hover { background: #fecaca; }
+
+  /* import-all bar */
+  .dc-import-all {
+    background: #fff;
+    border: 1px solid #e8e8ef;
+    border-radius: 16px;
+    padding: 1rem 1.3rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+  }
+  .dc-import-all label { font-size: .88rem; color: #374151; }
+  .dc-import-all input[type=number] {
+    width: 100px;
+    padding: .35rem .6rem;
+    border: 1.5px solid #d7d7e2;
+    border-radius: 8px;
+    font-size: .88rem;
+  }
+
+  /* empty */
+  .dc-empty {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: #9ca3af;
+    background: #fff;
+    border: 1px solid #e8e8ef;
+    border-radius: 18px;
+  }
+  .dc-empty i { font-size: 3rem; display: block; margin-bottom: 1rem; }
+
+  /* messages */
+  .dc-msg-ok  { background: #d1fae5; color: #065f46; padding: .7rem 1rem; border-radius: 12px; margin-bottom: 1rem; font-weight: 600; font-size: .9rem; }
+  .dc-msg-err { background: #fee2e2; color: #991b1b; padding: .7rem 1rem; border-radius: 12px; margin-bottom: 1rem; font-weight: 600; font-size: .9rem; }
+
+  /* modal */
+  .dc-modal-bg {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.6);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+  }
+  .dc-modal-bg.open { display: flex; }
+  .dc-modal {
+    background: #fff;
+    border-radius: 20px;
+    padding: 1.5rem;
+    max-width: 480px;
+    width: 90%;
+    box-shadow: 0 24px 60px rgba(0,0,0,.25);
+  }
+  .dc-modal h3 { margin: 0 0 1rem; font-size: 1rem; }
+  .dc-modal img { width: 100%; border-radius: 12px; object-fit: contain; max-height: 300px; background: #f8f8fb; margin-bottom: 1rem; }
+  .dc-modal-row { display: flex; align-items: center; gap: .75rem; margin-bottom: .75rem; flex-wrap: wrap; }
+  .dc-modal label { font-size: .85rem; color: #374151; }
+  .dc-modal input[type=number] { flex: 1; min-width: 100px; padding: .4rem .7rem; border: 1.5px solid #d7d7e2; border-radius: 8px; font-size: .9rem; }
+  .dc-modal-close { position: absolute; top: 1rem; right: 1rem; background: #f3f4f6; border: none; border-radius: 50%; width: 30px; height: 30px; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dc-wrap">
+
+  <div class="dc-header">
+    <div>
+      <h1>Catálogo de Diseños</h1>
+      <p>{{ subtitle }}</p>
+    </div>
+    <div class="dc-actions">
+      <button class="button" onclick="document.getElementById('dc-upload-trigger').click()">
+        <i class="ti ti-upload"></i> Subir diseños
+      </button>
+      <a class="button default" href="{% url 'admin:tienda_producto_changelist' %}?categoria__nombre=Diseños">
+        Ver como productos
+      </a>
+    </div>
+  </div>
+
+  {% if msg_ok %}<div class="dc-msg-ok">✓ {{ msg_ok }}</div>{% endif %}
+  {% if msg_err %}<div class="dc-msg-err">✕ {{ msg_err }}</div>{% endif %}
+
+  <!-- upload zone -->
+  <form method="post" enctype="multipart/form-data" id="dc-upload-form">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="upload">
+    <input type="file" id="dc-file-input" id="dc-upload-trigger" name="files" multiple accept=".jpg,.jpeg,.png,.webp,.gif">
+    <div class="dc-upload-zone" id="dc-drop-zone">
+      <i class="ti ti-photo-up"></i>
+      <p>Arrastra archivos aquí o <strong>haz click para seleccionar</strong></p>
+      <p style="font-size:.8rem;color:#9ca3af">PNG, JPG, WEBP — sin límite de cantidad</p>
+    </div>
+  </form>
+
+  <!-- import-all -->
+  {% if files %}
+  <form method="post" class="dc-import-all">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="import_all">
+    <span style="font-weight:600;font-size:.9rem;">Importar todos los no importados</span>
+    <label>Precio:</label>
+    <input type="number" name="precio" value="{{ precio_default }}" min="0" step="0.01">
+    <button type="submit" class="button default">Importar todos</button>
+  </form>
+  {% endif %}
+
+  <!-- search + filters -->
+  <div class="dc-bar">
+    <input type="search" id="dc-search" placeholder="Buscar diseño…" autocomplete="off">
+    <button class="dc-filter-btn active" data-filter="all">Todos</button>
+    <button class="dc-filter-btn" data-filter="pending">Sin importar</button>
+    <button class="dc-filter-btn" data-filter="imported">Importados</button>
+    <span class="dc-count" id="dc-visible-count">{{ files|length }} diseños</span>
+  </div>
+
+  {% if files %}
+  <div class="dc-grid" id="dc-grid">
+    {% for f in files %}
+    <div class="dc-card {% if f.imported %}is-imported{% endif %}"
+         data-name="{{ f.nombre|lower }}"
+         data-imported="{{ f.imported|yesno:'1,0' }}">
+      <div class="dc-thumb-wrap">
+        <img src="{{ f.url }}" alt="{{ f.nombre }}" loading="lazy">
+      </div>
+      <div class="dc-card-body">
+        <div class="dc-name">{{ f.nombre }}</div>
+        <div class="dc-card-actions">
+          {% if not f.imported %}
+          <button class="dc-btn dc-btn-import"
+                  data-file="{{ f.filename }}"
+                  data-url="{{ f.url }}"
+                  data-nombre="{{ f.nombre }}"
+                  data-precio="{{ precio_default }}"
+                  onclick="openImportModal(this)">
+            <i class="ti ti-plus"></i> Importar
+          </button>
+          {% else %}
+          <a class="dc-btn dc-btn-view"
+             href="{% url 'admin:tienda_producto_change' f.product.id %}">
+            <i class="ti ti-external-link"></i> Ver producto
+          </a>
+          {% endif %}
+          <form method="post" style="margin-left:auto"
+                onsubmit="return confirm('¿Eliminar {{ f.filename }}?')">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="delete">
+            <input type="hidden" name="file" value="{{ f.filename }}">
+            <button type="submit" class="dc-btn dc-btn-del">
+              <i class="ti ti-trash"></i>
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% else %}
+  <div class="dc-empty">
+    <i class="ti ti-photo-off"></i>
+    <p>No hay diseños en el catálogo.<br>Sube imágenes PNG o JPG para empezar.</p>
+  </div>
+  {% endif %}
+
+</div>
+
+<!-- import modal -->
+<div class="dc-modal-bg" id="dc-modal">
+  <div class="dc-modal" style="position:relative">
+    <button class="dc-modal-close" onclick="closeModal()">✕</button>
+    <h3 id="modal-title">Importar diseño</h3>
+    <img id="modal-img" src="" alt="">
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="import">
+      <input type="hidden" name="file" id="modal-file">
+      <div class="dc-modal-row">
+        <label>Precio de venta ($):</label>
+        <input type="number" name="precio" id="modal-precio" min="0" step="0.01" value="{{ precio_default }}">
+      </div>
+      <div style="display:flex;gap:.6rem;justify-content:flex-end">
+        <button type="button" class="button" onclick="closeModal()">Cancelar</button>
+        <button type="submit" class="button default">Importar como producto</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+(function() {
+  /* ── upload zone ── */
+  var dropZone  = document.getElementById('dc-drop-zone');
+  var fileInput = document.getElementById('dc-file-input');
+  var uploadForm = document.getElementById('dc-upload-form');
+
+  document.getElementById('dc-upload-trigger') && void 0;
+  dropZone.addEventListener('click', function() { fileInput.click(); });
+  fileInput.addEventListener('change', function() {
+    if (fileInput.files.length) uploadForm.submit();
+  });
+  dropZone.addEventListener('dragover', function(e) {
+    e.preventDefault(); dropZone.classList.add('drag-over');
+  });
+  dropZone.addEventListener('dragleave', function() { dropZone.classList.remove('drag-over'); });
+  dropZone.addEventListener('drop', function(e) {
+    e.preventDefault(); dropZone.classList.remove('drag-over');
+    var dt = new DataTransfer();
+    Array.from(e.dataTransfer.files).forEach(function(f) { dt.items.add(f); });
+    fileInput.files = dt.files;
+    if (fileInput.files.length) uploadForm.submit();
+  });
+
+  /* ── search + filter ── */
+  var cards   = Array.from(document.querySelectorAll('.dc-card'));
+  var countEl = document.getElementById('dc-visible-count');
+  var search  = document.getElementById('dc-search');
+  var filterBtns = Array.from(document.querySelectorAll('.dc-filter-btn'));
+  var currentFilter = 'all';
+
+  function applyFilters() {
+    var q = (search.value || '').toLowerCase();
+    var visible = 0;
+    cards.forEach(function(c) {
+      var nameMatch = c.dataset.name.includes(q);
+      var filterMatch = currentFilter === 'all' ||
+        (currentFilter === 'imported' && c.dataset.imported === '1') ||
+        (currentFilter === 'pending'  && c.dataset.imported === '0');
+      var show = nameMatch && filterMatch;
+      c.style.display = show ? '' : 'none';
+      if (show) visible++;
+    });
+    countEl.textContent = visible + ' diseño' + (visible !== 1 ? 's' : '');
+  }
+
+  search.addEventListener('input', applyFilters);
+  filterBtns.forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      filterBtns.forEach(function(b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      currentFilter = btn.dataset.filter;
+      applyFilters();
+    });
+  });
+
+  /* ── modal ── */
+  window.openImportModal = function(btn) {
+    document.getElementById('modal-title').textContent = 'Importar — ' + btn.dataset.nombre;
+    document.getElementById('modal-img').src  = btn.dataset.url;
+    document.getElementById('modal-file').value = btn.dataset.file;
+    document.getElementById('modal-precio').value = btn.dataset.precio;
+    document.getElementById('dc-modal').classList.add('open');
+  };
+  window.closeModal = function() {
+    document.getElementById('dc-modal').classList.remove('open');
+  };
+  document.getElementById('dc-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+  });
+})();
+</script>
+{% endblock %}

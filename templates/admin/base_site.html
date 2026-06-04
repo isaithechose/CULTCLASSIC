@@ -623,8 +623,8 @@
     <a class="cc-nav-item {% if 'categoria' in request.path %}active{% endif %}" href="{% url 'admin:tienda_categoria_changelist' %}">
       <i class="ti ti-tag cc-nav-icon" aria-hidden="true"></i><span class="cc-nav-label">Categorias</span>
     </a>
-    <a class="cc-nav-item" href="{% url 'admin:tienda_producto_changelist' %}?categoria__nombre=Diseños">
-      <i class="ti ti-palette cc-nav-icon" aria-hidden="true"></i><span class="cc-nav-label">Disenos</span>
+    <a class="cc-nav-item {% if 'design-catalog' in request.path %}active{% endif %}" href="{% url 'admin:tienda_producto_design_catalog' %}">
+      <i class="ti ti-palette cc-nav-icon" aria-hidden="true"></i><span class="cc-nav-label">Diseños</span>
     </a>
   </div>
 
