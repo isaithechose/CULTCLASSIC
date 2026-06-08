@@ -6,25 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
     <meta name="description" content="{% block meta_description %}Cult Clasiccs - Ropa y diseños con estilo limpio, compra simple y envío claro.{% endblock %}" />
     <meta name="author" content="Cult Clasiccs" />
-    {% if facebook_domain_verification %}
-    <meta name="facebook-domain-verification" content="{{ facebook_domain_verification }}" />
-    {% endif %}
-    {% if google_site_verification %}
-    <meta name="google-site-verification" content="{{ google_site_verification }}" />
-    {% endif %}
-    {% if google_merchant_verification %}
-    <meta name="google-merchant-center-verification" content="{{ google_merchant_verification }}" />
-    {% endif %}
-    {% if ga4_measurement_id %}
-    <!-- Google Analytics 4 -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id={{ ga4_measurement_id }}"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', '{{ ga4_measurement_id }}', { anonymize_ip: true });
-    </script>
-    {% endif %}
     <title>{% block title %}Cult Clasiccs | Ropa y diseños con estilo limpio{% endblock %}</title>
     <!-- Open Graph -->
     <meta property="og:site_name" content="Cult Clasiccs" />
@@ -81,13 +62,7 @@
                     const metaPixelEvents = JSON.parse(metaPixelEventsNode.textContent);
                     metaPixelEvents.forEach((eventItem) => {
                         if (eventItem && eventItem.name) {
-                            // event_id se pasa para que Meta deduplique entre pixel browser y CAPI server-side
-                            const opts = eventItem.event_id ? { eventID: eventItem.event_id } : undefined;
-                            if (opts) {
-                                fbq('track', eventItem.name, eventItem.payload || {}, opts);
-                            } else {
-                                fbq('track', eventItem.name, eventItem.payload || {});
-                            }
+                            fbq('track', eventItem.name, eventItem.payload || {});
                         }
                     });
                 } catch (error) {
@@ -120,9 +95,6 @@
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="{% url 'tienda:archivo' %}">Archivo</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'tienda:mayoreo' %}">Mayoreo</a>
                 </li>
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" id="navbarDesigns" href="#" role="button"
@@ -313,6 +285,46 @@
     }
 }
 
+.cc-whatsapp {
+    position: fixed;
+    bottom: 1.2rem;
+    right: 1.2rem;
+    z-index: 1090;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: #25D366;
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 24px rgba(37, 211, 102, 0.4), 0 2px 8px rgba(0,0,0,0.2);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    text-decoration: none;
+}
+.cc-whatsapp:hover,
+.cc-whatsapp:focus {
+    transform: scale(1.08);
+    color: #fff;
+    box-shadow: 0 10px 30px rgba(37, 211, 102, 0.55), 0 4px 12px rgba(0,0,0,0.25);
+}
+.cc-whatsapp::before {
+    content: "";
+    position: absolute;
+    inset: -6px;
+    border-radius: 50%;
+    background: rgba(37, 211, 102, 0.35);
+    z-index: -1;
+    animation: cc-whatsapp-pulse 2s ease-out infinite;
+}
+@keyframes cc-whatsapp-pulse {
+    0%   { transform: scale(0.85); opacity: 0.75; }
+    100% { transform: scale(1.35); opacity: 0; }
+}
+@media (max-width: 575.98px) {
+    .cc-whatsapp { bottom: 0.85rem; right: 0.85rem; width: 52px; height: 52px; }
+}
+
 .cc-newsletter {
     position: fixed; inset: 0; z-index: 1080;
     display: flex; align-items: center; justify-content: center;
@@ -492,6 +504,15 @@
     }
 })();
 </script>
+
+<!-- WhatsApp flotante -->
+<a href="https://wa.me/526567589153?text={% if producto %}Hola%2C+me+interesa+el+producto+{{ producto.nombre|urlencode }}{% else %}Hola%2C+tengo+una+duda{% endif %}"
+   class="cc-whatsapp" target="_blank" rel="noopener noreferrer"
+   aria-label="Chatear por WhatsApp">
+    <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor" aria-hidden="true">
+        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.149-.67.15-.198.297-.768.967-.941 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.693.626.712.226 1.36.194 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413"/>
+    </svg>
+</a>
 
 <!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
