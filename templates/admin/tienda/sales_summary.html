@@ -1,0 +1,171 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+  .ss-wrap { background:#fff; border:1px solid #e8e8ef; border-radius:14px; padding:1.25rem; margin-bottom:1.25rem; box-shadow:0 12px 30px rgba(16,24,40,0.06); }
+  .ss-kpis { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:1rem; margin-bottom:1.25rem; }
+  .ss-kpi { background:#fff; border:1px solid #e8e8ef; border-radius:14px; padding:1.1rem; box-shadow:0 6px 18px rgba(16,24,40,0.05); }
+  .ss-kpi__label { color:#6b7280; font-size:0.78rem; letter-spacing:0.08em; text-transform:uppercase; }
+  .ss-kpi__value { color:#111827; font-size:1.85rem; font-weight:800; margin-top:0.25rem; }
+  .ss-kpi__hint  { color:#6b7280; font-size:0.82rem; margin-top:0.2rem; }
+  .ss-filter { display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap; margin-bottom:0.85rem; }
+  .ss-filter a { padding:0.45rem 0.85rem; border-radius:999px; border:1px solid #d0d5dd; color:#344054; text-decoration:none; font-size:0.85rem; }
+  .ss-filter a.is-active { background:#111827; color:#fff; border-color:#111827; }
+  .ss-section-title { font-size:1.05rem; font-weight:700; color:#111827; margin:0 0 0.65rem; }
+  table.ss-table { width:100%; border-collapse:collapse; }
+  table.ss-table th, table.ss-table td { padding:0.6rem 0.7rem; border-bottom:1px solid #edf0f5; text-align:left; vertical-align:middle; }
+  table.ss-table th { color:#6b7280; font-size:0.72rem; letter-spacing:0.08em; text-transform:uppercase; background:#f8fafc; }
+  .badge-tone { display:inline-block; padding:0.18rem 0.55rem; border-radius:999px; font-size:0.72rem; font-weight:700; }
+  .tone-danger  { background:#fee2e2; color:#b91c1c; }
+  .tone-warn    { background:#fef3c7; color:#92400e; }
+  .tone-ok      { background:#dcfce7; color:#166534; }
+  .tone-neutral { background:#f1f5f9; color:#475569; }
+  details.ss-prod { background:#fff; border:1px solid #e8e8ef; border-radius:12px; margin-bottom:0.65rem; padding:0.85rem 1rem; }
+  details.ss-prod summary { cursor:pointer; font-weight:700; color:#111827; display:flex; justify-content:space-between; gap:1rem; align-items:center; flex-wrap:wrap; }
+  details.ss-prod summary::-webkit-details-marker { display:none; }
+  details.ss-prod summary::before { content:"▸"; color:#9ca3af; margin-right:0.4rem; transition:transform 0.15s; display:inline-block; }
+  details.ss-prod[open] summary::before { transform:rotate(90deg); }
+  .ss-prod__meta { display:flex; gap:1rem; color:#6b7280; font-size:0.82rem; font-weight:600; }
+  .ss-prod__meta strong { color:#111827; font-weight:800; }
+  .ss-chips { display:flex; flex-wrap:wrap; gap:0.35rem; margin:0.6rem 0; }
+  .ss-chip { background:#f1f5f9; color:#334155; padding:0.22rem 0.6rem; border-radius:999px; font-size:0.74rem; font-weight:600; }
+  .ss-chip strong { color:#0f172a; }
+  .ss-muted { color:#9ca3af; font-style:italic; }
+</style>
+{% endblock %}
+
+{% block content %}
+<h1>{{ title }}</h1>
+<p style="color:#6b7280;margin-top:-0.5rem;">{{ subtitle }} · desde <strong>{{ cutoff|date:"d M Y" }}</strong></p>
+
+<div class="ss-filter">
+  <span style="color:#6b7280;font-size:0.85rem;">Periodo:</span>
+  {% for d in "7,30,90,180,365"|cut:" "|cut:""|stringformat:"s"|slice:":0" %}{% endfor %}
+  <a href="?days=7"  {% if days == 7 %}class="is-active"{% endif %}>7 dias</a>
+  <a href="?days=30" {% if days == 30 %}class="is-active"{% endif %}>30 dias</a>
+  <a href="?days=90" {% if days == 90 %}class="is-active"{% endif %}>90 dias</a>
+  <a href="?days=180" {% if days == 180 %}class="is-active"{% endif %}>6 meses</a>
+  <a href="?days=365" {% if days == 365 %}class="is-active"{% endif %}>1 año</a>
+</div>
+
+<div class="ss-kpis">
+  <div class="ss-kpi">
+    <div class="ss-kpi__label">Piezas vendidas</div>
+    <div class="ss-kpi__value">{{ total_units }}</div>
+    <div class="ss-kpi__hint">en {{ days }} dias</div>
+  </div>
+  <div class="ss-kpi">
+    <div class="ss-kpi__label">Ingreso bruto</div>
+    <div class="ss-kpi__value">${{ total_revenue|floatformat:0 }}</div>
+    <div class="ss-kpi__hint">suma de subtotales (sin envio ni descuento)</div>
+  </div>
+  <div class="ss-kpi">
+    <div class="ss-kpi__label">Productos distintos vendidos</div>
+    <div class="ss-kpi__value">{{ product_summary|length }}</div>
+  </div>
+  <div class="ss-kpi">
+    <div class="ss-kpi__label">A reabastecer</div>
+    <div class="ss-kpi__value" style="color:#b91c1c;">{{ urgent_restock|length }}</div>
+    <div class="ss-kpi__hint">variantes urgentes o pronto</div>
+  </div>
+</div>
+
+{% if out_of_stock_movers %}
+<div class="ss-wrap" style="border-left:4px solid #b91c1c;">
+  <h3 class="ss-section-title">🚨 Vendiendose y SIN stock (oportunidad perdida)</h3>
+  <table class="ss-table">
+    <thead><tr><th>Producto</th><th>Color</th><th>Talla</th><th>Vendidas {{ days }}d</th><th>Stock</th><th>Accion</th></tr></thead>
+    <tbody>
+    {% for r in out_of_stock_movers %}
+      <tr>
+        <td><strong>{{ r.product }}</strong></td>
+        <td>{{ r.color }}</td>
+        <td>{{ r.talla }}</td>
+        <td>{{ r.units }}</td>
+        <td style="color:#b91c1c;font-weight:800;">0</td>
+        <td><span class="badge-tone tone-danger">{{ r.recomendacion }}</span></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<div class="ss-wrap">
+  <h3 class="ss-section-title">🛒 Recomendacion de compra (top 30 por urgencia)</h3>
+  {% if urgent_restock %}
+  <table class="ss-table">
+    <thead><tr><th>Producto</th><th>Color</th><th>Talla</th><th>Vendidas</th><th>Stock</th><th>Dias restantes</th><th>Accion</th></tr></thead>
+    <tbody>
+    {% for r in urgent_restock %}
+      <tr>
+        <td><strong>{{ r.product }}</strong></td>
+        <td>{{ r.color }}</td>
+        <td>{{ r.talla }}</td>
+        <td>{{ r.units }}</td>
+        <td>{{ r.stock|default:"—" }}</td>
+        <td>{% if r.days_left is not None %}{{ r.days_left }}d{% else %}—{% endif %}</td>
+        <td><span class="badge-tone tone-{{ r.tone }}">{{ r.recomendacion }}</span></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="ss-muted">Nada urgente por reabastecer. Buen ritmo.</p>
+  {% endif %}
+</div>
+
+<div class="ss-wrap">
+  <h3 class="ss-section-title">📊 Desglose por producto (click para expandir)</h3>
+  {% for s in product_summary %}
+  <details class="ss-prod">
+    <summary>
+      <span>{% if s.product %}{{ s.product.nombre }}{% else %}—{% endif %}</span>
+      <span class="ss-prod__meta">
+        <span><strong>{{ s.units }}</strong> piezas</span>
+        <span><strong>${{ s.revenue|floatformat:0 }}</strong> ingreso</span>
+        <span>{{ s.variants|length }} variantes</span>
+      </span>
+    </summary>
+
+    {% if s.colors_top %}
+    <div style="margin-top:0.6rem;">
+      <small style="color:#6b7280;">Top colores:</small>
+      <div class="ss-chips">
+        {% for color, n in s.colors_top %}<span class="ss-chip">{{ color }} <strong>{{ n }}</strong></span>{% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% if s.sizes_top %}
+    <div>
+      <small style="color:#6b7280;">Top tallas:</small>
+      <div class="ss-chips">
+        {% for talla, n in s.sizes_top %}<span class="ss-chip">{{ talla }} <strong>{{ n }}</strong></span>{% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <table class="ss-table" style="margin-top:0.7rem;">
+      <thead><tr><th>Color</th><th>Talla</th><th>Vendidas</th><th>Stock</th><th>Dias rest.</th><th>Recomendacion</th></tr></thead>
+      <tbody>
+      {% for v in s.variants %}
+        <tr>
+          <td>{{ v.color }}</td>
+          <td>{{ v.talla }}</td>
+          <td>{{ v.units }}</td>
+          <td>{{ v.stock|default:"—" }}</td>
+          <td>{% if v.days_left is not None %}{{ v.days_left }}d{% else %}—{% endif %}</td>
+          <td><span class="badge-tone tone-{{ v.tone }}">{{ v.recomendacion }}</span></td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </details>
+  {% empty %}
+  <p class="ss-muted">No hay ventas registradas en el periodo seleccionado.</p>
+  {% endfor %}
+</div>
+{% endblock %}

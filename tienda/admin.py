@@ -505,6 +505,7 @@ def _admin_overview_context():
             {"label": "Dashboard contable", "url": reverse("admin:tienda_expense_accounting_dashboard"), "description": "Estado de resultados, gastos y utilidad.", "tone": "info"},
             {"label": "Pólizas contables", "url": reverse("admin:tienda_journalentry_changelist"), "description": "Debe, haber y partidas contables por movimiento.", "tone": "info"},
             {"label": "Inventario", "url": reverse("admin:tienda_producto_inventory_dashboard"), "description": "Alertas, valor de stock y movimientos recientes.", "tone": "warn"},
+            {"label": "Resumen de ventas", "url": reverse("admin:tienda_producto_sales_summary"), "description": "Piezas vendidas, top colores/tallas y recomendación de compra (90 días).", "tone": "info"},
             {"label": "Recepción de compra", "url": reverse("admin:tienda_inventorymovement_receive_purchase"), "description": "Entrada de mercancía y gasto de compra.", "tone": "neutral"},
             {"label": "Calendario negocio", "url": reverse("admin:tienda_businesspayment_business_calendar"), "description": "Ventas, gastos y pagos por día.", "tone": "neutral"},
             {"label": "Tarjetas de crédito", "url": reverse("admin:tienda_creditcardstatement_changelist"), "description": "Estados de cuenta, vencimientos y saldos por pagar.", "tone": "warn"},
@@ -533,6 +534,7 @@ def _admin_overview_context():
                 "title": "Inventario",
                 "links": [
                     {"label": "Dashboard inventario", "url": reverse("admin:tienda_producto_inventory_dashboard")},
+                    {"label": "Resumen de ventas (90d)", "url": reverse("admin:tienda_producto_sales_summary")},
                     {"label": "Mesa de inventario", "url": reverse("admin:tienda_producto_inventory_matrix")},
                     {"label": "Recepción de compra", "url": reverse("admin:tienda_inventorymovement_receive_purchase")},
                     {"label": "Variantes", "url": reverse("admin:tienda_productvariant_changelist")},
@@ -1393,6 +1395,11 @@ class ProductoAdmin(admin.ModelAdmin):
                 name="tienda_producto_inventory_dashboard",
             ),
             path(
+                "sales-summary/",
+                self.admin_site.admin_view(self.sales_summary_view),
+                name="tienda_producto_sales_summary",
+            ),
+            path(
                 "stock-count-bulk/",
                 self.admin_site.admin_view(self.stock_count_bulk_view),
                 name="tienda_producto_stock_count_bulk",
@@ -1797,6 +1804,116 @@ class ProductoAdmin(admin.ModelAdmin):
             all_variants_data_json=json.dumps(all_variants_data),
         )
         return TemplateResponse(request, "admin/tienda/inventory_dashboard.html", context)
+
+    def sales_summary_view(self, request):
+        """Resumen de ventas últimos N días + recomendación de restock por velocidad."""
+        from collections import defaultdict
+        from datetime import timedelta
+        from django.db.models import Sum, F
+
+        days = int(request.GET.get("days", 90))
+        days = max(7, min(days, 365))
+        cutoff = timezone.now() - timedelta(days=days)
+
+        sold_items = (
+            OrderItem.objects
+            .filter(
+                order__status="Completed",
+                order__created_at__gte=cutoff,
+            )
+            .select_related("product")
+            .values("product_id", "product__nombre", "color", "talla")
+            .annotate(units=Sum("quantity"), revenue=Sum(F("price") * F("quantity")))
+            .order_by("-units")
+        )
+
+        # Indexar variantes por (product_id, color, talla)
+        variants_idx = {
+            (v.product_id, v.color, v.talla): v
+            for v in ProductVariant.objects.filter(activo=True).select_related("product")
+        }
+        products_idx = {p.id: p for p in Producto.objects.all()}
+
+        product_stats = {}
+        for row in sold_items:
+            pid = row["product_id"]
+            units = row["units"] or 0
+            revenue = row["revenue"] or Decimal("0")
+            stats = product_stats.setdefault(pid, {
+                "product": products_idx.get(pid),
+                "units": 0, "revenue": Decimal("0"),
+                "variants": [],
+                "colors": defaultdict(int),
+                "sizes": defaultdict(int),
+            })
+            stats["units"] += units
+            stats["revenue"] += revenue
+            if row["color"]:
+                stats["colors"][row["color"]] += units
+            if row["talla"]:
+                stats["sizes"][row["talla"]] += units
+            v = variants_idx.get((pid, row["color"] or "", row["talla"] or ""))
+            current_stock = v.stock if v else None
+            velocity = (units / days) if days > 0 else 0
+            days_left = (current_stock / velocity) if (current_stock is not None and velocity > 0) else None
+            if days_left is None:
+                recomendacion, tone = "—", "neutral"
+            elif days_left < 14:
+                recomendacion, tone = "Reabastecer URGENTE", "danger"
+            elif days_left < 30:
+                recomendacion, tone = "Comprar pronto", "warn"
+            else:
+                recomendacion, tone = "OK", "ok"
+            stats["variants"].append({
+                "color": row["color"] or "—",
+                "talla": row["talla"] or "—",
+                "units": units,
+                "revenue": revenue,
+                "stock": current_stock,
+                "days_left": round(days_left, 1) if days_left is not None else None,
+                "recomendacion": recomendacion,
+                "tone": tone,
+                "variant_id": v.id if v else None,
+            })
+
+        product_summary = sorted(product_stats.values(), key=lambda s: s["units"], reverse=True)
+        for s in product_summary:
+            s["colors_top"] = sorted(s["colors"].items(), key=lambda x: x[1], reverse=True)[:5]
+            s["sizes_top"]  = sorted(s["sizes"].items(),  key=lambda x: x[1], reverse=True)[:5]
+
+        # Recomendaciones globales: top variantes a reabastecer
+        urgent_restock = []
+        for s in product_summary:
+            for v in s["variants"]:
+                if v["recomendacion"] in ("Reabastecer URGENTE", "Comprar pronto"):
+                    urgent_restock.append({
+                        "product": s["product"].nombre if s["product"] else "—",
+                        "product_id": s["product"].id if s["product"] else None,
+                        **v,
+                    })
+        urgent_restock.sort(key=lambda x: (x["days_left"] if x["days_left"] is not None else 99999, -x["units"]))
+
+        # Variantes con velocidad pero sin stock (oportunidad perdida)
+        out_of_stock_movers = [x for x in urgent_restock if x["stock"] == 0]
+
+        # Totales
+        total_units = sum(s["units"] for s in product_summary)
+        total_revenue = sum(s["revenue"] for s in product_summary)
+
+        context = dict(
+            self.admin_site.each_context(request),
+            title=f"Resumen de ventas (ult. {days} dias)",
+            subtitle="Piezas vendidas, top colores/tallas y recomendación de compra por velocidad",
+            days=days,
+            cutoff=cutoff,
+            total_units=total_units,
+            total_revenue=total_revenue,
+            product_summary=product_summary,
+            urgent_restock=urgent_restock[:30],
+            out_of_stock_movers=out_of_stock_movers[:15],
+            opts=self.model._meta,
+        )
+        return TemplateResponse(request, "admin/tienda/sales_summary.html", context)
 
     def design_catalog_view(self, request):
         import shutil
