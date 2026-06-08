@@ -23,9 +23,41 @@
 
     .design-creator__layout {
         display: grid;
-        grid-template-columns: minmax(320px, 0.95fr) minmax(360px, 1.05fr);
+        grid-template-columns: 1fr;
         gap: 1.6rem;
         align-items: start;
+    }
+    .design-creator__preview { order: 0; }
+    .design-creator__form-col { order: 1; }
+    .design-creator__form-col .design-creator__panel { max-width: 980px; margin: 0 auto; }
+
+    /* Toolbar de corte sobre el mockup */
+    .design-creator__cut-toolbar {
+        display: flex;
+        justify-content: center;
+        gap: 0.5rem;
+        margin: 0 0 0.9rem;
+        flex-wrap: wrap;
+    }
+    .design-creator__cut-toolbar .cut-pill {
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(214,195,161,0.22);
+        color: rgba(255,255,255,0.78);
+        padding: 0.5rem 1.1rem;
+        border-radius: 999px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.15s, color 0.15s, border-color 0.15s;
+    }
+    .design-creator__cut-toolbar .cut-pill:hover {
+        background: rgba(214,195,161,0.12);
+        color: #fff;
+    }
+    .design-creator__cut-toolbar .cut-pill.is-active {
+        background: var(--cc-accent, #d6c3a1);
+        color: #111;
+        border-color: var(--cc-accent, #d6c3a1);
     }
 
     .design-creator__panel {
@@ -134,7 +166,10 @@
     /* Canvas */
     .design-canvas {
         position: relative;
-        min-height: 36rem;
+        min-height: 48rem;
+        max-width: 720px;
+        margin: 0 auto;
+        aspect-ratio: 3 / 4;
         border-radius: 2rem;
         border: 1px solid rgba(214,195,161,0.16);
         background:
@@ -150,33 +185,31 @@
         display: grid;
         place-items: center;
         pointer-events: none;
-    }
-
-    .design-canvas__shirt::before {
-        content: "";
-        width: min(88%, 31rem);
-        aspect-ratio: 0.82;
-        border-radius: 2.2rem;
-        background: var(--shirt-color, #f1ede6);
-        box-shadow: inset 0 0 0 1px rgba(0,0,0,0.06);
-        transition: background-color 0.25s ease;
+        background:
+            var(--shirt-mockup, url("/media/productos/9_0_garment_dye_designer_tshirt_cream_001.webp"))
+            center / contain no-repeat;
+        transition: background-image 0.25s ease;
     }
 
     .design-canvas__print-area {
         position: absolute;
         top: 50%;
         left: 50%;
-        width: min(48%, 17rem);
-        aspect-ratio: 1;
-        transform: translate(-50%, -44%);
-        border: 1px dashed rgba(17,17,17,0.22);
-        border-radius: 1rem;
+        width: var(--print-w, 24%);
+        aspect-ratio: var(--print-aspect, 1);
+        transform: translate(-50%, var(--print-y, -55%));
+        border: 1px dashed rgba(255,255,255,0.45);
+        border-radius: 0.35rem;
         background:
-            linear-gradient(180deg, rgba(255,255,255,0.2), rgba(255,255,255,0.12)),
-            repeating-linear-gradient(0deg, rgba(17,17,17,0.03) 0, rgba(17,17,17,0.03) 1px, transparent 1px, transparent 24px),
-            repeating-linear-gradient(90deg, rgba(17,17,17,0.03) 0, rgba(17,17,17,0.03) 1px, transparent 1px, transparent 24px);
+            repeating-linear-gradient(0deg, rgba(255,255,255,0.04) 0, rgba(255,255,255,0.04) 1px, transparent 1px, transparent 18px),
+            repeating-linear-gradient(90deg, rgba(255,255,255,0.04) 0, rgba(255,255,255,0.04) 1px, transparent 1px, transparent 18px);
         overflow: hidden;
+        transition: width 0.25s, transform 0.25s, aspect-ratio 0.25s;
     }
+    /* Cortes: cada uno ajusta width / posicion / aspecto del area de impresion */
+    .design-canvas[data-cut="oversize"]    { --print-w: 46%; --print-y: -20%; --print-aspect: 0.78; }
+    .design-canvas[data-cut="regular"]     { --print-w: 38%; --print-y: -18%; --print-aspect: 0.82; }
+    .design-canvas[data-cut="dropshoulder"]{ --print-w: 50%; --print-y: -14%; --print-aspect: 0.85; }
 
     .design-canvas__surface { width: 100%; height: 100%; display: block; }
 
@@ -282,6 +315,103 @@
     .design-creator__saved-delete:hover { color: #e05c5c; border-color: #e05c5c; }
 
     .design-creator__handoff { display: grid; gap: 0.9rem; }
+
+    /* Catálogo de diseños */
+    .design-catalog__toolbar {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin: 0.65rem 0 0.85rem;
+        flex-wrap: wrap;
+    }
+    .design-catalog__search {
+        flex: 1 1 240px;
+        min-height: 2.55rem;
+        padding: 0.55rem 0.85rem;
+        border: 1px solid rgba(255,255,255,0.18);
+        border-radius: 10px;
+        background: rgba(255,255,255,0.05);
+        color: inherit;
+        font-size: 0.95rem;
+    }
+    .design-catalog__search:focus {
+        outline: none;
+        border-color: #c8a96a;
+        box-shadow: 0 0 0 3px rgba(200,169,106,0.22);
+    }
+    .design-catalog__counter {
+        font-size: 0.78rem;
+        color: rgba(255,255,255,0.55);
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+    }
+    .design-catalog__chips {
+        display: flex;
+        gap: 0.4rem;
+        flex-wrap: wrap;
+        margin-bottom: 0.85rem;
+        max-height: 7.5rem;
+        overflow-y: auto;
+        padding-right: 0.35rem;
+    }
+    .design-catalog__chip {
+        background: rgba(255,255,255,0.05);
+        border: 1px solid rgba(255,255,255,0.14);
+        color: rgba(255,255,255,0.78);
+        font-size: 0.78rem;
+        padding: 0.35rem 0.75rem;
+        border-radius: 999px;
+        cursor: pointer;
+        transition: background 0.15s, color 0.15s, border-color 0.15s;
+        white-space: nowrap;
+    }
+    .design-catalog__chip small { opacity: 0.55; margin-left: 0.25rem; }
+    .design-catalog__chip:hover {
+        background: rgba(200,169,106,0.12);
+        border-color: rgba(200,169,106,0.35);
+        color: #fff;
+    }
+    .design-catalog__chip.is-active {
+        background: #c8a96a;
+        border-color: #c8a96a;
+        color: #111;
+    }
+    .design-catalog__chip.is-active small { opacity: 0.7; }
+    .design-catalog__grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+        gap: 0.55rem;
+        max-height: 28rem;
+        overflow-y: auto;
+        padding: 0.25rem;
+        background: rgba(0,0,0,0.18);
+        border-radius: 12px;
+    }
+    .design-catalog__item {
+        position: relative;
+        display: block;
+        aspect-ratio: 1 / 1;
+        background: #1a1a1a;
+        border: 2px solid transparent;
+        border-radius: 10px;
+        overflow: hidden;
+        transition: transform 0.15s, border-color 0.15s;
+    }
+    .design-catalog__item:hover {
+        transform: translateY(-2px);
+        border-color: rgba(200,169,106,0.55);
+    }
+    .design-catalog__item.is-active {
+        border-color: #c8a96a;
+        box-shadow: 0 0 0 2px rgba(200,169,106,0.35);
+    }
+    .design-catalog__item img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        padding: 4px;
+    }
+    .design-catalog__item.is-hidden { display: none; }
 
     /* Shirt color swatches */
     .shirt-color-btn {
@@ -467,7 +597,8 @@
     <div class="container px-4 px-lg-5">
         <div class="design-creator__layout">
 
-            <!-- ── Left: controls ── -->
+            <!-- ── Top: controls ── -->
+            <div class="design-creator__form-col">
             <div class="design-creator__panel">
                 <p class="design-creator__eyebrow">Herramienta</p>
                 <h2 class="design-creator__title">Tu diseño listo para usar</h2>
@@ -500,16 +631,16 @@
                                 <span id="shirtColorLabel">Beige</span>
                             </div>
                             <div style="display:flex;flex-wrap:wrap;gap:0.55rem;margin-top:0.25rem;">
-                                <button type="button" class="shirt-color-btn is-active" data-color="#f1ede6" data-label="Beige"     style="background:#f1ede6;"                   title="Beige"></button>
-                                <button type="button" class="shirt-color-btn"            data-color="#111111" data-label="Negro"     style="background:#111111;"                   title="Negro"></button>
-                                <button type="button" class="shirt-color-btn"            data-color="#f8f8f8" data-label="Blanco"    style="background:#f8f8f8;border:1px solid #ccc;" title="Blanco"></button>
-                                <button type="button" class="shirt-color-btn"            data-color="#9e9e9e" data-label="Gris"      style="background:#9e9e9e;"                   title="Gris"></button>
-                                <button type="button" class="shirt-color-btn"            data-color="#6d2030" data-label="Vino"      style="background:#6d2030;"                   title="Vino"></button>
-                                <button type="button" class="shirt-color-btn"            data-color="#1c2b4a" data-label="Marino"    style="background:#1c2b4a;"                   title="Azul marino"></button>
-                                <button type="button" class="shirt-color-btn"            data-color="#2e4a35" data-label="Verde"     style="background:#2e4a35;"                   title="Verde"></button>
-                                <button type="button" class="shirt-color-btn"            data-color="#c9b99a" data-label="Latte"     style="background:#c9b99a;"                   title="Latte"></button>
+                                <button type="button" class="shirt-color-btn is-active" data-color="#f1ede6" data-label="Crema"   data-mockup="cream"     style="background:#f1ede6;"                   title="Crema"></button>
+                                <button type="button" class="shirt-color-btn"            data-color="#111111" data-label="Negro"   data-mockup="black"     style="background:#111111;"                   title="Negro"></button>
+                                <button type="button" class="shirt-color-btn"            data-color="#f8f8f8" data-label="Blanco"  data-mockup="white"     style="background:#f8f8f8;border:1px solid #ccc;" title="Blanco"></button>
+                                <button type="button" class="shirt-color-btn"            data-color="#5b5b5b" data-label="Gris"    data-mockup="darkgrey"  style="background:#5b5b5b;"                   title="Gris oscuro"></button>
+                                <button type="button" class="shirt-color-btn"            data-color="#3a3a3a" data-label="Shadow"  data-mockup="shadow"    style="background:#3a3a3a;"                   title="Shadow"></button>
+                                <button type="button" class="shirt-color-btn"            data-color="#4a5d3a" data-label="Camo"    data-mockup="camo"      style="background:#4a5d3a;"                   title="Camo"></button>
+                                <button type="button" class="shirt-color-btn"            data-color="#6b4f3a" data-label="Mocha"   data-mockup="mocha"     style="background:#6b4f3a;"                   title="Mocha"></button>
                             </div>
                         </div>
+
 
                         <!-- Opacidad -->
                         <div class="design-creator__tool-group">
@@ -757,11 +888,24 @@
                 </form>
             </div>
 
-            <!-- ── Right: preview ── -->
+            </div><!-- /.design-creator__form-col -->
+
+            <!-- ── Preview (arriba) ── -->
             <div class="design-creator__preview">
                 <div class="design-creator__panel">
-                    <p class="design-creator__eyebrow">Preview</p>
-                    <div class="design-canvas" id="designCanvas">
+                    <div style="display:flex;justify-content:space-between;align-items:baseline;gap:1rem;flex-wrap:wrap;margin-bottom:0.4rem;">
+                        <p class="design-creator__eyebrow" style="margin:0;">Preview</p>
+                        <p class="design-creator__copy" style="margin:0;font-size:0.8rem;opacity:0.7;">Cambia el corte para ver tu diseño sobre cada tipo de playera.</p>
+                    </div>
+                    <div class="design-creator__cut-toolbar">
+                        <button type="button" class="cut-pill is-active shirt-cut-btn" data-cut="oversize" data-label="Oversize">Oversize</button>
+                        <button type="button" class="cut-pill shirt-cut-btn"            data-cut="regular"  data-label="Regular">Regular</button>
+                        <button type="button" class="cut-pill shirt-cut-btn"            data-cut="dropshoulder" data-label="Drop Shoulder">Drop Shoulder</button>
+                        <span style="border-left:1px solid rgba(255,255,255,0.15);margin:0 0.3rem;"></span>
+                        <button type="button" class="cut-pill is-active shirt-side-btn" data-side="frente">Frente</button>
+                        <button type="button" class="cut-pill shirt-side-btn"            data-side="espalda">Espalda</button>
+                    </div>
+                    <div class="design-canvas" id="designCanvas" data-cut="oversize">
                         <div class="design-canvas__shirt" id="shirtBg"></div>
                         <div class="design-canvas__print-area" id="printArea">
                             <div class="design-canvas__empty" id="emptyState">Sube un diseño, agrega texto o una forma para empezar.</div>
@@ -790,6 +934,11 @@
                     </div>
                 </div>
 
+                <div class="design-creator__panel" style="text-align:center;">
+                    <p class="design-creator__eyebrow" style="margin-bottom:0.5rem;">¿No tienes un diseño?</p>
+                    <a href="{% url 'tienda:catalogo_diseños_propios' %}" class="btn site-btn site-btn--accent">Explorar catálogo de diseños</a>
+                </div>
+
                 {% if saved_designs %}
                 <div class="design-creator__panel">
                     <p class="design-creator__eyebrow">Guardados</p>
@@ -797,7 +946,7 @@
                         {% for design_name in saved_designs %}
                         <div class="design-creator__saved-item{% if selected_design_url and selected_design_url|urlencode == design_name|urlencode %} is-active{% endif %}">
                             <a href="{% url 'tienda:design_creator' %}?file={{ design_name|urlencode }}" style="display:contents;">
-                                <img src="{{ MEDIA_URL }}diseños_propios/{{ design_name|urlencode }}" alt="{{ design_name }}">
+                                <img src="/media/diseños_propios/{{ design_name|urlencode }}" alt="{{ design_name }}">
                                 <span>{{ design_name }}</span>
                             </a>
                             <form method="post" action="{% url 'tienda:delete_design' design_name %}" class="design-delete-form" style="display:contents;">
@@ -1184,12 +1333,53 @@
 
     // ── Shirt color ───────────────────────────────────────────────────────────
 
+    const MOCKUP_BASE = "/media/productos/9_0_garment_dye_designer_tshirt_";
     document.querySelectorAll(".shirt-color-btn").forEach(btn => {
         btn.addEventListener("click", () => {
-            shirtBg.style.setProperty("--shirt-color", btn.dataset.color);
+            const mockup = btn.dataset.mockup || "cream";
+            shirtBg.style.setProperty("--shirt-mockup", `url("${MOCKUP_BASE}${mockup}_001.webp")`);
             document.getElementById("shirtColorLabel").textContent = btn.dataset.label;
             document.querySelectorAll(".shirt-color-btn").forEach(b => b.classList.remove("is-active"));
             btn.classList.add("is-active");
+        });
+    });
+
+    // ── Corte de playera ──────────────────────────────────────────────────────
+    const designCanvasEl = document.getElementById("designCanvas");
+    document.querySelectorAll(".shirt-cut-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+            designCanvasEl.dataset.cut = btn.dataset.cut;
+            document.querySelectorAll(".shirt-cut-btn").forEach(b => b.classList.remove("is-active"));
+            btn.classList.add("is-active");
+            if (state.artwork) fitArtwork();
+        });
+    });
+
+    // ── Frente / Espalda ──────────────────────────────────────────────────────
+    let currentSide = "frente";
+    const sideSnapshots = { frente: null, espalda: null };
+    document.querySelectorAll(".shirt-side-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const newSide = btn.dataset.side;
+            if (newSide === currentSide) return;
+            sideSnapshots[currentSide] = JSON.stringify(fabricCanvas.toJSON());
+            currentSide = newSide;
+            document.querySelectorAll(".shirt-side-btn").forEach(b => b.classList.toggle("is-active", b === btn));
+            fabricCanvas.clear();
+            state.artwork = null;
+            const snap = sideSnapshots[newSide];
+            if (snap) {
+                fabricCanvas.loadFromJSON(snap, () => {
+                    const imgObj = fabricCanvas.getObjects().find(o => o.type === "image");
+                    if (imgObj) state.artwork = imgObj;
+                    fabricCanvas.requestRenderAll();
+                    syncEmptyState();
+                    renderLayersList();
+                });
+            } else {
+                syncEmptyState();
+                renderLayersList();
+            }
         });
     });
 
@@ -1303,8 +1493,8 @@
 
     function fitArtwork() {
         if (!state.artwork) return;
-        const maxW = fabricCanvas.getWidth() * 0.62;
-        const maxH = fabricCanvas.getHeight() * 0.62;
+        const maxW = fabricCanvas.getWidth() * 0.95;
+        const maxH = fabricCanvas.getHeight() * 0.95;
         const s = Math.min(maxW / state.artwork.width, maxH / state.artwork.height, 1);
         state.artwork.set({ scaleX: s, scaleY: s, angle: 0, flipX: false, flipY: false,
             left: fabricCanvas.getWidth() / 2, top: fabricCanvas.getHeight() / 2,
@@ -1343,7 +1533,8 @@
                 originX: "center", originY: "center",
                 left: fabricCanvas.getWidth() / 2, top: fabricCanvas.getHeight() / 2,
                 cornerStyle: "circle", transparentCorners: false,
-                cornerColor: "#d6c3a1", borderColor: "#d6c3a1", padding: 8, lockUniScaling: true,
+                cornerColor: "#d6c3a1", borderColor: "#d6c3a1",
+                cornerSize: 14, padding: 10, lockUniScaling: true,
             });
             fabricCanvas.add(artwork);
             fabricCanvas.setActiveObject(artwork);
@@ -1631,6 +1822,42 @@
         const file = selectedDesignUrl.split("/").pop();
         if (file) window.location.href = `/producto/${quickProductSelect.value}/?diseño=${encodeURIComponent(file)}`;
     });
+
+    // ── Catálogo de diseños: filtro por categoría + búsqueda ──────────────
+    const catalogGrid    = document.getElementById("catalogGrid");
+    const catalogChips   = document.getElementById("catalogChips");
+    const catalogSearch  = document.getElementById("catalogSearch");
+    const catalogCounter = document.getElementById("catalogVisibleCount");
+    if (catalogGrid && catalogChips) {
+        const items = Array.from(catalogGrid.querySelectorAll(".design-catalog__item"));
+        let activeCategory = "";
+        let query = "";
+        const applyFilter = () => {
+            let visible = 0;
+            for (const item of items) {
+                const cat = item.dataset.category || "";
+                const name = item.dataset.name || "";
+                const okCat = !activeCategory || cat === activeCategory;
+                const okSearch = !query || name.includes(query) || cat.includes(query);
+                const show = okCat && okSearch;
+                item.classList.toggle("is-hidden", !show);
+                if (show) visible++;
+            }
+            if (catalogCounter) catalogCounter.textContent = visible.toLocaleString();
+        };
+        catalogChips.addEventListener("click", (e) => {
+            const btn = e.target.closest(".design-catalog__chip");
+            if (!btn) return;
+            activeCategory = btn.dataset.category || "";
+            catalogChips.querySelectorAll(".design-catalog__chip").forEach(b => b.classList.toggle("is-active", b === btn));
+            applyFilter();
+        });
+        catalogSearch?.addEventListener("input", (e) => {
+            query = (e.target.value || "").trim().toLowerCase();
+            applyFilter();
+        });
+        applyFilter();
+    }
 })();
 </script>
 {% endblock %}

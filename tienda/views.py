@@ -39,14 +39,25 @@ from .models import (
     record_inventory_movement,
 )
 from .skydrop import SkydropError, map_skydrop_status, quote_order, sync_shipment
+from .meta_capi import track_capi_event
 
 logger = logging.getLogger(__name__)
 
 
-def _track_meta_pixel_event(request, event_name, payload=None, persist=False):
+def _track_meta_pixel_event(request, event_name, payload=None, persist=False, user=None):
+    """Dispara un evento Meta por DOS canales con el mismo event_id:
+      1) Pixel browser (vía template, leído por base.html desde el context)
+      2) Conversions API server-side (async, no bloquea response)
+    Meta deduplica ambos por el event_id compartido.
+    """
+    # Dispara CAPI server-side y obtiene event_id
+    capi_user = user or getattr(request, "user", None)
+    event_id = track_capi_event(request, event_name, custom_data=payload or {}, user=capi_user)
+
     event = {
         "name": event_name,
         "payload": payload or {},
+        "event_id": event_id,
     }
     if persist:
         events = request.session.get("meta_pixel_events", [])
@@ -182,6 +193,40 @@ def design_creator(request):
         reverse=True,
     )[:24]
 
+    from collections import defaultdict as _defaultdict
+    catalog_groups = _defaultdict(list)
+    _KNOWN_PREFIXES = [
+        ("Angel_Streetwear_", "Angel Streetwear"),
+        ("ANIME_POSTER_", "Anime Poster"),
+        ("Anime_VERSION_6_", "Anime V6"),
+        ("Japanese_Anime_", "Japanese Anime"),
+        ("Premium_Halftone_Designs_", "Premium Halftone"),
+        ("Premium_Motor_Cycle_Designs_", "Premium Motor Cycle"),
+        ("Rockband_Designs_", "Rockband"),
+        ("Samurai_Japones_", "Samurai Japones"),
+    ]
+    for entry in designs_dir.iterdir():
+        if not entry.is_file():
+            continue
+        name = entry.name
+        if name.startswith(user_prefix):
+            continue
+        category = "Otros"
+        for prefix, label in _KNOWN_PREFIXES:
+            if name.startswith(prefix):
+                category = label
+                break
+        catalog_groups[category].append(name)
+    catalog = []
+    for category in sorted(catalog_groups.keys(), key=lambda c: c.lower()):
+        files = sorted(catalog_groups[category])
+        catalog.append({
+            "name": category,
+            "slug": slugify(category),
+            "count": len(files),
+            "files": files,
+        })
+
     context = {
         "form": form,
         "selected_design_name": selected_design_name,
@@ -189,6 +234,7 @@ def design_creator(request):
         "saved_designs": own_designs,
         "selected_product_id": selected_product_id,
         "customizable_products": customizable_products,
+        "catalog": catalog,
     }
     return render(request, "tienda/design_creator.html", context)
 
@@ -211,37 +257,83 @@ def delete_design(request, filename):
 
 def detalle_producto(request, producto_id):
     producto = get_object_or_404(Producto, id=producto_id)
-    tallas_disponibles = producto.tallas_disponibles.split(",") if producto.tallas_disponibles else []
-    colores_disponibles = producto.colores_disponibles.split(",") if producto.colores_disponibles else []
+
+    variantes_activas = list(producto.variants.filter(activo=True))
+    if variantes_activas:
+        seen_colores, colores_disponibles = set(), []
+        seen_tallas, tallas_disponibles = set(), []
+        declarados_colores = [c.strip() for c in (producto.colores_disponibles or "").split(",") if c.strip()]
+        declarados_tallas = [t.strip() for t in (producto.tallas_disponibles or "").split(",") if t.strip()]
+        for color in declarados_colores:
+            if any(v.color == color for v in variantes_activas) and color not in seen_colores:
+                seen_colores.add(color); colores_disponibles.append(color)
+        for v in variantes_activas:
+            if v.color and v.color not in seen_colores:
+                seen_colores.add(v.color); colores_disponibles.append(v.color)
+        for talla in declarados_tallas:
+            if any(v.talla == talla for v in variantes_activas) and talla not in seen_tallas:
+                seen_tallas.add(talla); tallas_disponibles.append(talla)
+        for v in variantes_activas:
+            if v.talla and v.talla not in seen_tallas:
+                seen_tallas.add(v.talla); tallas_disponibles.append(v.talla)
+    else:
+        tallas_disponibles = producto.tallas_disponibles.split(",") if producto.tallas_disponibles else []
+        colores_disponibles = producto.colores_disponibles.split(",") if producto.colores_disponibles else []
 
     diseño_seleccionado = request.GET.get("diseño")
-    diseños_anime = []
-    diseños_personalizados = []
+    designs_dir = Path(settings.MEDIA_ROOT) / "diseños_propios"
+    designs_dir.mkdir(parents=True, exist_ok=True)
 
-    try:
-        ruta_anime = os.path.join(settings.MEDIA_ROOT, 'diseños_nuevos')
-        ruta_personalizados = os.path.join(settings.MEDIA_ROOT, 'diseños_propios')
+    _KNOWN_PREFIXES = [
+        ("Angel_Streetwear_", "Angel Streetwear"),
+        ("ANIME_POSTER_", "Anime Poster"),
+        ("Anime_VERSION_6_", "Anime V6"),
+        ("Japanese_Anime_", "Japanese Anime"),
+        ("Premium_Halftone_Designs_", "Premium Halftone"),
+        ("Premium_Motor_Cycle_Designs_", "Premium Motor Cycle"),
+        ("Rockband_Designs_", "Rockband"),
+        ("Samurai_Japones_", "Samurai Japones"),
+    ]
+    user_prefix = slugify(request.user.username if request.user.is_authenticated else "cliente") + "-"
 
-        diseños_anime = os.listdir(ruta_anime)
-        diseños_personalizados = os.listdir(ruta_personalizados)
-    except FileNotFoundError:
-        pass
+    from collections import defaultdict as _defaultdict
+    catalog_groups = _defaultdict(list)
+    own_designs_names = []
+    todos_names = []
+    for entry in designs_dir.iterdir():
+        if not entry.is_file():
+            continue
+        name = entry.name
+        todos_names.append(name)
+        if name.startswith(user_prefix):
+            own_designs_names.append(name)
+            continue
+        category = "Otros"
+        for prefix, label in _KNOWN_PREFIXES:
+            if name.startswith(prefix):
+                category = label
+                break
+        catalog_groups[category].append(name)
+
+    catalog_picker = []
+    catalog_total = 0
+    for category in sorted(catalog_groups.keys(), key=lambda c: c.lower()):
+        files = sorted(catalog_groups[category])
+        items = [{"name": fn, "thumb": Path(fn).stem + ".webp"} for fn in files]
+        catalog_total += len(files)
+        catalog_picker.append({
+            "name": category,
+            "slug": slugify(category),
+            "count": len(files),
+            "items": items,
+        })
+
+    own_designs = sorted(own_designs_names, key=lambda n: (designs_dir / n).stat().st_mtime, reverse=True)[:24]
+    own_designs_items = [{"name": fn, "thumb": Path(fn).stem + ".webp"} for fn in own_designs]
 
     selected_custom_design = ""
-    if diseño_seleccionado and diseño_seleccionado in diseños_personalizados:
+    if diseño_seleccionado and diseño_seleccionado in todos_names:
         selected_custom_design = diseño_seleccionado
-
-    # Paginación de diseños anime
-    page_anime = request.GET.get("page_anime", 1)
-    anime_paginator = Paginator(diseños_anime, 10)
-    anime_page = anime_paginator.get_page(page_anime)
-
-    # Paginación para personalizados
-    page_personalizado = request.GET.get("page_personalizado", 1)
-    personalizado_paginator = Paginator(diseños_personalizados, 10)
-    personalizado_page = personalizado_paginator.get_page(page_personalizado)
-
-    # ...
 
     _track_meta_pixel_event(
         request,
@@ -261,8 +353,9 @@ def detalle_producto(request, producto_id):
         'producto': producto,
         'tallas_disponibles': tallas_disponibles,
         'colores_disponibles': colores_disponibles,
-        'diseños_anime': anime_page,
-        'diseños_personalizados': personalizado_page,
+        'catalog_picker': catalog_picker,
+        'catalog_total': catalog_total,
+        'own_designs_items': own_designs_items,
         'selected_custom_design': selected_custom_design,
         'reseña_form': ReseñaForm(),
         'reseñas': reseñas,
@@ -836,6 +929,68 @@ def archivo_view(request):
     productos = Producto.objects.filter(categoria__nombre="archivo")
     return render(request, 'tienda/archivo.html', {'productos': productos})
 
+
+# ── Mayoreo ──────────────────────────────────────────────────────────────
+# Tiers por volumen. El % de descuento aplica al precio retail del producto.
+MAYOREO_TIERS = [
+    {"min": 12,  "max": 23,   "label": "Mayoreo 12+",    "discount": 0.20},
+    {"min": 24,  "max": 49,   "label": "Mayoreo 24+",    "discount": 0.30},
+    {"min": 50,  "max": 99,   "label": "Mayoreo 50+",    "discount": 0.38},
+    {"min": 100, "max": None, "label": "Distribuidor",   "discount": 0.45},
+]
+
+
+def mayoreo_view(request):
+    """Pagina publica con tiers de mayoreo y catalogo de productos disponibles."""
+    from decimal import Decimal
+    from collections import defaultdict
+    from django.db.models import Sum, Min
+
+    # Productos con variantes Shaka (SHK-) que esten activos y tengan stock
+    productos = (
+        Producto.objects
+        .filter(variants__sku__startswith="SHK-", variants__activo=True)
+        .annotate(
+            stock_total=Sum("variants__stock"),
+            costo_min=Min("variants__costo"),
+        )
+        .distinct()
+        .order_by("-stock_total", "nombre")
+    )
+
+    # Para cada producto, calcular precios por tier
+    productos_data = []
+    for p in productos:
+        precio_retail = p.precio or Decimal("250")
+        precios_tier = [
+            {
+                "label": t["label"],
+                "min": t["min"],
+                "discount_pct": int(t["discount"] * 100),
+                "precio": (precio_retail * Decimal(1 - t["discount"])).quantize(Decimal("0.01")),
+            }
+            for t in MAYOREO_TIERS
+        ]
+        productos_data.append({
+            "producto": p,
+            "stock_total": p.stock_total or 0,
+            "costo": p.costo_min,
+            "precio_retail": precio_retail,
+            "precios": precios_tier,
+        })
+
+    tiers_ctx = [
+        {**t, "discount_pct": int(t["discount"] * 100)}
+        for t in MAYOREO_TIERS
+    ]
+    context = {
+        "tiers": tiers_ctx,
+        "productos_data": productos_data,
+        "total_productos": len(productos_data),
+        "total_stock": sum(d["stock_total"] for d in productos_data),
+    }
+    return render(request, "tienda/mayoreo.html", context)
+
 def proceso_compra(request):
     return redirect('tienda:checkout')
 
@@ -1340,10 +1495,52 @@ def catalogo_diseños(request):
         'page_obj': page_obj
     })
 def catalogo_diseños_propios(request):
-    nuevos = importar_diseños_propios()
-    productos = Producto.objects.filter(categoria__nombre__iexact="Diseños Propios")
-    return render(request, 'tienda/catalogo_diseños_propios.html', {
-        'productos': productos,
-        'nuevos': nuevos,
+    from collections import defaultdict as _defaultdict
+    from pathlib import Path as _Path
+    designs_dir = _Path(settings.MEDIA_ROOT) / "diseños_propios"
+    designs_dir.mkdir(parents=True, exist_ok=True)
 
+    user_prefix = slugify(request.user.username or "cliente") + "-"
+    _KNOWN_PREFIXES = [
+        ("Angel_Streetwear_", "Angel Streetwear"),
+        ("ANIME_POSTER_", "Anime Poster"),
+        ("Anime_VERSION_6_", "Anime V6"),
+        ("Japanese_Anime_", "Japanese Anime"),
+        ("Premium_Halftone_Designs_", "Premium Halftone"),
+        ("Premium_Motor_Cycle_Designs_", "Premium Motor Cycle"),
+        ("Rockband_Designs_", "Rockband"),
+        ("Samurai_Japones_", "Samurai Japones"),
+    ]
+    catalog_groups = _defaultdict(list)
+    for entry in designs_dir.iterdir():
+        if not entry.is_file():
+            continue
+        name = entry.name
+        if name.startswith(user_prefix):
+            continue
+        category = "Otros"
+        for prefix, label in _KNOWN_PREFIXES:
+            if name.startswith(prefix):
+                category = label
+                break
+        catalog_groups[category].append(name)
+    catalog = []
+    total = 0
+    for category in sorted(catalog_groups.keys(), key=lambda c: c.lower()):
+        files = sorted(catalog_groups[category])
+        items = [{"name": fn, "thumb": _Path(fn).stem + ".webp"} for fn in files]
+        total += len(files)
+        catalog.append({
+            "name": category,
+            "slug": slugify(category),
+            "count": len(files),
+            "files": files,
+            "items": items,
+        })
+
+    customizable_products = Producto.objects.filter(disponible=True, stock__gt=0).order_by("nombre")
+    return render(request, "tienda/catalogo_diseños_propios.html", {
+        "catalog": catalog,
+        "catalog_total": total,
+        "customizable_products": customizable_products,
     })

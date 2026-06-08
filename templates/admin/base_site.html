@@ -145,19 +145,21 @@
   .cc-sidebar-section { padding: 16px 0 4px; }
   .cc-section-label {
     display: block;
-    padding: 0 16px 6px;
+    padding: 0 16px 5px;
     font-family: var(--font-family-monospace);
-    font-size: 9px;
+    font-size: 10px;
     font-weight: 600;
-    letter-spacing: 1.2px;
+    letter-spacing: 1.1px;
     text-transform: uppercase;
-    color: var(--cc-faint);
+    color: #545454;
   }
   .cc-nav-item {
     display: flex;
     align-items: center;
     gap: 9px;
-    padding: 7px 16px;
+    padding: 6px 10px 6px 14px;
+    margin: 1px 6px;
+    border-radius: 8px;
     color: var(--cc-muted) !important;
     text-decoration: none !important;
     font-size: 13.5px;
@@ -165,17 +167,21 @@
     position: relative;
     transition: background 0.12s, color 0.12s;
   }
-  .cc-nav-item:hover { background: #141414; color: #ccc !important; }
-  .cc-nav-item.active { background: #171717; color: #fff !important; }
+  .cc-nav-item:hover { background: #1a1a1a; color: #ccc !important; }
+  .cc-nav-item.active {
+    background: rgba(74,158,255,0.12);
+    color: #fff !important;
+    border-radius: 8px;
+  }
   .cc-nav-item.active::before {
     content: "";
     position: absolute;
-    left: 0;
-    top: 4px;
-    bottom: 4px;
-    width: 2px;
-    background: #fff;
-    border-radius: 0 2px 2px 0;
+    left: -6px;
+    top: 6px;
+    bottom: 6px;
+    width: 3px;
+    background: var(--cc-blue);
+    border-radius: 0 3px 3px 0;
   }
   .cc-nav-icon { width: 18px; text-align: center; font-size: 15px; flex-shrink: 0; }
   .cc-nav-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -238,7 +244,7 @@
     display: flex;
     align-items: center;
     padding: 0 20px;
-    gap: 12px;
+    gap: 10px;
     flex-shrink: 0;
     position: sticky;
     top: 0;
@@ -260,9 +266,49 @@
     color: var(--cc-faint);
     white-space: nowrap;
   }
+  .cc-topbar-pending {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(240,165,0,.12);
+    color: var(--cc-yellow);
+    font-family: var(--font-family-monospace);
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+    text-decoration: none !important;
+    border: 1px solid rgba(240,165,0,.2);
+    transition: background .12s;
+  }
+  .cc-topbar-pending:hover { background: rgba(240,165,0,.2) !important; color: var(--cc-yellow) !important; }
+  .cc-topbar-pending-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--cc-yellow);
+    animation: pulse-dot 1.6s ease-in-out infinite;
+  }
+  @keyframes pulse-dot {
+    0%,100% { opacity:1; transform:scale(1); }
+    50%      { opacity:.4; transform:scale(.7); }
+  }
+  .cc-theme-toggle {
+    background: transparent;
+    border: 1px solid var(--cc-border-2);
+    border-radius: 6px;
+    color: var(--cc-muted);
+    width: 30px; height: 30px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    font-size: 15px;
+    transition: background .12s, color .12s;
+    flex-shrink: 0;
+  }
+  .cc-theme-toggle:hover { background: #1a1a1a; color: #fff; }
   .cc-topbar-action {
-    background: #fff !important;
-    color: #000 !important;
+    background: var(--cc-blue) !important;
+    color: #fff !important;
     border: 0 !important;
     border-radius: 6px;
     font-size: 12px;
@@ -270,6 +316,79 @@
     padding: 6px 12px;
     text-decoration: none !important;
     letter-spacing: 0.2px;
+    white-space: nowrap;
+    transition: opacity .12s;
+  }
+  .cc-topbar-action:hover { opacity: .85; color: #fff !important; }
+
+  /* ── sidebar search ── */
+  .cc-search-wrap {
+    padding: 10px 10px 4px;
+  }
+  .cc-search {
+    width: 100%;
+    box-sizing: border-box;
+    background: #141414;
+    border: 1px solid var(--cc-border-2);
+    border-radius: 8px;
+    color: #ccc;
+    font-family: var(--font-family-primary);
+    font-size: 12.5px;
+    padding: 6px 10px 6px 30px;
+    outline: none;
+    transition: border-color .15s;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23555' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: 9px center;
+  }
+  .cc-search::placeholder { color: #444; }
+  .cc-search:focus { border-color: var(--cc-blue); }
+
+  /* ── light mode ── */
+  html.light-mode #content-start,
+  html.light-mode #content,
+  html.light-mode #main { background: #f1f3f5 !important; }
+  html.light-mode #content { color: #111827 !important; }
+  html.light-mode #content [class*="-card"],
+  html.light-mode #content [class*="-panel"],
+  html.light-mode #content [class*="-tile"] {
+    background: #fff !important;
+    border-color: #e5e7eb !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,.06) !important;
+  }
+  html.light-mode #content [class*="-table"] th,
+  html.light-mode #content [class*="-table"] td {
+    border-color: #e5e7eb !important;
+    color: #374151 !important;
+  }
+  html.light-mode #content [class*="-table"] thead th { background: #f8fafc !important; color: #6b7280 !important; }
+  html.light-mode #content [class*="-label"] { color: #6b7280 !important; }
+  html.light-mode #content [class*="-value"],
+  html.light-mode #content [class*="-name"],
+  html.light-mode #content strong { color: #111827 !important; }
+  html.light-mode #content [class*="-muted"],
+  html.light-mode #content [class*="-sub"],
+  html.light-mode #content [class*="-empty"] { color: #9ca3af !important; }
+  html.light-mode #content [class*="-item"] { background: #f8fafc !important; }
+  html.light-mode #content [class*="-item"]:hover { background: #f0f2f5 !important; }
+  html.light-mode h1,html.light-mode h2,html.light-mode h3 { color: #111827 !important; }
+  html.light-mode .mx-table thead th { background: #f8fafc !important; }
+  html.light-mode .mx-card,html.light-mode .mx-header,html.light-mode .mx-footer { background: #fff !important; border-color: #e5e7eb !important; }
+  html.light-mode .inventory-card,html.light-mode .inventory-panel,html.light-mode .inventory-chart-panel,html.light-mode #chart-detail { background: #fff !important; border-color: #e5e7eb !important; }
+
+  /* ── guides / notes siempre dark-friendly ── */
+  #content [class*="-guide"],
+  #content [class*="-note-box"] {
+    background: #161616 !important;
+    border-color: var(--cc-border-2) !important;
+    color: var(--cc-muted) !important;
+  }
+  html.light-mode #content [class*="-guide"] { background: #f0f9ff !important; border-color: #bae6fd !important; color: #374151 !important; }
+
+  /* ── dashboard card border-radius ── */
+  #content [class*="-card"]:not(.cc-summary-card):not(.cc-quick-card):not(.cc-alert-row),
+  #content [class*="-panel"]:not(.cc-quick-card) {
+    border-radius: 14px !important;
   }
 
   .messagelist {
@@ -471,6 +590,10 @@
     </div>
   </a>
 
+  <div class="cc-search-wrap">
+    <input class="cc-search" id="cc-nav-search" type="search" placeholder="Buscar sección…" autocomplete="off">
+  </div>
+
   <div class="cc-sidebar-section">
     <span class="cc-section-label">Principal</span>
     <a class="cc-nav-item {% if request.resolver_match.url_name == 'index' %}active{% endif %}" href="{% url 'admin:index' %}">
@@ -500,8 +623,8 @@
     <a class="cc-nav-item {% if 'categoria' in request.path %}active{% endif %}" href="{% url 'admin:tienda_categoria_changelist' %}">
       <i class="ti ti-tag cc-nav-icon" aria-hidden="true"></i><span class="cc-nav-label">Categorias</span>
     </a>
-    <a class="cc-nav-item" href="{% url 'admin:tienda_producto_changelist' %}?categoria__nombre=Diseños">
-      <i class="ti ti-palette cc-nav-icon" aria-hidden="true"></i><span class="cc-nav-label">Disenos</span>
+    <a class="cc-nav-item {% if 'design-catalog' in request.path %}active{% endif %}" href="{% url 'admin:tienda_producto_design_catalog' %}">
+      <i class="ti ti-palette cc-nav-icon" aria-hidden="true"></i><span class="cc-nav-label">Diseños</span>
     </a>
   </div>
 
@@ -598,7 +721,15 @@
 {% block messages %}
 <div class="cc-topbar">
   <div class="cc-topbar-title">{{ title|default:"Inicio" }}</div>
+  {% for card in admin_overview_cards %}{% if card.label == 'Pedidos pendientes' and card.value > 0 %}
+  <a class="cc-topbar-pending" href="{% url 'admin:tienda_order_changelist' %}?status__exact=Pending">
+    <span class="cc-topbar-pending-dot"></span>{{ card.value }} pendiente{{ card.value|pluralize:"s" }}
+  </a>
+  {% endif %}{% endfor %}
   <span class="cc-topbar-meta" id="cc-clock"></span>
+  <button class="cc-theme-toggle" id="cc-theme-btn" title="Cambiar tema" aria-label="Cambiar tema">
+    <i class="ti ti-sun" id="cc-theme-icon"></i>
+  </button>
   <a class="cc-topbar-action" href="{% url 'admin:tienda_order_point_of_sale' %}">+ Nuevo pedido</a>
 </div>
 {% if messages %}
@@ -606,16 +737,64 @@
 {% endif %}
 <script>
 (function() {
+  /* ── Clock ── */
   var clock = document.getElementById("cc-clock");
-  if (!clock) return;
   function tick() {
+    if (!clock) return;
     var d = new Date();
-    var days = ["dom", "lun", "mar", "mie", "jue", "vie", "sab"];
-    var months = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
-    clock.textContent = days[d.getDay()] + " " + d.getDate() + " " + months[d.getMonth()] + " " + d.getFullYear() + " · " + String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
+    var days   = ["dom","lun","mar","mié","jue","vie","sáb"];
+    var months = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+    clock.textContent = days[d.getDay()] + " " + d.getDate() + " " + months[d.getMonth()] + " · " +
+      String(d.getHours()).padStart(2,"0") + ":" + String(d.getMinutes()).padStart(2,"0");
   }
-  tick();
-  setInterval(tick, 30000);
+  tick(); setInterval(tick, 30000);
+
+  /* ── Theme toggle ── */
+  var themeBtn  = document.getElementById("cc-theme-btn");
+  var themeIcon = document.getElementById("cc-theme-icon");
+  function applyTheme(light) {
+    document.documentElement.classList.toggle("light-mode", light);
+    if (themeIcon) {
+      themeIcon.className = light ? "ti ti-moon" : "ti ti-sun";
+    }
+    if (themeBtn) themeBtn.title = light ? "Modo oscuro" : "Modo claro";
+  }
+  applyTheme(localStorage.getItem("cc-theme") === "light");
+  if (themeBtn) {
+    themeBtn.addEventListener("click", function() {
+      var isLight = !document.documentElement.classList.contains("light-mode");
+      localStorage.setItem("cc-theme", isLight ? "light" : "dark");
+      applyTheme(isLight);
+    });
+  }
+
+  /* ── Sidebar search ── */
+  var searchInput = document.getElementById("cc-nav-search");
+  if (searchInput) {
+    searchInput.addEventListener("input", function() {
+      var q = this.value.trim().toLowerCase();
+      var items    = document.querySelectorAll(".cc-nav-item");
+      var sections = document.querySelectorAll(".cc-sidebar-section");
+
+      if (!q) {
+        items.forEach(function(el) { el.style.display = ""; });
+        sections.forEach(function(el) { el.style.display = ""; });
+        return;
+      }
+
+      sections.forEach(function(section) {
+        var sectionItems = section.querySelectorAll(".cc-nav-item");
+        var anyVisible = false;
+        sectionItems.forEach(function(item) {
+          var label = (item.querySelector(".cc-nav-label") || item).textContent.toLowerCase();
+          var show  = label.includes(q);
+          item.style.display = show ? "" : "none";
+          if (show) anyVisible = true;
+        });
+        section.style.display = anyVisible ? "" : "none";
+      });
+    });
+  }
 })();
 </script>
 {% endblock %}

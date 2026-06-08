@@ -11,6 +11,7 @@ from django.template.response import TemplateResponse
 from django.urls import path, reverse
 from django.utils.html import escape, format_html
 import calendar
+import json
 from datetime import date, timedelta
 
 from .skydrop import SkydropError, create_shipment, map_skydrop_status, quote_order, sync_shipment
@@ -29,8 +30,12 @@ from .models import (
     BankMovement,
     Order,
     OrderItem,
+    OrderReturn,
     Producto,
+    ProductImage,
     ProductVariant,
+    PromoCode,
+    SizeChart,
     InventoryMovement,
     ExpenseCategory,
     Expense,
@@ -1125,6 +1130,12 @@ class PointOfSaleHeaderForm(forms.Form):
         required=False,
         label="Nota interna",
     )
+    sale_date = forms.DateField(
+        required=False,
+        label="Fecha de la venta",
+        widget=forms.DateInput(attrs={"type": "date"}),
+        help_text="Deja en blanco para usar hoy.",
+    )
 
 
 class CashRegisterClosureForm(forms.Form):
@@ -1134,6 +1145,35 @@ class CashRegisterClosureForm(forms.Form):
     transferencia_contado = forms.DecimalField(min_value=0, decimal_places=2, max_digits=10, initial=0, label="Transferencia contado")
     otros_contado = forms.DecimalField(min_value=0, decimal_places=2, max_digits=10, initial=0, label="Otros contado")
     nota = forms.CharField(widget=forms.Textarea(attrs={"rows": 3}), required=False, label="Nota")
+
+
+class ProductImageInline(admin.TabularInline):
+    model = ProductImage
+    extra = 1
+    fields = ("image", "image_preview", "alt_text", "order")
+    readonly_fields = ("image_preview",)
+
+    @admin.display(description="Vista previa")
+    def image_preview(self, obj):
+        if obj.image:
+            return format_html('<img src="{}" style="height:56px;border-radius:8px;object-fit:cover;">', obj.image.url)
+        return "—"
+
+
+class SizeChartInline(admin.TabularInline):
+    model = SizeChart
+    extra = 1
+    fields = ("talla", "pecho", "cintura", "largo", "hombro", "manga")
+    verbose_name = "Medida"
+    verbose_name_plural = "Tabla de tallas"
+
+
+class OrderReturnInline(admin.TabularInline):
+    model = OrderReturn
+    extra = 0
+    fields = ("reason", "status", "refund_amount", "restock", "notes")
+    readonly_fields = ()
+    show_change_link = True
 
 
 class ProductVariantInline(admin.TabularInline):
@@ -1293,7 +1333,7 @@ class ProductoAdmin(admin.ModelAdmin):
         "variant_generation_panel",
         "stock_count_panel",
     )
-    inlines = [ProductVariantInline, InventoryMovementInline]
+    inlines = [ProductImageInline, SizeChartInline, ProductVariantInline, InventoryMovementInline]
     fieldsets = (
         ("Base del producto", {
             "fields": ("nombre", "slug_imagen", "descripcion")
@@ -1337,6 +1377,11 @@ class ProductoAdmin(admin.ModelAdmin):
     def get_urls(self):
         urls = super().get_urls()
         custom_urls = [
+            path(
+                "design-catalog/",
+                self.admin_site.admin_view(self.design_catalog_view),
+                name="tienda_producto_design_catalog",
+            ),
             path(
                 "inventory-matrix/",
                 self.admin_site.admin_view(self.inventory_matrix_view),
@@ -1689,19 +1734,41 @@ class ProductoAdmin(admin.ModelAdmin):
         total_inventory_sale_value = Decimal("0.00")
         products_using_variants = 0
         products_using_general_stock = 0
+        chart_labels = []
+        chart_stock = []
+        chart_variants_by_product = {}
 
         for product in active_products.prefetch_related("variants"):
             variants = [variant for variant in product.variants.all() if variant.activo]
             if variants:
                 products_using_variants += 1
-                total_units += sum(variant.stock for variant in variants)
+                p_stock = sum(variant.stock for variant in variants)
+                total_units += p_stock
                 total_inventory_cost_value += sum(_variant_unit_cost(variant) * Decimal(str(variant.stock)) for variant in variants)
                 total_inventory_sale_value += sum(_variant_sale_price(variant) * Decimal(str(variant.stock)) for variant in variants)
+                chart_variants_by_product[product.nombre] = [
+                    {"color": v.color, "talla": v.talla, "stock": v.stock} for v in variants
+                ]
             else:
                 products_using_general_stock += 1
-                total_units += product.stock
+                p_stock = product.stock
+                total_units += p_stock
                 total_inventory_cost_value += _product_unit_cost(product) * Decimal(str(product.stock))
                 total_inventory_sale_value += _money(product.precio) * Decimal(str(product.stock))
+                chart_variants_by_product[product.nombre] = [
+                    {"color": "—", "talla": "General", "stock": product.stock}
+                ]
+            chart_labels.append(product.nombre)
+            chart_stock.append(p_stock)
+
+        all_variants_list = list(active_variants)
+        variants_ok = sum(1 for v in all_variants_list if v.stock > 3)
+        variants_low = sum(1 for v in all_variants_list if 0 < v.stock <= 3)
+        variants_out = sum(1 for v in all_variants_list if v.stock == 0)
+        all_variants_data = [
+            {"producto": v.product.nombre, "color": v.color, "talla": v.talla, "stock": v.stock}
+            for v in all_variants_list
+        ]
 
         context = dict(
             self.admin_site.each_context(request),
@@ -1723,8 +1790,177 @@ class ProductoAdmin(admin.ModelAdmin):
             stock_count_bulk_url=reverse("admin:tienda_producto_stock_count_bulk"),
             inventory_matrix_url=reverse("admin:tienda_producto_inventory_matrix"),
             opts=self.model._meta,
+            chart_labels_json=json.dumps(chart_labels),
+            chart_stock_json=json.dumps(chart_stock),
+            chart_health_json=json.dumps([variants_ok, variants_low, variants_out]),
+            chart_variants_by_product_json=json.dumps(chart_variants_by_product),
+            all_variants_data_json=json.dumps(all_variants_data),
         )
         return TemplateResponse(request, "admin/tienda/inventory_dashboard.html", context)
+
+    def design_catalog_view(self, request):
+        import shutil
+        from django.utils.text import slugify
+
+        CATALOG_DIR = os.path.join(settings.MEDIA_ROOT, "diseños_nuevos")
+        EXTS = {".jpg", ".jpeg", ".png", ".gif", ".webp"}
+        os.makedirs(CATALOG_DIR, exist_ok=True)
+
+        categoria, _ = Categoria.objects.get_or_create(nombre="Diseños")
+        precio_default = Decimal(str(getattr(settings, "IMPORT_DISENO_PRECIO_DEFAULT", "199.00")))
+        stock_default = getattr(settings, "IMPORT_DISENO_STOCK_DEFAULT", 10)
+
+        msg_ok = msg_err = ""
+
+        if request.method == "POST":
+            action = request.POST.get("action")
+
+            # ── upload ──
+            if action == "upload":
+                uploaded = request.FILES.getlist("files")
+                saved = 0
+                for f in uploaded:
+                    ext = os.path.splitext(f.name)[1].lower()
+                    if ext not in EXTS:
+                        continue
+                    dest = os.path.join(CATALOG_DIR, f.name)
+                    with open(dest, "wb") as out:
+                        for chunk in f.chunks():
+                            out.write(chunk)
+                    saved += 1
+                msg_ok = f"{saved} archivo(s) subido(s)." if saved else "Ningún archivo válido."
+
+            # ── import single ──
+            elif action == "import":
+                filename = request.POST.get("file", "").strip()
+                filepath = os.path.join(CATALOG_DIR, filename)
+                if filename and os.path.exists(filepath):
+                    nombre = os.path.splitext(filename)[0]
+                    precio = Decimal(request.POST.get("precio", str(precio_default)))
+                    if not Producto.objects.filter(nombre=nombre).exists():
+                        Producto.objects.create(
+                            nombre=nombre,
+                            descripcion="Diseño del catálogo.",
+                            precio=precio,
+                            costo=0,
+                            stock=stock_default,
+                            imagen=f"diseños_nuevos/{filename}",
+                            categoria=categoria,
+                            tallas_disponibles="S,M,L,XL",
+                            colores_disponibles="Negro,Blanco",
+                            disponible=True,
+                        )
+                        msg_ok = f'"{nombre}" importado como producto.'
+                    else:
+                        msg_err = f'"{nombre}" ya existe como producto.'
+                else:
+                    msg_err = "Archivo no encontrado."
+
+            # ── import all ──
+            elif action == "import_all":
+                precio = Decimal(request.POST.get("precio", str(precio_default)))
+                creados = 0
+                for f in os.listdir(CATALOG_DIR):
+                    if os.path.splitext(f)[1].lower() not in EXTS:
+                        continue
+                    nombre = os.path.splitext(f)[0]
+                    if not Producto.objects.filter(nombre=nombre).exists():
+                        Producto.objects.create(
+                            nombre=nombre,
+                            descripcion="Diseño del catálogo.",
+                            precio=precio,
+                            costo=0,
+                            stock=stock_default,
+                            imagen=f"diseños_nuevos/{f}",
+                            categoria=categoria,
+                            tallas_disponibles="S,M,L,XL",
+                            colores_disponibles="Negro,Blanco",
+                            disponible=True,
+                        )
+                        creados += 1
+                msg_ok = f"{creados} diseño(s) importado(s) como productos."
+
+            # ── delete file ──
+            elif action == "delete":
+                filename = request.POST.get("file", "").strip()
+                filepath = os.path.join(CATALOG_DIR, filename)
+                if filename and os.path.exists(filepath):
+                    os.remove(filepath)
+                    msg_ok = f'"{filename}" eliminado.'
+                else:
+                    msg_err = "Archivo no encontrado."
+
+            # ── edit product ──
+            elif action == "edit":
+                pid = request.POST.get("product_id")
+                try:
+                    p = Producto.objects.get(pk=pid, categoria=categoria)
+                    p.nombre = request.POST.get("nombre", p.nombre).strip() or p.nombre
+                    raw_precio = request.POST.get("precio", "").strip()
+                    if raw_precio:
+                        p.precio = Decimal(raw_precio)
+                    p.descripcion = request.POST.get("descripcion", p.descripcion).strip()
+                    p.disponible = request.POST.get("disponible") == "1"
+                    p.save()
+                    msg_ok = f'"{p.nombre}" actualizado.'
+                except Producto.DoesNotExist:
+                    msg_err = "Producto no encontrado."
+
+            # ── toggle disponible ──
+            elif action == "toggle":
+                pid = request.POST.get("product_id")
+                try:
+                    p = Producto.objects.get(pk=pid, categoria=categoria)
+                    p.disponible = not p.disponible
+                    p.save(update_fields=["disponible"])
+                    estado = "activado" if p.disponible else "desactivado"
+                    msg_ok = f'"{p.nombre}" {estado}.'
+                except Producto.DoesNotExist:
+                    msg_err = "Producto no encontrado."
+
+            # ── bulk price ──
+            elif action == "bulk_price":
+                nuevo_precio = request.POST.get("precio", "").strip()
+                solo_inactivos = request.POST.get("solo_inactivos") == "1"
+                if nuevo_precio:
+                    qs = Producto.objects.filter(categoria=categoria)
+                    if solo_inactivos:
+                        qs = qs.filter(disponible=False)
+                    updated = qs.update(precio=Decimal(nuevo_precio))
+                    msg_ok = f"Precio actualizado a ${nuevo_precio} en {updated} diseño(s)."
+                else:
+                    msg_err = "Ingresa un precio válido."
+
+        # build file list
+        productos_map = {
+            p.nombre: p
+            for p in Producto.objects.filter(categoria=categoria)
+        }
+        files = []
+        for f in sorted(os.listdir(CATALOG_DIR)):
+            if os.path.splitext(f)[1].lower() not in EXTS:
+                continue
+            nombre = os.path.splitext(f)[0]
+            product = productos_map.get(nombre)
+            files.append({
+                "filename": f,
+                "nombre": nombre,
+                "url": f"{settings.MEDIA_URL}diseños_nuevos/{f}",
+                "imported": product is not None,
+                "product": product,
+            })
+
+        context = dict(
+            self.admin_site.each_context(request),
+            title="Catálogo de Diseños",
+            subtitle=f"{len(files)} diseños en disco · {sum(1 for f in files if f['imported'])} importados",
+            files=files,
+            precio_default=precio_default,
+            msg_ok=msg_ok,
+            msg_err=msg_err,
+            opts=self.model._meta,
+        )
+        return TemplateResponse(request, "admin/tienda/design_catalog.html", context)
 
     def inventory_matrix_view(self, request):
         variants = list(
@@ -1796,12 +2032,24 @@ class ProductoAdmin(admin.ModelAdmin):
                 }
             )
 
+        all_colors = sorted({v.color for v in variants if v.color})
+        all_tallas = sorted({v.talla for v in variants if v.talla})
+        all_categorias = sorted({
+            v.product.categoria.nombre
+            for v in variants
+            if v.product.categoria
+        })
+
         context = dict(
             self.admin_site.each_context(request),
             title="Inventario por variantes",
             rows=rows,
             formset=formset,
             opts=self.model._meta,
+            filter_colors=all_colors,
+            filter_tallas=all_tallas,
+            filter_categorias=all_categorias,
+            total_variants=len(variants),
         )
         return TemplateResponse(request, "admin/tienda/inventory_matrix.html", context)
 
@@ -1910,7 +2158,7 @@ class OrderAdmin(admin.ModelAdmin):
         "skydrop_summary",
     )
     autocomplete_fields = ("customer", "cashier")
-    inlines = [OrderItemInline, ShippingAddressInline, ShippingUpdateInline]
+    inlines = [OrderItemInline, ShippingAddressInline, ShippingUpdateInline, OrderReturnInline]
     actions = [
         marcar_pedidos_completados,
         marcar_pedidos_enviados,
@@ -2251,6 +2499,16 @@ class OrderAdmin(admin.ModelAdmin):
                                 internal_note=header_form.cleaned_data.get("internal_note", ""),
                                 cashier=request.user if request.user.is_authenticated else None,
                             )
+                            sale_date = header_form.cleaned_data.get("sale_date")
+                            if sale_date and sale_date != timezone.localdate():
+                                now = timezone.now()
+                                backdated = now.replace(
+                                    year=sale_date.year,
+                                    month=sale_date.month,
+                                    day=sale_date.day,
+                                )
+                                Order.objects.filter(pk=order.pk).update(created_at=backdated)
+                                order.refresh_from_db()
                             for line in lines:
                                 OrderItem.objects.create(
                                     order=order,
@@ -2289,7 +2547,7 @@ class OrderAdmin(admin.ModelAdmin):
                         )
                         return HttpResponseRedirect(reverse("admin:tienda_order_change", args=[order.id]))
         else:
-            header_form = PointOfSaleHeaderForm()
+            header_form = PointOfSaleHeaderForm(initial={"sale_date": timezone.localdate()})
             formset = POSLineFormSet(initial=initial, prefix="pos")
 
         rows = []
@@ -4530,3 +4788,151 @@ class NewsletterSubscriberAdmin(admin.ModelAdmin):
     search_fields = ("email",)
     date_hierarchy = "created_at"
     ordering = ("-created_at",)
+
+
+# ─────────────────────────────────────────────
+#  PROMO CODES
+# ─────────────────────────────────────────────
+
+@admin.register(PromoCode)
+class PromoCodeAdmin(admin.ModelAdmin):
+    list_display = (
+        "code", "discount_type_display", "discount_value_display",
+        "min_purchase", "uses_count", "max_uses_display",
+        "expiration_date", "active",
+    )
+    list_filter = ("active", "discount_type", "created_at")
+    search_fields = ("code", "description")
+    list_editable = ("active",)
+    readonly_fields = ("uses_count", "created_at", "promo_stats")
+    ordering = ("-created_at",)
+    fieldsets = (
+        ("Código", {"fields": ("code", "description", "active")}),
+        ("Descuento", {"fields": ("discount_type", "discount_value", "min_purchase")}),
+        ("Límites", {"fields": ("max_uses", "uses_count", "expiration_date")}),
+        ("Estadísticas", {"fields": ("promo_stats", "created_at")}),
+    )
+
+    @admin.display(description="Tipo")
+    def discount_type_display(self, obj):
+        icons = {"percentage": "％", "fixed": "$", "free_shipping": "🚚"}
+        return format_html("{} {}", icons.get(obj.discount_type, ""), obj.get_discount_type_display())
+
+    @admin.display(description="Descuento")
+    def discount_value_display(self, obj):
+        if obj.discount_type == "percentage":
+            return f"{obj.discount_value:.0f}%"
+        if obj.discount_type == "fixed":
+            return f"${obj.discount_value:.2f}"
+        return "Envío gratis"
+
+    @admin.display(description="Usos máx.")
+    def max_uses_display(self, obj):
+        return obj.max_uses if obj.max_uses is not None else "∞"
+
+    @admin.display(description="Resumen de uso")
+    def promo_stats(self, obj):
+        if not obj.pk:
+            return "Guarda el código primero."
+        total_orders = obj.orders.count()
+        total_discount = sum(o.discount_amount for o in obj.orders.all())
+        return format_html(
+            "<strong>{}</strong> órdenes · <strong>${:.2f}</strong> en descuentos aplicados",
+            total_orders, total_discount,
+        )
+
+    @admin.action(description="Activar códigos seleccionados")
+    def activar(self, request, queryset):
+        queryset.update(active=True)
+        self.message_user(request, f"{queryset.count()} código(s) activados.")
+
+    @admin.action(description="Desactivar códigos seleccionados")
+    def desactivar(self, request, queryset):
+        queryset.update(active=False)
+        self.message_user(request, f"{queryset.count()} código(s) desactivados.")
+
+    @admin.action(description="Resetear conteo de usos")
+    def resetear_usos(self, request, queryset):
+        queryset.update(uses_count=0)
+        self.message_user(request, f"Conteo reseteado en {queryset.count()} código(s).")
+
+    actions = [activar, desactivar, resetear_usos]
+
+
+# ─────────────────────────────────────────────
+#  DEVOLUCIONES / RMA
+# ─────────────────────────────────────────────
+
+@admin.register(OrderReturn)
+class OrderReturnAdmin(admin.ModelAdmin):
+    list_display = (
+        "id", "order_link", "reason_display", "status_badge",
+        "refund_amount", "restock", "created_at",
+    )
+    list_filter = ("status", "reason", "restock", "created_at")
+    search_fields = ("order__id", "notes")
+    readonly_fields = ("created_at", "updated_at", "order_summary")
+    ordering = ("-created_at",)
+    fieldsets = (
+        ("Devolución", {"fields": ("order", "order_summary", "reason", "status", "restock")}),
+        ("Reembolso", {"fields": ("refund_amount", "notes")}),
+        ("Fechas", {"fields": ("created_at", "updated_at")}),
+    )
+
+    @admin.display(description="Orden", ordering="order__id")
+    def order_link(self, obj):
+        url = reverse("admin:tienda_order_change", args=[obj.order_id])
+        return format_html('<a href="{}">#{}</a>', url, obj.order_id)
+
+    @admin.display(description="Razón")
+    def reason_display(self, obj):
+        return obj.get_reason_display()
+
+    @admin.display(description="Estado")
+    def status_badge(self, obj):
+        colors = {
+            "requested": ("#92400e", "#fef3c7"),
+            "approved":  ("#1e40af", "#dbeafe"),
+            "received":  ("#065f46", "#d1fae5"),
+            "restocked": ("#065f46", "#d1fae5"),
+            "refunded":  ("#374151", "#f3f4f6"),
+            "rejected":  ("#991b1b", "#fee2e2"),
+        }
+        fg, bg = colors.get(obj.status, ("#374151", "#f3f4f6"))
+        return format_html(
+            '<span style="padding:3px 10px;border-radius:999px;font-size:12px;'
+            'font-weight:700;background:{};color:{}">{}</span>',
+            bg, fg, obj.get_status_display(),
+        )
+
+    @admin.display(description="Resumen de la orden")
+    def order_summary(self, obj):
+        if not obj.order_id:
+            return "—"
+        order = obj.order
+        items_html = "".join(
+            f"<li>{i.product.nombre} × {i.quantity} (${i.price})</li>"
+            for i in order.items.all()
+        )
+        return format_html(
+            "<ul style='margin:0;padding-left:1.2rem'>{}</ul>"
+            "<p style='margin:.5rem 0 0'>Total orden: <strong>${}</strong></p>",
+            items_html, order.total_price,
+        )
+
+    @admin.action(description="Aprobar devoluciones seleccionadas")
+    def aprobar(self, request, queryset):
+        queryset.filter(status="requested").update(status="approved")
+        self.message_user(request, "Devoluciones aprobadas.")
+
+    @admin.action(description="Marcar como recibidas en bodega")
+    def recibir(self, request, queryset):
+        queryset.filter(status="approved").update(status="received")
+        self.message_user(request, "Marcadas como recibidas.")
+
+    @admin.action(description="Rechazar devoluciones seleccionadas")
+    def rechazar(self, request, queryset):
+        queryset.filter(status="requested").update(status="rejected")
+        self.message_user(request, "Devoluciones rechazadas.")
+
+    actions = [aprobar, recibir, rechazar]

@@ -1,0 +1,2429 @@
+[
+  {
+    "orden": "W60581",
+    "fecha": "May 17, 2026",
+    "status": "Paid",
+    "total": 397.63,
+    "nota": "3x Twill Cargo Logo Pants - 38 / Dark Grey (SPCP2238) | 6x 7.5oz Max Heavyweight Oversized Tee - 2XL / Black (MHO022X) | 12x 7.5oz Max Heavyweight Oversized Tee - XL / White (MHO01XL) | 12x 7.5oz Max Heavyweight Oversized Tee - XL / Black (MHO02XL) | 6x 7.5oz Max Heavyweight Oversized Tee - L / White (MHO01L) | 6x 7.5oz Max Heavyweight Oversized Tee - L / Latte (MHO75L) | 6x 7.5oz Max Heavyweight Oversized Tee - L / Off Black (MHO72L) | 12x 7.5oz Max Heavyweight Oversized Tee - L / Black (MHO02L)",
+    "items": [
+      {
+        "product": "Twill Cargo Logo Pants - 38 / Dark Grey",
+        "sku": "SPCP2238",
+        "qty": "3",
+        "price": "$ 15.00",
+        "total": "$ 45.00"
+      },
+      {
+        "product": "7.5oz Max Heavyweight Oversized Tee - 2XL / Black",
+        "sku": "MHO022X",
+        "qty": "6",
+        "price": "$ 6.30",
+        "total": "$ 37.80"
+      },
+      {
+        "product": "7.5oz Max Heavyweight Oversized Tee - XL / White",
+        "sku": "MHO01XL",
+        "qty": "12",
+        "price": "$ 4.40",
+        "total": "$ 52.80"
+      },
+      {
+        "product": "7.5oz Max Heavyweight Oversized Tee - XL / Black",
+        "sku": "MHO02XL",
+        "qty": "12",
+        "price": "$ 5.25",
+        "total": "$ 63.00"
+      },
+      {
+        "product": "7.5oz Max Heavyweight Oversized Tee - L / White",
+        "sku": "MHO01L",
+        "qty": "6",
+        "price": "$ 4.40",
+        "total": "$ 26.40"
+      },
+      {
+        "product": "7.5oz Max Heavyweight Oversized Tee - L / Latte",
+        "sku": "MHO75L",
+        "qty": "6",
+        "price": "$ 5.25",
+        "total": "$ 31.50"
+      },
+      {
+        "product": "7.5oz Max Heavyweight Oversized Tee - L / Off Black",
+        "sku": "MHO72L",
+        "qty": "6",
+        "price": "$ 5.25",
+        "total": "$ 31.50"
+      },
+      {
+        "product": "7.5oz Max Heavyweight Oversized Tee - L / Black",
+        "sku": "MHO02L",
+        "qty": "12",
+        "price": "$ 5.25",
+        "total": "$ 63.00"
+      }
+    ]
+  },
+  {
+    "orden": "W59473",
+    "fecha": "April 13, 2026",
+    "status": "Paid",
+    "total": 448.33,
+    "nota": "6x 6.5oz Retro Garment Dye - S / Black (RGD02S) | 3x Twill Cargo Logo Pants - 38 / Black (SPCP0238) | 6x 7.5oz Max Heavyweight Oversized Tee - XL / Desert Beige (MHO80XL) | 6x 7.5oz Max Heavyweight Oversized Tee - M / Off White (MHO71M) | 6x 7.5oz Max Heavyweight Oversized Tee - M / Off Black (MHO72M) | 6x 7.5oz Max Heavyweight Oversized Tee - M / Black (MHO02M) | 12x 7.5oz Max Heavyweight Oversized Tee - XL / Concrete (MHO22XL) | 6x 7.5oz Max Heavyweight Oversized Tee - XL / Slate Blue (MHO73XL) | 6x 7.5oz Max Heavyweight Oversized Tee - XL / Off Black (MHO72XL) | 12x 7.5oz Max Heavyweight Oversized Tee - XL / Black (MHO02XL)",
+    "items": [
+      {
+        "product": "6.5oz Retro Garment Dye - S / Black",
+        "sku": "RGD02S",
+        "qty": "6",
+        "price": "$ 6.95",
+        "total": "$ 41.70"
+      },
+      {
+        "product": "Twill Cargo Logo Pants - 38 / Black",
+        "sku": "SPCP0238",
+        "qty": "3",
+        "price": "$ 15.00",
+        "total": "$ 45.00"
+      },
+      {
+        "product": "7.5oz Max Heavyweight Oversized Tee - XL / Desert Beige",
+        "sku": "MHO80XL",
+        "qty": "6",
+        "price": "$ 5.25",
+        "total": "$ 31.50"
+      },
+      {
+        "product": "7.5oz Max Heavyweight Oversized Tee - M / Off White",
+        "sku": "MHO71M",
+        "qty": "6",
+        "price": "$ 5.25",
+        "total": "$ 31.50"
+      },
+      {
+        "product": "7.5oz Max Heavyweight Oversized Tee - M / Off Black",
+        "sku": "MHO72M",
+        "qty": "6",
+        "price": "$ 5.25",
+        "total": "$ 31.50"
+      },
+      {
+        "product": "7.5oz Max Heavyweight Oversized Tee - M / Black",
+        "sku": "MHO02M",
+        "qty": "6",
+        "price": "$ 5.25",
+        "total": "$ 31.50"
+      },
+      {
+        "product": "7.5oz Max Heavyweight Oversized Tee - XL / Concrete",
+        "sku": "MHO22XL",
+        "qty": "12",
+        "price": "$ 5.25",
+        "total": "$ 63.00"
+      },
+      {
+        "product": "7.5oz Max Heavyweight Oversized Tee - XL / Slate Blue",
+        "sku": "MHO73XL",
+        "qty": "6",
+        "price": "$ 5.25",
+        "total": "$ 31.50"
+      },
+      {
+        "product": "7.5oz Max Heavyweight Oversized Tee - XL / Off Black",
+        "sku": "MHO72XL",
+        "qty": "6",
+        "price": "$ 5.25",
+        "total": "$ 31.50"
+      },
+      {
+        "product": "7.5oz Max Heavyweight Oversized Tee - XL / Black",
+        "sku": "MHO02XL",
+        "qty": "12",
+        "price": "$ 5.25",
+        "total": "$ 63.00"
+      }
+    ]
+  },
+  {
+    "orden": "W58387",
+    "fecha": "March 11, 2026",
+    "status": "Paid",
+    "total": 664.46,
+    "nota": "6x 7.5oz Max Heavyweight Garment Dye Drop Shoulder - L / Mocha (GDD78L) | 6x 7.5oz Max Heavyweight Garment Dye Drop Shoulder - L / Shadow (GDD21L) | 6x 7.5oz Max Heavyweight Garment Dye Drop Shoulder - S / Shadow (GDD21S) | 3x Balloon Denim - 32/32 / Black (BLD023232) | 3x Balloon Denim - 32/32 / Light Wash (BLD933232) | 6x 7.5oz Max Heavyweight Garment Dye Drop Shoulder - 2XL / Shadow (GDD212X) | 6x 7.5oz Max Heavyweight Oversized Tee - 2XL / White (MHO012X) | 6x 7.5oz Max Heavyweight Oversized Tee - XL / Dark Navy (MHO53XL) | 6x 7.5oz Max Heavyweight Oversized Tee - XL / White (MHO01XL) | 6x 7.5oz Max Heavyweight Oversized Tee - XL / Off Black (MHO72XL) | 6x 7.5oz Max Heavyweight Oversized Tee - XL / Black (MHO02XL) | 6x 7.5oz Max Heavyweight Oversized Tee - L / Concrete (MHO22L) | 6x 7.5oz Max Heavyweight Oversized Tee - M / Concrete (MHO22M) | 6x 7.5oz Max Heavyweight Oversized Tee - M / White (MHO01M) | 6x 7.5oz Max Heavyweight Oversized Tee - S / Concrete (MHO22S) | 6x 7.5oz Max Heavyweight Oversized Tee - S / Black (MHO02S)",
+    "items": [
+      {
+        "product": "7.5oz Max Heavyweight Garment Dye Drop Shoulder - L / Mocha",
+        "sku": "GDD78L",
+        "qty": "6",
+        "price": "$ 6.85",
+        "total": "$ 41.10"
+      },
+      {
+        "product": "7.5oz Max Heavyweight Garment Dye Drop Shoulder - L / Shadow",
+        "sku": "GDD21L",
+        "qty": "6",
+        "price": "$ 6.85",
+        "total": "$ 41.10"
+      },
+      {
+        "product": "7.5oz Max Heavyweight Garment Dye Drop Shoulder - S / Shadow",
+        "sku": "GDD21S",
+        "qty": "6",
+        "price": "$ 6.85",
+        "total": "$ 41.10"
+      },
+      {
+        "product": "Balloon Denim - 32/32 / Black",
+        "sku": "BLD023232",
+        "qty": "3",
+        "price": "$ 22.00",
+        "total": "$ 66.00"
+      },
+      {
+        "product": "Balloon Denim - 32/32 / Light Wash",
+        "sku": "BLD933232",
+        "qty": "3",
+        "price": "$ 22.00",
+        "total": "$ 66.00"
+      },
+      {
+        "product": "7.5oz Max Heavyweight Garment Dye Drop Shoulder - 2XL / Shadow",
+        "sku": "GDD212X",
+        "qty": "6",
+        "price": "$ 8.15",
+        "total": "$ 48.90"
+      },
+      {
+        "product": "7.5oz Max Heavyweight Oversized Tee - 2XL / White",
+        "sku": "MHO012X",
+        "qty": "6",
+        "price": "$ 5.40",
+        "total": "$ 32.40"
+      },
+      {
+        "product": "7.5oz Max Heavyweight Oversized Tee - XL / Dark Navy",
+        "sku": "MHO53XL",
+        "qty": "6",
+        "price": "$ 5.25",
+        "total": "$ 31.50"
+      },
+      {
+        "product": "7.5oz Max Heavyweight Oversized Tee - XL / White",
+        "sku": "MHO01XL",
+        "qty": "6",
+        "price": "$ 4.40",
+        "total": "$ 26.40"
+      },
+      {
+        "product": "7.5oz Max Heavyweight Oversized Tee - XL / Off Black",
+        "sku": "MHO72XL",
+        "qty": "6",
+        "price": "$ 5.25",
+        "total": "$ 31.50"
+      },
+      {
+        "product": "7.5oz Max Heavyweight Oversized Tee - XL / Black",
+        "sku": "MHO02XL",
+        "qty": "6",
+        "price": "$ 5.25",
+        "total": "$ 31.50"
+      },
+      {
+        "product": "7.5oz Max Heavyweight Oversized Tee - L / Concrete",
+        "sku": "MHO22L",
+        "qty": "6",
+        "price": "$ 5.25",
+        "total": "$ 31.50"
+      },
+      {
+        "product": "7.5oz Max Heavyweight Oversized Tee - M / Concrete",
+        "sku": "MHO22M",
+        "qty": "6",
+        "price": "$ 5.25",
+        "total": "$ 31.50"
+      },
+      {
+        "product": "7.5oz Max Heavyweight Oversized Tee - M / White",
+        "sku": "MHO01M",
+        "qty": "6",
+        "price": "$ 4.40",
+        "total": "$ 26.40"
+      },
+      {
+        "product": "7.5oz Max Heavyweight Oversized Tee - S / Concrete",
+        "sku": "MHO22S",
+        "qty": "6",
+        "price": "$ 5.25",
+        "total": "$ 31.50"
+      },
+      {
+        "product": "7.5oz Max Heavyweight Oversized Tee - S / Black",
+        "sku": "MHO02S",
+        "qty": "6",
+        "price": "$ 5.25",
+        "total": "$ 31.50"
+      }
+    ]
+  },
+  {
+    "orden": "W57511",
+    "fecha": "February 11, 2026",
+    "status": "Paid",
+    "total": 443.7,
+    "nota": "6x 7.5oz Max Heavyweight Oversized Tee - 2XL / Dark Navy (MHO532X) | 6x 7.5oz Max Heavyweight Oversized Tee - 2XL / Off Black (MHO722X) | 6x 7.5oz Max Heavyweight Garment Dye Drop Shoulder - M / Peach (GDD34M) | 6x 7.5oz Max Heavyweight Garment Dye Drop Shoulder - M / Shadow (GDD21M) | 3x Twill Cargo Logo Pants - 28 / Dark Grey (SPCP2228) | 3x 9.0oz Heavyweight Thermal 2.0 - M / Desert Camo (TC230M) | 3x 9.0oz Heavyweight Thermal 2.0 - M / City Camo (TC231M) | 3x Balloon Denim - 36/33 / Brown (BLD043633) | 3x Balloon Denim - 36/33 / Light Wash (BLD933633)",
+    "items": [
+      {
+        "product": "7.5oz Max Heavyweight Oversized Tee - 2XL / Dark Navy",
+        "sku": "MHO532X",
+        "qty": "6",
+        "price": "$ 6.30",
+        "total": "$ 37.80"
+      },
+      {
+        "product": "7.5oz Max Heavyweight Oversized Tee - 2XL / Off Black",
+        "sku": "MHO722X",
+        "qty": "6",
+        "price": "$ 6.30",
+        "total": "$ 37.80"
+      },
+      {
+        "product": "7.5oz Max Heavyweight Garment Dye Drop Shoulder - M / Peach",
+        "sku": "GDD34M",
+        "qty": "6",
+        "price": "$ 6.85",
+        "total": "$ 41.10"
+      },
+      {
+        "product": "7.5oz Max Heavyweight Garment Dye Drop Shoulder - M / Shadow",
+        "sku": "GDD21M",
+        "qty": "6",
+        "price": "$ 6.85",
+        "total": "$ 41.10"
+      },
+      {
+        "product": "Twill Cargo Logo Pants - 28 / Dark Grey",
+        "sku": "SPCP2228",
+        "qty": "3",
+        "price": "$ 15.00",
+        "total": "$ 45.00"
+      },
+      {
+        "product": "9.0oz Heavyweight Thermal 2.0 - M / Desert Camo",
+        "sku": "TC230M",
+        "qty": "3",
+        "price": "$ 10.80",
+        "total": "$ 32.40"
+      },
+      {
+        "product": "9.0oz Heavyweight Thermal 2.0 - M / City Camo",
+        "sku": "TC231M",
+        "qty": "3",
+        "price": "$ 10.80",
+        "total": "$ 32.40"
+      },
+      {
+        "product": "Balloon Denim - 36/33 / Brown",
+        "sku": "BLD043633",
+        "qty": "3",
+        "price": "$ 22.00",
+        "total": "$ 66.00"
+      },
+      {
+        "product": "Balloon Denim - 36/33 / Light Wash",
+        "sku": "BLD933633",
+        "qty": "3",
+        "price": "$ 22.00",
+        "total": "$ 66.00"
+      }
+    ]
+  },
+  {
+    "orden": "W56780",
+    "fecha": "January 14, 2026",
+    "status": "Paid",
+    "total": 710.38,
+    "nota": "6x 7.5oz Max Heavyweight Garment Dye Drop Shoulder - XL / Mocha (GDD78XL) | 6x 7.5oz Max Heavyweight Garment Dye Drop Shoulder - M / Mocha (GDD78M) | 6x 7.5oz Max Heavyweight Oversized Tee - XL / White (MHO01XL) | 6x 7.5oz Max Heavyweight Oversized Tee - XL / Black (MHO02XL) | 6x 7.5oz Max Heavyweight Oversized Tee - L / Dark navy (MHO53L) | 6x 7.5oz Max Heavyweight Oversized Tee - L / Desert Beige (MHO80L) | 6x 7.5oz Max Heavyweight Oversized Tee - L / Utility Green (MHO86L) | 12x 7.5oz Max Heavyweight Oversized Tee - L / Black (MHO02L) | 6x 7.5oz Max Heavyweight Oversized Tee - M / Dark navy (MHO53M) | 6x 7.5oz Max Heavyweight Oversized Tee - M / Desert Beige (MHO80M) | 6x 7.5oz Max Heavyweight Oversized Tee - M / Utility Green (MHO86M) | 6x 7.5oz Max Heavyweight Oversized Tee - M / White (MHO01M) | 6x 7.5oz Max Heavyweight Oversized Tee - M / Off Black (MHO72M) | 24x 7.5oz Max Heavyweight Oversized Tee - M / Black (MHO02M) | 6x 7.5oz Max Heavyweight Oversized Tee - S / Desert Beige (MHO80S) | 6x 7.5oz Max Heavyweight Oversized Tee - S / Black (MHO02S)",
+    "items": [
+      {
+        "product": "7.5oz Max Heavyweight Garment Dye Drop Shoulder - XL / Mocha",
+        "sku": "GDD78XL",
+        "qty": "6",
+        "price": "$ 6.85",
+        "total": "$ 41.10"
+      },
+      {
+        "product": "7.5oz Max Heavyweight Garment Dye Drop Shoulder - M / Mocha",
+        "sku": "GDD78M",
+        "qty": "6",
+        "price": "$ 6.85",
+        "total": "$ 41.10"
+      },
+      {
+        "product": "7.5oz Max Heavyweight Oversized Tee - XL / White",
+        "sku": "MHO01XL",
+        "qty": "6",
+        "price": "$ 4.40",
+        "total": "$ 26.40"
+      },
+      {
+        "product": "7.5oz Max Heavyweight Oversized Tee - XL / Black",
+        "sku": "MHO02XL",
+        "qty": "6",
+        "price": "$ 5.25",
+        "total": "$ 31.50"
+      },
+      {
+        "product": "7.5oz Max Heavyweight Oversized Tee - L / Dark navy",
+        "sku": "MHO53L",
+        "qty": "6",
+        "price": "$ 5.25",
+        "total": "$ 31.50"
+      },
+      {
+        "product": "7.5oz Max Heavyweight Oversized Tee - L / Desert Beige",
+        "sku": "MHO80L",
+        "qty": "6",
+        "price": "$ 5.25",
+        "total": "$ 31.50"
+      },
+      {
+        "product": "7.5oz Max Heavyweight Oversized Tee - L / Utility Green",
+        "sku": "MHO86L",
+        "qty": "6",
+        "price": "$ 5.25",
+        "total": "$ 31.50"
+      },
+      {
+        "product": "7.5oz Max Heavyweight Oversized Tee - L / Black",
+        "sku": "MHO02L",
+        "qty": "12",
+        "price": "$ 5.25",
+        "total": "$ 63.00"
+      },
+      {
+        "product": "7.5oz Max Heavyweight Oversized Tee - M / Dark navy",
+        "sku": "MHO53M",
+        "qty": "6",
+        "price": "$ 5.25",
+        "total": "$ 31.50"
+      },
+      {
+        "product": "7.5oz Max Heavyweight Oversized Tee - M / Desert Beige",
+        "sku": "MHO80M",
+        "qty": "6",
+        "price": "$ 5.25",
+        "total": "$ 31.50"
+      },
+      {
+        "product": "7.5oz Max Heavyweight Oversized Tee - M / Utility Green",
+        "sku": "MHO86M",
+        "qty": "6",
+        "price": "$ 5.25",
+        "total": "$ 31.50"
+      },
+      {
+        "product": "7.5oz Max Heavyweight Oversized Tee - M / White",
+        "sku": "MHO01M",
+        "qty": "6",
+        "price": "$ 4.40",
+        "total": "$ 26.40"
+      },
+      {
+        "product": "7.5oz Max Heavyweight Oversized Tee - M / Off Black",
+        "sku": "MHO72M",
+        "qty": "6",
+        "price": "$ 5.25",
+        "total": "$ 31.50"
+      },
+      {
+        "product": "7.5oz Max Heavyweight Oversized Tee - M / Black",
+        "sku": "MHO02M",
+        "qty": "24",
+        "price": "$ 5.25",
+        "total": "$ 126.00"
+      },
+      {
+        "product": "7.5oz Max Heavyweight Oversized Tee - S / Desert Beige",
+        "sku": "MHO80S",
+        "qty": "6",
+        "price": "$ 5.25",
+        "total": "$ 31.50"
+      },
+      {
+        "product": "7.5oz Max Heavyweight Oversized Tee - S / Black",
+        "sku": "MHO02S",
+        "qty": "6",
+        "price": "$ 5.25",
+        "total": "$ 31.50"
+      }
+    ]
+  },
+  {
+    "orden": "W52971",
+    "fecha": "September 11, 2025",
+    "status": "Paid",
+    "total": 367.17,
+    "nota": "6x 7.5oz Max Heavyweight Garment Dye Drop Shoulder - XL / Black (GDD02XL) | 6x 7.5oz Max Heavyweight Garment Dye Drop Shoulder - L / Black (GDD02L) | 6x 7.5oz Max Heavyweight Garment Dye Drop Shoulder - M / Black (GDD02M) | 6x 7.5oz Max Heavyweight Garment Dye Drop Shoulder - S / Black (GDD02S) | 6x 7.5oz Max Heavyweight Oversized Tee - 2XL / Black (MHO022X) | 6x 7.5oz Max Heavyweight Oversized Tee - XL / Black (MHO02XL) | 6x 7.5oz Max Heavyweight Oversized Tee - L / Black (MHO02L) | 6x 7.5oz Max Heavyweight Oversized Tee - M / Black (MHO02M) | 6x 7.5oz Max Heavyweight Oversized Tee - S / Black (MHO02S)",
+    "items": [
+      {
+        "product": "7.5oz Max Heavyweight Garment Dye Drop Shoulder - XL / Black",
+        "sku": "GDD02XL",
+        "qty": "6",
+        "price": "$ 6.85",
+        "total": "$ 41.10"
+      },
+      {
+        "product": "7.5oz Max Heavyweight Garment Dye Drop Shoulder - L / Black",
+        "sku": "GDD02L",
+        "qty": "6",
+        "price": "$ 6.85",
+        "total": "$ 41.10"
+      },
+      {
+        "product": "7.5oz Max Heavyweight Garment Dye Drop Shoulder - M / Black",
+        "sku": "GDD02M",
+        "qty": "6",
+        "price": "$ 6.85",
+        "total": "$ 41.10"
+      },
+      {
+        "product": "7.5oz Max Heavyweight Garment Dye Drop Shoulder - S / Black",
+        "sku": "GDD02S",
+        "qty": "6",
+        "price": "$ 6.85",
+        "total": "$ 41.10"
+      },
+      {
+        "product": "7.5oz Max Heavyweight Oversized Tee - 2XL / Black",
+        "sku": "MHO022X",
+        "qty": "6",
+        "price": "$ 6.30",
+        "total": "$ 37.80"
+      },
+      {
+        "product": "7.5oz Max Heavyweight Oversized Tee - XL / Black",
+        "sku": "MHO02XL",
+        "qty": "6",
+        "price": "$ 5.25",
+        "total": "$ 31.50"
+      },
+      {
+        "product": "7.5oz Max Heavyweight Oversized Tee - L / Black",
+        "sku": "MHO02L",
+        "qty": "6",
+        "price": "$ 5.25",
+        "total": "$ 31.50"
+      },
+      {
+        "product": "7.5oz Max Heavyweight Oversized Tee - M / Black",
+        "sku": "MHO02M",
+        "qty": "6",
+        "price": "$ 5.25",
+        "total": "$ 31.50"
+      },
+      {
+        "product": "7.5oz Max Heavyweight Oversized Tee - S / Black",
+        "sku": "MHO02S",
+        "qty": "6",
+        "price": "$ 5.25",
+        "total": "$ 31.50"
+      }
+    ]
+  },
+  {
+    "orden": "W50781",
+    "fecha": "July 13, 2025",
+    "status": "Paid",
+    "total": 555.37,
+    "nota": "6x 7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - L / Navy (MHS03L) | 3x Retro Basketball Shorts - S / Green (RBS06S) | 6x 7.5 oz Max Heavyweight Tie Dye - M / Milky Way (TDSMWM) | 6x Garment Dye Drop Shoulder - L / Cream (GDD77L) | 6x Garment Dye Drop Shoulder - L / Black (GDD02L) | 6x Garment Dye Drop Shoulder - M / Cream (GDD77M) | 6x Garment Dye Drop Shoulder - M / Black (GDD02M) | 6x Max Heavyweight Oversized Short Sleeve - L / White (MHO01L) | 6x Max Heavyweight Oversized Short Sleeve - L / Black (MHO02L) | 6x Max Heavyweight Oversized Short Sleeve - M / White (MHO01M) | 6x Max Heavyweight Oversized Short Sleeve - M / Black (MHO02M) | 6x 7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - XL / White (MHS01XL) | 6x 7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - XL / Black (MHS02XL) | 6x 7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - L / White (MHS01L) | 12x 7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - L / Black (MHS02L)",
+    "items": [
+      {
+        "product": "7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - L / Navy",
+        "sku": "MHS03L",
+        "qty": "6",
+        "price": "$ 4.62",
+        "total": "$ 27.72"
+      },
+      {
+        "product": "Retro Basketball Shorts - S / Green",
+        "sku": "RBS06S",
+        "qty": "3",
+        "price": "$ 11.00",
+        "total": "$ 33.00"
+      },
+      {
+        "product": "7.5 oz Max Heavyweight Tie Dye - M / Milky Way",
+        "sku": "TDSMWM",
+        "qty": "6",
+        "price": "$ 6.55",
+        "total": "$ 39.30"
+      },
+      {
+        "product": "Garment Dye Drop Shoulder - L / Cream",
+        "sku": "GDD77L",
+        "qty": "6",
+        "price": "$ 6.85",
+        "total": "$ 41.10"
+      },
+      {
+        "product": "Garment Dye Drop Shoulder - L / Black",
+        "sku": "GDD02L",
+        "qty": "6",
+        "price": "$ 6.85",
+        "total": "$ 41.10"
+      },
+      {
+        "product": "Garment Dye Drop Shoulder - M / Cream",
+        "sku": "GDD77M",
+        "qty": "6",
+        "price": "$ 6.85",
+        "total": "$ 41.10"
+      },
+      {
+        "product": "Garment Dye Drop Shoulder - M / Black",
+        "sku": "GDD02M",
+        "qty": "6",
+        "price": "$ 6.85",
+        "total": "$ 41.10"
+      },
+      {
+        "product": "Max Heavyweight Oversized Short Sleeve - L / White",
+        "sku": "MHO01L",
+        "qty": "6",
+        "price": "$ 4.40",
+        "total": "$ 26.40"
+      },
+      {
+        "product": "Max Heavyweight Oversized Short Sleeve - L / Black",
+        "sku": "MHO02L",
+        "qty": "6",
+        "price": "$ 5.25",
+        "total": "$ 31.50"
+      },
+      {
+        "product": "Max Heavyweight Oversized Short Sleeve - M / White",
+        "sku": "MHO01M",
+        "qty": "6",
+        "price": "$ 4.40",
+        "total": "$ 26.40"
+      },
+      {
+        "product": "Max Heavyweight Oversized Short Sleeve - M / Black",
+        "sku": "MHO02M",
+        "qty": "6",
+        "price": "$ 5.25",
+        "total": "$ 31.50"
+      },
+      {
+        "product": "7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - XL / White",
+        "sku": "MHS01XL",
+        "qty": "6",
+        "price": "$ 3.80",
+        "total": "$ 22.80"
+      },
+      {
+        "product": "7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - XL / Black",
+        "sku": "MHS02XL",
+        "qty": "6",
+        "price": "$ 4.62",
+        "total": "$ 27.72"
+      },
+      {
+        "product": "7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - L / White",
+        "sku": "MHS01L",
+        "qty": "6",
+        "price": "$ 3.80",
+        "total": "$ 22.80"
+      },
+      {
+        "product": "7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - L / Black",
+        "sku": "MHS02L",
+        "qty": "12",
+        "price": "$ 4.62",
+        "total": "$ 55.44"
+      }
+    ]
+  },
+  {
+    "orden": "W47005",
+    "fecha": "March 29, 2025",
+    "status": "Paid",
+    "total": 345.59,
+    "nota": "6x Garment Dye Drop Shoulder - S / White (GDD01S) | 6x Max Heavyweight Oversized Short Sleeve - XL / White (MHO01XL) | 6x Max Heavyweight Oversized Short Sleeve - L / White (MHO01L) | 6x Max Heavyweight Oversized Short Sleeve - S / White (MHO01S) | 6x 6.0 oz Active Short Sleeve - Standard Sizes - S / White (ACS01S) | 6x 6.0 oz Active Short Sleeve - Standard Sizes - S / Black (ACS02S) | 6x 7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - XL / Brown (MHS04XL) | 6x 7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - XL / Black (MHS02XL) | 6x 7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - L / Brown (MHS04L) | 6x 7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - L / Black (MHS02L) | 6x 7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - M / Brown (MHS04M) | 6x 7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - M / Black (MHS02M)",
+    "items": [
+      {
+        "product": "Garment Dye Drop Shoulder - S / White",
+        "sku": "GDD01S",
+        "qty": "6",
+        "price": "$ 6.50",
+        "total": "$ 39.00"
+      },
+      {
+        "product": "Max Heavyweight Oversized Short Sleeve - XL / White",
+        "sku": "MHO01XL",
+        "qty": "6",
+        "price": "$ 4.15",
+        "total": "$ 24.90"
+      },
+      {
+        "product": "Max Heavyweight Oversized Short Sleeve - L / White",
+        "sku": "MHO01L",
+        "qty": "6",
+        "price": "$ 4.15",
+        "total": "$ 24.90"
+      },
+      {
+        "product": "Max Heavyweight Oversized Short Sleeve - S / White",
+        "sku": "MHO01S",
+        "qty": "6",
+        "price": "$ 4.15",
+        "total": "$ 24.90"
+      },
+      {
+        "product": "6.0 oz Active Short Sleeve - Standard Sizes - S / White",
+        "sku": "ACS01S",
+        "qty": "6",
+        "price": "$ 2.66",
+        "total": "$ 15.96"
+      },
+      {
+        "product": "6.0 oz Active Short Sleeve - Standard Sizes - S / Black",
+        "sku": "ACS02S",
+        "qty": "6",
+        "price": "$ 3.08",
+        "total": "$ 18.48"
+      },
+      {
+        "product": "7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - XL / Brown",
+        "sku": "MHS04XL",
+        "qty": "6",
+        "price": "$ 4.40",
+        "total": "$ 26.40"
+      },
+      {
+        "product": "7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - XL / Black",
+        "sku": "MHS02XL",
+        "qty": "6",
+        "price": "$ 4.40",
+        "total": "$ 26.40"
+      },
+      {
+        "product": "7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - L / Brown",
+        "sku": "MHS04L",
+        "qty": "6",
+        "price": "$ 4.40",
+        "total": "$ 26.40"
+      },
+      {
+        "product": "7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - L / Black",
+        "sku": "MHS02L",
+        "qty": "6",
+        "price": "$ 4.40",
+        "total": "$ 26.40"
+      },
+      {
+        "product": "7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - M / Brown",
+        "sku": "MHS04M",
+        "qty": "6",
+        "price": "$ 4.40",
+        "total": "$ 26.40"
+      },
+      {
+        "product": "7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - M / Black",
+        "sku": "MHS02M",
+        "qty": "6",
+        "price": "$ 4.40",
+        "total": "$ 26.40"
+      }
+    ]
+  },
+  {
+    "orden": "W45754",
+    "fecha": "February 23, 2025",
+    "status": "Paid",
+    "total": 348.03,
+    "nota": "6x Max Heavyweight Cropped Tee - L / Black (MCS02L) | 6x 7.5 oz Max Short Sleeve - Large Sizes - 2XL / Black (MHS022X) | 6x 7.5oz Garment Dyed Muscle Tee - XL / Black (GMT02XL) | 6x Garment Dye Drop Shoulder - 2XL / Black (GDD022X) | 6x Garment Dye Drop Shoulder - L / Black (GDD02L) | 6x Garment Dye Drop Shoulder - M / Black (GDD02M) | 6x Max Heavyweight Oversized Short Sleeve - L / Off Black (MHO72L) | 6x Max Heavyweight Oversized Short Sleeve - L / White (MHO01L) | 6x Max Heavyweight Oversized Short Sleeve - L / Black (MHO02L)",
+    "items": [
+      {
+        "product": "Max Heavyweight Cropped Tee - L / Black",
+        "sku": "MCS02L",
+        "qty": "6",
+        "price": "$ 4.40",
+        "total": "$ 26.40"
+      },
+      {
+        "product": "7.5 oz Max Short Sleeve - Large Sizes - 2XL / Black",
+        "sku": "MHS022X",
+        "qty": "6",
+        "price": "$ 5.77",
+        "total": "$ 34.62"
+      },
+      {
+        "product": "7.5oz Garment Dyed Muscle Tee - XL / Black",
+        "sku": "GMT02XL",
+        "qty": "6",
+        "price": "$ 6.00",
+        "total": "$ 36.00"
+      },
+      {
+        "product": "Garment Dye Drop Shoulder - 2XL / Black",
+        "sku": "GDD022X",
+        "qty": "6",
+        "price": "$ 7.75",
+        "total": "$ 46.50"
+      },
+      {
+        "product": "Garment Dye Drop Shoulder - L / Black",
+        "sku": "GDD02L",
+        "qty": "6",
+        "price": "$ 6.50",
+        "total": "$ 39.00"
+      },
+      {
+        "product": "Garment Dye Drop Shoulder - M / Black",
+        "sku": "GDD02M",
+        "qty": "6",
+        "price": "$ 6.50",
+        "total": "$ 39.00"
+      },
+      {
+        "product": "Max Heavyweight Oversized Short Sleeve - L / Off Black",
+        "sku": "MHO72L",
+        "qty": "6",
+        "price": "$ 5.00",
+        "total": "$ 30.00"
+      },
+      {
+        "product": "Max Heavyweight Oversized Short Sleeve - L / White",
+        "sku": "MHO01L",
+        "qty": "6",
+        "price": "$ 4.15",
+        "total": "$ 24.90"
+      },
+      {
+        "product": "Max Heavyweight Oversized Short Sleeve - L / Black",
+        "sku": "MHO02L",
+        "qty": "6",
+        "price": "$ 5.00",
+        "total": "$ 30.00"
+      }
+    ]
+  },
+  {
+    "orden": "W44445",
+    "fecha": "January 09, 2025",
+    "status": "Partially refunded",
+    "total": 385.88,
+    "nota": "12x Logo Beanie - M / Sand (BN04M) | 3x 6.2 oz Polo - S / Khaki (CP20S) | 6x 6.0 oz Raglan - Standard Sizes - L / Olive and Camo Green (RA5646L) | 3x Garment Dye Straight Leg Baggy Sweatpants - S / Black (GDSSP02S) | 6x Oversized Long Sleeve - L / Black (MOL02L) | 6x Oversized Long Sleeve - M / Black (MOL02M) | 12x Max Heavyweight Oversized Short Sleeve - 2XL / Black (MHO022X) | 12x Max Heavyweight Oversized Short Sleeve - M / Black (MHO02M)",
+    "items": [
+      {
+        "product": "Logo Beanie - M / Sand",
+        "sku": "BN04M",
+        "qty": "12",
+        "price": "$ 2.50",
+        "total": "$ 30.00"
+      },
+      {
+        "product": "6.2 oz Polo - S / Khaki",
+        "sku": "CP20S",
+        "qty": "3",
+        "price": "$ 7.25",
+        "total": "$ 21.75"
+      },
+      {
+        "product": "6.0 oz Raglan - Standard Sizes - L / Olive and Camo Green",
+        "sku": "RA5646L",
+        "qty": "6",
+        "price": "$ 5.18",
+        "total": "$ 31.08"
+      },
+      {
+        "product": "Garment Dye Straight Leg Baggy Sweatpants - S / Black",
+        "sku": "GDSSP02S",
+        "qty": "3",
+        "price": "$ 20.00",
+        "total": "$ 60.00"
+      },
+      {
+        "product": "Oversized Long Sleeve - L / Black",
+        "sku": "MOL02L",
+        "qty": "6",
+        "price": "$ 6.00",
+        "total": "$ 36.00"
+      },
+      {
+        "product": "Oversized Long Sleeve - M / Black",
+        "sku": "MOL02M",
+        "qty": "6",
+        "price": "$ 6.00",
+        "total": "$ 36.00"
+      },
+      {
+        "product": "Max Heavyweight Oversized Short Sleeve - 2XL / Black",
+        "sku": "MHO022X",
+        "qty": "12",
+        "price": "$ 6.00",
+        "total": "$ 72.00"
+      },
+      {
+        "product": "Max Heavyweight Oversized Short Sleeve - M / Black",
+        "sku": "MHO02M",
+        "qty": "12",
+        "price": "$ 5.00",
+        "total": "$ 60.00"
+      }
+    ]
+  },
+  {
+    "orden": "W44270",
+    "fecha": "January 03, 2025",
+    "status": "Paid",
+    "total": 383.61,
+    "nota": "3x Twill Cargo Pants - 30 / Black (SPCP0230) | 6x Oversized Long Sleeve - L / White (MOL01L) | 6x Oversized Long Sleeve - M / White (MOL01M) | 6x Garment Dye Drop Shoulder - L / Oatmeal (GDD31L) | 6x Garment Dye Drop Shoulder - L / Shadow (GDD21L) | 6x Garment Dye Drop Shoulder - L / Black (GDD02L) | 6x Garment Dye Drop Shoulder - M / Oatmeal (GDD31M) | 6x Garment Dye Drop Shoulder - M / Shadow (GDD21M) | 6x Garment Dye Drop Shoulder - M / Black (GDD02M)",
+    "items": [
+      {
+        "product": "Twill Cargo Pants - 30 / Black",
+        "sku": "SPCP0230",
+        "qty": "3",
+        "price": "$ 15.00",
+        "total": "$ 45.00"
+      },
+      {
+        "product": "Oversized Long Sleeve - L / White",
+        "sku": "MOL01L",
+        "qty": "6",
+        "price": "$ 5.25",
+        "total": "$ 31.50"
+      },
+      {
+        "product": "Oversized Long Sleeve - M / White",
+        "sku": "MOL01M",
+        "qty": "6",
+        "price": "$ 5.25",
+        "total": "$ 31.50"
+      },
+      {
+        "product": "Garment Dye Drop Shoulder - L / Oatmeal",
+        "sku": "GDD31L",
+        "qty": "6",
+        "price": "$ 6.50",
+        "total": "$ 39.00"
+      },
+      {
+        "product": "Garment Dye Drop Shoulder - L / Shadow",
+        "sku": "GDD21L",
+        "qty": "6",
+        "price": "$ 6.50",
+        "total": "$ 39.00"
+      },
+      {
+        "product": "Garment Dye Drop Shoulder - L / Black",
+        "sku": "GDD02L",
+        "qty": "6",
+        "price": "$ 6.50",
+        "total": "$ 39.00"
+      },
+      {
+        "product": "Garment Dye Drop Shoulder - M / Oatmeal",
+        "sku": "GDD31M",
+        "qty": "6",
+        "price": "$ 6.50",
+        "total": "$ 39.00"
+      },
+      {
+        "product": "Garment Dye Drop Shoulder - M / Shadow",
+        "sku": "GDD21M",
+        "qty": "6",
+        "price": "$ 6.50",
+        "total": "$ 39.00"
+      },
+      {
+        "product": "Garment Dye Drop Shoulder - M / Black",
+        "sku": "GDD02M",
+        "qty": "6",
+        "price": "$ 6.50",
+        "total": "$ 39.00"
+      }
+    ]
+  },
+  {
+    "orden": "W43277",
+    "fecha": "November 28, 2024",
+    "status": "Paid",
+    "total": 357.76,
+    "nota": "6x 7.5 oz Max Heavyweight Long Sleeve - Standard Sizes - XL / Black (MHL02XL) | 6x 7.5 oz Max Heavyweight Long Sleeve - Standard Sizes - L / Black (MHL02L) | 6x 7.5 oz Max Heavyweight Long Sleeve - Standard Sizes - M / Black (MHL02M) | 6x 7.5 oz Max Heavyweight Long Sleeve - Standard Sizes - S / Black (MHL02S) | 6x 7.5oz Garment Dyed Muscle Tee - L / Black (GMT02L) | 6x 7.5oz Garment Dyed Muscle Tee - M / Shadow (GMT21M) | 6x 7.5oz Garment Dyed Muscle Tee - M / Washed Denim (GMT93M) | 6x 7.5oz Garment Dyed Muscle Tee - M / Black (GMT02M) | 6x 7.5oz Garment Dyed Muscle Tee - S / Black (GMT02S)",
+    "items": [
+      {
+        "product": "7.5 oz Max Heavyweight Long Sleeve - Standard Sizes - XL / Black",
+        "sku": "MHL02XL",
+        "qty": "6",
+        "price": "$ 5.77",
+        "total": "$ 34.62"
+      },
+      {
+        "product": "7.5 oz Max Heavyweight Long Sleeve - Standard Sizes - L / Black",
+        "sku": "MHL02L",
+        "qty": "6",
+        "price": "$ 5.77",
+        "total": "$ 34.62"
+      },
+      {
+        "product": "7.5 oz Max Heavyweight Long Sleeve - Standard Sizes - M / Black",
+        "sku": "MHL02M",
+        "qty": "6",
+        "price": "$ 5.77",
+        "total": "$ 34.62"
+      },
+      {
+        "product": "7.5 oz Max Heavyweight Long Sleeve - Standard Sizes - S / Black",
+        "sku": "MHL02S",
+        "qty": "6",
+        "price": "$ 5.77",
+        "total": "$ 34.62"
+      },
+      {
+        "product": "7.5oz Garment Dyed Muscle Tee - L / Black",
+        "sku": "GMT02L",
+        "qty": "6",
+        "price": "$ 6.00",
+        "total": "$ 36.00"
+      },
+      {
+        "product": "7.5oz Garment Dyed Muscle Tee - M / Shadow",
+        "sku": "GMT21M",
+        "qty": "6",
+        "price": "$ 6.00",
+        "total": "$ 36.00"
+      },
+      {
+        "product": "7.5oz Garment Dyed Muscle Tee - M / Washed Denim",
+        "sku": "GMT93M",
+        "qty": "6",
+        "price": "$ 6.00",
+        "total": "$ 36.00"
+      },
+      {
+        "product": "7.5oz Garment Dyed Muscle Tee - M / Black",
+        "sku": "GMT02M",
+        "qty": "6",
+        "price": "$ 6.00",
+        "total": "$ 36.00"
+      },
+      {
+        "product": "7.5oz Garment Dyed Muscle Tee - S / Black",
+        "sku": "GMT02S",
+        "qty": "6",
+        "price": "$ 6.00",
+        "total": "$ 36.00"
+      }
+    ]
+  },
+  {
+    "orden": "W42634",
+    "fecha": "November 09, 2024",
+    "status": "Paid",
+    "total": 369.28,
+    "nota": "6x Max Heavyweight Oversized Short Sleeve - S / Deep Burgundy (MHO74S) | 6x Max Heavyweight Oversized Short Sleeve - S / Off White (MHO71S) | 6x Max Heavyweight Oversized Short Sleeve - S / Latte (MHO75S) | 6x Max Heavyweight Oversized Short Sleeve - S / Off Black (MHO72S) | 6x Max Heavyweight Oversized Short Sleeve - S / Black (MHO02S) | 12x Max Heavyweight Oversized Short Sleeve - XL / Black (MHO02XL) | 6x Max Heavyweight Oversized Short Sleeve - M / Off White (MHO71M) | 6x Max Heavyweight Oversized Short Sleeve - M / Latte (MHO75M) | 6x Max Heavyweight Oversized Short Sleeve - M / Off Black (MHO72M) | 6x Max Heavyweight Oversized Short Sleeve - M / Black (MHO02M)",
+    "items": [
+      {
+        "product": "Max Heavyweight Oversized Short Sleeve - S / Deep Burgundy",
+        "sku": "MHO74S",
+        "qty": "6",
+        "price": "$ 5.00",
+        "total": "$ 30.00"
+      },
+      {
+        "product": "Max Heavyweight Oversized Short Sleeve - S / Off White",
+        "sku": "MHO71S",
+        "qty": "6",
+        "price": "$ 5.00",
+        "total": "$ 30.00"
+      },
+      {
+        "product": "Max Heavyweight Oversized Short Sleeve - S / Latte",
+        "sku": "MHO75S",
+        "qty": "6",
+        "price": "$ 5.00",
+        "total": "$ 30.00"
+      },
+      {
+        "product": "Max Heavyweight Oversized Short Sleeve - S / Off Black",
+        "sku": "MHO72S",
+        "qty": "6",
+        "price": "$ 5.00",
+        "total": "$ 30.00"
+      },
+      {
+        "product": "Max Heavyweight Oversized Short Sleeve - S / Black",
+        "sku": "MHO02S",
+        "qty": "6",
+        "price": "$ 5.00",
+        "total": "$ 30.00"
+      },
+      {
+        "product": "Max Heavyweight Oversized Short Sleeve - XL / Black",
+        "sku": "MHO02XL",
+        "qty": "12",
+        "price": "$ 5.00",
+        "total": "$ 60.00"
+      },
+      {
+        "product": "Max Heavyweight Oversized Short Sleeve - M / Off White",
+        "sku": "MHO71M",
+        "qty": "6",
+        "price": "$ 5.00",
+        "total": "$ 30.00"
+      },
+      {
+        "product": "Max Heavyweight Oversized Short Sleeve - M / Latte",
+        "sku": "MHO75M",
+        "qty": "6",
+        "price": "$ 5.00",
+        "total": "$ 30.00"
+      },
+      {
+        "product": "Max Heavyweight Oversized Short Sleeve - M / Off Black",
+        "sku": "MHO72M",
+        "qty": "6",
+        "price": "$ 5.00",
+        "total": "$ 30.00"
+      },
+      {
+        "product": "Max Heavyweight Oversized Short Sleeve - M / Black",
+        "sku": "MHO02M",
+        "qty": "6",
+        "price": "$ 5.00",
+        "total": "$ 30.00"
+      }
+    ]
+  },
+  {
+    "orden": "W41392",
+    "fecha": "October 02, 2024",
+    "status": "Paid",
+    "total": 339.28,
+    "nota": "6x Max Heavyweight Oversized Short Sleeve - XL / Slate Blue (MHO73XL) | 6x Max Heavyweight Oversized Short Sleeve - L / Slate Blue (MHO73L) | 6x Max Heavyweight Oversized Short Sleeve - M / Slate Blue (MHO73M) | 6x Max Heavyweight Oversized Short Sleeve - L / Black (MHO02L) | 6x Max Heavyweight Oversized Short Sleeve - XL / Deep Burgundy (MHO74XL) | 6x Max Heavyweight Oversized Short Sleeve - XL / Off Black (MHO72XL) | 6x Max Heavyweight Oversized Short Sleeve - L / Deep Burgundy (MHO74L) | 6x Max Heavyweight Oversized Short Sleeve - M / Deep Burgundy (MHO74M) | 6x Max Heavyweight Oversized Short Sleeve - S / Deep Burgundy (MHO74S) | 6x Max Heavyweight Oversized Short Sleeve - S / Black (MHO02S)",
+    "items": [
+      {
+        "product": "Max Heavyweight Oversized Short Sleeve - XL / Slate Blue",
+        "sku": "MHO73XL",
+        "qty": "6",
+        "price": "$ 5.00",
+        "total": "$ 30.00"
+      },
+      {
+        "product": "Max Heavyweight Oversized Short Sleeve - L / Slate Blue",
+        "sku": "MHO73L",
+        "qty": "6",
+        "price": "$ 5.00",
+        "total": "$ 30.00"
+      },
+      {
+        "product": "Max Heavyweight Oversized Short Sleeve - M / Slate Blue",
+        "sku": "MHO73M",
+        "qty": "6",
+        "price": "$ 5.00",
+        "total": "$ 30.00"
+      },
+      {
+        "product": "Max Heavyweight Oversized Short Sleeve - L / Black",
+        "sku": "MHO02L",
+        "qty": "6",
+        "price": "$ 5.00",
+        "total": "$ 30.00"
+      },
+      {
+        "product": "Max Heavyweight Oversized Short Sleeve - XL / Deep Burgundy",
+        "sku": "MHO74XL",
+        "qty": "6",
+        "price": "$ 5.00",
+        "total": "$ 30.00"
+      },
+      {
+        "product": "Max Heavyweight Oversized Short Sleeve - XL / Off Black",
+        "sku": "MHO72XL",
+        "qty": "6",
+        "price": "$ 5.00",
+        "total": "$ 30.00"
+      },
+      {
+        "product": "Max Heavyweight Oversized Short Sleeve - L / Deep Burgundy",
+        "sku": "MHO74L",
+        "qty": "6",
+        "price": "$ 5.00",
+        "total": "$ 30.00"
+      },
+      {
+        "product": "Max Heavyweight Oversized Short Sleeve - M / Deep Burgundy",
+        "sku": "MHO74M",
+        "qty": "6",
+        "price": "$ 5.00",
+        "total": "$ 30.00"
+      },
+      {
+        "product": "Max Heavyweight Oversized Short Sleeve - S / Deep Burgundy",
+        "sku": "MHO74S",
+        "qty": "6",
+        "price": "$ 5.00",
+        "total": "$ 30.00"
+      },
+      {
+        "product": "Max Heavyweight Oversized Short Sleeve - S / Black",
+        "sku": "MHO02S",
+        "qty": "6",
+        "price": "$ 5.00",
+        "total": "$ 30.00"
+      }
+    ]
+  },
+  {
+    "orden": "W41181",
+    "fecha": "September 25, 2024",
+    "status": "Paid",
+    "total": 506.54,
+    "nota": "3x 13.5 Oz Los Angeles Heavyweight Garment Dye Hoodie - L / Mocha (GDH78L) | 3x 13.5 Oz Los Angeles Heavyweight Garment Dye Hoodie - L / Cream (GDH77L) | 3x 13.5 Oz Los Angeles Heavyweight Garment Dye Hoodie - L / Black (GDH02L) | 3x 13.5 Oz Los Angeles Heavyweight Garment Dye Hoodie - M / Mocha (GDH78M) | 3x 13.5 Oz Los Angeles Heavyweight Garment Dye Hoodie - M / Black (GDH02M) | 6x Max Heavyweight Oversized Short Sleeve - M / Black (MHO02M) | 6x Max Heavyweight Oversized Short Sleeve - L / Black (MHO02L) | 6x Max Heavyweight Oversized Short Sleeve - L / Off Black (MHO72L) | 6x Max Heavyweight Oversized Short Sleeve - XL / Black (MHO02XL)",
+    "items": [
+      {
+        "product": "13.5 Oz Los Angeles Heavyweight Garment Dye Hoodie - L / Mocha",
+        "sku": "GDH78L",
+        "qty": "3",
+        "price": "$ 23.00",
+        "total": "$ 69.00"
+      },
+      {
+        "product": "13.5 Oz Los Angeles Heavyweight Garment Dye Hoodie - L / Cream",
+        "sku": "GDH77L",
+        "qty": "3",
+        "price": "$ 23.00",
+        "total": "$ 69.00"
+      },
+      {
+        "product": "13.5 Oz Los Angeles Heavyweight Garment Dye Hoodie - L / Black",
+        "sku": "GDH02L",
+        "qty": "3",
+        "price": "$ 23.00",
+        "total": "$ 69.00"
+      },
+      {
+        "product": "13.5 Oz Los Angeles Heavyweight Garment Dye Hoodie - M / Mocha",
+        "sku": "GDH78M",
+        "qty": "3",
+        "price": "$ 23.00",
+        "total": "$ 69.00"
+      },
+      {
+        "product": "13.5 Oz Los Angeles Heavyweight Garment Dye Hoodie - M / Black",
+        "sku": "GDH02M",
+        "qty": "3",
+        "price": "$ 23.00",
+        "total": "$ 69.00"
+      },
+      {
+        "product": "Max Heavyweight Oversized Short Sleeve - M / Black",
+        "sku": "MHO02M",
+        "qty": "6",
+        "price": "$ 5.00",
+        "total": "$ 30.00"
+      },
+      {
+        "product": "Max Heavyweight Oversized Short Sleeve - L / Black",
+        "sku": "MHO02L",
+        "qty": "6",
+        "price": "$ 5.00",
+        "total": "$ 30.00"
+      },
+      {
+        "product": "Max Heavyweight Oversized Short Sleeve - L / Off Black",
+        "sku": "MHO72L",
+        "qty": "6",
+        "price": "$ 5.00",
+        "total": "$ 30.00"
+      },
+      {
+        "product": "Max Heavyweight Oversized Short Sleeve - XL / Black",
+        "sku": "MHO02XL",
+        "qty": "6",
+        "price": "$ 5.00",
+        "total": "$ 30.00"
+      }
+    ]
+  },
+  {
+    "orden": "W40315",
+    "fecha": "August 30, 2024",
+    "status": "Paid",
+    "total": 443.72,
+    "nota": "6x Garment Dye Drop Shoulder - L / Shadow (GDD21L) | 6x Garment Dye Drop Shoulder - L / Black (GDD02L) | 6x Garment Dye Drop Shoulder - L / White (GDD01L) | 6x Garment Dye Drop Shoulder - M / Shadow (GDD21M) | 6x Garment Dye Drop Shoulder - M / Black (GDD02M) | 6x Garment Dye Drop Shoulder - M / White (GDD01M) | 6x Max Heavyweight Oversized Short Sleeve - L / White (MHO01L) | 6x Max Heavyweight Oversized Short Sleeve - L / Black (MHO02L) | 6x Max Heavyweight Oversized Short Sleeve - M / Off Black (MHO72M) | 6x Max Heavyweight Oversized Short Sleeve - M / White (MHO01M) | 6x Max Heavyweight Oversized Short Sleeve - M / Black (MHO02M) | 6x Max Heavyweight Oversized Short Sleeve - S / Black (MHO02S)",
+    "items": [
+      {
+        "product": "Garment Dye Drop Shoulder - L / Shadow",
+        "sku": "GDD21L",
+        "qty": "6",
+        "price": "$ 6.50",
+        "total": "$ 39.00"
+      },
+      {
+        "product": "Garment Dye Drop Shoulder - L / Black",
+        "sku": "GDD02L",
+        "qty": "6",
+        "price": "$ 6.50",
+        "total": "$ 39.00"
+      },
+      {
+        "product": "Garment Dye Drop Shoulder - L / White",
+        "sku": "GDD01L",
+        "qty": "6",
+        "price": "$ 6.50",
+        "total": "$ 39.00"
+      },
+      {
+        "product": "Garment Dye Drop Shoulder - M / Shadow",
+        "sku": "GDD21M",
+        "qty": "6",
+        "price": "$ 6.50",
+        "total": "$ 39.00"
+      },
+      {
+        "product": "Garment Dye Drop Shoulder - M / Black",
+        "sku": "GDD02M",
+        "qty": "6",
+        "price": "$ 6.50",
+        "total": "$ 39.00"
+      },
+      {
+        "product": "Garment Dye Drop Shoulder - M / White",
+        "sku": "GDD01M",
+        "qty": "6",
+        "price": "$ 6.50",
+        "total": "$ 39.00"
+      },
+      {
+        "product": "Max Heavyweight Oversized Short Sleeve - L / White",
+        "sku": "MHO01L",
+        "qty": "6",
+        "price": "$ 4.15",
+        "total": "$ 24.90"
+      },
+      {
+        "product": "Max Heavyweight Oversized Short Sleeve - L / Black",
+        "sku": "MHO02L",
+        "qty": "6",
+        "price": "$ 5.00",
+        "total": "$ 30.00"
+      },
+      {
+        "product": "Max Heavyweight Oversized Short Sleeve - M / Off Black",
+        "sku": "MHO72M",
+        "qty": "6",
+        "price": "$ 5.00",
+        "total": "$ 30.00"
+      },
+      {
+        "product": "Max Heavyweight Oversized Short Sleeve - M / White",
+        "sku": "MHO01M",
+        "qty": "6",
+        "price": "$ 4.15",
+        "total": "$ 24.90"
+      },
+      {
+        "product": "Max Heavyweight Oversized Short Sleeve - M / Black",
+        "sku": "MHO02M",
+        "qty": "6",
+        "price": "$ 5.00",
+        "total": "$ 30.00"
+      },
+      {
+        "product": "Max Heavyweight Oversized Short Sleeve - S / Black",
+        "sku": "MHO02S",
+        "qty": "6",
+        "price": "$ 5.00",
+        "total": "$ 30.00"
+      }
+    ]
+  },
+  {
+    "orden": "W39819",
+    "fecha": "August 15, 2024",
+    "status": "Paid",
+    "total": 476.78,
+    "nota": "6x Garment Dye Designer Tee - M / Cream (GDN77M) | 6x Garment Dye Designer Tee - S / Cream (GDN77S) | 6x Garment Dye Crop Top - L / Mocha (GDC78L) | 6x Garment Dye Crop Top - L / Black (GDC02L) | 6x Garment Dye Crop Top - M / Mocha (GDC78M) | 6x Garment Dye Crop Top - M / Black (GDC02M) | 6x Max Heavyweight Oversized Short Sleeve - L / White (MHO01L) | 6x Max Heavyweight Oversized Short Sleeve - M / White (MHO01M) | 6x Garment Dye Drop Shoulder - S / Mocha (GDD78S) | 6x Garment Dye Drop Shoulder - S / Black (GDD02S) | 6x 7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - L / Black (MHS02L) | 6x 7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - L / White (MHS01L)",
+    "items": [
+      {
+        "product": "Garment Dye Designer Tee - M / Cream",
+        "sku": "GDN77M",
+        "qty": "6",
+        "price": "$ 9.75",
+        "total": "$ 58.50"
+      },
+      {
+        "product": "Garment Dye Designer Tee - S / Cream",
+        "sku": "GDN77S",
+        "qty": "6",
+        "price": "$ 9.75",
+        "total": "$ 58.50"
+      },
+      {
+        "product": "Garment Dye Crop Top - L / Mocha",
+        "sku": "GDC78L",
+        "qty": "6",
+        "price": "$ 6.00",
+        "total": "$ 36.00"
+      },
+      {
+        "product": "Garment Dye Crop Top - L / Black",
+        "sku": "GDC02L",
+        "qty": "6",
+        "price": "$ 6.00",
+        "total": "$ 36.00"
+      },
+      {
+        "product": "Garment Dye Crop Top - M / Mocha",
+        "sku": "GDC78M",
+        "qty": "6",
+        "price": "$ 6.00",
+        "total": "$ 36.00"
+      },
+      {
+        "product": "Garment Dye Crop Top - M / Black",
+        "sku": "GDC02M",
+        "qty": "6",
+        "price": "$ 6.00",
+        "total": "$ 36.00"
+      },
+      {
+        "product": "Max Heavyweight Oversized Short Sleeve - L / White",
+        "sku": "MHO01L",
+        "qty": "6",
+        "price": "$ 4.15",
+        "total": "$ 24.90"
+      },
+      {
+        "product": "Max Heavyweight Oversized Short Sleeve - M / White",
+        "sku": "MHO01M",
+        "qty": "6",
+        "price": "$ 4.15",
+        "total": "$ 24.90"
+      },
+      {
+        "product": "Garment Dye Drop Shoulder - S / Mocha",
+        "sku": "GDD78S",
+        "qty": "6",
+        "price": "$ 6.50",
+        "total": "$ 39.00"
+      },
+      {
+        "product": "Garment Dye Drop Shoulder - S / Black",
+        "sku": "GDD02S",
+        "qty": "6",
+        "price": "$ 6.50",
+        "total": "$ 39.00"
+      },
+      {
+        "product": "7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - L / Black",
+        "sku": "MHS02L",
+        "qty": "6",
+        "price": "$ 4.40",
+        "total": "$ 26.40"
+      },
+      {
+        "product": "7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - L / White",
+        "sku": "MHS01L",
+        "qty": "6",
+        "price": "$ 3.61",
+        "total": "$ 21.66"
+      }
+    ]
+  },
+  {
+    "orden": "W39343",
+    "fecha": "August 01, 2024",
+    "status": "Paid",
+    "total": 457.78,
+    "nota": "6x Max Heavyweight Oversized Short Sleeve - 2XL / Black (MHO022X) | 6x Max Heavyweight Oversized Short Sleeve - XL / Black (MHO02XL) | 6x Max Heavyweight Oversized Short Sleeve - L / Black (MHO02L) | 6x Max Heavyweight Oversized Short Sleeve - M / Black (MHO02M) | 6x Max Heavyweight Oversized Short Sleeve - S / Latte (MHO75S) | 6x Max Heavyweight Oversized Short Sleeve - S / Off Black (MHO72S) | 6x Max Heavyweight Oversized Short Sleeve - S / Black (MHO02S) | 6x Max Heavyweight Garment Dye - Large Sizes - 2XL / Shadow (GDS212X) | 6x Max Heavyweight Garment Dye - Standard Sizes - XL / Shadow (GDS21XL) | 6x Max Heavyweight Garment Dye - Standard Sizes - L / Shadow (GDS21L) | 6x Max Heavyweight Garment Dye - Standard Sizes - M / Shadow (GDS21M) | 6x Max Heavyweight Garment Dye - Standard Sizes - S / Shadow (GDS21S)",
+    "items": [
+      {
+        "product": "Max Heavyweight Oversized Short Sleeve - 2XL / Black",
+        "sku": "MHO022X",
+        "qty": "6",
+        "price": "$ 6.00",
+        "total": "$ 36.00"
+      },
+      {
+        "product": "Max Heavyweight Oversized Short Sleeve - XL / Black",
+        "sku": "MHO02XL",
+        "qty": "6",
+        "price": "$ 5.00",
+        "total": "$ 30.00"
+      },
+      {
+        "product": "Max Heavyweight Oversized Short Sleeve - L / Black",
+        "sku": "MHO02L",
+        "qty": "6",
+        "price": "$ 5.00",
+        "total": "$ 30.00"
+      },
+      {
+        "product": "Max Heavyweight Oversized Short Sleeve - M / Black",
+        "sku": "MHO02M",
+        "qty": "6",
+        "price": "$ 5.00",
+        "total": "$ 30.00"
+      },
+      {
+        "product": "Max Heavyweight Oversized Short Sleeve - S / Latte",
+        "sku": "MHO75S",
+        "qty": "6",
+        "price": "$ 5.00",
+        "total": "$ 30.00"
+      },
+      {
+        "product": "Max Heavyweight Oversized Short Sleeve - S / Off Black",
+        "sku": "MHO72S",
+        "qty": "6",
+        "price": "$ 5.00",
+        "total": "$ 30.00"
+      },
+      {
+        "product": "Max Heavyweight Oversized Short Sleeve - S / Black",
+        "sku": "MHO02S",
+        "qty": "6",
+        "price": "$ 5.00",
+        "total": "$ 30.00"
+      },
+      {
+        "product": "Max Heavyweight Garment Dye - Large Sizes - 2XL / Shadow",
+        "sku": "GDS212X",
+        "qty": "6",
+        "price": "$ 7.75",
+        "total": "$ 46.50"
+      },
+      {
+        "product": "Max Heavyweight Garment Dye - Standard Sizes - XL / Shadow",
+        "sku": "GDS21XL",
+        "qty": "6",
+        "price": "$ 6.50",
+        "total": "$ 39.00"
+      },
+      {
+        "product": "Max Heavyweight Garment Dye - Standard Sizes - L / Shadow",
+        "sku": "GDS21L",
+        "qty": "6",
+        "price": "$ 6.50",
+        "total": "$ 39.00"
+      },
+      {
+        "product": "Max Heavyweight Garment Dye - Standard Sizes - M / Shadow",
+        "sku": "GDS21M",
+        "qty": "6",
+        "price": "$ 6.50",
+        "total": "$ 39.00"
+      },
+      {
+        "product": "Max Heavyweight Garment Dye - Standard Sizes - S / Shadow",
+        "sku": "GDS21S",
+        "qty": "6",
+        "price": "$ 6.50",
+        "total": "$ 39.00"
+      }
+    ]
+  },
+  {
+    "orden": "W38668",
+    "fecha": "July 11, 2024",
+    "status": "Paid",
+    "total": 419.54,
+    "nota": "6x Max Heavyweight Oversized Short Sleeve - 2XL / Latte (MHO752X) | 6x Max Heavyweight Oversized Short Sleeve - 2XL / Off Black (MHO722X) | 6x Max Heavyweight Oversized Short Sleeve - 2XL / Black (MHO022X) | 6x Max Heavyweight Oversized Short Sleeve - XL / Latte (MHO75XL) | 6x Max Heavyweight Oversized Short Sleeve - XL / Off Black (MHO72XL) | 6x Max Heavyweight Oversized Short Sleeve - L / Latte (MHO75L) | 6x Max Heavyweight Oversized Short Sleeve - L / Off Black (MHO72L) | 6x Max Heavyweight Oversized Short Sleeve - M / Latte (MHO75M) | 6x Max Heavyweight Oversized Short Sleeve - M / Off Black (MHO72M) | 6x Max Heavyweight Oversized Short Sleeve - S / Latte (MHO75S) | 6x Max Heavyweight Oversized Short Sleeve - S / Off Black (MHO72S) | 6x Max Heavyweight Oversized Short Sleeve - S / Black (MHO02S)",
+    "items": [
+      {
+        "product": "Max Heavyweight Oversized Short Sleeve - 2XL / Latte",
+        "sku": "MHO752X",
+        "qty": "6",
+        "price": "$ 6.00",
+        "total": "$ 36.00"
+      },
+      {
+        "product": "Max Heavyweight Oversized Short Sleeve - 2XL / Off Black",
+        "sku": "MHO722X",
+        "qty": "6",
+        "price": "$ 6.00",
+        "total": "$ 36.00"
+      },
+      {
+        "product": "Max Heavyweight Oversized Short Sleeve - 2XL / Black",
+        "sku": "MHO022X",
+        "qty": "6",
+        "price": "$ 6.00",
+        "total": "$ 36.00"
+      },
+      {
+        "product": "Max Heavyweight Oversized Short Sleeve - XL / Latte",
+        "sku": "MHO75XL",
+        "qty": "6",
+        "price": "$ 5.00",
+        "total": "$ 30.00"
+      },
+      {
+        "product": "Max Heavyweight Oversized Short Sleeve - XL / Off Black",
+        "sku": "MHO72XL",
+        "qty": "6",
+        "price": "$ 5.00",
+        "total": "$ 30.00"
+      },
+      {
+        "product": "Max Heavyweight Oversized Short Sleeve - L / Latte",
+        "sku": "MHO75L",
+        "qty": "6",
+        "price": "$ 5.00",
+        "total": "$ 30.00"
+      },
+      {
+        "product": "Max Heavyweight Oversized Short Sleeve - L / Off Black",
+        "sku": "MHO72L",
+        "qty": "6",
+        "price": "$ 5.00",
+        "total": "$ 30.00"
+      },
+      {
+        "product": "Max Heavyweight Oversized Short Sleeve - M / Latte",
+        "sku": "MHO75M",
+        "qty": "6",
+        "price": "$ 5.00",
+        "total": "$ 30.00"
+      },
+      {
+        "product": "Max Heavyweight Oversized Short Sleeve - M / Off Black",
+        "sku": "MHO72M",
+        "qty": "6",
+        "price": "$ 5.00",
+        "total": "$ 30.00"
+      },
+      {
+        "product": "Max Heavyweight Oversized Short Sleeve - S / Latte",
+        "sku": "MHO75S",
+        "qty": "6",
+        "price": "$ 5.00",
+        "total": "$ 30.00"
+      },
+      {
+        "product": "Max Heavyweight Oversized Short Sleeve - S / Off Black",
+        "sku": "MHO72S",
+        "qty": "6",
+        "price": "$ 5.00",
+        "total": "$ 30.00"
+      },
+      {
+        "product": "Max Heavyweight Oversized Short Sleeve - S / Black",
+        "sku": "MHO02S",
+        "qty": "6",
+        "price": "$ 5.00",
+        "total": "$ 30.00"
+      }
+    ]
+  },
+  {
+    "orden": "W37205",
+    "fecha": "May 30, 2024",
+    "status": "Partially refunded",
+    "total": 874.33,
+    "nota": "6x Garment Dye Drop Shoulder - 2XL / Mocha (GDD782X) | 6x Garment Dye Drop Shoulder - 2XL / Oatmeal (GDD312X) | 6x Garment Dye Drop Shoulder - 2XL / Shadow (GDD212X) | 6x Garment Dye Drop Shoulder - XL / Mocha (GDD78XL) | 6x Garment Dye Drop Shoulder - XL / Oatmeal (GDD31XL) | 6x Garment Dye Drop Shoulder - XL / Shadow (GDD21XL) | 6x Garment Dye Drop Shoulder - L / Mocha (GDD78L) | 6x Garment Dye Drop Shoulder - L / Oatmeal (GDD31L) | 6x Garment Dye Drop Shoulder - L / Shadow (GDD21L) | 6x Garment Dye Drop Shoulder - M / Mocha (GDD78M) | 6x Garment Dye Drop Shoulder - M / Oatmeal (GDD31M) | 6x Garment Dye Drop Shoulder - M / Shadow (GDD21M) | 3x Twill Cargo Pants - 30 / Black (SPCP0230) | 6x Max Heavyweight Oversized Short Sleeve - 2XL / White (MHO012X) | 6x Max Heavyweight Oversized Short Sleeve - 2XL / Black (MHO022X) | 6x Max Heavyweight Oversized Short Sleeve - XL / White (MHO01XL) | 6x Max Heavyweight Oversized Short Sleeve - XL / Black (MHO02XL) | 6x Max Heavyweight Oversized Short Sleeve - L / White (MHO01L) | 6x Max Heavyweight Oversized Short Sleeve - L / Black (MHO02L) | 6x Max Heavyweight Oversized Short Sleeve - M / White (MHO01M) | 6x Max Heavyweight Oversized Short Sleeve - M / Black (MHO02M) | 6x Max Heavyweight Oversized Short Sleeve - S / White (MHO01S) | 6x Max Heavyweight Oversized Short Sleeve - S / Black (MHO02S)",
+    "items": [
+      {
+        "product": "Garment Dye Drop Shoulder - 2XL / Mocha",
+        "sku": "GDD782X",
+        "qty": "6",
+        "price": "$ 7.50",
+        "total": "$ 45.00"
+      },
+      {
+        "product": "Garment Dye Drop Shoulder - 2XL / Oatmeal",
+        "sku": "GDD312X",
+        "qty": "6",
+        "price": "$ 7.50",
+        "total": "$ 45.00"
+      },
+      {
+        "product": "Garment Dye Drop Shoulder - 2XL / Shadow",
+        "sku": "GDD212X",
+        "qty": "6",
+        "price": "$ 7.50",
+        "total": "$ 45.00"
+      },
+      {
+        "product": "Garment Dye Drop Shoulder - XL / Mocha",
+        "sku": "GDD78XL",
+        "qty": "6",
+        "price": "$ 6.25",
+        "total": "$ 37.50"
+      },
+      {
+        "product": "Garment Dye Drop Shoulder - XL / Oatmeal",
+        "sku": "GDD31XL",
+        "qty": "6",
+        "price": "$ 6.25",
+        "total": "$ 37.50"
+      },
+      {
+        "product": "Garment Dye Drop Shoulder - XL / Shadow",
+        "sku": "GDD21XL",
+        "qty": "6",
+        "price": "$ 6.25",
+        "total": "$ 37.50"
+      },
+      {
+        "product": "Garment Dye Drop Shoulder - L / Mocha",
+        "sku": "GDD78L",
+        "qty": "6",
+        "price": "$ 6.25",
+        "total": "$ 37.50"
+      },
+      {
+        "product": "Garment Dye Drop Shoulder - L / Oatmeal",
+        "sku": "GDD31L",
+        "qty": "6",
+        "price": "$ 6.25",
+        "total": "$ 37.50"
+      },
+      {
+        "product": "Garment Dye Drop Shoulder - L / Shadow",
+        "sku": "GDD21L",
+        "qty": "6",
+        "price": "$ 6.25",
+        "total": "$ 37.50"
+      },
+      {
+        "product": "Garment Dye Drop Shoulder - M / Mocha",
+        "sku": "GDD78M",
+        "qty": "6",
+        "price": "$ 6.25",
+        "total": "$ 37.50"
+      },
+      {
+        "product": "Garment Dye Drop Shoulder - M / Oatmeal",
+        "sku": "GDD31M",
+        "qty": "6",
+        "price": "$ 6.25",
+        "total": "$ 37.50"
+      },
+      {
+        "product": "Garment Dye Drop Shoulder - M / Shadow",
+        "sku": "GDD21M",
+        "qty": "6",
+        "price": "$ 6.25",
+        "total": "$ 37.50"
+      },
+      {
+        "product": "Twill Cargo Pants - 30 / Black",
+        "sku": "SPCP0230",
+        "qty": "3",
+        "price": "$ 15.00",
+        "total": "$ 45.00"
+      },
+      {
+        "product": "Max Heavyweight Oversized Short Sleeve - 2XL / White",
+        "sku": "MHO012X",
+        "qty": "6",
+        "price": "$ 5.15",
+        "total": "$ 30.90"
+      },
+      {
+        "product": "Max Heavyweight Oversized Short Sleeve - 2XL / Black",
+        "sku": "MHO022X",
+        "qty": "6",
+        "price": "$ 6.00",
+        "total": "$ 36.00"
+      },
+      {
+        "product": "Max Heavyweight Oversized Short Sleeve - XL / White",
+        "sku": "MHO01XL",
+        "qty": "6",
+        "price": "$ 4.15",
+        "total": "$ 24.90"
+      },
+      {
+        "product": "Max Heavyweight Oversized Short Sleeve - XL / Black",
+        "sku": "MHO02XL",
+        "qty": "6",
+        "price": "$ 5.00",
+        "total": "$ 30.00"
+      },
+      {
+        "product": "Max Heavyweight Oversized Short Sleeve - L / White",
+        "sku": "MHO01L",
+        "qty": "6",
+        "price": "$ 4.15",
+        "total": "$ 24.90"
+      },
+      {
+        "product": "Max Heavyweight Oversized Short Sleeve - L / Black",
+        "sku": "MHO02L",
+        "qty": "6",
+        "price": "$ 5.00",
+        "total": "$ 30.00"
+      },
+      {
+        "product": "Max Heavyweight Oversized Short Sleeve - M / White",
+        "sku": "MHO01M",
+        "qty": "6",
+        "price": "$ 4.15",
+        "total": "$ 24.90"
+      },
+      {
+        "product": "Max Heavyweight Oversized Short Sleeve - M / Black",
+        "sku": "MHO02M",
+        "qty": "6",
+        "price": "$ 5.00",
+        "total": "$ 30.00"
+      },
+      {
+        "product": "Max Heavyweight Oversized Short Sleeve - S / White",
+        "sku": "MHO01S",
+        "qty": "6",
+        "price": "$ 4.15",
+        "total": "$ 24.90"
+      },
+      {
+        "product": "Max Heavyweight Oversized Short Sleeve - S / Black",
+        "sku": "MHO02S",
+        "qty": "6",
+        "price": "$ 5.00",
+        "total": "$ 30.00"
+      }
+    ]
+  },
+  {
+    "orden": "W35439",
+    "fecha": "April 09, 2024",
+    "status": "Paid",
+    "total": 349.36,
+    "nota": "3x Fleece Jogger Shorts - M / Black (FJS02M) | 6x Garment Dye Crop Top - M / Cream (GDC77M) | 6x 7.5 oz Max Short Sleeve - Large Sizes - 2XL / Olive (MHS562X) | 6x 7.5 oz Max Short Sleeve - Large Sizes - 2XL / Hunter Green (MHS262X) | 6x 7.5 oz Max Short Sleeve - Large Sizes - 2XL / Black (MHS022X) | 6x 7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - XL / Olive (MHS56XL) | 6x 7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - XL / Hunter Green (MHS26XL) | 6x 7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - XL / Black (MHS02XL) | 6x 7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - L / Olive (MHS56L) | 6x 7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - L / Hunter Green (MHS26L) | 6x 7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - L / Black (MHS02L)",
+    "items": [
+      {
+        "product": "Fleece Jogger Shorts - M / Black",
+        "sku": "FJS02M",
+        "qty": "3",
+        "price": "$ 8.50",
+        "total": "$ 25.50"
+      },
+      {
+        "product": "Garment Dye Crop Top - M / Cream",
+        "sku": "GDC77M",
+        "qty": "6",
+        "price": "$ 6.00",
+        "total": "$ 36.00"
+      },
+      {
+        "product": "7.5 oz Max Short Sleeve - Large Sizes - 2XL / Olive",
+        "sku": "MHS562X",
+        "qty": "6",
+        "price": "$ 5.49",
+        "total": "$ 32.94"
+      },
+      {
+        "product": "7.5 oz Max Short Sleeve - Large Sizes - 2XL / Hunter Green",
+        "sku": "MHS262X",
+        "qty": "6",
+        "price": "$ 5.49",
+        "total": "$ 32.94"
+      },
+      {
+        "product": "7.5 oz Max Short Sleeve - Large Sizes - 2XL / Black",
+        "sku": "MHS022X",
+        "qty": "6",
+        "price": "$ 5.49",
+        "total": "$ 32.94"
+      },
+      {
+        "product": "7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - XL / Olive",
+        "sku": "MHS56XL",
+        "qty": "6",
+        "price": "$ 4.16",
+        "total": "$ 24.96"
+      },
+      {
+        "product": "7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - XL / Hunter Green",
+        "sku": "MHS26XL",
+        "qty": "6",
+        "price": "$ 4.16",
+        "total": "$ 24.96"
+      },
+      {
+        "product": "7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - XL / Black",
+        "sku": "MHS02XL",
+        "qty": "6",
+        "price": "$ 4.16",
+        "total": "$ 24.96"
+      },
+      {
+        "product": "7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - L / Olive",
+        "sku": "MHS56L",
+        "qty": "6",
+        "price": "$ 4.16",
+        "total": "$ 24.96"
+      },
+      {
+        "product": "7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - L / Hunter Green",
+        "sku": "MHS26L",
+        "qty": "6",
+        "price": "$ 4.16",
+        "total": "$ 24.96"
+      },
+      {
+        "product": "7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - L / Black",
+        "sku": "MHS02L",
+        "qty": "6",
+        "price": "$ 4.16",
+        "total": "$ 24.96"
+      }
+    ]
+  },
+  {
+    "orden": "W33604",
+    "fecha": "February 09, 2024",
+    "status": "Paid",
+    "total": 606.83,
+    "nota": "6x 6.0 oz Active Short Sleeve - Standard Sizes - M / Black (ACS02M) | 6x Garment Dye Drop Shoulder - L / Cream (GDD77L) | 6x Garment Dye Drop Shoulder - L / Mocha (GDD78L) | 6x Garment Dye Drop Shoulder - L / Oatmeal (GDD31L) | 6x Garment Dye Drop Shoulder - L / Shadow (GDD21L) | 6x Garment Dye Drop Shoulder - L / Black (GDD02L) | 6x Garment Dye Drop Shoulder - M / Mocha (GDD78M) | 6x Garment Dye Drop Shoulder - M / Oatmeal (GDD31M) | 6x Garment Dye Drop Shoulder - M / Black (GDD02M) | 6x 6.0 oz Active Short Sleeve - Standard Sizes - L / Khaki (ACS20L) | 6x 6.0 oz Active Short Sleeve - Standard Sizes - L / Hunter Green (ACS26L) | 6x 6.0 oz Active Short Sleeve - Standard Sizes - L / Dark Grey (ACS22L) | 6x 6.0 oz Active Short Sleeve - Standard Sizes - M / Khaki (ACS20M) | 6x 6.0 oz Active Short Sleeve - Standard Sizes - M / Hunter Green (ACS26M) | 6x 6.0 oz Active Short Sleeve - Standard Sizes - M / Dark Grey (ACS22M) | 6x 6.5 oz Retro Heavyweight - L / White (RHS01L) | 6x 6.5 oz Retro Heavyweight - M / White (RHS01M) | 6x Garment Dye Drop Shoulder - 2XL / Mocha (GDD782X) | 6x Garment Dye Drop Shoulder - 2XL / Black (GDD022X)",
+    "items": [
+      {
+        "product": "6.0 oz Active Short Sleeve - Standard Sizes - M / Black",
+        "sku": "ACS02M",
+        "qty": "6",
+        "price": "$ 3.08",
+        "total": "$ 18.48"
+      },
+      {
+        "product": "Garment Dye Drop Shoulder - L / Cream",
+        "sku": "GDD77L",
+        "qty": "6",
+        "price": "$ 6.25",
+        "total": "$ 37.50"
+      },
+      {
+        "product": "Garment Dye Drop Shoulder - L / Mocha",
+        "sku": "GDD78L",
+        "qty": "6",
+        "price": "$ 6.25",
+        "total": "$ 37.50"
+      },
+      {
+        "product": "Garment Dye Drop Shoulder - L / Oatmeal",
+        "sku": "GDD31L",
+        "qty": "6",
+        "price": "$ 6.25",
+        "total": "$ 37.50"
+      },
+      {
+        "product": "Garment Dye Drop Shoulder - L / Shadow",
+        "sku": "GDD21L",
+        "qty": "6",
+        "price": "$ 6.25",
+        "total": "$ 37.50"
+      },
+      {
+        "product": "Garment Dye Drop Shoulder - L / Black",
+        "sku": "GDD02L",
+        "qty": "6",
+        "price": "$ 6.25",
+        "total": "$ 37.50"
+      },
+      {
+        "product": "Garment Dye Drop Shoulder - M / Mocha",
+        "sku": "GDD78M",
+        "qty": "6",
+        "price": "$ 6.25",
+        "total": "$ 37.50"
+      },
+      {
+        "product": "Garment Dye Drop Shoulder - M / Oatmeal",
+        "sku": "GDD31M",
+        "qty": "6",
+        "price": "$ 6.25",
+        "total": "$ 37.50"
+      },
+      {
+        "product": "Garment Dye Drop Shoulder - M / Black",
+        "sku": "GDD02M",
+        "qty": "6",
+        "price": "$ 6.25",
+        "total": "$ 37.50"
+      },
+      {
+        "product": "6.0 oz Active Short Sleeve - Standard Sizes - L / Khaki",
+        "sku": "ACS20L",
+        "qty": "6",
+        "price": "$ 3.08",
+        "total": "$ 18.48"
+      },
+      {
+        "product": "6.0 oz Active Short Sleeve - Standard Sizes - L / Hunter Green",
+        "sku": "ACS26L",
+        "qty": "6",
+        "price": "$ 3.08",
+        "total": "$ 18.48"
+      },
+      {
+        "product": "6.0 oz Active Short Sleeve - Standard Sizes - L / Dark Grey",
+        "sku": "ACS22L",
+        "qty": "6",
+        "price": "$ 3.08",
+        "total": "$ 18.48"
+      },
+      {
+        "product": "6.0 oz Active Short Sleeve - Standard Sizes - M / Khaki",
+        "sku": "ACS20M",
+        "qty": "6",
+        "price": "$ 3.08",
+        "total": "$ 18.48"
+      },
+      {
+        "product": "6.0 oz Active Short Sleeve - Standard Sizes - M / Hunter Green",
+        "sku": "ACS26M",
+        "qty": "6",
+        "price": "$ 3.08",
+        "total": "$ 18.48"
+      },
+      {
+        "product": "6.0 oz Active Short Sleeve - Standard Sizes - M / Dark Grey",
+        "sku": "ACS22M",
+        "qty": "6",
+        "price": "$ 3.08",
+        "total": "$ 18.48"
+      },
+      {
+        "product": "6.5 oz Retro Heavyweight - L / White",
+        "sku": "RHS01L",
+        "qty": "6",
+        "price": "$ 3.40",
+        "total": "$ 20.40"
+      },
+      {
+        "product": "6.5 oz Retro Heavyweight - M / White",
+        "sku": "RHS01M",
+        "qty": "6",
+        "price": "$ 3.40",
+        "total": "$ 20.40"
+      },
+      {
+        "product": "Garment Dye Drop Shoulder - 2XL / Mocha",
+        "sku": "GDD782X",
+        "qty": "6",
+        "price": "$ 7.50",
+        "total": "$ 45.00"
+      },
+      {
+        "product": "Garment Dye Drop Shoulder - 2XL / Black",
+        "sku": "GDD022X",
+        "qty": "6",
+        "price": "$ 7.50",
+        "total": "$ 45.00"
+      }
+    ]
+  },
+  {
+    "orden": "W32135",
+    "fecha": "December 04, 2023",
+    "status": "Paid",
+    "total": 324.41,
+    "nota": "3x Garment Dye Long Sleeve - M / Mocha (GDL78M) | 3x Garment Dye Long Sleeve - M / Oatmeal (GDL31M) | 3x Garment Dye Long Sleeve - S / Mocha (GDL78S) | 3x Garment Dye Long Sleeve - M / Black (GDL02M) | 3x Garment Dye Long Sleeve - S / Shadow (GDL21S) | 6x 7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - XL / White (MHS01XL) | 6x 7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - XL / Charcoal Grey (MHS21XL) | 3x Max Heavyweight Garment Dye - Standard Sizes - XL / Midnight Navy (GDS03XL) | 3x Garment Dye Long Sleeve - XL / Shadow (GDL21XL) | 3x Garment Dye Long Sleeve - XL / Oatmeal (GDL31XL) | 3x Garment Dye Long Sleeve - XL / Black (GDL02XL) | 3x Garment Dye Long Sleeve - L / Shadow (GDL21L) | 3x Garment Dye Long Sleeve - L / Black (GDL02L)",
+    "items": [
+      {
+        "product": "Garment Dye Long Sleeve - M / Mocha",
+        "sku": "GDL78M",
+        "qty": "3",
+        "price": "$ 7.25",
+        "total": "$ 21.75"
+      },
+      {
+        "product": "Garment Dye Long Sleeve - M / Oatmeal",
+        "sku": "GDL31M",
+        "qty": "3",
+        "price": "$ 7.25",
+        "total": "$ 21.75"
+      },
+      {
+        "product": "Garment Dye Long Sleeve - S / Mocha",
+        "sku": "GDL78S",
+        "qty": "3",
+        "price": "$ 7.25",
+        "total": "$ 21.75"
+      },
+      {
+        "product": "Garment Dye Long Sleeve - M / Black",
+        "sku": "GDL02M",
+        "qty": "3",
+        "price": "$ 7.25",
+        "total": "$ 21.75"
+      },
+      {
+        "product": "Garment Dye Long Sleeve - S / Shadow",
+        "sku": "GDL21S",
+        "qty": "3",
+        "price": "$ 7.25",
+        "total": "$ 21.75"
+      },
+      {
+        "product": "7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - XL / White",
+        "sku": "MHS01XL",
+        "qty": "6",
+        "price": "$ 3.40",
+        "total": "$ 20.40"
+      },
+      {
+        "product": "7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - XL / Charcoal Grey",
+        "sku": "MHS21XL",
+        "qty": "6",
+        "price": "$ 4.16",
+        "total": "$ 24.96"
+      },
+      {
+        "product": "Max Heavyweight Garment Dye - Standard Sizes - XL / Midnight Navy",
+        "sku": "GDS03XL",
+        "qty": "3",
+        "price": "$ 6.25",
+        "total": "$ 18.75"
+      },
+      {
+        "product": "Garment Dye Long Sleeve - XL / Shadow",
+        "sku": "GDL21XL",
+        "qty": "3",
+        "price": "$ 7.25",
+        "total": "$ 21.75"
+      },
+      {
+        "product": "Garment Dye Long Sleeve - XL / Oatmeal",
+        "sku": "GDL31XL",
+        "qty": "3",
+        "price": "$ 7.25",
+        "total": "$ 21.75"
+      },
+      {
+        "product": "Garment Dye Long Sleeve - XL / Black",
+        "sku": "GDL02XL",
+        "qty": "3",
+        "price": "$ 7.25",
+        "total": "$ 21.75"
+      },
+      {
+        "product": "Garment Dye Long Sleeve - L / Shadow",
+        "sku": "GDL21L",
+        "qty": "3",
+        "price": "$ 7.25",
+        "total": "$ 21.75"
+      },
+      {
+        "product": "Garment Dye Long Sleeve - L / Black",
+        "sku": "GDL02L",
+        "qty": "3",
+        "price": "$ 7.25",
+        "total": "$ 21.75"
+      }
+    ]
+  },
+  {
+    "orden": "W30651",
+    "fecha": "October 16, 2023",
+    "status": "Paid",
+    "total": 243.71,
+    "nota": "3x Garment Dye Drop Shoulder - M / Black (GDD02M) | 6x 7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - XL / Black (MHS02XL) | 12x 7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - L / Black (MHS02L) | 6x 7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - M / Black (MHS02M) | 12x 6.5 oz Retro Heavyweight - L / Black (RHS02L) | 3x Garment Dye Drop Shoulder - M / Cream (GDD77M) | 3x Garment Dye Drop Shoulder - M / Oatmeal (GDD31M)",
+    "items": [
+      {
+        "product": "Garment Dye Drop Shoulder - M / Black",
+        "sku": "GDD02M",
+        "qty": "3",
+        "price": "$ 6.25",
+        "total": "$ 18.75"
+      },
+      {
+        "product": "7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - XL / Black",
+        "sku": "MHS02XL",
+        "qty": "6",
+        "price": "$ 4.16",
+        "total": "$ 24.96"
+      },
+      {
+        "product": "7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - L / Black",
+        "sku": "MHS02L",
+        "qty": "12",
+        "price": "$ 4.16",
+        "total": "$ 49.92"
+      },
+      {
+        "product": "7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - M / Black",
+        "sku": "MHS02M",
+        "qty": "6",
+        "price": "$ 4.16",
+        "total": "$ 24.96"
+      },
+      {
+        "product": "6.5 oz Retro Heavyweight - L / Black",
+        "sku": "RHS02L",
+        "qty": "12",
+        "price": "$ 4.16",
+        "total": "$ 49.92"
+      },
+      {
+        "product": "Garment Dye Drop Shoulder - M / Cream",
+        "sku": "GDD77M",
+        "qty": "3",
+        "price": "$ 6.25",
+        "total": "$ 18.75"
+      },
+      {
+        "product": "Garment Dye Drop Shoulder - M / Oatmeal",
+        "sku": "GDD31M",
+        "qty": "3",
+        "price": "$ 6.25",
+        "total": "$ 18.75"
+      }
+    ]
+  },
+  {
+    "orden": "W29424",
+    "fecha": "September 06, 2023",
+    "status": "Paid",
+    "total": 265.36,
+    "nota": "3x Garment Dye Drop Shoulder - S / Cream (GDD77S) | 3x Max Heavyweight Garment Dye - Standard Sizes - L / Pastel Purple (GDS08L) | 3x Max Heavyweight Garment Dye - Standard Sizes - L / Royal (GDS13L) | 3x Max Heavyweight Garment Dye - Standard Sizes - L / Cream (GDS77L) | 3x Max Heavyweight Garment Dye - Standard Sizes - M / Pastel Purple (GDS08M) | 3x Max Heavyweight Garment Dye - Standard Sizes - M / Royal (GDS13M) | 3x Max Heavyweight Garment Dye - Standard Sizes - M / Cream (GDS77M) | 6x 7.5 oz Max Short Sleeve - Large Sizes - 2XL / Khaki (MHS202X) | 6x 7.5 oz Max Short Sleeve - Large Sizes - 2XL / Charcoal Grey (MHS212X) | 6x 7.5 oz Max Short Sleeve - Large Sizes - 2XL / Black (MHS022X)",
+    "items": [
+      {
+        "product": "Garment Dye Drop Shoulder - S / Cream",
+        "sku": "GDD77S",
+        "qty": "3",
+        "price": "$ 6.25",
+        "total": "$ 18.75"
+      },
+      {
+        "product": "Max Heavyweight Garment Dye - Standard Sizes - L / Pastel Purple",
+        "sku": "GDS08L",
+        "qty": "3",
+        "price": "$ 6.25",
+        "total": "$ 18.75"
+      },
+      {
+        "product": "Max Heavyweight Garment Dye - Standard Sizes - L / Royal",
+        "sku": "GDS13L",
+        "qty": "3",
+        "price": "$ 6.25",
+        "total": "$ 18.75"
+      },
+      {
+        "product": "Max Heavyweight Garment Dye - Standard Sizes - L / Cream",
+        "sku": "GDS77L",
+        "qty": "3",
+        "price": "$ 6.25",
+        "total": "$ 18.75"
+      },
+      {
+        "product": "Max Heavyweight Garment Dye - Standard Sizes - M / Pastel Purple",
+        "sku": "GDS08M",
+        "qty": "3",
+        "price": "$ 6.25",
+        "total": "$ 18.75"
+      },
+      {
+        "product": "Max Heavyweight Garment Dye - Standard Sizes - M / Royal",
+        "sku": "GDS13M",
+        "qty": "3",
+        "price": "$ 6.25",
+        "total": "$ 18.75"
+      },
+      {
+        "product": "Max Heavyweight Garment Dye - Standard Sizes - M / Cream",
+        "sku": "GDS77M",
+        "qty": "3",
+        "price": "$ 6.25",
+        "total": "$ 18.75"
+      },
+      {
+        "product": "7.5 oz Max Short Sleeve - Large Sizes - 2XL / Khaki",
+        "sku": "MHS202X",
+        "qty": "6",
+        "price": "$ 5.49",
+        "total": "$ 32.94"
+      },
+      {
+        "product": "7.5 oz Max Short Sleeve - Large Sizes - 2XL / Charcoal Grey",
+        "sku": "MHS212X",
+        "qty": "6",
+        "price": "$ 5.49",
+        "total": "$ 32.94"
+      },
+      {
+        "product": "7.5 oz Max Short Sleeve - Large Sizes - 2XL / Black",
+        "sku": "MHS022X",
+        "qty": "6",
+        "price": "$ 5.49",
+        "total": "$ 32.94"
+      }
+    ]
+  },
+  {
+    "orden": "W28348",
+    "fecha": "August 03, 2023",
+    "status": "Paid",
+    "total": 327.26,
+    "nota": "3x Garment Dye Drop Shoulder - L / Cream (GDD77L) | 3x Garment Dye Drop Shoulder - L / Mocha (GDD78L) | 3x Garment Dye Drop Shoulder - L / Black (GDD02L) | 3x Garment Dye Drop Shoulder - L / White (GDD01L) | 3x Garment Dye Drop Shoulder - M / Oatmeal (GDD31M) | 3x Garment Dye Drop Shoulder - M / White (GDD01M) | 6x 7.5 oz Max Short Sleeve - Large Sizes - 2XL / White (MHS012X) | 6x 7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - XL / White (MHS01XL) | 6x 7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - XL / Black (MHS02XL) | 6x 7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - L / White (MHS01L) | 6x 7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - L / Black (MHS02L) | 6x 7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - M / White (MHS01M) | 6x 7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - M / Black (MHS02M)",
+    "items": [
+      {
+        "product": "Garment Dye Drop Shoulder - L / Cream",
+        "sku": "GDD77L",
+        "qty": "3",
+        "price": "$ 6.25",
+        "total": "$ 18.75"
+      },
+      {
+        "product": "Garment Dye Drop Shoulder - L / Mocha",
+        "sku": "GDD78L",
+        "qty": "3",
+        "price": "$ 6.25",
+        "total": "$ 18.75"
+      },
+      {
+        "product": "Garment Dye Drop Shoulder - L / Black",
+        "sku": "GDD02L",
+        "qty": "3",
+        "price": "$ 6.25",
+        "total": "$ 18.75"
+      },
+      {
+        "product": "Garment Dye Drop Shoulder - L / White",
+        "sku": "GDD01L",
+        "qty": "3",
+        "price": "$ 6.25",
+        "total": "$ 18.75"
+      },
+      {
+        "product": "Garment Dye Drop Shoulder - M / Oatmeal",
+        "sku": "GDD31M",
+        "qty": "3",
+        "price": "$ 6.25",
+        "total": "$ 18.75"
+      },
+      {
+        "product": "Garment Dye Drop Shoulder - M / White",
+        "sku": "GDD01M",
+        "qty": "3",
+        "price": "$ 6.25",
+        "total": "$ 18.75"
+      },
+      {
+        "product": "7.5 oz Max Short Sleeve - Large Sizes - 2XL / White",
+        "sku": "MHS012X",
+        "qty": "6",
+        "price": "$ 4.65",
+        "total": "$ 27.90"
+      },
+      {
+        "product": "7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - XL / White",
+        "sku": "MHS01XL",
+        "qty": "6",
+        "price": "$ 3.40",
+        "total": "$ 20.40"
+      },
+      {
+        "product": "7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - XL / Black",
+        "sku": "MHS02XL",
+        "qty": "6",
+        "price": "$ 4.16",
+        "total": "$ 24.96"
+      },
+      {
+        "product": "7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - L / White",
+        "sku": "MHS01L",
+        "qty": "6",
+        "price": "$ 3.40",
+        "total": "$ 20.40"
+      },
+      {
+        "product": "7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - L / Black",
+        "sku": "MHS02L",
+        "qty": "6",
+        "price": "$ 4.16",
+        "total": "$ 24.96"
+      },
+      {
+        "product": "7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - M / White",
+        "sku": "MHS01M",
+        "qty": "6",
+        "price": "$ 3.40",
+        "total": "$ 20.40"
+      },
+      {
+        "product": "7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - M / Black",
+        "sku": "MHS02M",
+        "qty": "6",
+        "price": "$ 4.16",
+        "total": "$ 24.96"
+      }
+    ]
+  },
+  {
+    "orden": "W27516",
+    "fecha": "July 11, 2023",
+    "status": "Paid",
+    "total": 266.12,
+    "nota": "6x 7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - XL / Khaki (MHS20XL) | 6x 7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - XL / Charcoal Grey (MHS21XL) | 6x 7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - L / Sky Blue (MHS12L) | 6x 7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - L / Olive (MHS56L) | 6x 7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - L / Khaki (MHS20L) | 6x 7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - L / Charcoal Grey (MHS21L) | 6x 7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - M / Sky Blue (MHS12M) | 6x 7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - M / Khaki (MHS20M) | 6x 7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - M / Charcoal Grey (MHS21M)",
+    "items": [
+      {
+        "product": "7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - XL / Khaki",
+        "sku": "MHS20XL",
+        "qty": "6",
+        "price": "$ 4.16",
+        "total": "$ 24.96"
+      },
+      {
+        "product": "7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - XL / Charcoal Grey",
+        "sku": "MHS21XL",
+        "qty": "6",
+        "price": "$ 4.16",
+        "total": "$ 24.96"
+      },
+      {
+        "product": "7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - L / Sky Blue",
+        "sku": "MHS12L",
+        "qty": "6",
+        "price": "$ 4.16",
+        "total": "$ 24.96"
+      },
+      {
+        "product": "7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - L / Olive",
+        "sku": "MHS56L",
+        "qty": "6",
+        "price": "$ 4.16",
+        "total": "$ 24.96"
+      },
+      {
+        "product": "7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - L / Khaki",
+        "sku": "MHS20L",
+        "qty": "6",
+        "price": "$ 4.16",
+        "total": "$ 24.96"
+      },
+      {
+        "product": "7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - L / Charcoal Grey",
+        "sku": "MHS21L",
+        "qty": "6",
+        "price": "$ 4.16",
+        "total": "$ 24.96"
+      },
+      {
+        "product": "7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - M / Sky Blue",
+        "sku": "MHS12M",
+        "qty": "6",
+        "price": "$ 4.16",
+        "total": "$ 24.96"
+      },
+      {
+        "product": "7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - M / Khaki",
+        "sku": "MHS20M",
+        "qty": "6",
+        "price": "$ 4.16",
+        "total": "$ 24.96"
+      },
+      {
+        "product": "7.5 oz Max Heavyweight Short Sleeve - Standard Sizes - M / Charcoal Grey",
+        "sku": "MHS21M",
+        "qty": "6",
+        "price": "$ 4.16",
+        "total": "$ 24.96"
+      }
+    ]
+  }
+]

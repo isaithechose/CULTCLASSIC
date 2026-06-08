@@ -79,6 +79,7 @@ class Order(models.Model):
     sales_channel = models.CharField(max_length=20, choices=SALES_CHANNEL_CHOICES, default="online")
     payment_method = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES, default="stripe")
     discount_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    promo_code = models.ForeignKey("PromoCode", on_delete=models.SET_NULL, null=True, blank=True, related_name="orders")
     internal_note = models.TextField(blank=True, null=True)
     cashier = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="pos_orders")
     shipping_status = models.CharField(max_length=20, choices=[
@@ -654,6 +655,121 @@ class ShippingUpdate(models.Model):
 
     def __str__(self):
         return f"Orden {self.order.id} - {self.updated_at:%Y-%m-%d %H:%M}"
+
+
+class PromoCode(models.Model):
+    DISCOUNT_TYPE_CHOICES = [
+        ("percentage", "Porcentaje (%)"),
+        ("fixed", "Monto fijo ($)"),
+        ("free_shipping", "Envío gratis"),
+    ]
+    code = models.CharField(max_length=50, unique=True)
+    discount_type = models.CharField(max_length=20, choices=DISCOUNT_TYPE_CHOICES)
+    discount_value = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    min_purchase = models.DecimalField(max_digits=10, decimal_places=2, default=0, help_text="Compra mínima para aplicar")
+    max_uses = models.PositiveIntegerField(null=True, blank=True, help_text="Vacío = ilimitado")
+    uses_count = models.PositiveIntegerField(default=0)
+    expiration_date = models.DateField(null=True, blank=True)
+    active = models.BooleanField(default=True)
+    description = models.CharField(max_length=200, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Código de descuento"
+        verbose_name_plural = "Códigos de descuento"
+        ordering = ["-created_at"]
+
+    def is_valid(self, subtotal=None):
+        from django.utils import timezone
+        if not self.active:
+            return False, "Código inactivo"
+        if self.expiration_date and self.expiration_date < timezone.localdate():
+            return False, "Código expirado"
+        if self.max_uses is not None and self.uses_count >= self.max_uses:
+            return False, "Código agotado"
+        if subtotal is not None and subtotal < self.min_purchase:
+            return False, f"Compra mínima de ${self.min_purchase}"
+        return True, None
+
+    def compute_discount(self, subtotal):
+        if self.discount_type == "percentage":
+            return (subtotal * self.discount_value / 100).quantize(Decimal("0.01"))
+        if self.discount_type == "fixed":
+            return min(self.discount_value, subtotal)
+        return Decimal("0.00")
+
+    def __str__(self):
+        return self.code
+
+
+class ProductImage(models.Model):
+    product = models.ForeignKey(Producto, on_delete=models.CASCADE, related_name="images")
+    image = models.ImageField(upload_to="productos/gallery/")
+    alt_text = models.CharField(max_length=200, blank=True)
+    order = models.PositiveSmallIntegerField(default=0, help_text="Menor = aparece primero")
+
+    class Meta:
+        verbose_name = "Imagen de producto"
+        verbose_name_plural = "Galería de imágenes"
+        ordering = ["order", "id"]
+
+    def __str__(self):
+        return f"{self.product.nombre} — imagen {self.order}"
+
+
+class OrderReturn(models.Model):
+    REASON_CHOICES = [
+        ("defective", "Defectuoso / dañado"),
+        ("wrong_size", "Talla incorrecta"),
+        ("wrong_item", "Artículo incorrecto"),
+        ("not_as_described", "No era como se describía"),
+        ("changed_mind", "Cambio de opinión"),
+        ("other", "Otro"),
+    ]
+    STATUS_CHOICES = [
+        ("requested", "Solicitada"),
+        ("approved", "Aprobada"),
+        ("received", "Recibida en bodega"),
+        ("restocked", "Reingresada a inventario"),
+        ("refunded", "Reembolsada"),
+        ("rejected", "Rechazada"),
+    ]
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="returns")
+    reason = models.CharField(max_length=30, choices=REASON_CHOICES)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="requested")
+    notes = models.TextField(blank=True)
+    refund_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    restock = models.BooleanField(default=True, help_text="Reingresar al inventario al aprobar")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Devolución"
+        verbose_name_plural = "Devoluciones"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"Dev #{self.id} — Orden #{self.order_id} ({self.get_status_display()})"
+
+
+class SizeChart(models.Model):
+    TALLA_ORDER = {"XS": 0, "S": 1, "M": 2, "L": 3, "XL": 4, "XXL": 5, "XXXL": 6}
+    product = models.ForeignKey(Producto, on_delete=models.CASCADE, related_name="size_chart")
+    talla = models.CharField(max_length=10)
+    pecho = models.DecimalField(max_digits=5, decimal_places=1, null=True, blank=True, help_text="cm")
+    cintura = models.DecimalField(max_digits=5, decimal_places=1, null=True, blank=True, help_text="cm")
+    largo = models.DecimalField(max_digits=5, decimal_places=1, null=True, blank=True, help_text="cm")
+    hombro = models.DecimalField(max_digits=5, decimal_places=1, null=True, blank=True, help_text="cm")
+    manga = models.DecimalField(max_digits=5, decimal_places=1, null=True, blank=True, help_text="cm (opcional)")
+
+    class Meta:
+        verbose_name = "Medida de talla"
+        verbose_name_plural = "Tabla de tallas"
+        unique_together = [["product", "talla"]]
+        ordering = ["product"]
+
+    def __str__(self):
+        return f"{self.product.nombre} — {self.talla}"
 
 
 def find_variant_for_selection(product, talla=None, color=None):

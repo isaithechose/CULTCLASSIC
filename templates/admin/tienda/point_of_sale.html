@@ -25,13 +25,65 @@
   }
   .pos-header-grid {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem 1.25rem;
+  }
+  .pos-header-grid > div {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+  .pos-header-grid label {
+    color: #344054;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
   }
   .pos-header-grid textarea,
   .pos-header-grid select,
   .pos-header-grid input {
     width: 100%;
+    min-height: 2.65rem;
+    padding: 0.55rem 0.75rem;
+    border: 1px solid #d0d5dd;
+    border-radius: 10px;
+    background: #fff;
+    color: #111827;
+    font-size: 0.95rem;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .pos-header-grid textarea {
+    min-height: 3.5rem;
+    resize: vertical;
+  }
+  .pos-header-grid textarea:focus,
+  .pos-header-grid select:focus,
+  .pos-header-grid input:focus {
+    outline: none;
+    border-color: #7c3aed;
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.18);
+  }
+  .pos-header-grid .pos-field-help {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    color: #6b7280;
+    font-size: 0.78rem;
+  }
+  .pos-header-grid .pos-field-help button {
+    background: none;
+    border: none;
+    color: #7c3aed;
+    cursor: pointer;
+    font-size: 0.78rem;
+    font-weight: 700;
+    padding: 0;
+    text-decoration: underline;
+  }
+  .pos-header-grid .pos-field-help button:hover {
+    color: #5b21b6;
   }
   .pos-note {
     color: #6b7280;
@@ -341,6 +393,15 @@
         {{ header_form.internal_note }}
         {{ header_form.internal_note.errors }}
       </div>
+      <div>
+        {{ header_form.sale_date.label_tag }}
+        {{ header_form.sale_date }}
+        <div class="pos-field-help">
+          <span>{{ header_form.sale_date.help_text }}</span>
+          <button type="button" id="posSaleDateToday">Usar hoy</button>
+        </div>
+        {{ header_form.sale_date.errors }}
+      </div>
     </div>
     <p class="pos-note">Esta pantalla crea un pedido completado, descuenta inventario y registra movimientos de venta.</p>
   </div>
@@ -635,6 +696,18 @@
       discountInput.value = 0;
       recalculateTotal();
     });
+    const saleDateInput = document.getElementById("id_sale_date");
+    const saleDateTodayBtn = document.getElementById("posSaleDateToday");
+    if (saleDateInput && saleDateTodayBtn) {
+      const today = new Date();
+      const iso = today.getFullYear() + "-"
+        + String(today.getMonth() + 1).padStart(2, "0") + "-"
+        + String(today.getDate()).padStart(2, "0");
+      saleDateTodayBtn.addEventListener("click", () => {
+        saleDateInput.value = iso;
+        saleDateInput.dispatchEvent(new Event("change", { bubbles: true }));
+      });
+    }
     recalculateTotal();
   })();
 </script>

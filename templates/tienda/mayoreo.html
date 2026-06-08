@@ -1,0 +1,309 @@
+{% extends "tienda/base.html" %}
+{% load static %}
+
+{% block title %}Mayoreo | Cult Clasiccs{% endblock %}
+
+{% block hero %}
+<section class="page-hero page-hero--compact">
+    <div class="container px-4 px-lg-5">
+        <div class="page-hero__inner">
+            <p class="page-eyebrow">Mayoreo</p>
+            <h1 class="page-hero__title">Precios por volumen.</h1>
+            <p class="page-hero__copy">
+                Cult Clasiccs para tu marca, tu equipo o tu tienda. Mientras más piezas, mejor precio.
+            </p>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block content %}
+<style>
+    .mayoreo { padding: 0 0 5rem; }
+
+    .mayoreo__panel {
+        border: 1px solid var(--cc-line);
+        border-radius: 1.8rem;
+        background:
+            radial-gradient(circle at top right, rgba(214,195,161,0.08), transparent 40%),
+            linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01));
+        box-shadow: var(--cc-shadow);
+        padding: 1.6rem;
+        margin-bottom: 1.6rem;
+    }
+
+    .mayoreo__eyebrow {
+        color: var(--cc-accent);
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        font-size: 0.76rem;
+        margin: 0 0 0.7rem;
+    }
+
+    .mayoreo__title {
+        margin: 0;
+        font-family: var(--cc-display);
+        font-size: clamp(1.4rem, 2.2vw, 2rem);
+        line-height: 1;
+        text-transform: uppercase;
+    }
+
+    .tiers-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 0.85rem;
+        margin-top: 1.1rem;
+    }
+
+    .tier-card {
+        position: relative;
+        padding: 1.1rem 1rem;
+        border-radius: 1.1rem;
+        border: 1px solid rgba(214,195,161,0.18);
+        background: rgba(255,255,255,0.035);
+        text-align: center;
+        transition: transform 0.18s, border-color 0.18s;
+    }
+    .tier-card:hover { transform: translateY(-2px); border-color: rgba(214,195,161,0.55); }
+
+    .tier-card__discount {
+        font-family: var(--cc-display);
+        font-size: 2.4rem;
+        line-height: 1;
+        color: var(--cc-accent);
+    }
+    .tier-card__label {
+        font-size: 0.78rem;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--cc-ink);
+        margin-top: 0.4rem;
+    }
+    .tier-card__range {
+        margin-top: 0.45rem;
+        font-size: 0.85rem;
+        color: var(--cc-muted);
+    }
+
+    .mayoreo-products {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 1rem;
+    }
+
+    .mayoreo-card {
+        display: grid;
+        gap: 0.7rem;
+        padding: 0.9rem;
+        border: 1px solid var(--cc-line);
+        border-radius: 1.1rem;
+        background: rgba(255,255,255,0.03);
+        transition: border-color 0.18s, transform 0.18s;
+    }
+    .mayoreo-card:hover {
+        border-color: rgba(214,195,161,0.45);
+        transform: translateY(-2px);
+    }
+    .mayoreo-card__thumb {
+        aspect-ratio: 1 / 1;
+        background: rgba(255,255,255,0.06);
+        border-radius: 0.85rem;
+        overflow: hidden;
+        display: grid;
+        place-items: center;
+    }
+    .mayoreo-card__thumb img {
+        width: 100%; height: 100%;
+        object-fit: contain;
+        padding: 0.5rem;
+    }
+    .mayoreo-card__thumb-empty {
+        color: var(--cc-muted);
+        font-size: 0.8rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+    }
+    .mayoreo-card__name {
+        font-weight: 600;
+        font-size: 0.95rem;
+        line-height: 1.25;
+        color: var(--cc-ink);
+        min-height: 2.4em;
+    }
+    .mayoreo-card__meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 0.5rem;
+        font-size: 0.78rem;
+        color: var(--cc-muted);
+    }
+    .mayoreo-card__retail {
+        color: rgba(255,255,255,0.55);
+        text-decoration: line-through;
+    }
+    .mayoreo-card__prices {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 0.3rem;
+        margin-top: 0.3rem;
+    }
+    .mayoreo-card__price {
+        text-align: center;
+        padding: 0.45rem 0.2rem;
+        border-radius: 0.55rem;
+        background: rgba(214,195,161,0.08);
+        border: 1px solid rgba(214,195,161,0.18);
+    }
+    .mayoreo-card__price small {
+        display: block;
+        font-size: 0.62rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--cc-accent);
+        margin-bottom: 0.15rem;
+    }
+    .mayoreo-card__price strong {
+        font-size: 0.92rem;
+        color: var(--cc-ink);
+    }
+
+    .mayoreo-cta {
+        padding: 1.6rem 1.2rem;
+        text-align: center;
+    }
+    .mayoreo-cta__title {
+        font-family: var(--cc-display);
+        font-size: clamp(1.4rem, 2.2vw, 1.9rem);
+        text-transform: uppercase;
+        margin: 0 0 0.5rem;
+    }
+    .mayoreo-cta__copy {
+        color: var(--cc-muted);
+        margin: 0 0 1rem;
+    }
+    .mayoreo-cta__actions {
+        display: flex;
+        gap: 0.7rem;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    .mayoreo-info {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 0.85rem;
+        margin-top: 1rem;
+    }
+    .mayoreo-info__item {
+        padding: 0.9rem 1rem;
+        border-radius: 1rem;
+        background: rgba(255,255,255,0.03);
+        border: 1px solid rgba(214,195,161,0.1);
+    }
+    .mayoreo-info__item strong {
+        display: block;
+        color: var(--cc-accent);
+        font-size: 0.72rem;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        margin-bottom: 0.35rem;
+    }
+    .mayoreo-info__item p {
+        margin: 0;
+        color: var(--cc-muted);
+        font-size: 0.88rem;
+        line-height: 1.5;
+    }
+</style>
+
+<section class="mayoreo">
+    <div class="container px-4 px-lg-5">
+
+        <!-- Tabla de tiers -->
+        <div class="mayoreo__panel">
+            <p class="mayoreo__eyebrow">Descuentos por volumen</p>
+            <h2 class="mayoreo__title">Cómo funciona el mayoreo</h2>
+            <p class="design-creator__copy">El descuento se aplica al total de piezas del pedido, sin importar la combinación de modelos/colores/tallas. Tu pedido se procesa por orden por separado.</p>
+            <div class="tiers-grid">
+                {% for tier in tiers %}
+                <div class="tier-card">
+                    <div class="tier-card__discount">{{ tier.discount_pct }}%</div>
+                    <div class="tier-card__label">{{ tier.label }}</div>
+                    <div class="tier-card__range">
+                        {% if tier.max %}{{ tier.min }} – {{ tier.max }} pzs{% else %}{{ tier.min }}+ pzs{% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="mayoreo-info">
+                <div class="mayoreo-info__item">
+                    <strong>Pedido mínimo</strong>
+                    <p>12 piezas para acceder a precios de mayoreo.</p>
+                </div>
+                <div class="mayoreo-info__item">
+                    <strong>Tiempo de entrega</strong>
+                    <p>5-10 días hábiles según volumen. Express bajo cotización.</p>
+                </div>
+                <div class="mayoreo-info__item">
+                    <strong>Personalización</strong>
+                    <p>Diseño DTF o serigrafía. Cotización aparte según arte y técnica.</p>
+                </div>
+                <div class="mayoreo-info__item">
+                    <strong>Pago</strong>
+                    <p>50% anticipo y 50% contra entrega. Transferencia o efectivo.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Catálogo -->
+        <div class="mayoreo__panel">
+            <p class="mayoreo__eyebrow">Catálogo</p>
+            <h2 class="mayoreo__title">Productos disponibles ({{ total_productos }})</h2>
+            <p class="design-creator__copy">Stock disponible en bodega: <strong>{{ total_stock }} piezas</strong>. Para pedidos sobre stock, consulta tiempo de fabricación.</p>
+
+            {% if productos_data %}
+            <div class="mayoreo-products" style="margin-top:1.2rem;">
+                {% for d in productos_data %}
+                <div class="mayoreo-card">
+                    <div class="mayoreo-card__thumb">
+                        {% if d.producto.imagen %}
+                            <img src="{{ d.producto.imagen.url }}" alt="{{ d.producto.nombre }}" loading="lazy">
+                        {% else %}
+                            <span class="mayoreo-card__thumb-empty">Sin imagen</span>
+                        {% endif %}
+                    </div>
+                    <div class="mayoreo-card__name">{{ d.producto.nombre }}</div>
+                    <div class="mayoreo-card__meta">
+                        <span>Stock: <strong>{{ d.stock_total }}</strong></span>
+                        <span class="mayoreo-card__retail">Retail ${{ d.precio_retail|floatformat:0 }}</span>
+                    </div>
+                    <div class="mayoreo-card__prices">
+                        {% for p in d.precios %}
+                        <div class="mayoreo-card__price" title="{{ p.label }} ({{ p.min }}+ pzs)">
+                            <small>{{ p.min }}+</small>
+                            <strong>${{ p.precio|floatformat:0 }}</strong>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="design-creator__copy">No hay productos disponibles en este momento.</p>
+            {% endif %}
+        </div>
+
+        <!-- CTA -->
+        <div class="mayoreo__panel mayoreo-cta">
+            <h2 class="mayoreo-cta__title">¿Listo para tu pedido?</h2>
+            <p class="mayoreo-cta__copy">Envíanos los modelos, cantidades y diseños. Te mandamos cotización formal en menos de 24 hrs.</p>
+            <div class="mayoreo-cta__actions">
+                <a class="btn site-btn site-btn--accent" href="https://wa.me/5215567589153?text=Hola%2C%20quiero%20cotizar%20un%20pedido%20de%20mayoreo" target="_blank" rel="noopener">WhatsApp</a>
+                <a class="btn site-btn site-btn--ghost" href="mailto:hola@cultclassics.shop?subject=Cotización%20mayoreo">Correo</a>
+            </div>
+        </div>
+
+    </div>
+</section>
+{% endblock %}

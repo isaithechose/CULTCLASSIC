@@ -8,6 +8,33 @@
 {% block og_description %}{{ producto.descripcion|truncatewords:20 }}{% endblock %}
 {% block og_image %}{% if producto.imagen %}{{ request.scheme }}://{{ request.get_host }}{{ producto.imagen.url }}{% endif %}{% endblock %}
 
+{% block extra_head %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org/",
+  "@type": "Product",
+  "name": "{{ producto.nombre|escapejs }}",
+  "description": "{{ producto.descripcion|truncatewords:40|escapejs }}",
+  {% if producto.imagen %}"image": ["{{ request.scheme }}://{{ request.get_host }}{{ producto.imagen.url }}"],{% endif %}
+  "sku": "{{ producto.id }}",
+  "brand": { "@type": "Brand", "name": "Cult Clasiccs" },
+  "offers": {
+    "@type": "Offer",
+    "url": "{{ request.scheme }}://{{ request.get_host }}{{ request.path }}",
+    "priceCurrency": "MXN",
+    "price": "{{ producto.precio }}",
+    "availability": "{% if producto.stock > 0 %}https://schema.org/InStock{% else %}https://schema.org/OutOfStock{% endif %}",
+    "itemCondition": "https://schema.org/NewCondition"
+  }{% if reseñas %},
+  "aggregateRating": {
+    "@type": "AggregateRating",
+    "ratingValue": "{{ reseñas|length|stringformat:'.1f' }}",
+    "reviewCount": "{{ reseñas|length }}"
+  }{% endif %}
+}
+</script>
+{% endblock %}
+
 {% block content %}
 <style>
     main {
@@ -26,7 +53,8 @@
         border-radius: 2rem;
         background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.015));
         box-shadow: var(--cc-shadow);
-        overflow: hidden;
+        /* overflow visible para que la columna izquierda pueda hacer sticky */
+        overflow: clip;
         display: grid;
         grid-template-columns: minmax(320px, 0.9fr) minmax(420px, 1fr);
         align-items: start;
@@ -38,6 +66,18 @@
 
     .product-detail-col {
         min-width: 0;
+    }
+
+    /* Galería pegada mientras se hace scroll de la columna derecha (solo desktop) */
+    @media (min-width: 992px) {
+        .product-detail-card > .product-detail-col:first-child {
+            position: sticky;
+            top: 1.25rem;
+            align-self: start;
+            max-height: calc(100vh - 2.5rem);
+            overflow-y: auto;
+            scrollbar-width: thin;
+        }
     }
 
     .product-detail-col:last-child {
@@ -72,6 +112,51 @@
 
     #imagen-principal:hover {
         transform: scale(1.02);
+    }
+
+    .design-overlay {
+        pointer-events: none;
+        z-index: 6;
+        max-height: 35%;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        opacity: 0;
+        transition: opacity 0.18s ease;
+    }
+    .design-overlay.is-active.has-image { opacity: 1; }
+
+    .gallery-view-toggle {
+        position: absolute;
+        top: 0.8rem;
+        left: 50%;
+        transform: translateX(-50%);
+        display: inline-flex;
+        gap: 0.3rem;
+        padding: 0.25rem;
+        background: rgba(17,17,19,0.7);
+        border: 1px solid rgba(214,195,161,0.18);
+        border-radius: 999px;
+        z-index: 8;
+        backdrop-filter: blur(4px);
+    }
+    .gallery-view-btn {
+        background: transparent;
+        border: 0;
+        color: rgba(255,255,255,0.7);
+        font-size: 0.78rem;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        padding: 0.32rem 0.85rem;
+        border-radius: 999px;
+        cursor: pointer;
+        transition: background 0.15s, color 0.15s;
+    }
+    .gallery-view-btn:hover { color: #fff; }
+    .gallery-view-btn.is-active {
+        background: var(--cc-accent, #d6c3a1);
+        color: #111;
     }
 
     .miniatura {
@@ -583,8 +668,8 @@
     }
 
     .detail-selected-chip {
-        display: inline-flex;
-        width: fit-content;
+        display: flex;
+        max-width: 100%;
         align-items: center;
         gap: 0.45rem;
         padding: 0.35rem 0.7rem;
@@ -592,11 +677,20 @@
         background: rgba(214, 195, 161, 0.1);
         color: var(--cc-accent);
         font-size: 0.82rem;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+    .detail-selected-chip > span {
+        flex: 1 1 auto;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .detail-design-grid {
         display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
         gap: 0.8rem;
         max-height: 27rem;
         overflow: auto;
@@ -675,6 +769,254 @@
         outline-offset: 2px;
     }
 
+    /* ── Slots compactos (chip Frente / Espalda) ──────────────────────── */
+    .design-slots {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.65rem;
+    }
+    .design-slot {
+        display: flex;
+        align-items: center;
+        gap: 0.65rem;
+        padding: 0.55rem 0.8rem;
+        border: 1px solid var(--cc-line);
+        border-radius: 0.85rem;
+        background: rgba(255,255,255,0.025);
+        min-width: 0;
+        transition: border-color 0.18s, background 0.18s;
+    }
+    .design-slot:not(.is-empty) {
+        border-color: rgba(214,195,161,0.45);
+        background: rgba(214,195,161,0.08);
+    }
+    .design-slot__label {
+        flex-shrink: 0;
+        font-size: 0.7rem;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--cc-accent);
+        font-weight: 600;
+    }
+    .design-slot__name {
+        flex: 1;
+        min-width: 0;
+        font-size: 0.88rem;
+        color: rgba(255,255,255,0.4);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .design-slot:not(.is-empty) .design-slot__name { color: var(--cc-ink); font-weight: 500; }
+    .design-slot__clear {
+        flex-shrink: 0;
+        width: 1.55rem; height: 1.55rem;
+        border-radius: 50%;
+        border: 1px solid rgba(214,195,161,0.22);
+        background: rgba(17,17,19,0.55);
+        color: var(--cc-muted);
+        font-size: 0.78rem;
+        line-height: 1;
+        cursor: pointer;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        transition: color 0.15s, border-color 0.15s;
+    }
+    .design-slot__clear:hover { color: #e05c5c; border-color: #e05c5c; }
+    .design-slot:not(.is-empty) .design-slot__clear { display: inline-flex; }
+
+    /* ── Picker (catálogo + propios) ──────────────────────────────────── */
+    .design-picker {
+        display: grid;
+        gap: 0.85rem;
+        padding: 1rem;
+        border: 1px solid var(--cc-line);
+        border-radius: 1.35rem;
+        background: rgba(255,255,255,0.02);
+    }
+    .design-picker__toolbar {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        flex-wrap: wrap;
+    }
+    .design-picker__search {
+        flex: 1 1 220px;
+        min-height: 2.55rem;
+        padding: 0.55rem 0.85rem;
+        border: 1px solid rgba(255,255,255,0.16);
+        border-radius: 10px;
+        background: rgba(255,255,255,0.04);
+        color: var(--cc-ink);
+        font-size: 0.9rem;
+    }
+    .design-picker__search:focus {
+        outline: none;
+        border-color: var(--cc-accent);
+        box-shadow: 0 0 0 3px rgba(214,195,161,0.18);
+    }
+    .design-picker__counter {
+        font-size: 0.75rem;
+        color: rgba(255,255,255,0.55);
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+    }
+    .design-picker__chips {
+        display: flex;
+        gap: 0.4rem;
+        flex-wrap: wrap;
+        max-height: 6.5rem;
+        overflow-y: auto;
+        padding-right: 0.3rem;
+    }
+    .design-picker__chip {
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(255,255,255,0.12);
+        color: rgba(255,255,255,0.78);
+        font-size: 0.76rem;
+        padding: 0.35rem 0.75rem;
+        border-radius: 999px;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: background 0.15s, color 0.15s, border-color 0.15s;
+    }
+    .design-picker__chip small { opacity: 0.5; margin-left: 0.22rem; }
+    .design-picker__chip:hover {
+        background: rgba(214,169,106,0.12);
+        border-color: rgba(214,195,161,0.35);
+        color: #fff;
+    }
+    .design-picker__chip.is-active {
+        background: var(--cc-accent, #d6c3a1);
+        border-color: var(--cc-accent, #d6c3a1);
+        color: #111;
+    }
+    .design-pick.is-hidden { display: none; }
+    .design-pick__grid-empty {
+        text-align: center;
+        padding: 1.5rem;
+        color: rgba(255,255,255,0.5);
+        font-size: 0.88rem;
+        grid-column: 1 / -1;
+    }
+    .design-picker__head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+    .design-picker__head strong { color: var(--cc-ink); font-size: 1rem; }
+    .design-picker__head small {
+        display: block;
+        color: var(--cc-muted);
+        font-size: 0.78rem;
+        margin-top: 0.1rem;
+    }
+    .design-picker__head .site-btn { padding: 0.45rem 0.85rem; font-size: 0.82rem; }
+    .design-picker__empty {
+        color: var(--cc-muted);
+        font-size: 0.88rem;
+        margin: 0;
+        padding: 1rem 0;
+        text-align: center;
+    }
+    .design-picker__grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 0.7rem;
+        max-height: 30rem;
+        overflow-y: auto;
+        padding: 0.15rem;
+    }
+
+    .design-pick {
+        display: grid;
+        gap: 0.5rem;
+        padding: 0.55rem;
+        border-radius: 0.85rem;
+        border: 1px solid rgba(255,255,255,0.08);
+        background: rgba(255,255,255,0.03);
+        transition: border-color 0.15s, transform 0.15s;
+    }
+    .design-pick:hover {
+        border-color: rgba(214,195,161,0.35);
+        transform: translateY(-1px);
+    }
+    .design-pick__thumb {
+        position: relative;
+        aspect-ratio: 1 / 1;
+        background: rgba(255,255,255,0.06);
+        border-radius: 0.6rem;
+        overflow: hidden;
+    }
+    .design-pick__thumb img {
+        width: 100%; height: 100%;
+        object-fit: contain;
+        padding: 0.4rem;
+    }
+    .design-pick__badge {
+        position: absolute;
+        top: 4px;
+        width: 1.25rem; height: 1.25rem;
+        border-radius: 50%;
+        background: var(--cc-accent);
+        color: #111;
+        font-size: 0.7rem;
+        font-weight: 700;
+        line-height: 1.25rem;
+        text-align: center;
+        display: none;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+    }
+    .design-pick__badge[data-frente] { left: 4px; }
+    .design-pick__badge[data-espalda] { right: 4px; }
+    .design-pick.is-frente .design-pick__badge[data-frente] { display: block; }
+    .design-pick.is-espalda .design-pick__badge[data-espalda] { display: block; }
+    .design-pick.is-frente,
+    .design-pick.is-espalda { border-color: rgba(214,195,161,0.5); background: rgba(214,195,161,0.06); }
+
+    .design-pick__name {
+        color: var(--cc-muted);
+        font-size: 0.74rem;
+        line-height: 1.3;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .design-pick__actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.3rem;
+    }
+    .design-pick__btn {
+        padding: 0.32rem 0.3rem;
+        font-size: 0.74rem;
+        border-radius: 0.45rem;
+        border: 1px solid rgba(214,195,161,0.18);
+        background: rgba(255,255,255,0.04);
+        color: var(--cc-muted);
+        cursor: pointer;
+        transition: background 0.15s, color 0.15s, border-color 0.15s;
+    }
+    .design-pick__btn:hover {
+        background: rgba(214,195,161,0.14);
+        color: var(--cc-ink);
+        border-color: rgba(214,195,161,0.45);
+    }
+    .design-pick.is-frente .design-pick__btn[data-side="frente"],
+    .design-pick.is-espalda .design-pick__btn[data-side="espalda"] {
+        background: var(--cc-accent);
+        color: #111;
+        border-color: var(--cc-accent);
+        font-weight: 600;
+    }
+
+    @media (max-width: 480px) {
+        .design-slots { grid-template-columns: 1fr; }
+    }
+
     @media (max-width: 639.98px) {
         .detail-size-grid {
             grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -726,28 +1068,37 @@
                     <img id="imagen-principal" src="https://via.placeholder.com/450x300?text=Sin+imagen" class="img-fluid mb-3" alt="Sin imagen" loading="eager" decoding="async">
                 {% endif %}
 
-                <!-- Capa del diseño sobre la imagen -->
-                <!-- Capa del diseño sobre la imagen -->
-                <img id="diseño-overlay" src=""
-                     class="position-absolute"
-                     style="
-                        pointer-events: none;
-                        z-index: 6;
-                        max-height: 35%;
-                        top: 50%;
-                        left: 50%;
-                        transform: translate(-60%, -50%);
-                     ">
+                <!-- Toggle de vista Frente / Espalda -->
+                <div class="gallery-view-toggle" id="galleryViewToggle">
+                    <button type="button" class="gallery-view-btn is-active" data-view="frente">Frente</button>
+                    <button type="button" class="gallery-view-btn" data-view="espalda">Espalda</button>
+                </div>
+
+                <!-- Capas del diseño sobre la imagen (sin src vacío para no disparar requests) -->
+                <img id="diseño-overlay"
+                     class="position-absolute design-overlay design-overlay--frente is-active"
+                     alt="Diseño frente">
+                <img id="diseño-overlay-espalda"
+                     class="position-absolute design-overlay design-overlay--espalda"
+                     alt="Diseño espalda">
                 </div>
 
             <div class="detail-thumbs mt-3" id="detailThumbs">
-                {% for color in colores_disponibles %}
-                    <img src="/media/productos/{{ producto.slug_imagen }}_{{ color|lower }}_001.webp"
-                         class="miniatura"
+                {% if producto.slug_imagen %}
+                    {% for color in colores_disponibles %}
+                        <img src="/media/productos/{{ producto.slug_imagen }}_{{ color|lower }}_001.webp"
+                             class="miniatura"
+                             loading="lazy"
+                             decoding="async"
+                             alt="{{ producto.nombre }} {{ color }}">
+                    {% endfor %}
+                {% elif producto.imagen %}
+                    <img src="{{ producto.imagen.url }}"
+                         class="miniatura is-active"
                          loading="lazy"
                          decoding="async"
-                         alt="{{ producto.nombre }} {{ color }}">
-                {% endfor %}
+                         alt="{{ producto.nombre }}">
+                {% endif %}
             </div>
         </div>
         </div>
@@ -756,6 +1107,7 @@
         <div class="product-detail-col">
             <div class="detail-content-pane">
                 <div class="detail-kicker">
+                    {% if producto.slug_imagen %}
                     <div class="detail-kicker__weight">
                         {% if producto.slug_imagen == "max_overweight_oversized" or producto.slug_imagen == "dropshoulder" %}
                             7.5<br>OZ
@@ -763,8 +1115,9 @@
                             9.0<br>OZ
                         {% endif %}
                     </div>
+                    {% endif %}
                     <div class="detail-kicker__stack">
-                        {% if producto.slug_imagen != "max_overweight_oversized" %}
+                        {% if producto.slug_imagen and producto.slug_imagen != "max_overweight_oversized" %}
                             <div class="detail-kicker__line">Garment Dye</div>
                         {% endif %}
                         <h2 class="detail-title">{{ producto.nombre }}</h2>
@@ -928,77 +1281,84 @@
                       <div class="detail-configurator__intro">
                           <span class="detail-configurator__eyebrow">Arma tu pieza</span>
                           <h3 class="detail-configurator__title">Personaliza tu playera</h3>
-                          <p class="detail-configurator__copy">Elige la base, agrega diseño al frente o a la espalda y revisa cómo va quedando antes de mandarla al carrito. Cada diseño agrega $200 MXN al total.</p>
+                          <p class="detail-configurator__copy">Elige diseño para el frente, la espalda o ambos. Cada diseño agrega $200 MXN al total.</p>
                       </div>
 
-                      <div class="detail-design-actions">
-                          <span class="detail-selected-chip">Diseño extra: $200 MXN por lado</span>
-                          <button type="button" class="btn site-btn site-btn--ghost" onclick="limpiarDisenos()">Limpiar diseños</button>
+                      <!-- Slots: chip compacto por lado, solo nombre + ✕ -->
+                      <div class="design-slots">
+                          <div class="design-slot is-empty" id="slotFrente" data-side="frente">
+                              <span class="design-slot__label">Frente</span>
+                              <span class="design-slot__name" id="slotFrenteName">Sin diseño</span>
+                              <button type="button" class="design-slot__clear" onclick="removeDesign('frente')" title="Quitar diseño del frente" aria-label="Quitar diseño del frente">✕</button>
+                          </div>
+                          <div class="design-slot is-empty" id="slotEspalda" data-side="espalda">
+                              <span class="design-slot__label">Espalda</span>
+                              <span class="design-slot__name" id="slotEspaldaName">Sin diseño</span>
+                              <button type="button" class="design-slot__clear" onclick="removeDesign('espalda')" title="Quitar diseño de la espalda" aria-label="Quitar diseño de la espalda">✕</button>
+                          </div>
                       </div>
 
-                      <div class="detail-design-layout">
-                          <div class="detail-design-columns">
-                              <div class="detail-design-panel">
-                                  <div class="detail-design-panel__top">
-                                      <strong>Frente</strong>
-                                      <span>Usa un diseño al pecho si quieres una pieza más limpia o más gráfica.</span>
-                                  </div>
-                                  <span class="detail-selected-chip">Seleccionado: <span id="selectedPechoLabel">Sin diseño</span></span>
-                                  <div class="detail-design-grid">
-                                      {% for diseño in diseños_anime %}
-                                          {% get_media_prefix as MEDIA_URL %}
-                                          <div class="detail-design-card">
-                                              <img src="{{ MEDIA_URL }}diseños_nuevos/{{ diseño|urlencode }}" alt="{{ diseño }}">
-                                              <small>{{ diseño }}</small>
-                                              <button type="button" onclick="seleccionarDiseñoLista('{{ diseño|escapejs }}', 'pecho')" class="btn site-btn">Usar al frente</button>
-                                          </div>
-                                      {% empty %}
-                                          <p class="text-muted mb-0">No hay diseños disponibles.</p>
-                                      {% endfor %}
-                                  </div>
+                      <!-- Selector unificado: tus diseños + catalogo con categorias -->
+                      <div class="design-picker" id="designPicker">
+                          <div class="design-picker__head">
+                              <div>
+                                  <strong>Catálogo de diseños</strong>
+                                  <small>{{ catalog_total }} diseños · $200 MXN por lado</small>
                               </div>
-
-                              <div class="detail-design-panel">
-                                  <div class="detail-design-panel__top">
-                                      <strong>Espalda</strong>
-                                      <span>Deja la espalda limpia o arma una versión más cargada con diseño posterior.</span>
-                                  </div>
-                                  <span class="detail-selected-chip">Seleccionado: <span id="selectedEspaldaLabel">Sin diseño</span></span>
-                                  <div class="detail-design-grid">
-                                      {% for diseño in diseños_anime %}
-                                          {% get_media_prefix as MEDIA_URL %}
-                                          <div class="detail-design-card">
-                                              <img src="{{ MEDIA_URL }}diseños_nuevos/{{ diseño|urlencode }}" alt="{{ diseño }}">
-                                              <small>{{ diseño }}</small>
-                                              <button type="button" onclick="seleccionarDiseñoLista('{{ diseño|escapejs }}', 'espalda')" class="btn site-btn">Usar atrás</button>
-                                          </div>
-                                      {% empty %}
-                                          <p class="text-muted mb-0">No hay diseños disponibles.</p>
-                                      {% endfor %}
-                                  </div>
+                              <div style="display:flex;gap:0.4rem;flex-wrap:wrap;">
+                                  <a class="btn site-btn site-btn--ghost" href="{% url 'tienda:design_creator' %}?product_id={{ producto.id }}">+ Subir el mío</a>
+                                  <button type="button" class="btn site-btn site-btn--ghost" onclick="limpiarDisenos()">Limpiar</button>
                               </div>
                           </div>
 
-                          <div class="detail-design-personal">
-                              <div class="detail-design-personal__header">
-                                  <strong>Diseños propios</strong>
-                                  <span>Si ya subiste uno, lo puedes usar directo al frente con un clic.</span>
+                          <div class="design-picker__toolbar">
+                              <input type="search" id="designPickerSearch" class="design-picker__search" placeholder="Buscar diseño o categoría…" autocomplete="off">
+                              <span class="design-picker__counter"><span id="designPickerVisible">{{ catalog_total }}</span> visibles</span>
+                          </div>
+
+                          <div class="design-picker__chips" id="designPickerChips">
+                              <button type="button" class="design-picker__chip is-active" data-category="">Todas</button>
+                              {% if own_designs_items %}
+                              <button type="button" class="design-picker__chip" data-category="__own">Tus diseños <small>({{ own_designs_items|length }})</small></button>
+                              {% endif %}
+                              {% for cat in catalog_picker %}
+                              <button type="button" class="design-picker__chip" data-category="{{ cat.slug }}">{{ cat.name }} <small>({{ cat.count }})</small></button>
+                              {% endfor %}
+                          </div>
+
+                          <div class="design-picker__grid" id="designPickerGrid">
+                              {% for d in own_designs_items %}
+                              <div class="design-pick" data-name="{{ d.name|escapejs }}" data-src="/media/diseños_propios/{{ d.name|urlencode }}" data-category="__own" data-search="{{ d.name|lower }}" data-own="1">
+                                  <div class="design-pick__thumb">
+                                      <img src="/media/diseños_propios/thumbs/{{ d.thumb|urlencode }}" alt="{{ d.name }}" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='/media/diseños_propios/{{ d.name|urlencode }}'">
+                                      <span class="design-pick__badge" data-frente>F</span>
+                                      <span class="design-pick__badge" data-espalda>E</span>
+                                  </div>
+                                  <div class="design-pick__actions">
+                                      <button type="button" class="design-pick__btn" data-side="frente">Frente</button>
+                                      <button type="button" class="design-pick__btn" data-side="espalda">Espalda</button>
+                                  </div>
                               </div>
-                              <div class="detail-design-personal__grid">
-                                  {% for diseño in diseños_personalizados %}
-                                      {% get_media_prefix as MEDIA_URL %}
-                                      <img src="{{ MEDIA_URL }}diseños_propios/{{ diseño|urlencode }}"
-                                           class="miniatura-diseño"
-                                           onclick="seleccionarDiseño(this)"
-                                           alt="{{ diseño }}">
-                                  {% empty %}
-                                      <div class="detail-design-personal__empty">
-                                          <p class="text-muted mb-2">Todavía no tienes diseños propios guardados.</p>
-                                          <a class="btn site-btn site-btn--accent" href="{% url 'tienda:design_creator' %}?product_id={{ producto.id }}">Crear diseño propio</a>
+                              {% endfor %}
+                              {% for cat in catalog_picker %}
+                                  {% for d in cat.items %}
+                                  <div class="design-pick" data-name="{{ d.name|escapejs }}" data-src="/media/diseños_propios/{{ d.name|urlencode }}" data-category="{{ cat.slug }}" data-search="{{ d.name|lower }} {{ cat.name|lower }}">
+                                      <div class="design-pick__thumb">
+                                          <img src="/media/diseños_propios/thumbs/{{ d.thumb|urlencode }}" alt="{{ d.name }}" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='/media/diseños_propios/{{ d.name|urlencode }}'">
+                                          <span class="design-pick__badge" data-frente>F</span>
+                                          <span class="design-pick__badge" data-espalda>E</span>
                                       </div>
+                                      <div class="design-pick__actions">
+                                          <button type="button" class="design-pick__btn" data-side="frente">Frente</button>
+                                          <button type="button" class="design-pick__btn" data-side="espalda">Espalda</button>
+                                      </div>
+                                  </div>
                                   {% endfor %}
-                              </div>
+                              {% endfor %}
                           </div>
+                          {% if not catalog_picker and not own_designs_items %}
+                          <p class="design-picker__empty">No hay diseños disponibles por ahora.</p>
+                          {% endif %}
                       </div>
                   </section>
 
@@ -1255,18 +1615,31 @@ document.addEventListener("DOMContentLoaded", function () {
       : "Selecciona color y talla para activar la compra.";
   }
 
+  function nombreLimpio(raw) {
+    if (!raw || raw === "Sin diseño") return "Sin diseño";
+    let s = String(raw);
+    if (s.includes("/")) s = s.split("/").pop();
+    try { s = decodeURIComponent(s); } catch (_) {}
+    return s;
+  }
+
+  // Versión más legible para mostrar (sin extensión, underscores como espacios).
+  function nombreBonito(raw) {
+    const base = nombreLimpio(raw);
+    if (base === "Sin diseño") return base;
+    return base.replace(/\.(png|jpe?g|webp|gif|svg)$/i, "").replace(/[_-]+/g, " ").trim();
+  }
+
   function actualizarResumen() {
     const color = document.getElementById("colorInput").value || "Pendiente";
     const talla = document.getElementById("tallaInput").value || "Pendiente";
-    const pecho = document.getElementById("diseñoPechoInput").value || "Sin diseño";
-    const espalda = document.getElementById("diseñoEspaldaInput").value || "Sin diseño";
+    const pecho = nombreBonito(document.getElementById("diseñoPechoInput").value);
+    const espalda = nombreBonito(document.getElementById("diseñoEspaldaInput").value);
 
     document.getElementById("summaryColor").textContent = color;
     document.getElementById("summaryTalla").textContent = talla;
     document.getElementById("summaryPecho").textContent = pecho;
     document.getElementById("summaryEspalda").textContent = espalda;
-    document.getElementById("selectedPechoLabel").textContent = pecho;
-    document.getElementById("selectedEspaldaLabel").textContent = espalda;
     actualizarEstadoCompra();
   }
 
@@ -1287,7 +1660,11 @@ document.addEventListener("DOMContentLoaded", function () {
       const colorEsp = circle.dataset.color;
       const colorEng = colorMap[colorEsp] || colorEsp;
       const nombreBase = "{{ producto.slug_imagen }}";
-      renderThumbs(nombreBase, colorEng);
+      // Solo intentar cargar imagenes por color si el producto tiene slug definido
+      // (productos sin galeria por color usan solo producto.imagen)
+      if (nombreBase) {
+        renderThumbs(nombreBase, colorEng);
+      }
       document.getElementById("colorInput").value = colorEsp;
       document.getElementById("colorLabel").textContent = colorEsp;
 
@@ -1309,47 +1686,171 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   });
 
-  // Seleccionar diseño anime (pecho o espalda)
-  window.seleccionarDiseñoLista = function(nombre, parte) {
-    const ruta = `/media/diseños_nuevos/${nombre}`;
+  // ── Selección de diseños (Frente / Espalda) ──────────────────────────
+  // Estado por lado: { nombre (crudo, lo que va al backend), src, label (display) }
+  const selected = { frente: null, espalda: null };
 
-    if (parte === 'pecho') {
-      document.getElementById('diseñoPechoInput').value = nombre;
-      document.getElementById('diseño-overlay').src = ruta;
-      precioPecho = PRECIO_DISENO;
+  // Refs DOM cacheadas
+  const ref = {
+    frente: {
+      slot: document.getElementById('slotFrente'),
+      name: document.getElementById('slotFrenteName'),
+      input: document.getElementById('diseñoPechoInput'),
+      overlay: document.getElementById('diseño-overlay'),
+    },
+    espalda: {
+      slot: document.getElementById('slotEspalda'),
+      name: document.getElementById('slotEspaldaName'),
+      input: document.getElementById('diseñoEspaldaInput'),
+      overlay: document.getElementById('diseño-overlay-espalda'),
+    },
+  };
+
+  // Si una imagen de overlay falla (archivo movido / 404), se oculta y avisa
+  Object.values(ref).forEach(r => {
+    r.overlay.addEventListener('error', () => {
+      r.overlay.classList.remove('has-image');
+      r.overlay.removeAttribute('src');
+    });
+  });
+
+  function setView(view) {
+    document.querySelectorAll('.gallery-view-btn').forEach(b => {
+      b.classList.toggle('is-active', b.dataset.view === view);
+    });
+    ref.frente.overlay.classList.toggle('is-active', view === 'frente');
+    ref.espalda.overlay.classList.toggle('is-active', view === 'espalda');
+  }
+  document.querySelectorAll('.gallery-view-btn').forEach(btn => {
+    btn.addEventListener('click', () => setView(btn.dataset.view));
+  });
+
+  function refreshSlot(side) {
+    const sel = selected[side];
+    const r = ref[side];
+    if (sel) {
+      r.slot.classList.remove('is-empty');
+      r.name.textContent = sel.label;
+      r.name.title = sel.label;
     } else {
-      document.getElementById('diseñoEspaldaInput').value = nombre;
-      precioEspalda = PRECIO_DISENO;
+      r.slot.classList.add('is-empty');
+      r.name.textContent = 'Sin diseño';
+      r.name.removeAttribute('title');
     }
+  }
 
+  // Match por src (única fuente confiable: 2 archivos en carpetas distintas con el
+  // mismo nombre no se confunden, y al re-render del mismo archivo coincide igual).
+  function refreshPickStates() {
+    const fSrc = selected.frente?.src || null;
+    const eSrc = selected.espalda?.src || null;
+    document.querySelectorAll('.design-pick').forEach(card => {
+      const s = card.dataset.src;
+      card.classList.toggle('is-frente',  s === fSrc);
+      card.classList.toggle('is-espalda', s === eSrc);
+    });
+  }
+
+  // Asigna un diseño a un lado. side = "frente" | "espalda".
+  function assignDesign(side, nombre, src) {
+    selected[side] = { nombre, src, label: nombreBonito(nombre) };
+
+    const r = ref[side];
+    r.input.value = nombre;
+    r.overlay.src = src;
+    r.overlay.classList.add('has-image');
+
+    if (side === 'frente') precioPecho = PRECIO_DISENO; else precioEspalda = PRECIO_DISENO;
+
+    refreshSlot(side);
+    refreshPickStates();
+    setView(side);
     actualizarPrecio();
     actualizarResumen();
+  }
+
+  window.removeDesign = function(side) {
+    selected[side] = null;
+    const r = ref[side];
+    r.input.value = '';
+    r.overlay.removeAttribute('src');
+    r.overlay.classList.remove('has-image');
+    if (side === 'frente') precioPecho = 0; else precioEspalda = 0;
+    refreshSlot(side);
+    refreshPickStates();
+    actualizarPrecio();
+    actualizarResumen();
+  };
+
+  // Delegación: cualquier botón .design-pick__btn dispara assignDesign
+  // Y embellece el nombre visible del card (sin extensión, sin guiones bajos)
+  document.querySelectorAll('.design-pick').forEach(card => {
+    const nombre = card.dataset.name;
+    const src    = card.dataset.src;
+    const label  = card.querySelector('.design-pick__name');
+    if (label) {
+      label.textContent = nombreBonito(nombre);
+      label.title = nombre;
+    }
+    card.querySelectorAll('.design-pick__btn').forEach(btn => {
+      btn.addEventListener('click', () => assignDesign(btn.dataset.side, nombre, src));
+    });
+  });
+
+  // Compatibilidad: shim por si alguna pieza vieja llama estas funciones.
+  window.seleccionarDiseñoLista = function(nombre, parte) {
+    const side = (parte === 'pecho' || parte === 'frente') ? 'frente' : 'espalda';
+    let clean = nombre; try { clean = decodeURIComponent(nombre); } catch (_) {}
+    const src = `/media/diseños_nuevos/${encodeURIComponent(clean)}`;
+    assignDesign(side, clean, src);
+  };
+  window.seleccionarDiseño = function(img) {
+    assignDesign('frente', nombreLimpio(img.src), img.src);
   };
 
   window.limpiarDisenos = function() {
-    document.getElementById('diseñoPechoInput').value = "";
-    document.getElementById('diseñoEspaldaInput').value = "";
-    document.getElementById('diseño-overlay').src = "";
-    precioPecho = 0;
-    precioEspalda = 0;
-    document.querySelectorAll('.miniatura-diseño').forEach(i => i.classList.remove("is-active"));
-    actualizarPrecio();
-    actualizarResumen();
+    removeDesign('frente');
+    removeDesign('espalda');
+    setView('frente');
   };
 
-  // Seleccionar diseño personalizado para PECHO
-  window.seleccionarDiseño = function(img) {
-    const nombre = img.src.split('/').pop();
-    document.getElementById('diseñoPechoInput').value = nombre;
-    document.getElementById('diseño-overlay').src = img.src;
+  // ── Filtro del picker: chips de categoria + buscador ──────────────────
+  (() => {
+    const grid    = document.getElementById('designPickerGrid');
+    const chips   = document.getElementById('designPickerChips');
+    const search  = document.getElementById('designPickerSearch');
+    const counter = document.getElementById('designPickerVisible');
+    if (!grid || !chips) return;
 
-    precioPecho = PRECIO_DISENO;
-    actualizarPrecio();
-    actualizarResumen();
-
-    document.querySelectorAll('.miniatura-diseño').forEach(i => i.classList.remove("is-active"));
-    img.classList.add("is-active");
-  };
+    const items = Array.from(grid.querySelectorAll('.design-pick'));
+    let activeCategory = '';
+    let query = '';
+    const applyFilter = () => {
+      let visible = 0;
+      for (const item of items) {
+        const cat = item.dataset.category || '';
+        const txt = item.dataset.search || '';
+        const okCat = !activeCategory || cat === activeCategory;
+        const okQ = !query || txt.includes(query);
+        const show = okCat && okQ;
+        item.classList.toggle('is-hidden', !show);
+        if (show) visible++;
+      }
+      if (counter) counter.textContent = visible.toLocaleString();
+    };
+    chips.addEventListener('click', (e) => {
+      const btn = e.target.closest('.design-picker__chip');
+      if (!btn) return;
+      activeCategory = btn.dataset.category || '';
+      chips.querySelectorAll('.design-picker__chip').forEach(b => b.classList.toggle('is-active', b === btn));
+      applyFilter();
+    });
+    search?.addEventListener('input', (e) => {
+      query = (e.target.value || '').trim().toLowerCase();
+      applyFilter();
+    });
+    applyFilter();
+  })();
 
   actualizarPrecio();
   actualizarResumen();

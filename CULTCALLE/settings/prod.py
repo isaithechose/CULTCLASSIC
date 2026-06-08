@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
 
     "django.contrib.sites",
+    "django.contrib.sitemaps",
 
     "allauth",
     "allauth.account",
@@ -124,6 +125,12 @@ SOCIALACCOUNT_PROVIDERS = {
 STRIPE_PUBLIC_KEY = config("STRIPE_PUBLIC_KEY", default="")
 STRIPE_SECRET_KEY = config("STRIPE_SECRET_KEY", default="")
 META_PIXEL_ID = config("META_PIXEL_ID", default="")
+META_PIXEL_ACCESS_TOKEN = config("META_PIXEL_ACCESS_TOKEN", default="")
+META_PIXEL_TEST_EVENT_CODE = config("META_PIXEL_TEST_EVENT_CODE", default="")
+FACEBOOK_DOMAIN_VERIFICATION = config("FACEBOOK_DOMAIN_VERIFICATION", default="")
+GA4_MEASUREMENT_ID = config("GA4_MEASUREMENT_ID", default="")
+GOOGLE_SITE_VERIFICATION = config("GOOGLE_SITE_VERIFICATION", default="")
+GOOGLE_MERCHANT_VERIFICATION = config("GOOGLE_MERCHANT_VERIFICATION", default="")
 stripe.api_key = STRIPE_SECRET_KEY
 
 
@@ -173,6 +180,7 @@ TEMPLATES = [
                 "django.contrib.messages.context_processors.messages",
                 "tienda.context_processors.meta_pixel",
                 "tienda.context_processors.admin_nav_context",
+                "tienda.context_processors.instagram_feed",
             ],
         },
     },

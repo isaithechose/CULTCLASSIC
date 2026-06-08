@@ -14,6 +14,19 @@
     <meta property="og:description" content="{% block og_description %}Cult Clasiccs - Ropa y diseños con estilo limpio, compra simple y envío claro.{% endblock %}" />
     <meta property="og:image" content="{% block og_image %}{% endblock %}" />
     <meta property="og:url" content="{{ request.build_absolute_uri }}" />
+    <meta property="og:locale" content="es_MX" />
+
+    <!-- Twitter card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="{% block twitter_title %}{% block twitter_title_default %}Cult Clasiccs{% endblock %}{% endblock %}" />
+    <meta name="twitter:description" content="{% block twitter_description %}Ropa y diseños con estilo limpio, compra simple y envío claro.{% endblock %}" />
+    <meta name="twitter:image" content="{% block twitter_image %}{% endblock %}" />
+
+    <!-- Canonical y robots -->
+    <link rel="canonical" href="{{ request.scheme }}://{{ request.get_host }}{{ request.path }}" />
+    <meta name="robots" content="{% block robots %}index, follow{% endblock %}" />
+
+    {% block extra_head %}{% endblock %}
 
     <!-- Favicon -->
     <link rel="icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}" />
@@ -87,32 +100,13 @@
                     <a class="nav-link dropdown-toggle" id="navbarDesigns" href="#" role="button"
                        data-bs-toggle="dropdown" aria-expanded="false">Diseños</a>
                     <ul class="dropdown-menu" aria-labelledby="navbarDesigns">
-                        <li><a class="dropdown-item" href="{% url 'tienda:catalogo_diseños' %}">Diseños Anime</a></li>
-                        <li><a class="dropdown-item" href="{% url 'tienda:catalogo_diseños_propios' %}">Diseños Propios</a></li>
+                        <li><a class="dropdown-item" href="{% url 'tienda:catalogo_diseños_propios' %}">Catálogo</a></li>
                         <li><a class="dropdown-item" href="{% url 'tienda:design_creator' %}">Creador</a></li>
-                    </ul>
-                </li>
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" id="navbarDropdown" href="#" role="button"
-                       data-bs-toggle="dropdown" aria-expanded="false">Tienda</a>
-                    <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-                        <li><a class="dropdown-item" href="{% url 'tienda:tienda' %}">Artículos</a></li>
-                        <li><hr class="dropdown-divider" /></li>
-                        <li><a class="dropdown-item" href="#">Populares</a></li>
-                        <li><a class="dropdown-item" href="#">Nuevo Drop</a></li>
                     </ul>
                 </li>
             </ul>
 
             <div class="d-flex align-items-center flex-wrap gap-2">
-                <form method="get" action="{% url 'tienda:buscar' %}" class="d-flex" role="search">
-                    <input type="text" name="q" class="form-control form-control-sm"
-                           style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.15);color:var(--cc-ink);min-width:160px;"
-                           placeholder="Buscar..." aria-label="Buscar productos">
-                    <button type="submit" class="btn btn-sm ms-1" style="background:rgba(255,255,255,0.1);color:var(--cc-ink);border:none;">
-                        <i class="bi-search"></i>
-                    </button>
-                </form>
                 <a class="btn site-btn site-btn--ghost" href="{% url 'tienda:carrito' %}">
                     <i class="bi-cart-fill me-1"></i>
                     Carrito
@@ -123,9 +117,6 @@
                 {% if user.is_authenticated %}
                     <a class="btn site-btn site-btn--ghost" href="{% url 'tienda:profile' %}">
                         Mi perfil
-                    </a>
-                    <a class="btn site-btn site-btn--ghost" href="{% url 'tienda:my_orders' %}">
-                        Seguir mis Pedidos
                     </a>
                     <a class="btn site-btn site-btn--accent" href="{% url 'account_logout' %}">Cerrar sesión</a>
                 {% else %}
@@ -233,6 +224,107 @@
 </div>
 
 <style>
+/* ── Navbar movil ────────────────────────────────────────────────────── */
+@media (max-width: 991.98px) {
+    .site-navbar .navbar-toggler {
+        border: 1px solid rgba(255,255,255,0.18);
+        padding: 0.35rem 0.55rem;
+        border-radius: 8px;
+    }
+    .site-navbar .navbar-toggler:focus { box-shadow: 0 0 0 2px rgba(214,195,161,0.35); }
+    .site-navbar .navbar-toggler-icon {
+        filter: invert(1) opacity(0.85);
+    }
+    .site-navbar .navbar-collapse {
+        margin-top: 0.85rem;
+        padding: 1rem;
+        background: rgba(15,15,17,0.97);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 16px;
+    }
+    .site-navbar__links { gap: 0.15rem; }
+    .site-navbar__links .nav-link {
+        padding: 0.7rem 0.4rem;
+        font-size: 0.85rem;
+        border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .site-navbar__links .dropdown-menu {
+        position: static;
+        float: none;
+        margin: 0.25rem 0 0.6rem 0.6rem;
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 10px;
+        padding: 0.4rem;
+    }
+    .site-navbar__links .dropdown-item {
+        color: rgba(255,255,255,0.85);
+        padding: 0.55rem 0.85rem;
+        border-radius: 8px;
+        font-size: 0.85rem;
+    }
+    .site-navbar__links .dropdown-item:hover,
+    .site-navbar__links .dropdown-item:focus {
+        background: rgba(214,195,161,0.15);
+        color: var(--cc-accent);
+    }
+    .site-navbar .navbar-collapse > .d-flex {
+        margin-top: 0.9rem;
+        padding-top: 0.9rem;
+        border-top: 1px solid rgba(255,255,255,0.08);
+        flex-direction: column;
+        align-items: stretch !important;
+        gap: 0.5rem !important;
+    }
+    .site-navbar .navbar-collapse > .d-flex form { width: 100%; }
+    .site-navbar .navbar-collapse > .d-flex form .form-control { min-width: 0 !important; flex: 1; }
+    .site-navbar .navbar-collapse > .d-flex .site-btn {
+        width: 100%;
+        text-align: center;
+        padding: 0.7rem 1rem;
+    }
+}
+
+.cc-whatsapp {
+    position: fixed;
+    bottom: 1.2rem;
+    right: 1.2rem;
+    z-index: 1090;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: #25D366;
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 24px rgba(37, 211, 102, 0.4), 0 2px 8px rgba(0,0,0,0.2);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    text-decoration: none;
+}
+.cc-whatsapp:hover,
+.cc-whatsapp:focus {
+    transform: scale(1.08);
+    color: #fff;
+    box-shadow: 0 10px 30px rgba(37, 211, 102, 0.55), 0 4px 12px rgba(0,0,0,0.25);
+}
+.cc-whatsapp::before {
+    content: "";
+    position: absolute;
+    inset: -6px;
+    border-radius: 50%;
+    background: rgba(37, 211, 102, 0.35);
+    z-index: -1;
+    animation: cc-whatsapp-pulse 2s ease-out infinite;
+}
+@keyframes cc-whatsapp-pulse {
+    0%   { transform: scale(0.85); opacity: 0.75; }
+    100% { transform: scale(1.35); opacity: 0; }
+}
+@media (max-width: 575.98px) {
+    .cc-whatsapp { bottom: 0.85rem; right: 0.85rem; width: 52px; height: 52px; }
+}
+
 .cc-newsletter {
     position: fixed; inset: 0; z-index: 1080;
     display: flex; align-items: center; justify-content: center;
@@ -412,6 +504,15 @@
     }
 })();
 </script>
+
+<!-- WhatsApp flotante -->
+<a href="https://wa.me/526567589153?text={% if producto %}Hola%2C+me+interesa+el+producto+{{ producto.nombre|urlencode }}{% else %}Hola%2C+tengo+una+duda{% endif %}"
+   class="cc-whatsapp" target="_blank" rel="noopener noreferrer"
+   aria-label="Chatear por WhatsApp">
+    <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor" aria-hidden="true">
+        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.149-.67.15-.198.297-.768.967-.941 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.693.626.712.226 1.36.194 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413"/>
+    </svg>
+</a>
 
 <!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
