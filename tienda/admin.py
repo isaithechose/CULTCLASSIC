@@ -2151,6 +2151,7 @@ class ProductoAdmin(admin.ModelAdmin):
 
         all_colors = sorted({v.color for v in variants if v.color})
         all_tallas = sorted({v.talla for v in variants if v.talla})
+        all_productos = sorted({v.product.nombre for v in variants})
         all_categorias = sorted({
             v.product.categoria.nombre
             for v in variants
@@ -2166,6 +2167,7 @@ class ProductoAdmin(admin.ModelAdmin):
             filter_colors=all_colors,
             filter_tallas=all_tallas,
             filter_categorias=all_categorias,
+            filter_productos=all_productos,
             total_variants=len(variants),
         )
         return TemplateResponse(request, "admin/tienda/inventory_matrix.html", context)

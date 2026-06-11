@@ -305,6 +305,11 @@
   <div class="mx-filters">
     <input class="mx-search" id="mx-search" type="search" placeholder="Buscar producto o color…" autocomplete="off">
 
+    <select class="mx-select" id="mx-producto">
+      <option value="">Todos los productos</option>
+      {% for p in filter_productos %}<option value="{{ p|lower }}">{{ p }}</option>{% endfor %}
+    </select>
+
     <select class="mx-select" id="mx-cat">
       <option value="">Todas las categorías</option>
       {% for cat in filter_categorias %}<option value="{{ cat|lower }}">{{ cat }}</option>{% endfor %}
@@ -481,6 +486,7 @@
   // Filters
   const mxRows     = Array.from(document.querySelectorAll('#mx-table tbody tr'));
   const mxSearch   = document.getElementById('mx-search');
+  const mxProducto = document.getElementById('mx-producto');
   const mxCat      = document.getElementById('mx-cat');
   const mxColor    = document.getElementById('mx-color');
   const mxTalla    = document.getElementById('mx-talla');
@@ -492,6 +498,7 @@
 
   function mxApply() {
     const q     = (mxSearch.value || '').toLowerCase();
+    const prod  = mxProducto.value;
     const cat   = mxCat.value;
     const color = mxColor.value;
     const talla = mxTalla.value;
@@ -500,6 +507,7 @@
       const s = parseInt(tr.dataset.stock) || 0;
       const ok =
         (!q     || tr.dataset.product.includes(q) || tr.dataset.color.includes(q)) &&
+        (!prod  || tr.dataset.product === prod)  &&
         (!cat   || tr.dataset.cat   === cat)   &&
         (!color || tr.dataset.color === color) &&
         (!talla || tr.dataset.talla === talla) &&
@@ -510,7 +518,7 @@
     mxCount.textContent = vis + ' variante' + (vis !== 1 ? 's' : '');
   }
 
-  [mxSearch, mxCat, mxColor, mxTalla].forEach(el => el.addEventListener('input', mxApply));
+  [mxSearch, mxProducto, mxCat, mxColor, mxTalla].forEach(el => el.addEventListener('input', mxApply));
 
   mxEstados.forEach(btn => {
     btn.addEventListener('click', () => {
@@ -522,7 +530,7 @@
   });
 
   document.getElementById('mx-clear').addEventListener('click', () => {
-    mxSearch.value = ''; mxCat.value = ''; mxColor.value = ''; mxTalla.value = '';
+    mxSearch.value = ''; mxProducto.value = ''; mxCat.value = ''; mxColor.value = ''; mxTalla.value = '';
     mxEstado = 'all';
     mxEstados.forEach(b => b.classList.toggle('active', b.dataset.estado === 'all'));
     mxApply();
