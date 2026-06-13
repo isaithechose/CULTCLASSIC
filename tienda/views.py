@@ -438,7 +438,7 @@ def _build_order_from_cart(order, carrito, reset_checkout_state=True):
             order=order,
             product_id=product_id,
             quantity=item["cantidad"],
-            price=item["precio"],
+            price=Decimal(str(item["precio"])),
             talla=talla,
             color=color,
             diseño_pecho=diseño_pecho or "",
@@ -852,10 +852,12 @@ def agregar_al_carrito(request, producto_id):
         item_key = f"{producto_id}-{talla}-{color}-{diseño_pecho}-{diseño_espalda}"
 
         # Suma precio base + extra por cada diseño
-        PRECIO_DISENO = 200
-        precio_pecho = PRECIO_DISENO if diseño_pecho else 0
-        precio_espalda = PRECIO_DISENO if diseño_espalda else 0
-        precio_total = float(producto.precio) + precio_pecho + precio_espalda
+        PRECIO_DISENO = Decimal("200")
+        precio_pecho = PRECIO_DISENO if diseño_pecho else Decimal("0")
+        precio_espalda = PRECIO_DISENO if diseño_espalda else Decimal("0")
+        precio_total = (producto.precio + precio_pecho + precio_espalda).quantize(
+            Decimal("0.01"), rounding=ROUND_HALF_UP
+        )
 
         if item_key in carrito:
             if carrito[item_key]['cantidad'] + 1 > available_stock:
@@ -868,7 +870,7 @@ def agregar_al_carrito(request, producto_id):
         else:
             carrito[item_key] = {
                 'nombre': producto.nombre,
-                'precio': precio_total,
+                'precio': str(precio_total),  # str: la sesión serializa a JSON (Decimal no es serializable)
                 'cantidad': 1,
                 'talla': talla,
                 'color': color,
@@ -924,7 +926,7 @@ def carrito_view(request):
         producto = productos_map.get(int(producto_id))
         if not producto:
             continue
-        precio_unitario_total = item['precio']
+        precio_unitario_total = Decimal(str(item['precio']))
         subtotal = precio_unitario_total * item['cantidad']
         carrito_items.append({
             'producto_id': producto_id,
@@ -1144,7 +1146,7 @@ def stripe_checkout(request):
     line_items = []
     for key, item in carrito.items():
         # Convierte el precio a centavos (por ejemplo, 299.00 MXN -> 29900)
-        price_in_cents = int(item['precio'] * 100)
+        price_in_cents = int((Decimal(str(item['precio'])) * 100).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
         line_items.append({
             'price_data': {
                 'currency': 'mxn',  # ← AQUÍ CAMBIASTE A PESOS MEXICANOS
