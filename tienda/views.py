@@ -12,7 +12,8 @@ from django.contrib.auth.decorators import login_required
 from django.core.files.storage import FileSystemStorage
 from django.core.mail import send_mail
 from django.core.paginator import Paginator
-from django.http import JsonResponse
+from django.db import transaction
+from django.http import JsonResponse, HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.utils.text import slugify
@@ -74,6 +75,29 @@ def _custom_designs_dir():
     return Path(settings.MEDIA_ROOT) / "diseños_propios"
 
 
+_ALLOWED_DESIGN_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp"}
+_MAX_DESIGN_BYTES = 15 * 1024 * 1024
+
+
+def _assert_valid_image_bytes(data):
+    """Verifica que ``data`` sean bytes de una imagen real (PNG/JPEG/WEBP).
+
+    Evita que se suban archivos arbitrarios (p.ej. HTML/SVG con scripts o
+    ejecutables) a una carpeta de MEDIA servida públicamente.
+    """
+    from io import BytesIO
+    from PIL import Image, UnidentifiedImageError
+
+    try:
+        with Image.open(BytesIO(data)) as img:
+            img.verify()
+            fmt = (img.format or "").upper()
+    except (UnidentifiedImageError, OSError, ValueError):
+        raise ValueError("El archivo no es una imagen válida.")
+    if fmt not in {"PNG", "JPEG", "WEBP"}:
+        raise ValueError("Solo se permiten imágenes PNG, JPG o WEBP.")
+
+
 def _save_custom_design(user, design_name, uploaded_file=None, edited_image_data=None):
     designs_dir = _custom_designs_dir()
     designs_dir.mkdir(parents=True, exist_ok=True)
@@ -86,9 +110,13 @@ def _save_custom_design(user, design_name, uploaded_file=None, edited_image_data
         header, _, encoded = edited_image_data.partition(",")
         if ";base64" not in header or not encoded:
             raise ValueError("La imagen editada no llegó en un formato válido.")
-        decoded = base64.b64decode(encoded)
-        if len(decoded) > 15 * 1024 * 1024:
+        try:
+            decoded = base64.b64decode(encoded, validate=True)
+        except (ValueError, base64.binascii.Error):
+            raise ValueError("La imagen editada no llegó en un formato válido.")
+        if len(decoded) > _MAX_DESIGN_BYTES:
             raise ValueError("El diseño excede el límite de 15 MB.")
+        _assert_valid_image_bytes(decoded)
         final_name = f"{filename_base}.png"
         file_path = designs_dir / final_name
         counter = 1
@@ -100,9 +128,14 @@ def _save_custom_design(user, design_name, uploaded_file=None, edited_image_data
         return final_name
 
     if uploaded_file:
-        if uploaded_file.size > 15 * 1024 * 1024:
+        if uploaded_file.size > _MAX_DESIGN_BYTES:
             raise ValueError("El archivo excede el límite de 15 MB.")
         extension = Path(uploaded_file.name).suffix.lower() or ".png"
+        if extension not in _ALLOWED_DESIGN_EXTENSIONS:
+            raise ValueError("Solo se permiten imágenes PNG, JPG o WEBP.")
+        uploaded_file.seek(0)
+        _assert_valid_image_bytes(uploaded_file.read())
+        uploaded_file.seek(0)
         final_name = f"{filename_base}{extension}"
         file_path = designs_dir / final_name
         counter = 1
@@ -1003,6 +1036,14 @@ def devoluciones_view(request):
     return render(request, 'tienda/devoluciones.html')
 
 
+def google_site_verification(request):
+    """Archivo de verificacion de propiedad para Google Search Console."""
+    return HttpResponse(
+        "google-site-verification: google994215bd513f755c.html",
+        content_type="text/plain",
+    )
+
+
 def privacidad_view(request):
     return render(request, 'tienda/privacidad.html')
 
@@ -1157,6 +1198,42 @@ def stripe_checkout(request):
     # Redirige al usuario a la URL de Stripe para procesar el pago
     return redirect(session.url, code=303)
 
+def _finalize_paid_order(order_id, *, created_by, note):
+    """Marca una orden pagada como Completed descontando inventario de forma
+    idempotente y bajo bloqueo de fila.
+
+    Devuelve (order, newly_completed). El bloqueo select_for_update + la
+    re-verificación del estado dentro de la transacción evitan que el retorno
+    a payment_success y el webhook de Stripe descuenten el stock dos veces si
+    llegan casi al mismo tiempo.
+    """
+    with transaction.atomic():
+        order = Order.objects.select_for_update().get(id=order_id)
+        if order.status == "Completed":
+            return order, False
+
+        for item in order.items.select_related("product"):
+            variant = find_variant_for_selection(item.product, talla=item.talla, color=item.color)
+            record_inventory_movement(
+                product=item.product,
+                variant=variant,
+                order=order,
+                movement_type="sale",
+                quantity_change=-int(item.quantity),
+                note=note,
+                created_by=created_by,
+                metadata={
+                    "talla": item.talla,
+                    "color": item.color,
+                    "precio": str(item.price),
+                },
+            )
+
+        order.status = "Completed"
+        order.save(update_fields=["status"])
+    return order, True
+
+
 @login_required
 def payment_success(request):
     session_id = request.GET.get("session_id")
@@ -1205,39 +1282,34 @@ def payment_success(request):
                 )
             return redirect("tienda:carrito")
 
-        for item in order.items.select_related("product"):
-            variant = find_variant_for_selection(item.product, talla=item.talla, color=item.color)
-            record_inventory_movement(
-                product=item.product,
-                variant=variant,
-                order=order,
-                movement_type="sale",
-                quantity_change=-int(item.quantity),
-                note=f"Descuento automático al completar el pedido #{order.id}.",
+        try:
+            order, newly_completed = _finalize_paid_order(
+                order.id,
                 created_by=request.user,
-                metadata={
-                    "talla": item.talla,
-                    "color": item.color,
-                    "precio": str(item.price),
-                },
+                note=f"Descuento automático al completar el pedido #{order.id}.",
             )
+        except ValueError:
+            logger.exception("Stock insuficiente al finalizar el pedido %s tras el pago", order.id)
+            messages.error(
+                request,
+                "Algunos productos se quedaron sin stock al confirmar el pago. Escríbenos para resolverlo."
+            )
+            return redirect("tienda:carrito")
 
-        order.status = "Completed"
-        order.save(update_fields=["status"])
-
-        from django.template.loader import render_to_string
-        subject = f"Pedido #{order.id} confirmado — Cult Clasiccs"
-        html_message = render_to_string('tienda/email/order_confirmation.html', {'order': order})
-        plain_message = (
-            f"Hola {order.customer.get_full_name() or order.customer.username},\n\n"
-            f"Tu pedido #{order.id} ha sido confirmado.\n"
-            f"Subtotal: ${order.subtotal_price:.2f} MXN\n"
-            f"Envío: ${order.shipping_total:.2f} MXN\n"
-            f"Total: ${order.total_price:.2f} MXN\n\n"
-            "¡Gracias por comprar en Cult Clasiccs!"
-        )
-        send_mail(subject, plain_message, settings.DEFAULT_FROM_EMAIL,
-                  [order.customer.email], html_message=html_message)
+        if newly_completed:
+            from django.template.loader import render_to_string
+            subject = f"Pedido #{order.id} confirmado — Cult Clasiccs"
+            html_message = render_to_string('tienda/email/order_confirmation.html', {'order': order})
+            plain_message = (
+                f"Hola {order.customer.get_full_name() or order.customer.username},\n\n"
+                f"Tu pedido #{order.id} ha sido confirmado.\n"
+                f"Subtotal: ${order.subtotal_price:.2f} MXN\n"
+                f"Envío: ${order.shipping_total:.2f} MXN\n"
+                f"Total: ${order.total_price:.2f} MXN\n\n"
+                "¡Gracias por comprar en Cult Clasiccs!"
+            )
+            send_mail(subject, plain_message, settings.DEFAULT_FROM_EMAIL,
+                      [order.customer.email], html_message=html_message)
 
     request.session['carrito'] = {}
     request.session["last_completed_order_id"] = order.id
@@ -1329,21 +1401,16 @@ def stripe_webhook(request):
             logger.error("Stripe webhook: orden %s no encontrada", order_id)
             return JsonResponse({'status': 'orden no encontrada'}, status=404)
 
-        if order.status != 'Completed':
-            for item in order.items.select_related('product'):
-                variant = find_variant_for_selection(item.product, talla=item.talla, color=item.color)
-                record_inventory_movement(
-                    product=item.product,
-                    variant=variant,
-                    order=order,
-                    movement_type='sale',
-                    quantity_change=-int(item.quantity),
-                    note=f"Descuento vía Stripe webhook para pedido #{order.id}.",
-                    created_by=None,
-                    metadata={'talla': item.talla, 'color': item.color, 'precio': str(item.price)},
-                )
-            order.status = 'Completed'
-            order.save(update_fields=['status'])
+        try:
+            _, newly_completed = _finalize_paid_order(
+                order.id,
+                created_by=None,
+                note=f"Descuento vía Stripe webhook para pedido #{order.id}.",
+            )
+        except ValueError:
+            logger.exception("Stripe webhook: stock insuficiente al completar pedido #%s", order.id)
+            return JsonResponse({'status': 'sin stock'}, status=409)
+        if newly_completed:
             logger.info("Stripe webhook: pedido #%s marcado como Completed", order.id)
 
     return JsonResponse({'status': 'ok'})
