@@ -1084,7 +1084,24 @@
                 </div>
 
             <div class="detail-thumbs mt-3" id="detailThumbs">
-                {% if producto.slug_imagen %}
+                {% if gallery_images %}
+                    {% if producto.imagen %}
+                        <img src="{{ producto.imagen.url }}"
+                             data-full-src="{{ producto.imagen.url }}"
+                             class="miniatura is-active"
+                             loading="lazy"
+                             decoding="async"
+                             alt="{{ producto.nombre }}">
+                    {% endif %}
+                    {% for gi in gallery_images %}
+                        <img src="{{ gi.image.url }}"
+                             data-full-src="{{ gi.image.url }}"
+                             class="miniatura"
+                             loading="lazy"
+                             decoding="async"
+                             alt="{{ gi.alt_text|default:producto.nombre }}">
+                    {% endfor %}
+                {% elif producto.slug_imagen %}
                     {% for color in colores_disponibles %}
                         <img src="/media/productos/{{ producto.slug_imagen }}_{{ color|lower }}_001.webp"
                              class="miniatura"
@@ -1170,6 +1187,39 @@
                       </div>
 
                       <div class="collapse detail-size-guide" id="detailSizeGuide">
+                          {% if size_chart %}
+                          <div class="detail-size-guide__product">
+                              <p class="detail-size-guide__title">Medidas de {{ producto.nombre }}</p>
+                              <table aria-label="Guía de tallas {{ producto.nombre }}">
+                                  <thead>
+                                      <tr>
+                                          <th>Talla</th>
+                                          {% with f=size_chart.0 %}
+                                          {% if f.pecho %}<th>Pecho</th>{% endif %}
+                                          {% if f.cintura %}<th>Cintura</th>{% endif %}
+                                          {% if f.largo %}<th>Largo</th>{% endif %}
+                                          {% if f.hombro %}<th>Hombro</th>{% endif %}
+                                          {% if f.manga %}<th>Manga</th>{% endif %}
+                                          {% endwith %}
+                                      </tr>
+                                  </thead>
+                                  <tbody>
+                                      {% for row in size_chart %}
+                                      <tr>
+                                          <td><strong>{{ row.talla }}</strong></td>
+                                          {% if size_chart.0.pecho %}<td>{% if row.pecho %}{{ row.pecho }} cm{% else %}—{% endif %}</td>{% endif %}
+                                          {% if size_chart.0.cintura %}<td>{% if row.cintura %}{{ row.cintura }} cm{% else %}—{% endif %}</td>{% endif %}
+                                          {% if size_chart.0.largo %}<td>{% if row.largo %}{{ row.largo }} cm{% else %}—{% endif %}</td>{% endif %}
+                                          {% if size_chart.0.hombro %}<td>{% if row.hombro %}{{ row.hombro }} cm{% else %}—{% endif %}</td>{% endif %}
+                                          {% if size_chart.0.manga %}<td>{% if row.manga %}{{ row.manga }} cm{% else %}—{% endif %}</td>{% endif %}
+                                      </tr>
+                                      {% endfor %}
+                                  </tbody>
+                              </table>
+                              <p class="detail-size-guide__note">Medidas en centímetros, tomadas con la prenda en plano. Si dudas entre dos tallas, elige la más grande para un fit más relajado.</p>
+                          </div>
+                          <p class="detail-size-guide__title" style="margin-top:1.2rem;opacity:.7;">Tablas de referencia por corte</p>
+                          {% endif %}
                           <ul class="nav nav-pills detail-size-guide__tabs" role="tablist">
                               <li class="nav-item" role="presentation">
                                   <button class="nav-link active" id="tab-oversized" data-bs-toggle="pill" data-bs-target="#size-oversized" type="button" role="tab" aria-controls="size-oversized" aria-selected="true">Oversized Tee</button>

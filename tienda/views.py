@@ -382,6 +382,14 @@ def detalle_producto(request, producto_id):
 
     reseñas = producto.reseñas.select_related('usuario').order_by('-fecha')
 
+    gallery_images = list(producto.images.all())
+
+    _talla_rank = {"XS": 0, "S": 1, "M": 2, "L": 3, "XL": 4, "XXL": 5, "XXXL": 6}
+    size_chart = sorted(
+        producto.size_chart.all(),
+        key=lambda s: _talla_rank.get((s.talla or "").upper(), 99),
+    )
+
     return render(request, 'tienda/detalle_producto.html', {
         'producto': producto,
         'tallas_disponibles': tallas_disponibles,
@@ -392,6 +400,8 @@ def detalle_producto(request, producto_id):
         'selected_custom_design': selected_custom_design,
         'reseña_form': ReseñaForm(),
         'reseñas': reseñas,
+        'gallery_images': gallery_images,
+        'size_chart': size_chart,
     })
 
 
