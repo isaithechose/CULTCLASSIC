@@ -1,0 +1,193 @@
+{% extends "admin/base_site.html" %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+  .ms-wrap { max-width: 1280px; }
+  .ms-header {
+    background: var(--cc-panel) !important;
+    border: 1px solid var(--cc-border) !important;
+    border-radius: 14px;
+    padding: 1.2rem 1.4rem;
+    margin-bottom: 1rem;
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 1rem; flex-wrap: wrap;
+  }
+  .ms-header h1 { margin: 0 0 .25rem; font-size: 1.2rem; }
+  .ms-header p  { margin: 0; color: var(--cc-muted); font-size: .88rem; }
+  .ms-range { display: flex; gap: .4rem; }
+  .ms-range a {
+    padding: .35rem .7rem; border-radius: 8px;
+    font-size: .82rem; font-weight: 600; text-decoration: none !important;
+    background: #1a1a1a; color: #aaa !important; border: 1px solid var(--cc-border-2);
+  }
+  .ms-range a.active { background: var(--cc-blue); color: #fff !important; border-color: var(--cc-blue); }
+
+  .ms-cards {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem; margin-bottom: 1.2rem;
+  }
+  .ms-card {
+    background: var(--cc-panel) !important;
+    border: 1px solid var(--cc-border) !important;
+    border-radius: 14px; padding: 1.1rem 1.2rem;
+  }
+  .ms-card-label { color: var(--cc-muted); font-size: .78rem; text-transform: uppercase; letter-spacing: .07em; margin-bottom: .5rem; }
+  .ms-card-value { font-size: 1.7rem; font-weight: 800; color: #fff !important; line-height: 1.05; }
+  .ms-card-sub { margin-top: .35rem; font-size: .82rem; color: var(--cc-muted); }
+  .ms-up   { color: var(--cc-green) !important; }
+  .ms-down { color: var(--cc-red) !important; }
+
+  .ms-panel {
+    background: var(--cc-panel) !important;
+    border: 1px solid var(--cc-border) !important;
+    border-radius: 14px; padding: 1.2rem 1.4rem; margin-bottom: 1.2rem;
+  }
+  .ms-panel h3 { margin: 0 0 1rem; font-size: 1rem; }
+
+  .ms-table { width: 100%; border-collapse: collapse; }
+  .ms-table thead th {
+    background: #0f0f0f !important; color: #888 !important;
+    font-size: .76rem; text-transform: uppercase; letter-spacing: .06em;
+    padding: .65rem .8rem; text-align: right; border-bottom: 1px solid var(--cc-border) !important;
+    white-space: nowrap;
+  }
+  .ms-table thead th:first-child { text-align: left; }
+  .ms-table td {
+    padding: .7rem .8rem; border-bottom: 1px solid var(--cc-border) !important;
+    text-align: right; color: #ccc; font-variant-numeric: tabular-nums;
+  }
+  .ms-table td:first-child { text-align: left; font-weight: 700; color: #fff; }
+  .ms-table tbody tr:hover td { background: #181818; }
+  .ms-table tbody tr:last-child td { border-bottom: none; }
+  .ms-rev { color: #fff; font-weight: 700; }
+  .ms-profit-pos { color: var(--cc-green); }
+  .ms-profit-neg { color: var(--cc-red); }
+  .ms-pill {
+    display: inline-block; padding: .12rem .5rem; border-radius: 999px;
+    font-size: .76rem; font-weight: 700;
+  }
+  .ms-pill-best { background: rgba(74,158,255,.15); color: var(--cc-blue); }
+  .ms-empty-row td { color: var(--cc-faint); }
+
+  /* light mode */
+  html.light-mode .ms-header, html.light-mode .ms-card, html.light-mode .ms-panel { background:#fff !important; border-color:#e5e7eb !important; }
+  html.light-mode .ms-card-value, html.light-mode .ms-table td:first-child, html.light-mode .ms-rev { color:#111827 !important; }
+  html.light-mode .ms-table thead th { background:#f8fafc !important; color:#6b7280 !important; }
+  html.light-mode .ms-table td { color:#374151; border-color:#ececf3 !important; }
+  html.light-mode .ms-table tbody tr:hover td { background:#f8fafc; }
+  html.light-mode .ms-range a { background:#f3f4f6; color:#374151 !important; border-color:#e5e7eb; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ms-wrap">
+
+  <div class="ms-header">
+    <div>
+      <h1>Ventas por mes</h1>
+      <p>{{ subtitle }}</p>
+    </div>
+    <div class="ms-range">
+      <a href="?months=6"  class="{% if months_back == 6 %}active{% endif %}">6 meses</a>
+      <a href="?months=12" class="{% if months_back == 12 %}active{% endif %}">12 meses</a>
+      <a href="?months=24" class="{% if months_back == 24 %}active{% endif %}">24 meses</a>
+    </div>
+  </div>
+
+  <div class="ms-cards">
+    <div class="ms-card">
+      <div class="ms-card-label">Vendido (total)</div>
+      <div class="ms-card-value">${{ total_rev|floatformat:2 }}</div>
+      <div class="ms-card-sub">{{ total_orders }} pedidos · {{ total_units }} piezas</div>
+    </div>
+    <div class="ms-card">
+      <div class="ms-card-label">Utilidad estimada</div>
+      <div class="ms-card-value">${{ total_profit|floatformat:2 }}</div>
+      <div class="ms-card-sub">Costo: ${{ total_cogs|floatformat:2 }}</div>
+    </div>
+    <div class="ms-card">
+      <div class="ms-card-label">Ticket promedio</div>
+      <div class="ms-card-value">${{ avg_ticket|floatformat:2 }}</div>
+      <div class="ms-card-sub">Por pedido completado</div>
+    </div>
+    <div class="ms-card">
+      <div class="ms-card-label">Mes actual vs anterior</div>
+      {% if delta_pct is not None %}
+        <div class="ms-card-value {% if delta_pct >= 0 %}ms-up{% else %}ms-down{% endif %}">
+          {% if delta_pct >= 0 %}▲{% else %}▼{% endif %} {{ delta_pct|floatformat:1 }}%
+        </div>
+      {% else %}
+        <div class="ms-card-value">—</div>
+      {% endif %}
+      {% if best_month %}<div class="ms-card-sub">Mejor mes: {{ best_month.label }} (${{ best_month.revenue|floatformat:0 }})</div>{% endif %}
+    </div>
+  </div>
+
+  <div class="ms-panel">
+    <h3>Ingresos y utilidad por mes</h3>
+    <canvas id="msChart" height="90"></canvas>
+  </div>
+
+  <div class="ms-panel">
+    <h3>Detalle mensual</h3>
+    <table class="ms-table">
+      <thead>
+        <tr>
+          <th>Mes</th>
+          <th>Pedidos</th>
+          <th>Piezas</th>
+          <th>Vendido</th>
+          <th>Costo</th>
+          <th>Utilidad</th>
+          <th>Margen</th>
+          <th>Ticket prom.</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in rows_desc %}
+        <tr {% if r.orders == 0 %}class="ms-empty-row"{% endif %}>
+          <td>{{ r.label }}{% if best_month and r.label == best_month.label %} <span class="ms-pill ms-pill-best">Mejor</span>{% endif %}</td>
+          <td>{{ r.orders }}</td>
+          <td>{{ r.units }}</td>
+          <td class="ms-rev">${{ r.revenue|floatformat:2 }}</td>
+          <td>${{ r.cogs|floatformat:2 }}</td>
+          <td class="{% if r.profit >= 0 %}ms-profit-pos{% else %}ms-profit-neg{% endif %}">${{ r.profit|floatformat:2 }}</td>
+          <td>{{ r.margin|floatformat:1 }}%</td>
+          <td>${{ r.ticket|floatformat:2 }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+(function() {
+  const labels  = {{ chart_labels|safe }};
+  const revenue = {{ chart_revenue|safe }};
+  const profit  = {{ chart_profit|safe }};
+  const ctx = document.getElementById('msChart');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Vendido', data: revenue, backgroundColor: 'rgba(74,158,255,.55)', borderColor: '#4a9eff', borderWidth: 1.5, borderRadius: 6 },
+        { label: 'Utilidad', data: profit, backgroundColor: 'rgba(45,190,108,.55)', borderColor: '#2dbe6c', borderWidth: 1.5, borderRadius: 6 },
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { position: 'bottom', labels: { color: '#999', padding: 14, font: { size: 12 } } } },
+      scales: {
+        x: { grid: { color: 'rgba(255,255,255,.05)' }, ticks: { color: '#888' } },
+        y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,.05)' }, ticks: { color: '#888', callback: v => '$' + v.toLocaleString() } }
+      }
+    }
+  });
+})();
+</script>
+{% endblock %}

@@ -1385,6 +1385,11 @@ class ProductoAdmin(admin.ModelAdmin):
                 name="tienda_producto_design_catalog",
             ),
             path(
+                "monthly-sales/",
+                self.admin_site.admin_view(self.monthly_sales_view),
+                name="tienda_producto_monthly_sales",
+            ),
+            path(
                 "inventory-matrix/",
                 self.admin_site.admin_view(self.inventory_matrix_view),
                 name="tienda_producto_inventory_matrix",
@@ -1804,6 +1809,120 @@ class ProductoAdmin(admin.ModelAdmin):
             all_variants_data_json=json.dumps(all_variants_data),
         )
         return TemplateResponse(request, "admin/tienda/inventory_dashboard.html", context)
+
+    def monthly_sales_view(self, request):
+        """Ventas mes a mes: ingresos, pedidos, piezas, costo y utilidad."""
+        import json
+        from django.db.models import Sum, Count, F
+        from django.db.models.functions import TruncMonth
+
+        months_back = int(request.GET.get("months", 12))
+        months_back = max(3, min(months_back, 36))
+
+        _MES = ["", "Ene", "Feb", "Mar", "Abr", "May", "Jun",
+                "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
+
+        # Ingresos y piezas por mes (desde OrderItem)
+        item_rows = (
+            OrderItem.objects
+            .filter(order__status="Completed")
+            .annotate(month=TruncMonth("order__created_at"))
+            .values("month")
+            .annotate(
+                revenue=Sum(F("price") * F("quantity")),
+                units=Sum("quantity"),
+                cogs=Sum(F("product__costo") * F("quantity")),
+            )
+        )
+        # Pedidos por mes (desde Order)
+        order_rows = (
+            Order.objects
+            .filter(status="Completed")
+            .annotate(month=TruncMonth("created_at"))
+            .values("month")
+            .annotate(orders=Count("id"))
+        )
+
+        by_month = {}
+        for r in item_rows:
+            m = r["month"]
+            if not m:
+                continue
+            key = (m.year, m.month)
+            by_month.setdefault(key, {})
+            by_month[key]["revenue"] = r["revenue"] or Decimal("0")
+            by_month[key]["units"] = r["units"] or 0
+            by_month[key]["cogs"] = r["cogs"] or Decimal("0")
+        for r in order_rows:
+            m = r["month"]
+            if not m:
+                continue
+            key = (m.year, m.month)
+            by_month.setdefault(key, {})
+            by_month[key]["orders"] = r["orders"] or 0
+
+        # Construir rango continuo de los últimos N meses (incluye meses sin ventas)
+        today = timezone.localdate()
+        year, month = today.year, today.month
+        sequence = []
+        for _ in range(months_back):
+            sequence.append((year, month))
+            month -= 1
+            if month == 0:
+                month = 12
+                year -= 1
+        sequence.reverse()
+
+        rows = []
+        total_rev = total_cogs = Decimal("0")
+        total_units = total_orders = 0
+        for (y, mo) in sequence:
+            data = by_month.get((y, mo), {})
+            rev = data.get("revenue", Decimal("0"))
+            cogs = data.get("cogs", Decimal("0"))
+            units = data.get("units", 0)
+            orders = data.get("orders", 0)
+            profit = rev - cogs
+            margin = float(profit / rev * 100) if rev > 0 else 0.0
+            ticket = float(rev / orders) if orders > 0 else 0.0
+            rows.append({
+                "label": f"{_MES[mo]} {y}",
+                "short": f"{_MES[mo]} '{str(y)[2:]}",
+                "revenue": rev, "cogs": cogs, "profit": profit,
+                "units": units, "orders": orders,
+                "margin": margin, "ticket": ticket,
+            })
+            total_rev += rev
+            total_cogs += cogs
+            total_units += units
+            total_orders += orders
+
+        total_profit = total_rev - total_cogs
+        # Comparación mes actual vs anterior
+        delta_pct = None
+        if len(rows) >= 2 and rows[-2]["revenue"] > 0:
+            delta_pct = float((rows[-1]["revenue"] - rows[-2]["revenue"]) / rows[-2]["revenue"] * 100)
+
+        best = max(rows, key=lambda r: r["revenue"]) if rows else None
+
+        context = dict(
+            self.admin_site.each_context(request),
+            title="Ventas por mes",
+            subtitle=f"Últimos {months_back} meses · solo pedidos completados",
+            rows=rows,
+            rows_desc=list(reversed(rows)),
+            months_back=months_back,
+            total_rev=total_rev, total_cogs=total_cogs, total_profit=total_profit,
+            total_units=total_units, total_orders=total_orders,
+            avg_ticket=(float(total_rev / total_orders) if total_orders else 0.0),
+            delta_pct=delta_pct,
+            best_month=best,
+            chart_labels=json.dumps([r["short"] for r in rows]),
+            chart_revenue=json.dumps([float(r["revenue"]) for r in rows]),
+            chart_profit=json.dumps([float(r["profit"]) for r in rows]),
+            opts=self.model._meta,
+        )
+        return TemplateResponse(request, "admin/tienda/monthly_sales.html", context)
 
     def sales_summary_view(self, request):
         """Resumen de ventas últimos N días + recomendación de restock por velocidad."""

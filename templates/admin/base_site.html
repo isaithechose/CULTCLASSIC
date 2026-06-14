@@ -609,6 +609,9 @@
     <a class="cc-nav-item {% if 'daily-close' in request.path %}active{% endif %}" href="{% url 'admin:tienda_cashregisterclosure_daily_close' %}">
       <i class="ti ti-cash-register cc-nav-icon" aria-hidden="true"></i><span class="cc-nav-label">Cierre de caja</span>
     </a>
+    <a class="cc-nav-item {% if 'monthly-sales' in request.path %}active{% endif %}" href="{% url 'admin:tienda_producto_monthly_sales' %}">
+      <i class="ti ti-calendar-stats cc-nav-icon" aria-hidden="true"></i><span class="cc-nav-label">Ventas por mes</span>
+    </a>
   </div>
 
   <div class="cc-sidebar-section">
