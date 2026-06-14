@@ -18,6 +18,20 @@
 {% endblock %}
 
 {% block content %}
+<style>
+  .profile-stat--spent .profile-stat__value { color: #16a34a; }
+  .profile-ship {
+    display: inline-block;
+    padding: .2rem .6rem;
+    border-radius: 999px;
+    font-size: .78rem;
+    font-weight: 700;
+    letter-spacing: .01em;
+  }
+  .profile-ship--processing { color: #92400e; background: #fef3c7; }
+  .profile-ship--shipped    { color: #1e40af; background: #dbeafe; }
+  .profile-ship--delivered  { color: #065f46; background: #d1fae5; }
+</style>
 <section class="profile-page py-5">
     <div class="container px-4 px-lg-5">
         <div class="profile-layout">
@@ -44,6 +58,10 @@
                     <div class="profile-stat">
                         <span class="profile-stat__value">{{ pending_orders }}</span>
                         <span class="profile-stat__label">Pendientes</span>
+                    </div>
+                    <div class="profile-stat profile-stat--spent">
+                        <span class="profile-stat__value">${{ total_spent|floatformat:0 }}</span>
+                        <span class="profile-stat__label">Total gastado</span>
                     </div>
                 </div>
 
@@ -113,11 +131,13 @@
                                         <p class="profile-order__meta">{{ order.created_at|date:"d/m/Y H:i" }}</p>
                                     </div>
                                     <div>
-                                        <p class="profile-order__status">{{ order.status }}</p>
-                                        <p class="profile-order__total">${{ order.total_price }}</p>
+                                        <p class="profile-order__status profile-ship profile-ship--{{ order.shipping_status|lower }}">
+                                            {% if order.shipping_status == 'Delivered' %}Entregado{% elif order.shipping_status == 'Shipped' %}Enviado{% else %}En proceso{% endif %}
+                                        </p>
+                                        <p class="profile-order__total">${{ order.total_price|floatformat:2 }}</p>
                                     </div>
-                                    <a class="btn site-btn site-btn--ghost profile-order__cta" href="{% url 'tienda:order_detail' order.id %}">
-                                        Ver detalle
+                                    <a class="btn site-btn site-btn--ghost profile-order__cta" href="{% url 'tienda:order_tracking' order.id %}">
+                                        Rastrear
                                     </a>
                                 </article>
                             {% endfor %}

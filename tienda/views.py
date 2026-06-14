@@ -665,6 +665,7 @@ def profile_view(request):
     recent_orders = visible_orders[:3]
     completed_orders = visible_orders.count()
     pending_orders = all_orders.filter(status="Pending").count()
+    total_spent = sum((o.total_price for o in visible_orders), Decimal("0.00"))
 
     if request.method == "POST":
         form = UserProfileForm(request.POST, instance=request.user)
@@ -682,6 +683,7 @@ def profile_view(request):
         "completed_orders": completed_orders,
         "pending_orders": pending_orders,
         "recent_orders": recent_orders,
+        "total_spent": total_spent,
     }
     return render(request, "tienda/profile.html", context)
 
