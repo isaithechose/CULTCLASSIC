@@ -1494,9 +1494,12 @@
 
     function fitArtwork() {
         if (!state.artwork) return;
-        const maxW = fabricCanvas.getWidth() * 0.95;
-        const maxH = fabricCanvas.getHeight() * 0.95;
-        const s = Math.min(maxW / state.artwork.width, maxH / state.artwork.height, 1);
+        // El diseño se ajusta para llenar casi toda el área de impresión.
+        // Sin tope de escala 1: diseños mas chicos tambien se agrandan para llenar.
+        const margin = 0.98;
+        const maxW = fabricCanvas.getWidth() * margin;
+        const maxH = fabricCanvas.getHeight() * margin;
+        const s = Math.min(maxW / state.artwork.width, maxH / state.artwork.height);
         state.artwork.set({ scaleX: s, scaleY: s, angle: 0, flipX: false, flipY: false,
             left: fabricCanvas.getWidth() / 2, top: fabricCanvas.getHeight() / 2,
             originX: "center", originY: "center" });
