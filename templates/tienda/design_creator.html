@@ -1494,9 +1494,9 @@
 
     function fitArtwork() {
         if (!state.artwork) return;
-        // El diseño se ajusta para llenar casi toda el área de impresión.
+        // El diseño se ajusta dentro del área de impresión con un margen limpio.
         // Sin tope de escala 1: diseños mas chicos tambien se agrandan para llenar.
-        const margin = 0.98;
+        const margin = 0.90;
         const maxW = fabricCanvas.getWidth() * margin;
         const maxH = fabricCanvas.getHeight() * margin;
         const s = Math.min(maxW / state.artwork.width, maxH / state.artwork.height);
