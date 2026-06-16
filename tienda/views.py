@@ -1310,20 +1310,23 @@ def payment_success(request):
             )
             return redirect("tienda:carrito")
 
-        if newly_completed:
-            from django.template.loader import render_to_string
-            subject = f"Pedido #{order.id} confirmado — Cult Clasiccs"
-            html_message = render_to_string('tienda/email/order_confirmation.html', {'order': order})
-            plain_message = (
-                f"Hola {order.customer.get_full_name() or order.customer.username},\n\n"
-                f"Tu pedido #{order.id} ha sido confirmado.\n"
-                f"Subtotal: ${order.subtotal_price:.2f} MXN\n"
-                f"Envío: ${order.shipping_total:.2f} MXN\n"
-                f"Total: ${order.total_price:.2f} MXN\n\n"
-                "¡Gracias por comprar en Cult Clasiccs!"
-            )
-            send_mail(subject, plain_message, settings.DEFAULT_FROM_EMAIL,
-                      [order.customer.email], html_message=html_message)
+        if newly_completed and order.customer and order.customer.email:
+            try:
+                from django.template.loader import render_to_string
+                subject = f"Pedido #{order.id} confirmado — Cult Clasiccs"
+                html_message = render_to_string('tienda/email/order_confirmation.html', {'order': order})
+                plain_message = (
+                    f"Hola {order.customer.get_full_name() or order.customer.username},\n\n"
+                    f"Tu pedido #{order.id} ha sido confirmado.\n"
+                    f"Subtotal: ${order.subtotal_price:.2f} MXN\n"
+                    f"Envío: ${order.shipping_total:.2f} MXN\n"
+                    f"Total: ${order.total_price:.2f} MXN\n\n"
+                    "¡Gracias por comprar en Cult Clasiccs!"
+                )
+                send_mail(subject, plain_message, settings.DEFAULT_FROM_EMAIL,
+                          [order.customer.email], html_message=html_message, fail_silently=True)
+            except Exception:
+                logger.exception("No se pudo enviar el email de confirmacion del pedido %s", order.id)
 
     request.session['carrito'] = {}
     request.session["last_completed_order_id"] = order.id
