@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.core.cache import cache
 from django.contrib import admin
 from django.contrib import messages
 from django.contrib.admin.sites import AdminSite
@@ -330,7 +331,27 @@ def _ml_vision_extras(today, month_start):
     }
 
 
+ADMIN_OVERVIEW_CACHE_KEY = "cc_admin_overview_v1"
+ADMIN_OVERVIEW_CACHE_TTL = 30
+
+
 def _admin_overview_context():
+    """Resumen del admin (contadores, vision board) cacheado unos segundos.
+
+    Lo consumen el context processor —o sea, TODAS las páginas del admin— y la
+    portada, que además lo pedía dos veces por carga. Son ~35 consultas, así que
+    se cachea; las señales de tienda.signals lo invalidan en cuanto hay una
+    venta, un gasto o un movimiento de inventario.
+    """
+    cached = cache.get(ADMIN_OVERVIEW_CACHE_KEY)
+    if cached is not None:
+        return cached
+    data = _compute_admin_overview_context()
+    cache.set(ADMIN_OVERVIEW_CACHE_KEY, data, ADMIN_OVERVIEW_CACHE_TTL)
+    return data
+
+
+def _compute_admin_overview_context():
     today = timezone.localdate()
     month_start = today.replace(day=1)
     pending_orders = Order.objects.filter(status="Pending").count()
@@ -1268,6 +1289,7 @@ class CategoriaAdmin(admin.ModelAdmin):
 
 @admin.register(Subcategoria)
 class SubcategoriaAdmin(admin.ModelAdmin):
+    list_select_related = ("categoria",)
     list_display = ("nombre", "categoria", "descripcion_corta")
     list_filter = ("categoria",)
     search_fields = ("nombre", "descripcion", "categoria__nombre")
@@ -1282,6 +1304,7 @@ class SubcategoriaAdmin(admin.ModelAdmin):
 
 @admin.register(Producto)
 class ProductoAdmin(admin.ModelAdmin):
+    list_select_related = ("categoria", "subcategoria")
     list_display = (
         "preview_imagen",
         "nombre",
@@ -1460,7 +1483,11 @@ class ProductoAdmin(admin.ModelAdmin):
 
     @admin.display(description="Inventario")
     def inventory_mode(self, obj):
-        if obj.uses_variant_inventory():
+        # active_variants viene del prefetch del listado; sin él sería un
+        # exists() por fila.
+        variants = getattr(obj, "active_variants", None)
+        uses_variants = bool(variants) if variants is not None else obj.uses_variant_inventory()
+        if uses_variants:
             return format_html('<strong style="color:#2f67b0;">Variantes mandan</strong>')
         return format_html('<span style="color:#888;">Stock general manda</span>')
 
@@ -1533,7 +1560,9 @@ class ProductoAdmin(admin.ModelAdmin):
 
     @admin.display(description="Valor inventario")
     def inventory_value_summary(self, obj):
-        variants = list(obj.variants.filter(activo=True))
+        variants = getattr(obj, "active_variants", None)
+        if variants is None:
+            variants = list(obj.variants.filter(activo=True))
         if variants:
             cost_value = sum(_variant_unit_cost(variant) * Decimal(str(variant.stock)) for variant in variants)
             sale_value = sum(_variant_sale_price(variant) * Decimal(str(variant.stock)) for variant in variants)
@@ -2401,6 +2430,9 @@ class ProductoAdmin(admin.ModelAdmin):
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
+    list_select_related = ("customer", "cashier")
+    list_per_page = 50
+    show_full_result_count = False
     list_display = (
         "id",
         "customer",
@@ -2935,6 +2967,7 @@ class InventoryMovementAdminForm(forms.ModelForm):
 
 @admin.register(ProductVariant)
 class ProductVariantAdmin(admin.ModelAdmin):
+    list_select_related = ("product",)
     list_display = (
         "preview_imagen",
         "product",
@@ -3064,6 +3097,9 @@ class ProductVariantAdmin(admin.ModelAdmin):
 
 @admin.register(InventoryMovement)
 class InventoryMovementAdmin(admin.ModelAdmin):
+    list_select_related = ("product", "variant", "variant__product", "order", "created_by")
+    list_per_page = 50
+    show_full_result_count = False
     form = InventoryMovementAdminForm
     list_display = (
         "created_at",
@@ -3439,6 +3475,7 @@ class CreditCardAccountAdmin(admin.ModelAdmin):
 
 @admin.register(CreditCardStatement)
 class CreditCardStatementAdmin(admin.ModelAdmin):
+    list_select_related = ("tarjeta",)
     list_display = (
         "tarjeta",
         "periodo",
@@ -3512,6 +3549,7 @@ class CreditCardStatementAdmin(admin.ModelAdmin):
 
 @admin.register(AccountingAccount)
 class AccountingAccountAdmin(admin.ModelAdmin):
+    list_select_related = ("parent",)
     list_display = ("code", "name", "account_type", "parent", "is_active", "ledger_link")
     list_filter = ("account_type", "is_active")
     search_fields = ("code", "name")
@@ -3689,6 +3727,8 @@ class JournalEntryAdminForm(forms.ModelForm):
 
 @admin.register(JournalEntry)
 class JournalEntryAdmin(admin.ModelAdmin):
+    list_per_page = 50
+    show_full_result_count = False
     form = JournalEntryAdminForm
     inlines = [JournalEntryLineInline]
     list_display = ("date", "entry_type", "source", "concept", "reference", "total_debit_display", "total_credit_display", "balanced_badge")
@@ -3774,6 +3814,11 @@ class JournalEntryAdmin(admin.ModelAdmin):
         if not obj.created_by:
             obj.created_by = request.user
         super().save_model(request, obj, form, change)
+
+    def get_queryset(self, request):
+        # total_debit / total_credit / is_balanced recorren entry.lines:
+        # sin prefetch son tres consultas por fila del listado.
+        return super().get_queryset(request).prefetch_related("lines")
 
     @admin.display(description="Debe")
     def total_debit_display(self, obj):
@@ -4184,6 +4229,7 @@ class JournalEntryAdmin(admin.ModelAdmin):
 
 @admin.register(AccountingPeriodClose)
 class AccountingPeriodCloseAdmin(admin.ModelAdmin):
+    list_select_related = ("closed_by",)
     list_display = ("month_start", "month_end", "total_debit", "total_credit", "difference_badge", "unbalanced_count", "closed_by", "created_at")
     list_filter = ("month_start", "closed_by")
     search_fields = ("note", "closed_by__username")
@@ -4263,6 +4309,7 @@ def marcar_movimientos_no_conciliados(modeladmin, request, queryset):
 
 @admin.register(MoneyAccount)
 class MoneyAccountAdmin(admin.ModelAdmin):
+    list_select_related = ("accounting_account",)
     list_display = ("name", "kind", "bank_name", "account_last4", "accounting_account", "opening_balance", "is_active", "reconciliation_link")
     list_filter = ("kind", "is_active", "bank_name")
     search_fields = ("name", "bank_name", "account_last4", "accounting_account__code", "accounting_account__name")
@@ -4519,6 +4566,7 @@ class MoneyAccountAdmin(admin.ModelAdmin):
 
 @admin.register(BankMovement)
 class BankMovementAdmin(admin.ModelAdmin):
+    list_select_related = ("money_account", "journal_entry")
     list_display = ("date", "money_account", "description", "movement_type", "amount", "signed_amount_display", "journal_entry", "reconciled_badge")
     list_filter = ("money_account", "movement_type", "is_reconciled", "date")
     search_fields = ("description", "reference", "note", "money_account__name", "journal_entry__concept", "journal_entry__reference")
@@ -4615,6 +4663,7 @@ def generar_siguiente_gasto_recurrente(modeladmin, request, queryset):
 
 @admin.register(Expense)
 class ExpenseAdmin(admin.ModelAdmin):
+    list_select_related = ("categoria", "created_by")
     list_display = (
         "fecha",
         "concepto",
@@ -4857,6 +4906,7 @@ class ExpenseAdmin(admin.ModelAdmin):
 
 @admin.register(CashRegisterClosure)
 class CashRegisterClosureAdmin(admin.ModelAdmin):
+    list_select_related = ("closed_by",)
     list_display = ("fecha", "total_sistema_display", "total_contado_display", "gastos_efectivo", "diferencia_badge", "closed_by", "created_at")
     list_filter = ("fecha", "closed_by")
     search_fields = ("nota", "closed_by__username")
@@ -5078,6 +5128,9 @@ admin.site.index = types.MethodType(_enhanced_admin_index, admin.site)
 
 @admin.register(OrderItem)
 class OrderItemAdmin(admin.ModelAdmin):
+    list_select_related = ("order", "product")
+    list_per_page = 50
+    show_full_result_count = False
     list_display = ("order", "product", "talla", "color", "quantity", "price")
     list_filter = ("order__status", "order__shipping_status")
     search_fields = ("order__id", "product__nombre")
@@ -5086,6 +5139,7 @@ class OrderItemAdmin(admin.ModelAdmin):
 
 @admin.register(Carrito)
 class CarritoAdmin(admin.ModelAdmin):
+    list_select_related = ("usuario", "producto")
     list_display = ("usuario", "producto", "cantidad", "subtotal_display")
     list_filter = ("usuario",)
     search_fields = ("usuario__username", "producto__nombre")
@@ -5098,6 +5152,7 @@ class CarritoAdmin(admin.ModelAdmin):
 
 @admin.register(Reseña)
 class ResenaAdmin(admin.ModelAdmin):
+    list_select_related = ("producto", "usuario")
     list_display = ("producto", "usuario", "calificacion", "fecha")
     list_filter = ("calificacion", "fecha", "producto")
     search_fields = ("producto__nombre", "usuario__username", "comentario")
@@ -5106,6 +5161,7 @@ class ResenaAdmin(admin.ModelAdmin):
 
 @admin.register(ShippingAddress)
 class ShippingAddressAdmin(admin.ModelAdmin):
+    list_select_related = ("order",)
     list_display = ("order", "phone", "city", "state", "country", "postal_code")
     search_fields = ("order__id", "phone", "city", "state", "country", "postal_code")
     autocomplete_fields = ("order",)
@@ -5113,6 +5169,7 @@ class ShippingAddressAdmin(admin.ModelAdmin):
 
 @admin.register(ShippingUpdate)
 class ShippingUpdateAdmin(admin.ModelAdmin):
+    list_select_related = ("order",)
     list_display = ("order", "status_message", "updated_at")
     list_filter = ("updated_at",)
     search_fields = ("order__id", "status_message")

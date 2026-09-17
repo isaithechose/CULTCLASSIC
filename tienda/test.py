@@ -1,6 +1,7 @@
 from django.test import TestCase, Client
 from django.urls import reverse
 from .models import Categoria, Producto
+from decimal import Decimal
 
 class CarritoTests(TestCase):
     def setUp(self):
@@ -29,7 +30,8 @@ class CarritoTests(TestCase):
 
         self.assertIn(key, carrito)
         self.assertEqual(carrito[key]['cantidad'], 1)
-        self.assertAlmostEqual(carrito[key]['precio'], 500)  # 300 base + 200 diseño pecho
+        # El carrito guarda el precio como string: la sesión se serializa a JSON.
+        self.assertEqual(Decimal(carrito[key]['precio']), Decimal('500'))  # 300 base + 200 diseño pecho
 
     def test_falta_talla_color(self):
         url = reverse('tienda:agregar_al_carrito', args=[self.producto.id])

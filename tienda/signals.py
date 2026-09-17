@@ -1,9 +1,18 @@
 from django.conf import settings
+from django.core.cache import cache
 from django.core.mail import send_mail
-from django.db.models.signals import post_save, pre_save
+from django.db.models.signals import post_delete, post_save, pre_save
 from django.dispatch import receiver
 
-from .models import Order, ShippingUpdate
+from .models import (
+    CreditCardStatement,
+    Expense,
+    InventoryMovement,
+    Order,
+    OrderItem,
+    ProductVariant,
+    ShippingUpdate,
+)
 
 _shipping_status_before = {}
 
@@ -57,3 +66,37 @@ def notify_shipping_update(sender, instance, created, **kwargs):
     subject = f"Actualización en el envío de tu pedido #{instance.order.id}"
     message = instance.status_message
     send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [instance.order.customer.email])
+
+
+# ── Invalidación del resumen del admin ──────────────────────────────────────
+# _admin_overview_context() se cachea 30 s porque lo pide cada página del admin.
+# Cuando cambia algo que ese resumen muestra, se tira el cache para que los
+# contadores (pedidos pendientes, stock bajo, ventas del día) salgan al momento.
+
+_OVERVIEW_MODELS = (
+    Order,
+    OrderItem,
+    Expense,
+    InventoryMovement,
+    ProductVariant,
+    CreditCardStatement,
+)
+
+
+def _clear_admin_overview_cache(**kwargs):
+    from .admin import ADMIN_OVERVIEW_CACHE_KEY
+
+    cache.delete(ADMIN_OVERVIEW_CACHE_KEY)
+
+
+for _model in _OVERVIEW_MODELS:
+    post_save.connect(
+        _clear_admin_overview_cache,
+        sender=_model,
+        dispatch_uid=f"clear_admin_overview_save_{_model.__name__}",
+    )
+    post_delete.connect(
+        _clear_admin_overview_cache,
+        sender=_model,
+        dispatch_uid=f"clear_admin_overview_delete_{_model.__name__}",
+    )

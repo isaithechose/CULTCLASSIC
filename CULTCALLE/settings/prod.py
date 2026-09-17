@@ -201,6 +201,14 @@ DATABASES = {
     }
 }
 
+# SQLite solo admite un escritor: si el POS cobra mientras corre el sync de
+# Mercado Libre, el segundo proceso recibe "database is locked" de inmediato.
+# Con este timeout espera su turno en vez de fallar.
+if "sqlite3" in DATABASES["default"]["ENGINE"]:
+    DATABASES["default"].setdefault("OPTIONS", {})["timeout"] = config(
+        "DB_TIMEOUT", default=20, cast=int
+    )
+
 
 # =========================
 # ARCHIVOS ESTÁTICOS Y MEDIA
