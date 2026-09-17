@@ -210,6 +210,9 @@ def _post_expense_journal_entry(expense, created_by=None):
     if amount <= 0:
         return None
     credit_account = _account("2100") if expense.metodo_pago == "card" else _cash_account_for_method(expense.metodo_pago)
+    # La compra de mercancía capitaliza inventario aunque se capture como gasto.
+    es_compra_inventario = bool(expense.categoria and expense.categoria.nombre == "Compras inventario")
+    debit_account = _account("1100") if es_compra_inventario else _account("6000")
     return _create_balanced_journal_entry(
         date_value=expense.fecha,
         entry_type="expense",
@@ -218,10 +221,55 @@ def _post_expense_journal_entry(expense, created_by=None):
         reference=f"EXP-{expense.id}",
         expense=expense,
         lines=[
-            {"account": _account("6000"), "debit": amount, "description": expense.concepto},
+            {"account": debit_account, "debit": amount, "description": expense.concepto},
             {"account": credit_account, "credit": amount, "description": expense.get_metodo_pago_display()},
         ],
         created_by=created_by or expense.created_by,
+    )
+
+
+# Formas de pago de una recepción de compra y la cuenta que se abona.
+PURCHASE_PAYMENT_CHOICES = [
+    ("transfer", "Transferencia / banco"),
+    ("cash", "Efectivo"),
+    ("card", "Tarjeta de crédito"),
+    ("credit", "A crédito con el proveedor"),
+]
+PURCHASE_PAYMENT_ACCOUNTS = {
+    "transfer": "1010",   # Bancos
+    "cash": "1000",       # Caja
+    "card": "2100",       # Tarjetas de credito por pagar
+    "credit": "2000",     # Proveedores
+}
+
+
+def _post_purchase_journal_entry(*, date_value, amount, payment_method, supplier="", note="", reference="", created_by=None):
+    """Capitaliza la compra: cargo a Inventario contra la forma de pago.
+
+    Una compra de mercancía no es un gasto: se vuelve costo cuando se vende, y
+    ahí la póliza de la venta ya carga 5000 Costo de ventas contra 1100
+    Inventario. Mandarla a gastos al comprar duplicaba el costo y dejaba la
+    cuenta de inventario en negativo.
+    """
+    amount = _money(amount)
+    if amount <= 0:
+        return None
+    credit_code = PURCHASE_PAYMENT_ACCOUNTS.get(payment_method, "1010")
+    payment_label = dict(PURCHASE_PAYMENT_CHOICES).get(payment_method, payment_method)
+    concept = "Compra de inventario"
+    if supplier:
+        concept = f"{concept} — {supplier}"
+    return _create_balanced_journal_entry(
+        date_value=date_value,
+        entry_type="diary",
+        source="inventory",
+        concept=concept[:180],
+        reference=reference,
+        lines=[
+            {"account": _account("1100"), "debit": amount, "description": note[:180] or "Recepción de compra"},
+            {"account": _account(credit_code), "credit": amount, "description": payment_label},
+        ],
+        created_by=created_by,
     )
 
 
@@ -3252,20 +3300,22 @@ class InventoryMovementAdmin(admin.ModelAdmin):
             "supplier": "",
             "note": "Recepción de compra desde admin.",
             "receipt_date": str(timezone.localdate()),
-            "create_expense": False,
+            "payment_method": "transfer",
         }
 
         if request.method == "POST":
             formset = PurchaseReceiptFormSet(request.POST, prefix="receipt")
             supplier = request.POST.get("supplier", "").strip()
             note = request.POST.get("note", "").strip() or "Recepción de compra desde admin."
-            create_expense = request.POST.get("create_expense") == "on"
+            payment_method = request.POST.get("payment_method", "").strip() or "transfer"
+            if payment_method not in PURCHASE_PAYMENT_ACCOUNTS:
+                payment_method = "transfer"
             receipt_date = request.POST.get("receipt_date", "").strip() or str(timezone.localdate())
             form_values = {
                 "supplier": supplier,
                 "note": note,
                 "receipt_date": receipt_date,
-                "create_expense": create_expense,
+                "payment_method": payment_method,
             }
 
             if formset.is_valid():
@@ -3302,23 +3352,27 @@ class InventoryMovementAdmin(admin.ModelAdmin):
                     total_purchase_amount += Decimal(str(unit_cost)) * Decimal(str(quantity))
                     movements += 1
 
-                if create_expense and total_purchase_amount > 0:
-                    expense = Expense.objects.create(
-                        fecha=receipt_date,
-                        categoria=self._purchase_expense_category(),
-                        concepto=f"Recepción de compra ({movements} variantes)",
-                        monto=total_purchase_amount,
-                        metodo_pago="transfer",
-                        proveedor=supplier or "",
-                        nota=note,
+                entry = None
+                if total_purchase_amount > 0:
+                    # La compra capitaliza inventario (1100) contra la forma de
+                    # pago. Antes iba a gastos (6000), lo que duplicaba el costo
+                    # y dejaba 1100 en negativo al vender.
+                    entry = _post_purchase_journal_entry(
+                        date_value=receipt_date,
+                        amount=total_purchase_amount,
+                        payment_method=payment_method,
+                        supplier=supplier,
+                        note=note,
+                        reference=f"REC-{receipt_date}",
                         created_by=request.user,
                     )
-                    _post_expense_journal_entry(expense, created_by=request.user)
 
                 if movements:
+                    payment_label = dict(PURCHASE_PAYMENT_CHOICES).get(payment_method, payment_method)
+                    detalle = f" Póliza #{entry.id}: inventario contra {payment_label.lower()}." if entry else ""
                     self.message_user(
                         request,
-                        f"Compra registrada. Se cargaron {movements} variantes y ${total_purchase_amount:.2f} de costo total.",
+                        f"Compra registrada. Se cargaron {movements} variantes y ${total_purchase_amount:.2f} de costo total.{detalle}",
                         level=messages.SUCCESS,
                     )
                 else:
@@ -3387,6 +3441,7 @@ class InventoryMovementAdmin(admin.ModelAdmin):
             form_values=form_values,
             filter_colors=filter_colors,
             filter_tallas=filter_tallas,
+            payment_choices=PURCHASE_PAYMENT_CHOICES,
             total_variants=len(rows),
             total_products=len(groups),
             today=str(timezone.localdate()),
@@ -4548,7 +4603,19 @@ class JournalEntryAdmin(admin.ModelAdmin):
         ).aggregate(d=Sum("debit"), c=Sum("credit"))
         cargos, abonos = _money(inventario["d"]), _money(inventario["c"])
         saldo_inv = cargos - abonos
-        if saldo_inv < 0:
+        if saldo_inv < 0 and cargos > 0:
+            avisos.append({
+                "tono": "warn",
+                "titulo": "Inventario negativo por arrastre histórico",
+                "detalle": (
+                    f"La cuenta 1100 tiene ${saldo_inv:,.2f}. Las compras nuevas ya capitalizan "
+                    "inventario, pero el saldo viene en negativo de las compras viejas que se "
+                    "registraron como gasto. Se corrige con una póliza de ajuste."
+                ),
+                "url": reverse("admin:tienda_journalentry_add"),
+                "accion": "Crear póliza de ajuste",
+            })
+        elif saldo_inv < 0:
             avisos.append({
                 "tono": "danger",
                 "titulo": "Inventario con saldo negativo",

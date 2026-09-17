@@ -65,6 +65,14 @@
     font-size: .9rem;
   }
   .rp-field input:focus { outline: none; border-color: var(--cc-blue) !important; }
+  .rp-field select.rp-payment {
+    width: 100%;
+    padding: .55rem .8rem;
+    border-radius: 10px;
+    font-size: .9rem;
+    cursor: pointer;
+  }
+  .rp-field select.rp-payment:focus { outline: none; border-color: var(--cc-blue) !important; }
   .rp-check {
     display: inline-flex;
     align-items: center;
@@ -342,7 +350,8 @@
   <div class="rp-guide">
     <strong>Cómo funciona —</strong> escribe cuántas piezas llegaron por variante: solo se registran las filas con cantidad mayor a cero.
     El <strong>costo unitario</strong> se captura por producto y actualiza el costo del producto en el catálogo.
-    Si marcas <strong>“Registrar también como gasto”</strong>, se crea un gasto por el importe total y su póliza contable.
+    La compra <strong>entra a la cuenta de Inventario</strong> contra la forma de pago que elijas; no es un gasto:
+    se vuelve costo hasta que vendes, y ahí la póliza de la venta lo saca de inventario.
   </div>
 
   {% if selected_variant %}
@@ -367,11 +376,13 @@
           <label for="id_supplier">Proveedor</label>
           <input id="id_supplier" type="text" name="supplier" value="{{ form_values.supplier }}" placeholder="Ej. Blank Supplier / importador" autocomplete="off">
         </div>
-        <div>
-          <label class="rp-check {% if form_values.create_expense %}is-on{% endif %}" id="rp-expense-label">
-            <input type="checkbox" name="create_expense" id="rp-expense" {% if form_values.create_expense %}checked{% endif %}>
-            Registrar también como gasto
-          </label>
+        <div class="rp-field">
+          <label for="id_payment_method">Forma de pago</label>
+          <select id="id_payment_method" name="payment_method" class="rp-payment">
+            {% for value, label in payment_choices %}
+            <option value="{{ value }}" {% if form_values.payment_method == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
         </div>
       </div>
     </div>
@@ -573,7 +584,7 @@
   const sumTotal    = document.getElementById('rp-sum-total');
   const barHint     = document.getElementById('rp-bar-hint');
   const submitBtn   = document.getElementById('rp-submit');
-  const expenseBox  = document.getElementById('rp-expense');
+  const paymentSel  = document.getElementById('id_payment_method');
   let dirty = false;
 
   function recalc() {
@@ -617,10 +628,9 @@
       barHint.textContent = 'Captura cantidades para habilitar el guardado.';
     } else if (total === 0) {
       barHint.textContent = 'Falta el costo unitario: el importe quedará en cero.';
-    } else if (expenseBox.checked) {
-      barHint.textContent = 'Se creará un gasto de ' + money(total) + ' con su póliza.';
     } else {
-      barHint.textContent = 'No se registrará gasto, solo la entrada de inventario.';
+      const pago = paymentSel.options[paymentSel.selectedIndex].text.toLowerCase();
+      barHint.textContent = 'Entra ' + money(total) + ' a inventario contra ' + pago + '.';
     }
   }
 
@@ -686,12 +696,8 @@
     recalc();
   });
 
-  // Checkbox de gasto con estado visible
-  const expenseLabel = document.getElementById('rp-expense-label');
-  expenseBox.addEventListener('change', () => {
-    expenseLabel.classList.toggle('is-on', expenseBox.checked);
-    recalc();
-  });
+  // La forma de pago cambia la contrapartida de la póliza
+  paymentSel.addEventListener('change', recalc);
 
   // Filtros
   const search  = document.getElementById('rp-search');

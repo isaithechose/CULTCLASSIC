@@ -11,6 +11,8 @@ from .models import (
     AccountingAccount,
     BankMovement,
     Categoria,
+    Expense,
+    ExpenseCategory,
     JournalEntry,
     JournalEntryLine,
     MoneyAccount,
@@ -436,3 +438,82 @@ class FinanceSectionTests(TestCase):
         ):
             response = self.client.get(url, {"month": "2026-05"})
             self.assertEqual(response.status_code, 200)
+
+
+# ---------------------------------------------------------------------------
+# Las compras capitalizan inventario, no son gasto
+# ---------------------------------------------------------------------------
+
+
+class PurchaseCapitalizationTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_superuser(
+            username="compras", email="compras@example.com", password="clave-secreta"
+        )
+        for code, name, tipo in (
+            ("1000", "Caja", "asset"),
+            ("1010", "Bancos", "asset"),
+            ("1100", "Inventario", "asset"),
+            ("2000", "Proveedores", "liability"),
+            ("2100", "Tarjetas de credito por pagar", "liability"),
+            ("6000", "Gastos generales", "expense"),
+        ):
+            AccountingAccount.objects.get_or_create(
+                code=code, defaults={"name": name, "account_type": tipo}
+            )
+
+    def _lineas(self, entry):
+        return {line.account.code: (line.debit, line.credit) for line in entry.lines.all()}
+
+    def test_cada_forma_de_pago_abona_su_cuenta(self):
+        from tienda.admin import _post_purchase_journal_entry
+
+        esperado = {"transfer": "1010", "cash": "1000", "card": "2100", "credit": "2000"}
+        for metodo, cuenta in esperado.items():
+            entry = _post_purchase_journal_entry(
+                date_value=date(2026, 9, 17),
+                amount=Decimal("2500"),
+                payment_method=metodo,
+                supplier="Proveedor X",
+                note="compra",
+                reference=f"REC-{metodo}",
+                created_by=self.user,
+            )
+            lineas = self._lineas(entry)
+            self.assertEqual(lineas["1100"][0], Decimal("2500"), f"{metodo}: inventario debe ir al debe")
+            self.assertEqual(lineas[cuenta][1], Decimal("2500"), f"{metodo}: contrapartida equivocada")
+            self.assertNotIn("6000", lineas, f"{metodo}: la compra no debe tocar gastos")
+
+    def test_gasto_de_categoria_compras_tambien_capitaliza(self):
+        from tienda.admin import _post_expense_journal_entry
+
+        categoria = ExpenseCategory.objects.create(nombre="Compras inventario")
+        gasto = Expense.objects.create(
+            fecha=date(2026, 9, 17),
+            categoria=categoria,
+            concepto="Compra a proveedor",
+            monto=Decimal("1200"),
+            metodo_pago="transfer",
+            created_by=self.user,
+        )
+        entry = _post_expense_journal_entry(gasto, created_by=self.user)
+        lineas = self._lineas(entry)
+        self.assertEqual(lineas["1100"][0], Decimal("1200"))
+        self.assertNotIn("6000", lineas)
+
+    def test_un_gasto_normal_si_va_a_gastos(self):
+        from tienda.admin import _post_expense_journal_entry
+
+        categoria = ExpenseCategory.objects.create(nombre="Renta")
+        gasto = Expense.objects.create(
+            fecha=date(2026, 9, 17),
+            categoria=categoria,
+            concepto="Renta del local",
+            monto=Decimal("8000"),
+            metodo_pago="transfer",
+            created_by=self.user,
+        )
+        entry = _post_expense_journal_entry(gasto, created_by=self.user)
+        lineas = self._lineas(entry)
+        self.assertEqual(lineas["6000"][0], Decimal("8000"))
+        self.assertNotIn("1100", lineas)
