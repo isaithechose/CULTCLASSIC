@@ -22,8 +22,6 @@ class ProductoSitemap(Sitemap):
 
 class StaticViewSitemap(Sitemap):
     """Páginas estáticas relevantes para indexar."""
-    changefreq = "monthly"
-    priority = 0.6
     protocol = "https"
 
     def items(self):
@@ -39,3 +37,9 @@ class StaticViewSitemap(Sitemap):
 
     def location(self, item):
         return reverse(item)
+
+    def priority(self, item):
+        return 1.0 if item == "tienda:tienda" else 0.6
+
+    def changefreq(self, item):
+        return "weekly" if item == "tienda:tienda" else "monthly"

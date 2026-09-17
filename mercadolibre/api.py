@@ -68,9 +68,13 @@ def refresh_token(cred):
             "client_secret": settings.ML_APP_SECRET,
             "refresh_token": cred.refresh_token,
         },
+        headers={"Accept": "application/json"},
         timeout=15,
     )
-    r.raise_for_status()
+    if not r.ok:
+        body = r.text[:300]
+        logger.error("ML refresh token %s: %s", r.status_code, body)
+        raise requests.HTTPError(f"{r.status_code} — {body}", response=r)
     data = r.json()
     cred.access_token = data["access_token"]
     cred.refresh_token = data["refresh_token"]
@@ -80,9 +84,28 @@ def refresh_token(cred):
 
 
 def _ensure_fresh(cred):
-    if cred.is_expired():
-        cred = refresh_token(cred)
-    return cred
+    if not cred.is_expired():
+        return cred
+    # Otro proceso (cron, webhook, señal) pudo haber refrescado ya:
+    # releer de BD evita que varios workers pidan token a la vez y ML
+    # responda 429 en /oauth/token.
+    cred.refresh_from_db()
+    if not cred.is_expired():
+        return cred
+    try:
+        return refresh_token(cred)
+    except requests.HTTPError as exc:
+        resp = getattr(exc, "response", None)
+        status = resp.status_code if resp is not None else None
+        # is_expired() tiene buffer de 5 min: ante un 429 el token actual
+        # puede seguir siendo válido, así que lo usamos en vez de fallar.
+        if status == 429 and timezone.now() < cred.expires_at:
+            logger.warning(
+                "ML /oauth/token rate-limited (429); se reutiliza el token vigente hasta %s",
+                cred.expires_at,
+            )
+            return cred
+        raise
 
 
 def _headers(cred):
