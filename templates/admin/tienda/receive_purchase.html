@@ -3,15 +3,139 @@
 {% block extrastyle %}
 {{ block.super }}
 <style>
-  /* Lo genérico vive en static/css/admin-ui.css; aquí solo lo propio de
-     la recepción: la rejilla de datos y el encabezado por producto. */
+  .rp-wrap { max-width: 1320px; padding-bottom: 96px; }
+
+  /* ── header ── */
+  .rp-header {
+    background: var(--cc-panel) !important;
+    border: 1px solid var(--cc-border) !important;
+    border-radius: 14px;
+    padding: 1.3rem 1.5rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .rp-header h1 { margin: 0 0 .25rem; font-size: 1.25rem; }
+  .rp-header p  { margin: 0; color: var(--cc-muted); font-size: .9rem; }
+  .rp-actions { display: flex; gap: .6rem; flex-wrap: wrap; align-items: center; }
+
+  .rp-guide {
+    padding: .85rem 1.1rem;
+    border-radius: 14px;
+    background: #161616;
+    border: 1px solid var(--cc-border-2);
+    margin-bottom: 1rem;
+    font-size: .88rem;
+    color: var(--cc-muted);
+    line-height: 1.55;
+  }
+  .rp-guide strong { color: var(--cc-text); }
+
+  /* ── datos de la recepción ── */
+  .rp-card {
+    background: var(--cc-panel) !important;
+    border: 1px solid var(--cc-border) !important;
+    border-radius: 14px;
+    margin-bottom: 1rem;
+  }
+  .rp-meta { padding: 1.1rem 1.3rem; }
   .rp-meta-grid {
     display: grid;
     grid-template-columns: 200px 1fr auto;
     gap: 1rem;
     align-items: end;
   }
+  .rp-field label {
+    display: block;
+    font-size: .74rem;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    color: var(--cc-muted);
+    font-weight: 700;
+    margin-bottom: .4rem;
+  }
+  .rp-field input[type="text"],
+  .rp-field input[type="date"] {
+    width: 100%;
+    padding: .55rem .8rem;
+    border-radius: 10px;
+    font-size: .9rem;
+  }
+  .rp-field input:focus { outline: none; border-color: var(--cc-blue) !important; }
+  .rp-check {
+    display: inline-flex;
+    align-items: center;
+    gap: .55rem;
+    padding: .6rem .9rem;
+    border: 1px solid var(--cc-border-2);
+    border-radius: 10px;
+    background: #1a1a1a;
+    font-size: .86rem;
+    font-weight: 600;
+    color: #ddd;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .rp-check input { accent-color: var(--cc-blue); width: 16px; height: 16px; cursor: pointer; }
+  .rp-check.is-on { border-color: rgba(74,158,255,.5); background: rgba(74,158,255,.10); color: #cfe3ff; }
 
+  /* ── filtros ── */
+  .rp-filters {
+    background: var(--cc-panel) !important;
+    border: 1px solid var(--cc-border) !important;
+    border-radius: 14px;
+    padding: .85rem 1.1rem;
+    display: flex;
+    gap: .6rem;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+  }
+  .rp-search {
+    flex: 1; min-width: 190px;
+    padding: .45rem .9rem;
+    border: 1px solid var(--cc-border-2);
+    border-radius: 10px;
+    font-size: .88rem;
+    background: #1a1a1a;
+    color: #ddd;
+  }
+  .rp-search::placeholder { color: #555; }
+  .rp-search:focus { outline: none; border-color: var(--cc-blue); }
+  .rp-select { padding: .42rem 1.6rem .42rem .8rem; border-radius: 10px; font-size: .84rem; cursor: pointer; }
+  .rp-select:focus { outline: none; border-color: var(--cc-blue) !important; }
+  .rp-chips { display: flex; gap: .35rem; flex-wrap: wrap; }
+  .rp-chip {
+    padding: .35rem .75rem;
+    border-radius: 9px;
+    font-size: .78rem;
+    font-weight: 700;
+    cursor: pointer;
+    border: 1px solid var(--cc-border-2);
+    background: #1f1f1f;
+    color: #ccc;
+    transition: .12s;
+    white-space: nowrap;
+  }
+  .rp-chip[data-estado="captured"] { background: rgba(74,158,255,.10); color: var(--cc-blue); border-color: rgba(74,158,255,.3); }
+  .rp-chip[data-estado="low"]      { background: rgba(240,165,0,.10);  color: var(--cc-yellow); border-color: rgba(240,165,0,.3); }
+  .rp-chip[data-estado="out"]      { background: rgba(224,80,80,.10);  color: var(--cc-red); border-color: rgba(224,80,80,.3); }
+  .rp-chip.active { box-shadow: 0 0 0 1.5px currentColor; }
+  .rp-linkbtn {
+    font-size: .8rem; color: var(--cc-muted); cursor: pointer;
+    background: none; border: none; text-decoration: underline; white-space: nowrap;
+  }
+  .rp-linkbtn:hover { color: #fff; }
+  .rp-count { font-size: .82rem; color: var(--cc-muted); white-space: nowrap; margin-left: auto; }
+
+  /* ── grupo por producto ── */
+  .rp-group { margin-bottom: .9rem; overflow: hidden; }
   .rp-group-head {
     display: flex;
     align-items: center;
@@ -31,7 +155,16 @@
   }
   .rp-toggle:hover { color: #fff; background: #262626; }
   .rp-group.collapsed .rp-toggle { transform: rotate(-90deg); }
+  .rp-thumb, .rp-thumb-fallback { width: 46px; height: 46px; border-radius: 11px; flex: 0 0 46px; }
+  .rp-thumb { object-fit: cover; border: 1px solid var(--cc-border-2); background: #1a1a1a; }
+  .rp-thumb-fallback {
+    display: flex; align-items: center; justify-content: center;
+    border: 1px dashed #3a3a3a; color: #666; background: #1a1a1a;
+    font-size: .68rem; font-weight: 700; text-transform: uppercase;
+  }
   .rp-group-title { min-width: 180px; flex: 1; }
+  .rp-group-name { font-weight: 700; color: #fff !important; font-size: .95rem; }
+  .rp-group-sub  { font-size: .78rem; color: var(--cc-muted) !important; margin-top: 2px; }
   .rp-group-tools { display: flex; align-items: flex-end; gap: .7rem; flex-wrap: wrap; }
   .rp-tool label {
     display: block; font-size: .7rem; text-transform: uppercase; letter-spacing: .06em;
@@ -59,42 +192,161 @@
   }
   .rp-group-sum.is-on { color: var(--cc-green) !important; border-color: rgba(45,190,108,.35); background: rgba(45,190,108,.10); }
 
-  .rp-total { color: var(--cc-green) !important; }
+  /* ── tabla ── */
+  .rp-table { width: 100%; border-collapse: collapse; }
+  .rp-table thead th {
+    background: #0f0f0f !important;
+    border-bottom: 1px solid var(--cc-border) !important;
+    padding: .6rem 1rem; text-align: left;
+    font-size: .74rem; text-transform: uppercase; letter-spacing: .07em;
+    color: #888 !important; white-space: nowrap;
+  }
+  .rp-table td { padding: .7rem 1rem; border-bottom: 1px solid var(--cc-border) !important; vertical-align: middle; }
+  .rp-table tbody tr:last-child td { border-bottom: none !important; }
+  .rp-table tbody tr { transition: background .1s; }
+  .rp-table tbody tr:hover { background: #181818; }
+  .rp-table tbody tr.is-captured { background: rgba(45,190,108,.07); }
+  .rp-table tbody tr.is-captured:hover { background: rgba(45,190,108,.11); }
+  .rp-cell-stripe { padding: 0 !important; width: 4px; }
+  .rp-stripe { display: block; width: 4px; min-height: 46px; height: 100%; border-radius: 0 4px 4px 0; background: #2a2a2a; }
+  tr.is-captured .rp-stripe { background: var(--cc-green); }
 
-  /* el encabezado de tabla se pega debajo de la barra de filtros */
-  .ui-table { --ui-thead-top: 0px; }
+  .rp-color { display: flex; align-items: center; gap: .55rem; white-space: nowrap; }
+  .rp-swatch { width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0; box-shadow: 0 0 0 2px var(--cc-panel), 0 0 0 3.5px rgba(255,255,255,.22); }
+  .rp-color-name { font-size: .86rem; color: #ccc !important; font-weight: 500; }
+  .rp-talla {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 32px; height: 32px; padding: 0 .5rem; border-radius: 9px;
+    background: #1f1f1f; border: 1px solid var(--cc-border-2);
+    font-weight: 700; font-size: .8rem; color: #ddd;
+  }
+  .rp-sku { color: #777 !important; font-size: .8rem; font-family: var(--font-family-monospace); }
+  .rp-stock { display: flex; align-items: center; gap: .5rem; }
+  .rp-stock-num { font-size: 1.02rem; font-weight: 800; color: #fff !important; min-width: 20px; }
+  .rp-badge {
+    display: inline-flex; align-items: center; gap: .28rem;
+    padding: .2rem .5rem; border-radius: 999px; font-weight: 700; font-size: .72rem; white-space: nowrap;
+  }
+  .rp-badge::before { content:''; width:5px; height:5px; border-radius:50%; display:inline-block; }
+  .rp-badge--ok  { color: var(--cc-green) !important;  background: rgba(45,190,108,.12); } .rp-badge--ok::before  { background: var(--cc-green); }
+  .rp-badge--low { color: var(--cc-yellow) !important; background: rgba(240,165,0,.12); }  .rp-badge--low::before { background: var(--cc-yellow); }
+  .rp-badge--out { color: var(--cc-red) !important;    background: rgba(224,80,80,.12); }  .rp-badge--out::before { background: var(--cc-red); }
 
+  .rp-stepper {
+    display: inline-flex; align-items: center;
+    border: 1px solid var(--cc-border-2); border-radius: 12px; overflow: hidden; background: #1a1a1a;
+  }
+  .rp-stepper button {
+    background: #1f1f1f; border: none; width: 32px; height: 38px;
+    font-size: 1.15rem; color: #888; cursor: pointer; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; transition: background .1s, color .1s;
+  }
+  .rp-stepper button:hover { background: #2a2a2a; color: #fff; }
+  .rp-stepper input.rp-qty {
+    width: 62px;
+    border: none !important;
+    border-left: 1px solid var(--cc-border-2) !important;
+    border-right: 1px solid var(--cc-border-2) !important;
+    border-radius: 0 !important;
+    text-align: center; font-size: .92rem; font-weight: 700;
+    color: #fff !important; padding: .4rem 0; background: #141414 !important;
+    -moz-appearance: textfield;
+  }
+  .rp-stepper input.rp-qty::-webkit-outer-spin-button,
+  .rp-stepper input.rp-qty::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .rp-stepper input.rp-qty:focus { outline: none; background: #1a2433 !important; }
+  .rp-subtotal { font-size: .88rem; font-weight: 700; color: #666 !important; white-space: nowrap; }
+  tr.is-captured .rp-subtotal { color: #fff !important; }
+  .rp-result { font-size: .85rem; color: #666 !important; white-space: nowrap; }
+  tr.is-captured .rp-result { color: var(--cc-green) !important; font-weight: 700; }
+
+  .rp-empty { padding: 2rem; text-align: center; color: var(--cc-muted); }
+  .rp-noresults { display: none; }
+  .rp-noresults.show { display: block; }
+
+  /* ── nota ── */
+  .rp-note-card { padding: 1.1rem 1.3rem; }
+  .rp-note { width: 100%; min-height: 76px; padding: .8rem 1rem; border-radius: 12px; resize: vertical; font-size: .9rem; }
+  .rp-note:focus { outline: none; border-color: var(--cc-blue) !important; }
+
+  /* ── barra sticky de totales ── */
+  .rp-bar {
+    position: fixed; left: 230px; right: 0; bottom: 0; z-index: 60;
+    background: rgba(13,13,13,.97);
+    border-top: 1px solid var(--cc-border-2);
+    backdrop-filter: blur(8px);
+    padding: .75rem 1.4rem;
+    display: flex; align-items: center; gap: 1.6rem; flex-wrap: wrap;
+  }
+  .rp-bar-stat { display: flex; flex-direction: column; gap: 1px; }
+  .rp-bar-label { font-size: .68rem; text-transform: uppercase; letter-spacing: .08em; color: #777; font-weight: 700; }
+  .rp-bar-value { font-size: 1.05rem; font-weight: 800; color: #fff !important; line-height: 1.2; }
+  .rp-bar-value.rp-total { color: var(--cc-green) !important; }
+  .rp-bar-hint { font-size: .8rem; color: var(--cc-muted); max-width: 320px; }
+  .rp-bar-right { margin-left: auto; display: flex; align-items: center; gap: .8rem; }
+  .rp-submit {
+    padding: .62rem 1.5rem !important; font-size: .92rem !important; font-weight: 700 !important;
+    border-radius: 10px !important; cursor: pointer;
+  }
+  .rp-submit[disabled] { opacity: .45; cursor: not-allowed; }
+
+  /* ── light mode ── */
   html.light-mode .rp-group-head { background: #f8fafc !important; }
-  html.light-mode .rp-mini-btn, html.light-mode .rp-group-sum { background: #f3f4f6; border-color: #e5e7eb; color: #374151; }
-  html.light-mode .rp-total { color: #059669 !important; }
+  html.light-mode .rp-table thead th { background: #f8fafc !important; color: #6b7280 !important; }
+  html.light-mode .rp-table tbody tr:hover { background: #f8fafc; }
+  html.light-mode .rp-table tbody tr.is-captured { background: #ecfdf5; }
+  html.light-mode .rp-group-name, html.light-mode .rp-stock-num { color: #111827 !important; }
+  html.light-mode .rp-color-name { color: #374151 !important; }
+  html.light-mode .rp-talla, html.light-mode .rp-chip, html.light-mode .rp-mini-btn { background: #f3f4f6; border-color: #e5e7eb; color: #374151; }
+  html.light-mode .rp-search, html.light-mode .rp-check { background: #f9fafb; color: #111827; border-color: #d7d7e2; }
+  html.light-mode .rp-swatch { box-shadow: 0 0 0 2px #fff, 0 0 0 3.5px rgba(0,0,0,.13); }
+  html.light-mode .rp-stepper { background: #fff; }
+  html.light-mode .rp-stepper input.rp-qty { background: #fff !important; color: #111827 !important; }
+  html.light-mode .rp-stepper button { background: #f3f4f6; }
+  html.light-mode .rp-bar { background: rgba(255,255,255,.97); border-color: #e5e7eb; }
+  html.light-mode .rp-bar-value { color: #111827 !important; }
+  html.light-mode .rp-bar-value.rp-total { color: #059669 !important; }
+  html.light-mode .rp-stripe { background: #e5e7eb; }
 
-  @media (max-width: 1100px) { .rp-meta-grid { grid-template-columns: 1fr 1fr; } }
-  @media (max-width: 900px)  { .rp-meta-grid { grid-template-columns: 1fr; } }
+  @media (max-width: 1100px) {
+    .rp-meta-grid { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 900px) {
+    .rp-bar { left: 0; }
+    .rp-header { flex-direction: column; }
+    .rp-meta-grid { grid-template-columns: 1fr; }
+    .rp-filters { position: static; }
+    .rp-table thead { display: none; }
+    .rp-table tbody tr { display: grid; grid-template-columns: 1fr auto; gap: .35rem .7rem; padding: .7rem 1rem; border-bottom: 1px solid var(--cc-border); }
+    .rp-table td { border: none !important; padding: .15rem 0 !important; }
+    .rp-table td.rp-cell-stripe { display: none; }
+    .rp-table td[data-cell="qty"] { grid-row: span 3; align-self: center; justify-self: end; }
+  }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="ui-page ui-page--with-bar">
+<div class="rp-wrap">
 
-  <div class="ui-page-header">
+  <div class="rp-header">
     <div>
       <h1>Recepción de compra</h1>
       <p>Captura la mercancía que llegó y conviértela en movimientos reales de inventario.</p>
     </div>
-    <div class="ui-page-actions">
+    <div class="rp-actions">
       <a class="button" href="{% url 'admin:tienda_producto_inventory_matrix' %}">Mesa de stock</a>
       <a class="button" href="{% url 'admin:tienda_inventorymovement_changelist' %}">Ver movimientos</a>
     </div>
   </div>
 
-  <div class="ui-guide">
+  <div class="rp-guide">
     <strong>Cómo funciona —</strong> escribe cuántas piezas llegaron por variante: solo se registran las filas con cantidad mayor a cero.
     El <strong>costo unitario</strong> se captura por producto y actualiza el costo del producto en el catálogo.
     Si marcas <strong>“Registrar también como gasto”</strong>, se crea un gasto por el importe total y su póliza contable.
   </div>
 
   {% if selected_variant %}
-  <div class="ui-guide" style="display:flex;justify-content:space-between;align-items:center;gap:1rem;">
+  <div class="rp-guide" style="display:flex;justify-content:space-between;align-items:center;gap:1rem;">
     <span>Estás recibiendo solo <strong>{{ selected_variant.product.nombre }} · {{ selected_variant.color }} · {{ selected_variant.talla }}</strong>.</span>
     <a class="button" href="{% url 'admin:tienda_inventorymovement_receive_purchase' %}">Ver todas las variantes</a>
   </div>
@@ -105,18 +357,18 @@
     {% csrf_token %}
     {{ formset.management_form }}
 
-    <div class="ui-panel ui-panel--pad">
+    <div class="rp-card rp-meta">
       <div class="rp-meta-grid">
-        <div class="ui-field">
+        <div class="rp-field">
           <label for="id_receipt_date">Fecha de recepción</label>
           <input id="id_receipt_date" type="date" name="receipt_date" value="{{ form_values.receipt_date }}">
         </div>
-        <div class="ui-field">
+        <div class="rp-field">
           <label for="id_supplier">Proveedor</label>
           <input id="id_supplier" type="text" name="supplier" value="{{ form_values.supplier }}" placeholder="Ej. Blank Supplier / importador" autocomplete="off">
         </div>
         <div>
-          <label class="ui-check {% if form_values.create_expense %}is-on{% endif %}" id="rp-expense-label">
+          <label class="rp-check {% if form_values.create_expense %}is-on{% endif %}" id="rp-expense-label">
             <input type="checkbox" name="create_expense" id="rp-expense" {% if form_values.create_expense %}checked{% endif %}>
             Registrar también como gasto
           </label>
@@ -124,44 +376,44 @@
       </div>
     </div>
 
-    <div class="ui-toolbar">
-      <input class="ui-input" id="rp-search" type="search" placeholder="Buscar producto, color, talla o SKU…" autocomplete="off">
+    <div class="rp-filters">
+      <input class="rp-search" id="rp-search" type="search" placeholder="Buscar producto, color, talla o SKU…" autocomplete="off">
 
-      <select class="ui-select" id="rp-color">
+      <select class="rp-select" id="rp-color">
         <option value="">Todos los colores</option>
         {% for c in filter_colors %}<option value="{{ c|lower }}">{{ c }}</option>{% endfor %}
       </select>
 
-      <select class="ui-select" id="rp-talla">
+      <select class="rp-select" id="rp-talla">
         <option value="">Todas las tallas</option>
         {% for t in filter_tallas %}<option value="{{ t|lower }}">{{ t }}</option>{% endfor %}
       </select>
 
-      <div class="ui-chips">
-        <button type="button" class="ui-chip rp-chip active" data-estado="all">Todas</button>
-        <button type="button" class="ui-chip ui-chip--info rp-chip" data-estado="captured">Capturadas</button>
-        <button type="button" class="ui-chip ui-chip--low rp-chip" data-estado="low">Stock bajo</button>
-        <button type="button" class="ui-chip ui-chip--out rp-chip" data-estado="out">Agotadas</button>
+      <div class="rp-chips">
+        <button type="button" class="rp-chip active" data-estado="all">Todas</button>
+        <button type="button" class="rp-chip" data-estado="captured">Capturadas</button>
+        <button type="button" class="rp-chip" data-estado="low">Stock bajo</button>
+        <button type="button" class="rp-chip" data-estado="out">Agotadas</button>
       </div>
 
-      <button type="button" class="ui-link" id="rp-toggle-all">Contraer todo</button>
-      <button type="button" class="ui-link" id="rp-clear">Limpiar filtros</button>
-      <span class="ui-counter" id="rp-count">{{ total_variants }} variantes · {{ total_products }} productos</span>
+      <button type="button" class="rp-linkbtn" id="rp-toggle-all">Contraer todo</button>
+      <button type="button" class="rp-linkbtn" id="rp-clear">Limpiar filtros</button>
+      <span class="rp-count" id="rp-count">{{ total_variants }} variantes · {{ total_products }} productos</span>
     </div>
 
     <div id="rp-groups">
       {% for group in groups %}
-      <div class="ui-panel rp-group" data-group="{{ group.product.id }}">
+      <div class="rp-card rp-group" data-group="{{ group.product.id }}">
         <div class="rp-group-head">
           <button type="button" class="rp-toggle" aria-label="Contraer producto">▾</button>
           {% if group.image_url %}
-            <img class="ui-thumb" src="{{ group.image_url }}" alt="{{ group.product.nombre }}">
+            <img class="rp-thumb" src="{{ group.image_url }}" alt="{{ group.product.nombre }}">
           {% else %}
-            <div class="ui-thumb--empty">Sin img</div>
+            <div class="rp-thumb-fallback">Sin img</div>
           {% endif %}
           <div class="rp-group-title">
-            <div class="ui-name">{{ group.product.nombre }}</div>
-            <div class="ui-sub">
+            <div class="rp-group-name">{{ group.product.nombre }}</div>
+            <div class="rp-group-sub">
               {{ group.rows|length }} variante{{ group.rows|length|pluralize:"s" }} · stock actual {{ group.stock_total }}
               {% if group.low_count %} · {{ group.low_count }} con stock bajo{% endif %}
             </div>
@@ -186,7 +438,7 @@
         </div>
 
         <div class="rp-group-body">
-          <table class="ui-table">
+          <table class="rp-table">
             <thead>
               <tr>
                 <th style="width:4px;padding:0"></th>
@@ -206,32 +458,32 @@
                   data-color="{{ row.variant.color|lower }}"
                   data-talla="{{ row.variant.talla|lower }}"
                   data-sku="{{ row.variant.sku|default:''|lower }}">
-                <td class="ui-cell-stripe"><span class="ui-stripe"></span></td>
+                <td class="rp-cell-stripe"><span class="rp-stripe"></span></td>
                 <td data-cell="color">
-                  <div class="ui-color">
-                    <span class="ui-swatch rp-swatch" data-color="{{ row.variant.color }}"></span>
-                    <span class="ui-color-name">{{ row.variant.color }}</span>
+                  <div class="rp-color">
+                    <span class="rp-swatch" data-color="{{ row.variant.color }}"></span>
+                    <span class="rp-color-name">{{ row.variant.color }}</span>
                   </div>
                   {{ row.form.variant_id }}
                   {{ row.form.unit_cost }}
                 </td>
-                <td data-cell="talla"><span class="ui-size">{{ row.variant.talla }}</span></td>
-                <td class="ui-sku" data-cell="sku">{{ row.variant.sku|default:"—" }}</td>
+                <td data-cell="talla"><span class="rp-talla">{{ row.variant.talla }}</span></td>
+                <td class="rp-sku" data-cell="sku">{{ row.variant.sku|default:"—" }}</td>
                 <td data-cell="stock">
-                  <div class="ui-stock">
-                    <span class="ui-num">{{ row.variant.stock }}</span>
-                    <span class="ui-badge"></span>
+                  <div class="rp-stock">
+                    <span class="rp-stock-num">{{ row.variant.stock }}</span>
+                    <span class="rp-badge"></span>
                   </div>
                 </td>
                 <td data-cell="qty">
-                  <div class="ui-stepper rp-stepper">
+                  <div class="rp-stepper">
                     <button type="button" class="rp-dec" tabindex="-1" aria-label="Quitar una pieza">−</button>
                     {{ row.form.quantity }}
                     <button type="button" class="rp-inc" tabindex="-1" aria-label="Agregar una pieza">+</button>
                   </div>
                 </td>
-                <td class="ui-money" data-cell="subtotal">—</td>
-                <td class="ui-hint-cell" data-cell="result">—</td>
+                <td class="rp-subtotal" data-cell="subtotal">—</td>
+                <td class="rp-result" data-cell="result">—</td>
               </tr>
               {% endfor %}
             </tbody>
@@ -241,39 +493,39 @@
       {% endfor %}
     </div>
 
-    <div class="ui-panel ui-empty ui-hidden" id="rp-noresults">
-      Ninguna variante coincide con los filtros. <button type="button" class="ui-link" id="rp-clear-2">Limpiar filtros</button>
+    <div class="rp-card rp-empty rp-noresults" id="rp-noresults">
+      Ninguna variante coincide con los filtros. <button type="button" class="rp-linkbtn" id="rp-clear-2">Limpiar filtros</button>
     </div>
 
-    <div class="ui-panel ui-panel--pad">
+    <div class="rp-card rp-note-card">
       <label for="id_note" style="display:block;font-size:.74rem;text-transform:uppercase;letter-spacing:.07em;color:var(--cc-muted);font-weight:700;margin-bottom:.4rem;">Nota del movimiento</label>
-      <textarea id="id_note" name="note" class="ui-textarea" placeholder="Ej. Recepción de proveedor abril, cajas revisadas y contadas.">{{ form_values.note }}</textarea>
+      <textarea id="id_note" name="note" class="rp-note" placeholder="Ej. Recepción de proveedor abril, cajas revisadas y contadas.">{{ form_values.note }}</textarea>
     </div>
 
-    <div class="ui-bar">
-      <div class="ui-bar-stat">
-        <span class="ui-bar-label">Variantes</span>
-        <span class="ui-bar-value" id="rp-sum-variants">0</span>
+    <div class="rp-bar">
+      <div class="rp-bar-stat">
+        <span class="rp-bar-label">Variantes</span>
+        <span class="rp-bar-value" id="rp-sum-variants">0</span>
       </div>
-      <div class="ui-bar-stat">
-        <span class="ui-bar-label">Piezas</span>
-        <span class="ui-bar-value" id="rp-sum-units">0</span>
+      <div class="rp-bar-stat">
+        <span class="rp-bar-label">Piezas</span>
+        <span class="rp-bar-value" id="rp-sum-units">0</span>
       </div>
-      <div class="ui-bar-stat">
-        <span class="ui-bar-label">Importe total</span>
-        <span class="ui-bar-value rp-total" id="rp-sum-total">$0.00</span>
+      <div class="rp-bar-stat">
+        <span class="rp-bar-label">Importe total</span>
+        <span class="rp-bar-value rp-total" id="rp-sum-total">$0.00</span>
       </div>
-      <span class="ui-bar-hint" id="rp-bar-hint">Captura cantidades para habilitar el guardado.</span>
-      <div class="ui-bar-right">
-        <button type="button" class="ui-link" id="rp-reset-all">Limpiar captura</button>
-        <button type="submit" class="button default ui-submit" id="rp-submit" disabled>Guardar recepción</button>
+      <span class="rp-bar-hint" id="rp-bar-hint">Captura cantidades para habilitar el guardado.</span>
+      <div class="rp-bar-right">
+        <button type="button" class="rp-linkbtn" id="rp-reset-all">Limpiar captura</button>
+        <button type="submit" class="button default rp-submit" id="rp-submit" disabled>Guardar recepción</button>
       </div>
     </div>
   </form>
 
   {% else %}
-  <div class="ui-panel">
-    <div class="ui-empty">No hay variantes activas para recibir. Crea variantes en tus productos para usar esta pantalla.</div>
+  <div class="rp-card">
+    <div class="rp-empty">No hay variantes activas para recibir. Crea variantes en tus productos para usar esta pantalla.</div>
   </div>
   {% endif %}
 
@@ -303,13 +555,13 @@
   const LABEL = { ok: 'OK', low: 'Bajo', out: 'Agotado' };
 
   const groups = Array.from(document.querySelectorAll('.rp-group'));
-  const rows = Array.from(document.querySelectorAll('.ui-table tbody tr'));
+  const rows = Array.from(document.querySelectorAll('.rp-table tbody tr'));
 
   // Badge de stock por fila
   rows.forEach(tr => {
     const sk = status(parseInt(tr.dataset.stock) || 0);
-    const badge = tr.querySelector('.ui-badge');
-    badge.className = 'ui-badge ui-badge--' + sk;
+    const badge = tr.querySelector('.rp-badge');
+    badge.className = 'rp-badge rp-badge--' + sk;
     badge.textContent = LABEL[sk];
   });
 
@@ -335,12 +587,12 @@
       });
 
       let gVariants = 0, gUnits = 0, gTotal = 0;
-      group.querySelectorAll('.ui-table tbody tr').forEach(tr => {
+      group.querySelectorAll('.rp-table tbody tr').forEach(tr => {
         const qty   = qtyOf(tr);
         const stock = parseInt(tr.dataset.stock) || 0;
         const line  = qty * cost;
 
-        tr.classList.toggle('is-on', qty > 0);
+        tr.classList.toggle('is-captured', qty > 0);
         tr.querySelector('[data-cell="subtotal"]').textContent = qty > 0 ? money(line) : '—';
         tr.querySelector('[data-cell="result"]').textContent   = qty > 0 ? (stock + ' → ' + (stock + qty)) : '—';
 
@@ -413,7 +665,7 @@
     }
     if (e.target.closest('.rp-fill-apply')) {
       const value = parseInt(group.querySelector('.rp-group-fill').value) || 0;
-      group.querySelectorAll('.ui-table tbody tr').forEach(tr => {
+      group.querySelectorAll('.rp-table tbody tr').forEach(tr => {
         if (tr.style.display !== 'none') tr.querySelector('.rp-qty').value = value;
       });
       dirty = true;
@@ -457,7 +709,7 @@
 
     groups.forEach(group => {
       let shown = 0;
-      group.querySelectorAll('.ui-table tbody tr').forEach(tr => {
+      group.querySelectorAll('.rp-table tbody tr').forEach(tr => {
         const stock = parseInt(tr.dataset.stock) || 0;
         const st = status(stock);
         const ok =

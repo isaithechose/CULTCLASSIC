@@ -3,28 +3,240 @@
 {% block extrastyle %}
 {{ block.super }}
 <style>
-  /* Lo genérico vive en static/css/admin-ui.css; aquí solo el ajuste propio
-     de esta pantalla: el encabezado de la tabla se pega bajo los filtros. */
-  .ui-table { --ui-thead-top: 64px; }
-  @media (max-width: 900px) { .ui-table { --ui-thead-top: 0px; } }
+  .bulk-wrap { max-width: 1320px; padding-bottom: 96px; }
+
+  .bulk-header {
+    background: var(--cc-panel) !important;
+    border: 1px solid var(--cc-border) !important;
+    border-radius: 14px;
+    padding: 1.3rem 1.5rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .bulk-header h1 { margin: 0 0 .25rem; font-size: 1.25rem; }
+  .bulk-header p  { margin: 0; color: var(--cc-muted); font-size: .9rem; }
+  .bulk-actions { display: flex; gap: .6rem; flex-wrap: wrap; align-items: center; }
+
+  .bulk-guide {
+    padding: .85rem 1.1rem;
+    border-radius: 14px;
+    background: #161616;
+    border: 1px solid var(--cc-border-2);
+    margin-bottom: 1rem;
+    font-size: .88rem;
+    color: var(--cc-muted);
+    line-height: 1.55;
+  }
+  .bulk-guide strong { color: var(--cc-text); }
+
+  .bulk-card {
+    background: var(--cc-panel) !important;
+    border: 1px solid var(--cc-border) !important;
+    border-radius: 14px;
+    margin-bottom: 1rem;
+    overflow: hidden;
+  }
+
+  /* filtros */
+  .bulk-filters {
+    background: var(--cc-panel) !important;
+    border: 1px solid var(--cc-border) !important;
+    border-radius: 14px;
+    padding: .85rem 1.1rem;
+    display: flex;
+    gap: .6rem;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+  }
+  .bulk-search {
+    flex: 1; min-width: 190px;
+    padding: .45rem .9rem;
+    border: 1px solid var(--cc-border-2);
+    border-radius: 10px;
+    font-size: .88rem;
+    background: #1a1a1a;
+    color: #ddd;
+  }
+  .bulk-search::placeholder { color: #555; }
+  .bulk-search:focus { outline: none; border-color: var(--cc-blue); }
+  .bulk-select { padding: .42rem 1.6rem .42rem .8rem; border-radius: 10px; font-size: .84rem; cursor: pointer; }
+  .bulk-select:focus { outline: none; border-color: var(--cc-blue) !important; }
+  .bulk-chips { display: flex; gap: .35rem; flex-wrap: wrap; }
+  .bulk-chip {
+    padding: .35rem .75rem; border-radius: 9px; font-size: .78rem; font-weight: 700;
+    cursor: pointer; border: 1px solid var(--cc-border-2); background: #1f1f1f; color: #ccc;
+    transition: .12s; white-space: nowrap;
+  }
+  .bulk-chip[data-estado="changed"] { background: rgba(74,158,255,.10); color: var(--cc-blue); border-color: rgba(74,158,255,.3); }
+  .bulk-chip[data-estado="low"]     { background: rgba(240,165,0,.10);  color: var(--cc-yellow); border-color: rgba(240,165,0,.3); }
+  .bulk-chip[data-estado="out"]     { background: rgba(224,80,80,.10);  color: var(--cc-red); border-color: rgba(224,80,80,.3); }
+  .bulk-chip.active { box-shadow: 0 0 0 1.5px currentColor; }
+  .bulk-linkbtn {
+    font-size: .8rem; color: var(--cc-muted); cursor: pointer;
+    background: none; border: none; text-decoration: underline; white-space: nowrap;
+  }
+  .bulk-linkbtn:hover { color: #fff; }
+  .bulk-count { font-size: .82rem; color: var(--cc-muted); white-space: nowrap; margin-left: auto; }
+
+  /* tabla */
+  .bulk-table { width: 100%; border-collapse: collapse; }
+  .bulk-table thead th {
+    position: sticky; top: 64px; z-index: 2;
+    background: #0f0f0f !important;
+    border-bottom: 1px solid var(--cc-border) !important;
+    padding: .65rem 1rem; text-align: left;
+    font-size: .74rem; text-transform: uppercase; letter-spacing: .07em;
+    color: #888 !important; white-space: nowrap;
+  }
+  .bulk-table td { padding: .7rem 1rem; border-bottom: 1px solid var(--cc-border) !important; vertical-align: middle; }
+  .bulk-table tbody tr:last-child td { border-bottom: none !important; }
+  .bulk-table tbody tr:hover { background: #181818; }
+  .bulk-table tbody tr.is-changed { background: rgba(74,158,255,.08); }
+  .bulk-table tbody tr.is-changed:hover { background: rgba(74,158,255,.12); }
+  .bulk-cell-stripe { padding: 0 !important; width: 4px; }
+  .bulk-stripe { display: block; width: 4px; min-height: 52px; height: 100%; border-radius: 0 4px 4px 0; background: #2a2a2a; }
+  tr.is-changed .bulk-stripe { background: var(--cc-blue); }
+
+  .bulk-product { display: flex; align-items: center; gap: .8rem; min-width: 210px; }
+  .bulk-product__thumb, .bulk-product__fallback { width: 46px; height: 46px; border-radius: 11px; flex: 0 0 46px; }
+  .bulk-product__thumb { object-fit: cover; border: 1px solid var(--cc-border-2); background: #1a1a1a; }
+  .bulk-product__fallback {
+    display: flex; align-items: center; justify-content: center;
+    border: 1px dashed #3a3a3a; color: #666; background: #1a1a1a;
+    font-size: .68rem; font-weight: 700; text-transform: uppercase;
+  }
+  .bulk-product__name { font-weight: 700; color: #fff !important; font-size: .9rem; line-height: 1.25; }
+  .bulk-product__sub  { font-size: .78rem; color: var(--cc-muted) !important; margin-top: 2px; }
+
+  .bulk-color { display: flex; align-items: center; gap: .55rem; white-space: nowrap; }
+  .bulk-swatch { width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0; box-shadow: 0 0 0 2px var(--cc-panel), 0 0 0 3.5px rgba(255,255,255,.22); }
+  .bulk-color-name { font-size: .86rem; color: #ccc !important; font-weight: 500; }
+  .bulk-talla {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 32px; height: 32px; padding: 0 .5rem; border-radius: 9px;
+    background: #1f1f1f; border: 1px solid var(--cc-border-2);
+    font-weight: 700; font-size: .8rem; color: #ddd;
+  }
+  .bulk-sku { color: #777 !important; font-size: .8rem; font-family: var(--font-family-monospace); }
+  .bulk-stock { display: flex; align-items: center; gap: .5rem; }
+  .bulk-stock-num { font-size: 1.02rem; font-weight: 800; color: #fff !important; min-width: 20px; }
+  .bulk-badge {
+    display: inline-flex; align-items: center; gap: .28rem;
+    padding: .2rem .5rem; border-radius: 999px; font-weight: 700; font-size: .72rem; white-space: nowrap;
+  }
+  .bulk-badge::before { content:''; width:5px; height:5px; border-radius:50%; display:inline-block; }
+  .bulk-badge--ok  { color: var(--cc-green) !important;  background: rgba(45,190,108,.12); } .bulk-badge--ok::before  { background: var(--cc-green); }
+  .bulk-badge--low { color: var(--cc-yellow) !important; background: rgba(240,165,0,.12); }  .bulk-badge--low::before { background: var(--cc-yellow); }
+  .bulk-badge--out { color: var(--cc-red) !important;    background: rgba(224,80,80,.12); }  .bulk-badge--out::before { background: var(--cc-red); }
+
+  .bulk-stepper {
+    display: inline-flex; align-items: center;
+    border: 1px solid var(--cc-border-2); border-radius: 12px; overflow: hidden; background: #1a1a1a;
+  }
+  .bulk-stepper button {
+    background: #1f1f1f; border: none; width: 32px; height: 38px;
+    font-size: 1.15rem; color: #888; cursor: pointer; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; transition: background .1s, color .1s;
+  }
+  .bulk-stepper button:hover { background: #2a2a2a; color: #fff; }
+  .bulk-stepper input.bulk-qty {
+    width: 62px;
+    border: none !important;
+    border-left: 1px solid var(--cc-border-2) !important;
+    border-right: 1px solid var(--cc-border-2) !important;
+    border-radius: 0 !important;
+    text-align: center; font-size: .92rem; font-weight: 700;
+    color: #fff !important; padding: .4rem 0; background: #141414 !important;
+    -moz-appearance: textfield;
+  }
+  .bulk-stepper input.bulk-qty::-webkit-outer-spin-button,
+  .bulk-stepper input.bulk-qty::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .bulk-stepper input.bulk-qty:focus { outline: none; background: #1a2433 !important; }
+
+  .bulk-diff { font-size: .88rem; font-weight: 800; white-space: nowrap; color: #666 !important; }
+  .bulk-diff.is-up   { color: var(--cc-green) !important; }
+  .bulk-diff.is-down { color: var(--cc-red) !important; }
+
+  .bulk-note-card { padding: 1.1rem 1.3rem; }
+  .bulk-note { width: 100%; min-height: 76px; padding: .8rem 1rem; border-radius: 12px; resize: vertical; font-size: .9rem; }
+  .bulk-note:focus { outline: none; border-color: var(--cc-blue) !important; }
+
+  .bulk-empty { padding: 2rem; text-align: center; color: var(--cc-muted); }
+  .bulk-noresults { display: none; }
+  .bulk-noresults.show { display: block; }
+
+  /* barra fija */
+  .bulk-bar {
+    position: fixed; left: 230px; right: 0; bottom: 0; z-index: 60;
+    background: rgba(13,13,13,.97);
+    border-top: 1px solid var(--cc-border-2);
+    backdrop-filter: blur(8px);
+    padding: .75rem 1.4rem;
+    display: flex; align-items: center; gap: 1.6rem; flex-wrap: wrap;
+  }
+  .bulk-bar-stat { display: flex; flex-direction: column; gap: 1px; }
+  .bulk-bar-label { font-size: .68rem; text-transform: uppercase; letter-spacing: .08em; color: #777; font-weight: 700; }
+  .bulk-bar-value { font-size: 1.05rem; font-weight: 800; color: #fff !important; line-height: 1.2; }
+  .bulk-bar-value.is-up   { color: var(--cc-green) !important; }
+  .bulk-bar-value.is-down { color: var(--cc-red) !important; }
+  .bulk-bar-hint { font-size: .8rem; color: var(--cc-muted); max-width: 340px; }
+  .bulk-bar-right { margin-left: auto; display: flex; align-items: center; gap: .8rem; }
+  .bulk-submit { padding: .62rem 1.5rem !important; font-size: .92rem !important; font-weight: 700 !important; border-radius: 10px !important; cursor: pointer; }
+  .bulk-submit[disabled] { opacity: .45; cursor: not-allowed; }
+
+  /* light mode */
+  html.light-mode .bulk-table thead th { background: #f8fafc !important; color: #6b7280 !important; }
+  html.light-mode .bulk-table tbody tr:hover { background: #f8fafc; }
+  html.light-mode .bulk-table tbody tr.is-changed { background: #eff6ff; }
+  html.light-mode .bulk-product__name, html.light-mode .bulk-stock-num { color: #111827 !important; }
+  html.light-mode .bulk-color-name { color: #374151 !important; }
+  html.light-mode .bulk-talla, html.light-mode .bulk-chip { background: #f3f4f6; border-color: #e5e7eb; color: #374151; }
+  html.light-mode .bulk-search { background: #f9fafb; color: #111827; border-color: #d7d7e2; }
+  html.light-mode .bulk-swatch { box-shadow: 0 0 0 2px #fff, 0 0 0 3.5px rgba(0,0,0,.13); }
+  html.light-mode .bulk-stepper { background: #fff; }
+  html.light-mode .bulk-stepper input.bulk-qty { background: #fff !important; color: #111827 !important; }
+  html.light-mode .bulk-stepper button { background: #f3f4f6; }
+  html.light-mode .bulk-product__thumb, html.light-mode .bulk-product__fallback { background: #f8f8fb; border-color: #e5e7eb; }
+  html.light-mode .bulk-bar { background: rgba(255,255,255,.97); border-color: #e5e7eb; }
+  html.light-mode .bulk-bar-value { color: #111827 !important; }
+  html.light-mode .bulk-stripe { background: #e5e7eb; }
+
+  @media (max-width: 900px) {
+    .bulk-bar { left: 0; }
+    .bulk-header { flex-direction: column; }
+    .bulk-filters { position: static; }
+    .bulk-table thead { display: none; }
+    .bulk-table tbody tr { display: grid; grid-template-columns: 1fr auto; gap: .35rem .7rem; padding: .7rem 1rem; }
+    .bulk-table td { border: none !important; padding: .15rem 0 !important; }
+    .bulk-table td.bulk-cell-stripe { display: none; }
+    .bulk-table td[data-cell="qty"] { grid-row: span 3; align-self: center; justify-self: end; }
+  }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="ui-page ui-page--with-bar">
+<div class="bulk-wrap">
 
-  <div class="ui-page-header">
+  <div class="bulk-header">
     <div>
       <h1>Conteo físico masivo</h1>
       <p>Captura el conteo real de varias variantes en una sola vuelta. Solo se ajustan las que cambian.</p>
     </div>
-    <div class="ui-page-actions">
+    <div class="bulk-actions">
       <a class="button" href="{% url 'admin:tienda_producto_inventory_matrix' %}">Mesa de stock</a>
       <a class="button" href="{% url 'admin:tienda_producto_inventory_dashboard' %}">Dashboard</a>
     </div>
   </div>
 
-  <div class="ui-guide">
+  <div class="bulk-guide">
     <strong>Qué cuenta esta pantalla —</strong> cada fila es una <strong>variante</strong> vendible (producto + color + talla).
     El número que captures <strong>reemplaza</strong> el stock actual y deja un movimiento de ajuste con la diferencia.
     Los productos con stock general no aparecen aquí.
@@ -35,37 +247,37 @@
     {% csrf_token %}
     {{ formset.management_form }}
 
-    <div class="ui-toolbar">
-      <input class="ui-input" id="bulk-search" type="search" placeholder="Buscar producto, color, talla o SKU…" autocomplete="off">
+    <div class="bulk-filters">
+      <input class="bulk-search" id="bulk-search" type="search" placeholder="Buscar producto, color, talla o SKU…" autocomplete="off">
 
-      <select class="ui-select" id="bulk-producto">
+      <select class="bulk-select" id="bulk-producto">
         <option value="">Todos los productos</option>
         {% for p in filter_productos %}<option value="{{ p|lower }}">{{ p }}</option>{% endfor %}
       </select>
 
-      <select class="ui-select" id="bulk-color">
+      <select class="bulk-select" id="bulk-color">
         <option value="">Todos los colores</option>
         {% for c in filter_colors %}<option value="{{ c|lower }}">{{ c }}</option>{% endfor %}
       </select>
 
-      <select class="ui-select" id="bulk-talla">
+      <select class="bulk-select" id="bulk-talla">
         <option value="">Todas las tallas</option>
         {% for t in filter_tallas %}<option value="{{ t|lower }}">{{ t }}</option>{% endfor %}
       </select>
 
-      <div class="ui-chips">
-        <button type="button" class="ui-chip bulk-chip active" data-estado="all">Todas</button>
-        <button type="button" class="ui-chip ui-chip--info bulk-chip" data-estado="changed">Modificadas</button>
-        <button type="button" class="ui-chip ui-chip--low bulk-chip" data-estado="low">Stock bajo</button>
-        <button type="button" class="ui-chip ui-chip--out bulk-chip" data-estado="out">Agotadas</button>
+      <div class="bulk-chips">
+        <button type="button" class="bulk-chip active" data-estado="all">Todas</button>
+        <button type="button" class="bulk-chip" data-estado="changed">Modificadas</button>
+        <button type="button" class="bulk-chip" data-estado="low">Stock bajo</button>
+        <button type="button" class="bulk-chip" data-estado="out">Agotadas</button>
       </div>
 
-      <button type="button" class="ui-link" id="bulk-clear">Limpiar filtros</button>
-      <span class="ui-counter" id="bulk-visible">{{ total_variants }} variantes</span>
+      <button type="button" class="bulk-linkbtn" id="bulk-clear">Limpiar filtros</button>
+      <span class="bulk-count" id="bulk-visible">{{ total_variants }} variantes</span>
     </div>
 
-    <div class="ui-panel">
-      <table class="ui-table" id="bulk-table">
+    <div class="bulk-card">
+      <table class="bulk-table" id="bulk-table">
         <thead>
           <tr>
             <th style="width:4px;padding:0"></th>
@@ -85,82 +297,82 @@
               data-color="{{ row.variant.color|lower }}"
               data-talla="{{ row.variant.talla|lower }}"
               data-sku="{{ row.variant.sku|default:''|lower }}">
-            <td class="ui-cell-stripe"><span class="ui-stripe"></span></td>
+            <td class="bulk-cell-stripe"><span class="bulk-stripe"></span></td>
             <td data-cell="product">
-              <div class="ui-media">
+              <div class="bulk-product">
                 {% if row.variant.display_image_url %}
-                  <img src="{{ row.variant.display_image_url }}" alt="{{ row.variant.product.nombre }}" class="ui-thumb">
+                  <img src="{{ row.variant.display_image_url }}" alt="{{ row.variant.product.nombre }}" class="bulk-product__thumb">
                 {% else %}
-                  <div class="ui-thumb--empty">Sin img</div>
+                  <div class="bulk-product__fallback">Sin img</div>
                 {% endif %}
                 <div>
-                  <div class="ui-name">{{ row.variant.product.nombre }}</div>
-                  <div class="ui-sub">{{ row.variant.product.subcategoria|default:"Sin subcategoría" }}</div>
+                  <div class="bulk-product__name">{{ row.variant.product.nombre }}</div>
+                  <div class="bulk-product__sub">{{ row.variant.product.subcategoria|default:"Sin subcategoría" }}</div>
                 </div>
               </div>
               {{ row.form.variant_id }}
             </td>
             <td data-cell="color">
-              <div class="ui-color">
-                <span class="ui-swatch bulk-swatch" data-color="{{ row.variant.color }}"></span>
-                <span class="ui-color-name">{{ row.variant.color }}</span>
+              <div class="bulk-color">
+                <span class="bulk-swatch" data-color="{{ row.variant.color }}"></span>
+                <span class="bulk-color-name">{{ row.variant.color }}</span>
               </div>
             </td>
-            <td data-cell="talla"><span class="ui-size">{{ row.variant.talla }}</span></td>
-            <td class="ui-sku" data-cell="sku">{{ row.variant.sku|default:"—" }}</td>
+            <td data-cell="talla"><span class="bulk-talla">{{ row.variant.talla }}</span></td>
+            <td class="bulk-sku" data-cell="sku">{{ row.variant.sku|default:"—" }}</td>
             <td data-cell="stock">
-              <div class="ui-stock">
-                <span class="ui-num">{{ row.variant.stock }}</span>
-                <span class="ui-badge"></span>
+              <div class="bulk-stock">
+                <span class="bulk-stock-num">{{ row.variant.stock }}</span>
+                <span class="bulk-badge"></span>
               </div>
             </td>
             <td data-cell="qty">
-              <div class="ui-stepper bulk-stepper">
+              <div class="bulk-stepper">
                 <button type="button" class="bulk-dec" tabindex="-1" aria-label="Restar una pieza">−</button>
                 {{ row.form.counted_stock }}
                 <button type="button" class="bulk-inc" tabindex="-1" aria-label="Sumar una pieza">+</button>
               </div>
             </td>
-            <td class="ui-delta" data-cell="diff">—</td>
+            <td class="bulk-diff" data-cell="diff">—</td>
           </tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
 
-    <div class="ui-panel ui-empty ui-hidden" id="bulk-noresults">
-      Ninguna variante coincide con los filtros. <button type="button" class="ui-link" id="bulk-clear-2">Limpiar filtros</button>
+    <div class="bulk-card bulk-empty bulk-noresults" id="bulk-noresults">
+      Ninguna variante coincide con los filtros. <button type="button" class="bulk-linkbtn" id="bulk-clear-2">Limpiar filtros</button>
     </div>
 
-    <div class="ui-panel ui-panel--pad">
+    <div class="bulk-card bulk-note-card">
       <label for="id_note" style="display:block;font-size:.74rem;text-transform:uppercase;letter-spacing:.07em;color:var(--cc-muted);font-weight:700;margin-bottom:.4rem;">Nota del conteo</label>
-      <textarea id="id_note" name="note" class="ui-textarea" placeholder="Ej. Conteo general del almacén y rack principal.">{{ note_value }}</textarea>
+      <textarea id="id_note" name="note" class="bulk-note" placeholder="Ej. Conteo general del almacén y rack principal.">{{ note_value }}</textarea>
     </div>
 
-    <div class="ui-bar">
-      <div class="ui-bar-stat">
-        <span class="ui-bar-label">Variantes con cambio</span>
-        <span class="ui-bar-value" id="bulk-sum-rows">0</span>
+    <div class="bulk-bar">
+      <div class="bulk-bar-stat">
+        <span class="bulk-bar-label">Variantes con cambio</span>
+        <span class="bulk-bar-value" id="bulk-sum-rows">0</span>
       </div>
-      <div class="ui-bar-stat">
-        <span class="ui-bar-label">Sobrante</span>
-        <span class="ui-bar-value is-up" id="bulk-sum-up">+0</span>
+      <div class="bulk-bar-stat">
+        <span class="bulk-bar-label">Sobrante</span>
+        <span class="bulk-bar-value is-up" id="bulk-sum-up">+0</span>
       </div>
-      <div class="ui-bar-stat">
-        <span class="ui-bar-label">Faltante</span>
-        <span class="ui-bar-value is-down" id="bulk-sum-down">0</span>
+      <div class="bulk-bar-stat">
+        <span class="bulk-bar-label">Faltante</span>
+        <span class="bulk-bar-value is-down" id="bulk-sum-down">0</span>
       </div>
-      <span class="ui-bar-hint" id="bulk-hint">Captura el conteo real para habilitar el guardado.</span>
-      <div class="ui-bar-right">
-        <button type="button" class="ui-link" id="bulk-reset">Volver al stock actual</button>
-        <button type="submit" class="button default ui-submit" id="bulk-submit" disabled>Guardar conteo masivo</button>
+      <span class="bulk-bar-hint" id="bulk-hint">Captura el conteo real para habilitar el guardado.</span>
+      <div class="bulk-bar-right">
+        <button type="button" class="bulk-linkbtn" id="bulk-reset">Volver al stock actual</button>
+        <button type="submit" class="button default bulk-submit" id="bulk-submit" disabled>Guardar conteo masivo</button>
       </div>
     </div>
   </form>
 
   {% else %}
-  <div class="ui-panel">
-    <div class="ui-empty">No hay variantes activas para contar. Genera variantes en tus productos para usar esta pantalla.</div>
+  <div class="bulk-card">
+    <div class="bulk-empty">No hay variantes activas para contar. Genera variantes en tus productos para usar esta pantalla.</div>
   </div>
   {% endif %}
 
@@ -191,8 +403,8 @@
 
   rows.forEach(tr => {
     const sk = status(parseInt(tr.dataset.stock) || 0);
-    const badge = tr.querySelector('.ui-badge');
-    badge.className = 'ui-badge ui-badge--' + sk;
+    const badge = tr.querySelector('.bulk-badge');
+    badge.className = 'bulk-badge bulk-badge--' + sk;
     badge.textContent = LABEL[sk];
   });
 
@@ -220,19 +432,19 @@
         blanks++;
         tr.classList.remove('is-changed');
         cell.textContent = '—';
-        cell.className = 'ui-delta';
+        cell.className = 'bulk-diff';
         return;
       }
       const diff = value - stock;
       tr.classList.toggle('is-changed', diff !== 0);
       if (diff === 0) {
         cell.textContent = 'Sin cambio';
-        cell.className = 'ui-delta';
+        cell.className = 'bulk-diff';
       } else {
         changed++;
         if (diff > 0) up += diff; else down += diff;
         cell.textContent = (diff > 0 ? '+' : '') + diff;
-        cell.className = 'ui-delta ' + (diff > 0 ? 'is-up' : 'is-down');
+        cell.className = 'bulk-diff ' + (diff > 0 ? 'is-up' : 'is-down');
       }
     });
 
