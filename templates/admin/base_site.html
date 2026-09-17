@@ -572,6 +572,11 @@
     #content { padding: 16px !important; }
   }
 </style>
+{# Componentes compartidos de las pantallas del admin (tarjetas, tablas,
+   badges, steppers, barra de acciones). Va después del <style> de arriba
+   para poder ganarle a los overrides globales; cada plantilla puede afinar
+   lo suyo en su propio bloque. Sube ?v= al editarlo: nginx cachea 30 días. #}
+<link rel="stylesheet" href="{% static 'css/admin-ui.css' %}?v=1">
 {% endblock %}
 
 {% block header %}{% endblock %}
