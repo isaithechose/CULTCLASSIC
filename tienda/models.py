@@ -599,6 +599,18 @@ class OrderItem(models.Model):
     product = models.ForeignKey(Producto, on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField()
     price = models.DecimalField(max_digits=10, decimal_places=2)
+    unit_cost = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name="Costo unitario",
+        help_text=(
+            "Costo del producto en el momento de la venta. Se congela aquí para que "
+            "la utilidad de un mes ya cerrado no cambie cuando recibas mercancía a "
+            "otro costo."
+        ),
+    )
     talla = models.CharField(max_length=10, blank=True, null=True)
     color = models.CharField(max_length=40, blank=True, null=True)
     diseño_pecho = models.CharField(max_length=255, blank=True, null=True)
@@ -607,6 +619,21 @@ class OrderItem(models.Model):
     @property
     def subtotal(self):
         return self.price * self.quantity
+
+    @property
+    def effective_unit_cost(self):
+        """Costo congelado; si la venta es anterior a este campo, el del producto."""
+        if self.unit_cost is not None:
+            return self.unit_cost
+        return Decimal(str(self.product.costo or 0))
+
+    @property
+    def cost_total(self):
+        return self.effective_unit_cost * self.quantity
+
+    @property
+    def profit_total(self):
+        return self.subtotal - self.cost_total
 
     def __str__(self):
         return f"{self.product.nombre} x {self.quantity}"

@@ -288,3 +288,61 @@ class ShippingNotificationSignalTests(TestCase):
         order.save(update_fields=["internal_note"])
 
         self.assertEqual(len(mail.outbox), 1)
+
+
+# ---------------------------------------------------------------------------
+# Costo congelado en la venta
+# ---------------------------------------------------------------------------
+
+
+class FrozenUnitCostTests(TestCase):
+    """El costo de lo vendido se guarda en la línea, no se recalcula después."""
+
+    def setUp(self):
+        self.producto = make_producto(precio=500)
+        self.producto.costo = Decimal("100.00")
+        self.producto.save(update_fields=["costo"])
+
+    def test_costo_de_la_linea_no_cambia_si_cambia_el_costo_del_producto(self):
+        order = Order.objects.create(status="Completed")
+        item = OrderItem.objects.create(
+            order=order,
+            product=self.producto,
+            quantity=2,
+            price=Decimal("500.00"),
+            unit_cost=Decimal("100.00"),
+        )
+        self.assertEqual(item.cost_total, Decimal("200.00"))
+        self.assertEqual(item.profit_total, Decimal("800.00"))
+
+        self.producto.costo = Decimal("400.00")
+        self.producto.save(update_fields=["costo"])
+        item.refresh_from_db()
+
+        self.assertEqual(item.effective_unit_cost, Decimal("100.00"))
+        self.assertEqual(item.cost_total, Decimal("200.00"))
+        self.assertEqual(item.profit_total, Decimal("800.00"))
+
+    def test_venta_vieja_sin_costo_congelado_cae_al_costo_del_producto(self):
+        order = Order.objects.create(status="Completed")
+        item = OrderItem.objects.create(
+            order=order,
+            product=self.producto,
+            quantity=1,
+            price=Decimal("500.00"),
+        )
+        self.assertIsNone(item.unit_cost)
+        self.assertEqual(item.effective_unit_cost, Decimal("100.00"))
+
+    def test_checkout_congela_el_costo_al_armar_el_pedido(self):
+        from tienda.views import _build_order_from_cart
+
+        order = Order.objects.create(status="Pending")
+        carrito = {
+            f"{self.producto.id}-M-negro--": {"cantidad": 3, "precio": "500.00"},
+        }
+        _build_order_from_cart(order, carrito, reset_checkout_state=False)
+
+        item = order.items.get()
+        self.assertEqual(item.unit_cost, Decimal("100.00"))
+        self.assertEqual(item.quantity, 3)

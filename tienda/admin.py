@@ -6,6 +6,7 @@ from django.contrib.admin.sites import AdminSite
 from django import forms
 from django.db import transaction
 from django.db.models import Case, Count, DecimalField, ExpressionWrapper, F, Prefetch, Sum, Value, When
+from django.db.models.functions import Coalesce
 from django.forms import formset_factory
 from django.http import HttpResponse, HttpResponseRedirect
 from django.template.response import TemplateResponse
@@ -166,7 +167,11 @@ def _post_order_journal_entry(order, lines, created_by=None):
     total = _money(order.total_price)
     cogs = Decimal("0.00")
     for line in lines:
-        cogs += _product_unit_cost(line["product"]) * Decimal(str(line["quantity"]))
+        # el mismo costo que se congela en OrderItem.unit_cost
+        unit_cost = line.get("unit_cost")
+        if unit_cost is None:
+            unit_cost = _product_unit_cost(line["product"])
+        cogs += _money(unit_cost) * Decimal(str(line["quantity"]))
 
     journal_lines = [
         {"account": _cash_account_for_method(order.payment_method), "debit": total, "description": "Cobro venta"},
@@ -392,7 +397,7 @@ def _compute_admin_overview_context():
     today_cogs = Decimal("0.00")
     for order in today_orders:
         for item in order.items.all():
-            today_cogs += _product_unit_cost(item.product) * item.quantity
+            today_cogs += item.effective_unit_cost * item.quantity
     today_profit = Decimal(str(today_sales)) - today_cogs - Decimal(str(today_expenses))
 
     # ── Vision board: serie de últimos 7 días + meta mensual + top productos ──
@@ -1117,7 +1122,7 @@ class SubcategoriaInline(admin.TabularInline):
 class OrderItemInline(admin.TabularInline):
     model = OrderItem
     extra = 0
-    fields = ("product", "talla", "color", "diseño_pecho", "diseño_espalda", "quantity", "price")
+    fields = ("product", "talla", "color", "diseño_pecho", "diseño_espalda", "quantity", "price", "unit_cost")
     autocomplete_fields = ("product",)
 
 
@@ -1870,7 +1875,7 @@ class ProductoAdmin(admin.ModelAdmin):
             .annotate(
                 revenue=Sum(F("price") * F("quantity")),
                 units=Sum("quantity"),
-                cogs=Sum(F("product__costo") * F("quantity")),
+                cogs=Sum(Coalesce(F("unit_cost"), F("product__costo")) * F("quantity")),
             )
         )
         # Pedidos por mes (desde Order)
@@ -2759,6 +2764,7 @@ class OrderAdmin(admin.ModelAdmin):
                                 "variant": variant,
                                 "quantity": int(quantity),
                                 "unit_price": unit_price if unit_price is not None else _variant_sale_price(variant),
+                                "unit_cost": _variant_unit_cost(variant),
                                 "talla": variant.talla,
                                 "color": variant.color,
                             }
@@ -2774,6 +2780,7 @@ class OrderAdmin(admin.ModelAdmin):
                                 "variant": None,
                                 "quantity": int(quantity),
                                 "unit_price": unit_price if unit_price is not None else _money(product.precio),
+                                "unit_cost": _product_unit_cost(product),
                                 "talla": "",
                                 "color": "",
                             }
@@ -2813,6 +2820,7 @@ class OrderAdmin(admin.ModelAdmin):
                                     product=line["product"],
                                     quantity=line["quantity"],
                                     price=line["unit_price"],
+                                    unit_cost=line["unit_cost"],
                                     talla=line["talla"],
                                     color=line["color"],
                                 )
@@ -4777,7 +4785,7 @@ class ExpenseAdmin(admin.ModelAdmin):
         estimated_cogs = Decimal("0.00")
         for order in month_orders:
             for item in order.items.all():
-                estimated_cogs += _product_unit_cost(item.product) * item.quantity
+                estimated_cogs += item.effective_unit_cost * item.quantity
 
         # COGS de ML: para cada item de pedido ML válido del mes, busca la publicación
         # enlazada (MercadoLibreListing.producto) y suma el costo unitario × cantidad.
@@ -5131,10 +5139,27 @@ class OrderItemAdmin(admin.ModelAdmin):
     list_select_related = ("order", "product")
     list_per_page = 50
     show_full_result_count = False
-    list_display = ("order", "product", "talla", "color", "quantity", "price")
+    list_display = ("order", "product", "talla", "color", "quantity", "price", "unit_cost_display", "profit_display")
     list_filter = ("order__status", "order__shipping_status")
     search_fields = ("order__id", "product__nombre")
     autocomplete_fields = ("order", "product")
+
+    @admin.display(description="Costo unitario", ordering="unit_cost")
+    def unit_cost_display(self, obj):
+        if obj.unit_cost is None:
+            # venta anterior al congelado: se muestra el costo actual del producto
+            return format_html(
+                '<span title="Venta anterior al costo congelado: se usa el costo actual del producto." '
+                'style="color:#888;">${}  ~</span>',
+                f"{obj.effective_unit_cost:.2f}",
+            )
+        return f"${obj.unit_cost:.2f}"
+
+    @admin.display(description="Utilidad")
+    def profit_display(self, obj):
+        profit = obj.profit_total
+        color = "#2dbe6c" if profit >= 0 else "#e05050"
+        return format_html('<span style="color:{};font-weight:700;">${}</span>', color, f"{profit:.2f}")
 
 
 @admin.register(Carrito)

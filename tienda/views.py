@@ -439,6 +439,13 @@ def submit_reseña(request, producto_id):
 
 def _build_order_from_cart(order, carrito, reset_checkout_state=True):
     order.items.all().delete()
+    # Costo de cada producto en este momento: se congela en la línea del pedido
+    # para que la utilidad histórica no cambie si luego cambia el costo.
+    costos = dict(
+        Producto.objects.filter(
+            id__in=[k.split("-", 4)[0] for k in carrito if len(k.split("-", 4)) == 5]
+        ).values_list("id", "costo")
+    )
     for key, item in carrito.items():
         parts = key.split("-", 4)
         if len(parts) != 5:
@@ -449,6 +456,7 @@ def _build_order_from_cart(order, carrito, reset_checkout_state=True):
             product_id=product_id,
             quantity=item["cantidad"],
             price=Decimal(str(item["precio"])),
+            unit_cost=Decimal(str(costos.get(int(product_id)) or 0)),
             talla=talla,
             color=color,
             diseño_pecho=diseño_pecho or "",
