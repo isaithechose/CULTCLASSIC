@@ -1,0 +1,247 @@
+{% extends "admin/base_site.html" %}
+{% load humanize %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+  .fin-wrap { max-width: 1320px; }
+
+  .fin-header {
+    background: var(--cc-panel) !important;
+    border: 1px solid var(--cc-border) !important;
+    border-radius: 14px;
+    padding: 1.3rem 1.5rem;
+    margin-bottom: 1rem;
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 1rem; flex-wrap: wrap;
+  }
+  .fin-header h1 { margin: 0 0 .25rem; font-size: 1.25rem; }
+  .fin-header p { margin: 0; color: var(--cc-muted); font-size: .9rem; }
+  .fin-nav { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
+  .fin-nav strong { color: #fff !important; min-width: 9rem; text-align: center; }
+
+  .fin-kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: .8rem;
+    margin-bottom: 1rem;
+  }
+  .fin-kpi {
+    background: var(--cc-panel) !important;
+    border: 1px solid var(--cc-border) !important;
+    border-radius: 14px;
+    padding: 1rem 1.1rem;
+  }
+  .fin-kpi-label { font-size: .7rem; text-transform: uppercase; letter-spacing: .08em; color: var(--cc-muted) !important; font-weight: 700; }
+  .fin-kpi-value { font-size: 1.55rem; font-weight: 800; color: #fff !important; margin-top: .3rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .fin-kpi-value.is-ok { color: var(--cc-green) !important; }
+  .fin-kpi-value.is-bad { color: var(--cc-red) !important; }
+  .fin-kpi-hint { font-size: .78rem; color: var(--cc-muted) !important; margin-top: .25rem; }
+
+  .fin-avisos { display: grid; gap: .6rem; margin-bottom: 1rem; }
+  .fin-aviso {
+    display: flex; gap: .9rem; align-items: flex-start;
+    padding: .85rem 1.1rem; border-radius: 14px;
+    border: 1px solid var(--cc-border-2); background: #161616;
+  }
+  .fin-aviso--danger { border-color: rgba(224,80,80,.4); background: rgba(224,80,80,.08); }
+  .fin-aviso--warn { border-color: rgba(240,165,0,.4); background: rgba(240,165,0,.07); }
+  .fin-aviso--info { border-color: rgba(74,158,255,.35); background: rgba(74,158,255,.07); }
+  .fin-aviso-body { flex: 1; min-width: 0; }
+  .fin-aviso-title { font-weight: 700; color: #fff !important; font-size: .92rem; }
+  .fin-aviso-text { color: var(--cc-muted) !important; font-size: .86rem; margin-top: .2rem; line-height: 1.5; }
+  .fin-aviso a.button { white-space: nowrap; }
+
+  .fin-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 1rem; margin-bottom: 1rem; }
+  .fin-panel {
+    background: var(--cc-panel) !important;
+    border: 1px solid var(--cc-border) !important;
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .fin-panel-head {
+    display: flex; justify-content: space-between; align-items: center; gap: 1rem;
+    padding: .9rem 1.1rem; border-bottom: 1px solid var(--cc-border); background: #141414;
+  }
+  .fin-panel-head h2 { margin: 0; font-size: .98rem; }
+  .fin-panel-body { padding: .4rem 0; }
+  .fin-row {
+    display: grid; grid-template-columns: 1fr auto; gap: 1rem;
+    padding: .6rem 1.1rem; align-items: center;
+  }
+  .fin-row + .fin-row { border-top: 1px solid var(--cc-border); }
+  .fin-row-label { color: #ccc !important; font-size: .89rem; }
+  .fin-row-sub { display: block; color: var(--cc-muted) !important; font-size: .78rem; margin-top: 2px; }
+  .fin-row-value { font-weight: 800; color: #fff !important; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .fin-row-value.is-ok { color: var(--cc-green) !important; }
+  .fin-row-value.is-bad { color: var(--cc-red) !important; }
+  .fin-row.is-total { background: #141414; }
+  .fin-row.is-total .fin-row-label { color: #fff !important; font-weight: 700; }
+
+  .fin-badge {
+    display: inline-flex; align-items: center; gap: .3rem;
+    padding: .2rem .55rem; border-radius: 999px; font-size: .72rem; font-weight: 700;
+  }
+  .fin-badge--ok { color: var(--cc-green) !important; background: rgba(45,190,108,.13); }
+  .fin-badge--warn { color: var(--cc-yellow) !important; background: rgba(240,165,0,.13); }
+  .fin-badge--danger { color: var(--cc-red) !important; background: rgba(224,80,80,.13); }
+  .fin-badge--muted { color: var(--cc-muted) !important; background: #1f1f1f; }
+  .fin-badge--neutral { color: #ccc !important; background: #1f1f1f; }
+
+  .fin-links { display: flex; gap: .6rem; flex-wrap: wrap; }
+
+  html.light-mode .fin-header, html.light-mode .fin-kpi, html.light-mode .fin-panel { background: #fff !important; border-color: #e5e7eb !important; }
+  html.light-mode .fin-panel-head, html.light-mode .fin-row.is-total { background: #f8fafc; }
+  html.light-mode .fin-kpi-value, html.light-mode .fin-row-value, html.light-mode .fin-aviso-title, html.light-mode .fin-nav strong { color: #111827 !important; }
+  html.light-mode .fin-row-label { color: #374151 !important; }
+  html.light-mode .fin-aviso { background: #f8fafc; }
+
+  @media (max-width: 900px) { .fin-header { flex-direction: column; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="fin-wrap">
+
+  <div class="fin-header">
+    <div>
+      <h1>Finanzas</h1>
+      <p>Cómo va el negocio en {{ month_label }}: resultado, efectivo y salud financiera.</p>
+    </div>
+    <div class="fin-nav">
+      <a class="button" href="?month={{ previous_month }}">← Mes anterior</a>
+      <strong>{{ month_label }}</strong>
+      <a class="button" href="?month={{ next_month }}">Mes siguiente →</a>
+    </div>
+  </div>
+
+  {% if avisos %}
+  <div class="fin-avisos">
+    {% for aviso in avisos %}
+    <div class="fin-aviso fin-aviso--{{ aviso.tono }}">
+      <div class="fin-aviso-body">
+        <div class="fin-aviso-title">{{ aviso.titulo }}</div>
+        <div class="fin-aviso-text">{{ aviso.detalle }}</div>
+      </div>
+      <a class="button" href="{{ aviso.url }}">{{ aviso.accion }}</a>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="fin-kpis">
+    <div class="fin-kpi">
+      <div class="fin-kpi-label">Ingresos del mes</div>
+      <div class="fin-kpi-value">${{ total_income|floatformat:2|intcomma }}</div>
+      <div class="fin-kpi-hint">Ventas, envíos y descuentos</div>
+    </div>
+    <div class="fin-kpi">
+      <div class="fin-kpi-label">Utilidad bruta</div>
+      <div class="fin-kpi-value">${{ gross_profit|floatformat:2|intcomma }}</div>
+      <div class="fin-kpi-hint">Después del costo del producto</div>
+    </div>
+    <div class="fin-kpi">
+      <div class="fin-kpi-label">Utilidad neta</div>
+      <div class="fin-kpi-value {% if net_profit >= 0 %}is-ok{% else %}is-bad{% endif %}">${{ net_profit|floatformat:2|intcomma }}</div>
+      <div class="fin-kpi-hint">Ya con gastos de operación</div>
+    </div>
+    <div class="fin-kpi">
+      <div class="fin-kpi-label">Efectivo al cierre</div>
+      <div class="fin-kpi-value">${{ flow_closing|floatformat:2|intcomma }}</div>
+      <div class="fin-kpi-hint">Caja + bancos</div>
+    </div>
+    <div class="fin-kpi">
+      <div class="fin-kpi-label">Flujo del mes</div>
+      <div class="fin-kpi-value {% if flow_net_change >= 0 %}is-ok{% else %}is-bad{% endif %}">${{ flow_net_change|floatformat:2|intcomma }}</div>
+      <div class="fin-kpi-hint">Entró menos salió</div>
+    </div>
+    <div class="fin-kpi">
+      <div class="fin-kpi-label">Capital de trabajo</div>
+      <div class="fin-kpi-value {% if ratio_base.capital_trabajo >= 0 %}is-ok{% else %}is-bad{% endif %}">${{ ratio_base.capital_trabajo|floatformat:2|intcomma }}</div>
+      <div class="fin-kpi-hint">Circulante menos deuda corta</div>
+    </div>
+  </div>
+
+  <div class="fin-grid">
+
+    <div class="fin-panel">
+      <div class="fin-panel-head">
+        <h2>Resultado del mes</h2>
+        <a class="button" href="{% url 'admin:tienda_journalentry_income_statement' %}?month={{ current_month_value }}">Estado de resultados</a>
+      </div>
+      <div class="fin-panel-body">
+        <div class="fin-row"><span class="fin-row-label">Ingresos</span><span class="fin-row-value">${{ total_income|floatformat:2|intcomma }}</span></div>
+        <div class="fin-row"><span class="fin-row-label">Costo de ventas</span><span class="fin-row-value">−${{ total_cost|floatformat:2|intcomma }}</span></div>
+        <div class="fin-row is-total"><span class="fin-row-label">Utilidad bruta</span><span class="fin-row-value">${{ gross_profit|floatformat:2|intcomma }}</span></div>
+        <div class="fin-row"><span class="fin-row-label">Gastos de operación</span><span class="fin-row-value">−${{ total_expense|floatformat:2|intcomma }}</span></div>
+        <div class="fin-row is-total">
+          <span class="fin-row-label">Utilidad neta</span>
+          <span class="fin-row-value {% if net_profit >= 0 %}is-ok{% else %}is-bad{% endif %}">${{ net_profit|floatformat:2|intcomma }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="fin-panel">
+      <div class="fin-panel-head">
+        <h2>Efectivo</h2>
+        <a class="button" href="{% url 'admin:tienda_journalentry_cash_flow' %}?month={{ current_month_value }}">Flujo completo</a>
+      </div>
+      <div class="fin-panel-body">
+        <div class="fin-row"><span class="fin-row-label">Saldo inicial</span><span class="fin-row-value">${{ flow_opening|floatformat:2|intcomma }}</span></div>
+        <div class="fin-row"><span class="fin-row-label">Entradas</span><span class="fin-row-value is-ok">+${{ flow_total_in|floatformat:2|intcomma }}</span></div>
+        <div class="fin-row"><span class="fin-row-label">Salidas</span><span class="fin-row-value is-bad">−${{ flow_total_out|floatformat:2|intcomma }}</span></div>
+        <div class="fin-row is-total"><span class="fin-row-label">Saldo final</span><span class="fin-row-value">${{ flow_closing|floatformat:2|intcomma }}</span></div>
+        {% if not flow_check_ok %}
+        <div class="fin-row"><span class="fin-row-label">Revisión<span class="fin-row-sub">El saldo calculado no coincide con el contable (${{ flow_closing_real|floatformat:2|intcomma }}).</span></span><span class="fin-badge fin-badge--danger">Revisar</span></div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="fin-panel">
+      <div class="fin-panel-head">
+        <h2>Posición al {{ month_end }}</h2>
+        <a class="button" href="{% url 'admin:tienda_journalentry_balance_sheet' %}?month={{ current_month_value }}">Balance general</a>
+      </div>
+      <div class="fin-panel-body">
+        <div class="fin-row"><span class="fin-row-label">Activo total</span><span class="fin-row-value">${{ total_assets|floatformat:2|intcomma }}</span></div>
+        <div class="fin-row"><span class="fin-row-label">Pasivo total</span><span class="fin-row-value">${{ total_liabilities|floatformat:2|intcomma }}</span></div>
+        <div class="fin-row"><span class="fin-row-label">Capital + resultado</span><span class="fin-row-value">${{ total_liabilities_equity|floatformat:2|intcomma }}</span></div>
+        <div class="fin-row is-total">
+          <span class="fin-row-label">Diferencia</span>
+          <span class="fin-row-value {% if difference %}is-bad{% else %}is-ok{% endif %}">${{ difference|floatformat:2|intcomma }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="fin-panel">
+      <div class="fin-panel-head">
+        <h2>Razones clave</h2>
+        <a class="button" href="{% url 'admin:tienda_journalentry_financial_ratios' %}?month={{ current_month_value }}">Ver todas</a>
+      </div>
+      <div class="fin-panel-body">
+        {% for grupo in ratio_groups %}{% for razon in grupo.razones %}{% if forloop.first %}
+        <div class="fin-row">
+          <span class="fin-row-label">{{ razon.nombre }}<span class="fin-row-sub">{{ razon.lectura }}</span></span>
+          <span class="fin-badge fin-badge--{{ razon.tono }}">{{ razon.display }}</span>
+        </div>
+        {% endif %}{% endfor %}{% endfor %}
+      </div>
+    </div>
+
+  </div>
+
+  <div class="fin-panel">
+    <div class="fin-panel-head"><h2>Otros reportes</h2></div>
+    <div class="fin-panel-body" style="padding:1rem 1.1rem;">
+      <div class="fin-links">
+        <a class="button" href="{% url 'admin:tienda_journalentry_trial_balance' %}?month={{ current_month_value }}">Balanza de comprobación</a>
+        <a class="button" href="{% url 'admin:tienda_moneyaccount_changelist' %}">Conciliación bancaria</a>
+        <a class="button" href="{% url 'admin:tienda_expense_accounting_dashboard' %}">Dashboard contable</a>
+        <a class="button" href="{% url 'admin:tienda_producto_monthly_sales' %}">Ventas por mes</a>
+        <a class="button" href="{% url 'admin:tienda_journalentry_unbalanced' %}">Pólizas descuadradas</a>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

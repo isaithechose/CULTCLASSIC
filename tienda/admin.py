@@ -3781,6 +3781,21 @@ class JournalEntryAdmin(admin.ModelAdmin):
                 name="tienda_journalentry_generate_missing",
             ),
             path(
+                "finanzas/",
+                self.admin_site.admin_view(self.finance_dashboard_view),
+                name="tienda_journalentry_finance_dashboard",
+            ),
+            path(
+                "flujo-de-efectivo/",
+                self.admin_site.admin_view(self.cash_flow_view),
+                name="tienda_journalentry_cash_flow",
+            ),
+            path(
+                "razones-financieras/",
+                self.admin_site.admin_view(self.financial_ratios_view),
+                name="tienda_journalentry_financial_ratios",
+            ),
+            path(
                 "income-statement/",
                 self.admin_site.admin_view(self.income_statement_view),
                 name="tienda_journalentry_income_statement",
@@ -4145,6 +4160,481 @@ class JournalEntryAdmin(admin.ModelAdmin):
             "difference": difference,
             "end_date": end_date,
         }
+
+    # ── Finanzas ────────────────────────────────────────────────────────────
+    # Cuentas que representan dinero disponible. El flujo de efectivo mira los
+    # movimientos de estas cuentas y clasifica cada uno por su contrapartida.
+    CASH_CODES = ("1000", "1010")
+
+    # Clasificación del flujo por la cuenta de contrapartida.
+    FLOW_CATEGORIES = {
+        "4000": ("operacion", "Cobros de venta"),
+        "4010": ("operacion", "Descuentos sobre ventas"),
+        "4020": ("operacion", "Cobros por envío"),
+        "1020": ("operacion", "Cobros de terminal"),
+        "1200": ("operacion", "Cobranza a clientes"),
+        "1100": ("operacion", "Compra de inventario"),
+        "5000": ("operacion", "Costo de ventas pagado"),
+        "6000": ("operacion", "Gastos de operación"),
+        "2000": ("operacion", "Pago a proveedores"),
+        "2100": ("financiamiento", "Tarjetas de crédito"),
+        "3000": ("financiamiento", "Aportaciones y retiros de capital"),
+    }
+    FLOW_SECTION_LABELS = {
+        "operacion": "Actividades de operación",
+        "inversion": "Actividades de inversión",
+        "financiamiento": "Actividades de financiamiento",
+    }
+
+    def _cash_balance_at(self, date_to, date_from=None):
+        """Saldo (o variación) de las cuentas de efectivo hasta una fecha."""
+        queryset = JournalEntryLine.objects.filter(
+            journal_entry__is_posted=True,
+            account__code__in=self.CASH_CODES,
+            journal_entry__date__lte=date_to,
+        )
+        if date_from:
+            queryset = queryset.filter(journal_entry__date__gte=date_from)
+        totals = queryset.aggregate(d=Sum("debit"), c=Sum("credit"))
+        return _money(totals["d"]) - _money(totals["c"])
+
+    def _cash_flow_data(self, bounds):
+        start, end = bounds["month_start"], bounds["month_end"]
+        opening = self._cash_balance_at(start - timedelta(days=1))
+
+        # Pólizas del periodo que tocan efectivo, con todas sus líneas.
+        entries = (
+            JournalEntry.objects.filter(
+                is_posted=True,
+                date__gte=start,
+                date__lte=end,
+                lines__account__code__in=self.CASH_CODES,
+            )
+            .distinct()
+            .prefetch_related("lines__account")
+            .order_by("date", "id")
+        )
+
+        sections = {key: {} for key in self.FLOW_SECTION_LABELS}
+        sin_clasificar = []
+        total_in = Decimal("0.00")
+        total_out = Decimal("0.00")
+
+        for entry in entries:
+            cash_delta = Decimal("0.00")
+            counterparts = []
+            for line in entry.lines.all():
+                if line.account.code in self.CASH_CODES:
+                    cash_delta += line.debit - line.credit
+                else:
+                    counterparts.append(line)
+            if cash_delta == 0:
+                continue
+
+            # La contrapartida de mayor importe define la categoría.
+            counterparts.sort(key=lambda l: max(l.debit, l.credit), reverse=True)
+            code = counterparts[0].account.code if counterparts else ""
+            section, label = self.FLOW_CATEGORIES.get(code, ("operacion", "Otros movimientos"))
+            if not counterparts:
+                sin_clasificar.append(entry)
+
+            bucket = sections[section].setdefault(
+                label, {"label": label, "inflow": Decimal("0.00"), "outflow": Decimal("0.00"), "count": 0}
+            )
+            if cash_delta > 0:
+                bucket["inflow"] += cash_delta
+                total_in += cash_delta
+            else:
+                bucket["outflow"] += -cash_delta
+                total_out += -cash_delta
+            bucket["count"] += 1
+
+        flow_sections = []
+        for key, label in self.FLOW_SECTION_LABELS.items():
+            rows = sorted(sections[key].values(), key=lambda r: r["inflow"] + r["outflow"], reverse=True)
+            for row in rows:
+                row["net"] = row["inflow"] - row["outflow"]
+            net = sum((row["net"] for row in rows), Decimal("0.00"))
+            flow_sections.append({"key": key, "label": label, "rows": rows, "net": net})
+
+        net_change = total_in - total_out
+        closing = opening + net_change
+        closing_real = self._cash_balance_at(end)
+
+        # ── Método indirecto: de la utilidad al efectivo ──
+        statement = self._income_statement_data(bounds)
+        working_capital_codes = {
+            "1100": "Inventario",
+            "1200": "Clientes",
+            "2000": "Proveedores",
+            "2100": "Tarjetas de crédito",
+        }
+        adjustments = []
+        for code, name in working_capital_codes.items():
+            totals = JournalEntryLine.objects.filter(
+                journal_entry__is_posted=True,
+                journal_entry__date__gte=start,
+                journal_entry__date__lte=end,
+                account__code=code,
+            ).aggregate(d=Sum("debit"), c=Sum("credit"))
+            variation = _money(totals["d"]) - _money(totals["c"])
+            if variation == 0:
+                continue
+            account = AccountingAccount.objects.filter(code=code).first()
+            is_asset = account is not None and account.account_type == "asset"
+            # Más activo circulante consume efectivo; más pasivo lo libera.
+            effect = -variation if is_asset else variation
+            adjustments.append({
+                "name": name,
+                "variation": variation,
+                "effect": effect,
+                "hint": ("Aumento de activo: consume efectivo" if is_asset and variation > 0 else
+                         "Disminución de activo: libera efectivo" if is_asset else
+                         "Aumento de pasivo: libera efectivo" if variation > 0 else
+                         "Pago de pasivo: consume efectivo"),
+            })
+        indirect_total = statement["net_profit"] + sum((a["effect"] for a in adjustments), Decimal("0.00"))
+
+        return {
+            "flow_sections": flow_sections,
+            "flow_opening": opening,
+            "flow_total_in": total_in,
+            "flow_total_out": total_out,
+            "flow_net_change": net_change,
+            "flow_closing": closing,
+            "flow_closing_real": closing_real,
+            "flow_check_ok": abs(closing - closing_real) < Decimal("0.01"),
+            "flow_unclassified": len(sin_clasificar),
+            "flow_net_profit": statement["net_profit"],
+            "flow_adjustments": adjustments,
+            "flow_indirect_total": indirect_total,
+            "flow_indirect_matches": abs(indirect_total - net_change) < Decimal("0.01"),
+        }
+
+    def _ratio(self, numerator, denominator):
+        if not denominator:
+            return None
+        return Decimal(str(numerator)) / Decimal(str(denominator))
+
+    def _financial_ratios_data(self, bounds):
+        start, end = bounds["month_start"], bounds["month_end"]
+        balance = self._balance_sheet_data(bounds)
+        statement = self._income_statement_data(bounds)
+
+        def saldo(code, date_to=None):
+            totals = JournalEntryLine.objects.filter(
+                journal_entry__is_posted=True,
+                account__code=code,
+                journal_entry__date__lte=date_to or end,
+            ).aggregate(d=Sum("debit"), c=Sum("credit"))
+            account = AccountingAccount.objects.filter(code=code).first()
+            debit, credit = _money(totals["d"]), _money(totals["c"])
+            if account is not None and account.account_type in ("liability", "equity", "income"):
+                return credit - debit
+            return debit - credit
+
+        efectivo = self._cash_balance_at(end)
+        inventario = saldo("1100")
+        clientes = saldo("1200")
+        terminal = saldo("1020")
+        proveedores = saldo("2000")
+        tarjetas = saldo("2100")
+
+        activo_circulante = efectivo + inventario + clientes + terminal
+        pasivo_corto = proveedores + tarjetas
+        capital_trabajo = activo_circulante - pasivo_corto
+
+        ingresos = statement["total_income"]
+        costo = statement["total_cost"]
+        gastos = statement["total_expense"]
+        utilidad_bruta = statement["gross_profit"]
+        utilidad_neta = statement["net_profit"]
+        activos = balance["total_assets"]
+        pasivos = balance["total_liabilities"]
+        capital = balance["total_equity"] + balance["accumulated_result"]
+
+        dias = (end - start).days + 1
+        margen_contribucion = self._ratio(utilidad_bruta, ingresos)
+
+        grupos = [
+            {
+                "titulo": "Liquidez",
+                "descripcion": "Si el negocio puede cubrir lo que debe en el corto plazo.",
+                "razones": [
+                    {"nombre": "Razón corriente", "formula": "Activo circulante ÷ Pasivo corto plazo",
+                     "valor": self._ratio(activo_circulante, pasivo_corto), "formato": "veces",
+                     "referencia": "Sano arriba de 1.5",
+                     "lectura": "Por cada peso que debes a corto plazo, tienes este tanto disponible."},
+                    {"nombre": "Prueba ácida", "formula": "(Activo circulante − Inventario) ÷ Pasivo corto plazo",
+                     "valor": self._ratio(activo_circulante - inventario, pasivo_corto), "formato": "veces",
+                     "referencia": "Sano arriba de 1.0",
+                     "lectura": "Lo mismo, pero sin contar con vender el inventario."},
+                    {"nombre": "Capital de trabajo", "formula": "Activo circulante − Pasivo corto plazo",
+                     "valor": capital_trabajo, "formato": "dinero",
+                     "referencia": "Debe ser positivo",
+                     "lectura": "Lo que te queda si pagas hoy todo lo de corto plazo."},
+                ],
+            },
+            {
+                "titulo": "Rentabilidad",
+                "descripcion": "Cuánto de lo que vendes se convierte en utilidad.",
+                "razones": [
+                    {"nombre": "Margen bruto", "formula": "Utilidad bruta ÷ Ingresos",
+                     "valor": self._ratio(utilidad_bruta, ingresos), "formato": "porcentaje",
+                     "referencia": "En ropa, 50% o más",
+                     "lectura": "De cada peso vendido, esto queda después del costo del producto."},
+                    {"nombre": "Margen neto", "formula": "Utilidad neta ÷ Ingresos",
+                     "valor": self._ratio(utilidad_neta, ingresos), "formato": "porcentaje",
+                     "referencia": "Depende del giro",
+                     "lectura": "De cada peso vendido, esto queda ya con todos los gastos."},
+                    {"nombre": "Peso de los gastos", "formula": "Gastos ÷ Ingresos",
+                     "valor": self._ratio(gastos, ingresos), "formato": "porcentaje",
+                     "referencia": "Mientras más bajo, mejor",
+                     "lectura": "Qué parte de tus ventas se va en gastos de operación."},
+                    {"nombre": "Rendimiento sobre activos", "formula": "Utilidad neta ÷ Activo total",
+                     "valor": self._ratio(utilidad_neta, activos), "formato": "porcentaje",
+                     "referencia": "Comparar contra meses previos",
+                     "lectura": "Cuánta utilidad saca el negocio de todo lo que tiene invertido."},
+                ],
+            },
+            {
+                "titulo": "Endeudamiento",
+                "descripcion": "Qué parte del negocio se financia con deuda.",
+                "razones": [
+                    {"nombre": "Deuda sobre activos", "formula": "Pasivo total ÷ Activo total",
+                     "valor": self._ratio(pasivos, activos), "formato": "porcentaje",
+                     "referencia": "Prudente abajo de 50%",
+                     "lectura": "Qué porcentaje de lo que tienes le pertenece a terceros."},
+                    {"nombre": "Deuda sobre capital", "formula": "Pasivo total ÷ Capital contable",
+                     "valor": self._ratio(pasivos, capital), "formato": "veces",
+                     "referencia": "Prudente abajo de 1.0",
+                     "lectura": "Cuántos pesos debes por cada peso propio metido en el negocio."},
+                ],
+            },
+            {
+                "titulo": "Actividad",
+                "descripcion": "Qué tan rápido se mueve el inventario y el dinero.",
+                "razones": [
+                    {"nombre": "Rotación de inventario", "formula": "Costo de ventas ÷ Inventario",
+                     "valor": self._ratio(costo, inventario) if inventario > 0 else None, "formato": "veces",
+                     "referencia": "Más alto es mejor",
+                     "lectura": "Cuántas veces vendiste tu inventario completo en el periodo."},
+                    {"nombre": "Días de inventario", "formula": "Días del periodo ÷ Rotación",
+                     "valor": (self._ratio(Decimal(dias), self._ratio(costo, inventario))
+                               if inventario > 0 and costo else None), "formato": "dias",
+                     "referencia": "Mientras menos, mejor",
+                     "lectura": "Cuántos días tarda en venderse lo que tienes en bodega."},
+                    {"nombre": "Días de cobro", "formula": "(Clientes ÷ Ingresos) × Días",
+                     "valor": (self._ratio(clientes, ingresos) * Decimal(dias)) if ingresos and clientes else None,
+                     "formato": "dias", "referencia": "Mientras menos, mejor",
+                     "lectura": "Cuánto tardas en cobrar lo que vendes a crédito."},
+                    {"nombre": "Días de pago", "formula": "(Proveedores ÷ Costo de ventas) × Días",
+                     "valor": (self._ratio(proveedores, costo) * Decimal(dias)) if costo and proveedores else None,
+                     "formato": "dias", "referencia": "Más días te dan aire",
+                     "lectura": "Cuánto tardas en pagarle a tus proveedores."},
+                ],
+            },
+            {
+                "titulo": "Punto de equilibrio",
+                "descripcion": "Cuánto necesitas vender para no perder.",
+                "razones": [
+                    {"nombre": "Ventas de equilibrio", "formula": "Gastos ÷ Margen bruto",
+                     "valor": (self._ratio(gastos, margen_contribucion) if margen_contribucion else None),
+                     "formato": "dinero", "referencia": f"Vendiste ${ingresos:,.2f}",
+                     "lectura": "Con este nivel de ventas cubres costo y gastos, sin ganar ni perder."},
+                    {"nombre": "Margen de seguridad", "formula": "(Ventas − Equilibrio) ÷ Ventas",
+                     "valor": (self._ratio(ingresos - (gastos / margen_contribucion), ingresos)
+                               if margen_contribucion and ingresos else None),
+                     "formato": "porcentaje", "referencia": "Mientras más alto, mejor",
+                     "lectura": "Cuánto pueden caer tus ventas antes de empezar a perder."},
+                ],
+            },
+        ]
+
+        # Con inventario negativo (compras que no capitalizan) varias razones
+        # mienten: la prueba ácida sale MAYOR que la razón corriente porque
+        # restar un negativo suma. Se marcan en vez de presentarlas como buenas.
+        inventario_confiable = inventario >= 0
+        afectadas_por_inventario = {
+            "Razón corriente", "Prueba ácida", "Capital de trabajo",
+            "Rotación de inventario", "Días de inventario",
+            "Rendimiento sobre activos", "Deuda sobre activos", "Deuda sobre capital",
+        }
+        if not inventario_confiable:
+            for grupo in grupos:
+                for razon in grupo["razones"]:
+                    if razon["nombre"] in afectadas_por_inventario:
+                        razon["afectada"] = "El inventario tiene saldo negativo: este número no es confiable."
+
+        self._format_ratios(grupos)
+
+        return {
+            "ratio_groups": grupos,
+            "inventario_confiable": inventario_confiable,
+            "ratio_base": {
+                "efectivo": efectivo, "inventario": inventario, "clientes": clientes,
+                "terminal": terminal, "proveedores": proveedores, "tarjetas": tarjetas,
+                "activo_circulante": activo_circulante, "pasivo_corto": pasivo_corto,
+                "capital_trabajo": capital_trabajo, "ingresos": ingresos, "costo": costo,
+                "gastos": gastos, "utilidad_bruta": utilidad_bruta, "utilidad_neta": utilidad_neta,
+                "activos": activos, "pasivos": pasivos, "capital": capital, "dias": dias,
+            },
+        }
+
+    # Umbrales para colorear. Solo se pinta lo que tiene una lectura clara;
+    # el resto queda neutro para no inventar semáforos.
+    RATIO_THRESHOLDS = {
+        "Razón corriente": (Decimal("1.5"), Decimal("1"), "mayor"),
+        "Prueba ácida": (Decimal("1"), Decimal("0.8"), "mayor"),
+        "Capital de trabajo": (Decimal("0.01"), Decimal("0"), "mayor"),
+        "Margen bruto": (Decimal("0.5"), Decimal("0.3"), "mayor"),
+        "Margen neto": (Decimal("0.1"), Decimal("0"), "mayor"),
+        "Peso de los gastos": (Decimal("0.3"), Decimal("0.5"), "menor"),
+        "Deuda sobre activos": (Decimal("0.5"), Decimal("0.7"), "menor"),
+        "Deuda sobre capital": (Decimal("1"), Decimal("2"), "menor"),
+        "Margen de seguridad": (Decimal("0.3"), Decimal("0"), "mayor"),
+    }
+
+    def _format_ratios(self, grupos):
+        for grupo in grupos:
+            for razon in grupo["razones"]:
+                valor = razon.get("valor")
+                formato = razon.get("formato")
+                if valor is None:
+                    razon["display"] = "Sin dato"
+                    razon["tono"] = "muted"
+                    razon["detalle_sin_dato"] = True
+                    continue
+                valor = Decimal(str(valor))
+                if formato == "porcentaje":
+                    razon["display"] = f"{valor * 100:.1f}%"
+                elif formato == "veces":
+                    razon["display"] = f"{valor:.2f}×"
+                elif formato == "dias":
+                    razon["display"] = f"{valor:.0f} días"
+                else:
+                    razon["display"] = f"${valor:,.2f}"
+
+                if razon.get("afectada"):
+                    # no se pinta de verde algo calculado sobre datos rotos
+                    razon["tono"] = "warn"
+                    continue
+
+                bien, regular, sentido = self.RATIO_THRESHOLDS.get(razon["nombre"], (None, None, None))
+                if bien is None:
+                    razon["tono"] = "neutral"
+                elif sentido == "mayor":
+                    razon["tono"] = "ok" if valor >= bien else ("warn" if valor >= regular else "danger")
+                else:
+                    razon["tono"] = "ok" if valor <= bien else ("warn" if valor <= regular else "danger")
+
+    def _finance_health_checks(self, bounds):
+        """Avisos sobre datos que harían mentir a los estados financieros."""
+        end = bounds["month_end"]
+        avisos = []
+
+        balance = self._balance_sheet_data(bounds)
+        if abs(balance["difference"]) >= Decimal("0.01"):
+            avisos.append({
+                "tono": "danger",
+                "titulo": "El balance no cuadra",
+                "detalle": f"Activo y pasivo+capital difieren en ${balance['difference']:,.2f}.",
+                "url": reverse("admin:tienda_journalentry_unbalanced"),
+                "accion": "Ver pólizas descuadradas",
+            })
+
+        inventario = JournalEntryLine.objects.filter(
+            journal_entry__is_posted=True, account__code="1100", journal_entry__date__lte=end
+        ).aggregate(d=Sum("debit"), c=Sum("credit"))
+        cargos, abonos = _money(inventario["d"]), _money(inventario["c"])
+        saldo_inv = cargos - abonos
+        if saldo_inv < 0:
+            avisos.append({
+                "tono": "danger",
+                "titulo": "Inventario con saldo negativo",
+                "detalle": (
+                    f"La cuenta 1100 tiene ${saldo_inv:,.2f}: salen costos de venta pero las compras "
+                    "no entran a inventario, se registran directo como gasto. Eso duplica el costo en "
+                    "el estado de resultados y deja el balance mal."
+                ),
+                "url": reverse("admin:tienda_inventorymovement_receive_purchase"),
+                "accion": "Ver recepción de compra",
+            })
+        elif cargos == 0 and abonos > 0:
+            avisos.append({
+                "tono": "warn",
+                "titulo": "Las compras no capitalizan inventario",
+                "detalle": "Nunca se ha cargado la cuenta 1100; el inventario no aparece como activo.",
+                "url": reverse("admin:tienda_inventorymovement_receive_purchase"),
+                "accion": "Ver recepción de compra",
+            })
+
+        sin_contabilizar = JournalEntry.objects.filter(is_posted=False).count()
+        if sin_contabilizar:
+            avisos.append({
+                "tono": "warn",
+                "titulo": f"{sin_contabilizar} póliza(s) sin contabilizar",
+                "detalle": "No entran a los estados financieros hasta marcarlas como contabilizadas.",
+                "url": reverse("admin:tienda_journalentry_changelist") + "?is_posted__exact=0",
+                "accion": "Revisar",
+            })
+
+        capital = JournalEntryLine.objects.filter(
+            journal_entry__is_posted=True, account__code="3000"
+        ).exists()
+        if not capital:
+            avisos.append({
+                "tono": "info",
+                "titulo": "Sin aportación de capital registrada",
+                "detalle": "La cuenta 3000 nunca se ha usado, así que el capital contable sale solo del resultado acumulado.",
+                "url": reverse("admin:tienda_journalentry_add"),
+                "accion": "Registrar póliza",
+            })
+        return avisos
+
+    def finance_dashboard_view(self, request):
+        bounds = self._month_bounds(request)
+        statement = self._income_statement_data(bounds)
+        balance = self._balance_sheet_data(bounds)
+        flow = self._cash_flow_data(bounds)
+        ratios = self._financial_ratios_data(bounds)
+        context = dict(
+            self.admin_site.each_context(request),
+            title="Finanzas",
+            subtitle="Estado del negocio en números",
+            opts=self.model._meta,
+            avisos=self._finance_health_checks(bounds),
+            **bounds,
+            **statement,
+            **balance,
+            **flow,
+            **ratios,
+        )
+        return TemplateResponse(request, "admin/tienda/finance_dashboard.html", context)
+
+    def cash_flow_view(self, request):
+        bounds = self._month_bounds(request)
+        context = dict(
+            self.admin_site.each_context(request),
+            title="Flujo de efectivo",
+            opts=self.model._meta,
+            avisos=self._finance_health_checks(bounds),
+            **bounds,
+            **self._cash_flow_data(bounds),
+        )
+        return TemplateResponse(request, "admin/tienda/cash_flow.html", context)
+
+    def financial_ratios_view(self, request):
+        bounds = self._month_bounds(request)
+        context = dict(
+            self.admin_site.each_context(request),
+            title="Razones financieras",
+            opts=self.model._meta,
+            avisos=self._finance_health_checks(bounds),
+            **bounds,
+            **self._financial_ratios_data(bounds),
+        )
+        return TemplateResponse(request, "admin/tienda/financial_ratios.html", context)
 
     def export_income_statement_view(self, request):
         bounds = self._month_bounds(request)

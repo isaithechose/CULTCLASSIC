@@ -1,0 +1,178 @@
+{% extends "admin/base_site.html" %}
+{% load humanize %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+  .cf-wrap { max-width: 1100px; }
+
+  .cf-header {
+    background: var(--cc-panel) !important;
+    border: 1px solid var(--cc-border) !important;
+    border-radius: 14px; padding: 1.3rem 1.5rem; margin-bottom: 1rem;
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
+  }
+  .cf-header h1 { margin: 0 0 .25rem; font-size: 1.25rem; }
+  .cf-header p { margin: 0; color: var(--cc-muted); font-size: .9rem; }
+  .cf-nav { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
+  .cf-nav strong { color: #fff !important; min-width: 9rem; text-align: center; }
+
+  .cf-guide {
+    padding: .85rem 1.1rem; border-radius: 14px; background: #161616;
+    border: 1px solid var(--cc-border-2); margin-bottom: 1rem;
+    font-size: .88rem; color: var(--cc-muted); line-height: 1.55;
+  }
+  .cf-guide strong { color: var(--cc-text); }
+
+  .cf-panel {
+    background: var(--cc-panel) !important;
+    border: 1px solid var(--cc-border) !important;
+    border-radius: 14px; overflow: hidden; margin-bottom: 1rem;
+  }
+  .cf-panel-head {
+    display: flex; justify-content: space-between; align-items: center; gap: 1rem;
+    padding: .9rem 1.1rem; border-bottom: 1px solid var(--cc-border); background: #141414;
+  }
+  .cf-panel-head h2 { margin: 0; font-size: .98rem; }
+  .cf-panel-head span { color: var(--cc-muted); font-size: .82rem; }
+
+  .cf-row {
+    display: grid; grid-template-columns: 1fr 8rem 8rem 9rem; gap: 1rem;
+    padding: .65rem 1.1rem; align-items: center;
+  }
+  .cf-row + .cf-row { border-top: 1px solid var(--cc-border); }
+  .cf-row-head {
+    font-size: .72rem; text-transform: uppercase; letter-spacing: .07em;
+    color: #888 !important; background: #0f0f0f; padding: .5rem 1.1rem;
+  }
+  .cf-label { color: #ddd !important; font-size: .9rem; }
+  .cf-label small { display: block; color: var(--cc-muted) !important; font-size: .76rem; margin-top: 2px; }
+  .cf-num { text-align: right; font-variant-numeric: tabular-nums; font-size: .9rem; color: #ccc !important; white-space: nowrap; }
+  .cf-num.is-in { color: var(--cc-green) !important; }
+  .cf-num.is-out { color: var(--cc-red) !important; }
+  .cf-num.is-net { font-weight: 800; color: #fff !important; }
+  .cf-section-total { background: #141414; }
+  .cf-section-total .cf-label { font-weight: 700; color: #fff !important; }
+
+  .cf-resume { display: grid; grid-template-columns: 1fr auto; gap: 1rem; padding: .7rem 1.1rem; align-items: center; }
+  .cf-resume + .cf-resume { border-top: 1px solid var(--cc-border); }
+  .cf-resume-label { color: #ccc !important; font-size: .9rem; }
+  .cf-resume-value { font-weight: 800; font-variant-numeric: tabular-nums; color: #fff !important; white-space: nowrap; }
+  .cf-resume.is-total { background: #141414; }
+  .cf-resume-value.is-in { color: var(--cc-green) !important; }
+  .cf-resume-value.is-out { color: var(--cc-red) !important; }
+
+  .cf-badge { display: inline-flex; padding: .2rem .55rem; border-radius: 999px; font-size: .74rem; font-weight: 700; }
+  .cf-badge--ok { color: var(--cc-green) !important; background: rgba(45,190,108,.13); }
+  .cf-badge--bad { color: var(--cc-red) !important; background: rgba(224,80,80,.13); }
+
+  .cf-empty { padding: 1.6rem 1.1rem; text-align: center; color: var(--cc-muted); }
+
+  html.light-mode .cf-header, html.light-mode .cf-panel { background: #fff !important; border-color: #e5e7eb !important; }
+  html.light-mode .cf-panel-head, html.light-mode .cf-section-total, html.light-mode .cf-resume.is-total { background: #f8fafc; }
+  html.light-mode .cf-row-head { background: #f8fafc; color: #6b7280 !important; }
+  html.light-mode .cf-label, html.light-mode .cf-resume-label { color: #374151 !important; }
+  html.light-mode .cf-num.is-net, html.light-mode .cf-resume-value, html.light-mode .cf-nav strong { color: #111827 !important; }
+
+  @media (max-width: 900px) {
+    .cf-header { flex-direction: column; }
+    .cf-row { grid-template-columns: 1fr auto; }
+    .cf-row .cf-num:nth-child(2), .cf-row .cf-num:nth-child(3) { display: none; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="cf-wrap">
+
+  <div class="cf-header">
+    <div>
+      <h1>Flujo de efectivo</h1>
+      <p>De dónde entró y a dónde se fue el dinero en {{ month_label }}.</p>
+    </div>
+    <div class="cf-nav">
+      <a class="button" href="?month={{ previous_month }}">←</a>
+      <strong>{{ month_label }}</strong>
+      <a class="button" href="?month={{ next_month }}">→</a>
+      <a class="button default" href="{% url 'admin:tienda_journalentry_finance_dashboard' %}?month={{ current_month_value }}">Finanzas</a>
+    </div>
+  </div>
+
+  <div class="cf-guide">
+    <strong>Cómo se arma —</strong> se toman los movimientos reales de <strong>Caja</strong> y <strong>Bancos</strong>
+    en el periodo y cada uno se clasifica por su contrapartida: cobros de venta, pagos a proveedores, gastos,
+    tarjetas, capital. Abajo está la comprobación contra el saldo contable y la vista desde la utilidad.
+  </div>
+
+  <div class="cf-panel">
+    <div class="cf-panel-head">
+      <h2>Movimientos por actividad</h2>
+      <span>Método directo</span>
+    </div>
+    <div class="cf-row cf-row-head">
+      <span>Concepto</span><span style="text-align:right">Entradas</span><span style="text-align:right">Salidas</span><span style="text-align:right">Neto</span>
+    </div>
+    {% for section in flow_sections %}
+      {% if section.rows %}
+      <div class="cf-row cf-section-total">
+        <span class="cf-label">{{ section.label }}</span>
+        <span class="cf-num"></span><span class="cf-num"></span>
+        <span class="cf-num is-net">${{ section.net|floatformat:2|intcomma }}</span>
+      </div>
+        {% for row in section.rows %}
+        <div class="cf-row">
+          <span class="cf-label">{{ row.label }}<small>{{ row.count }} movimiento{{ row.count|pluralize:"s" }}</small></span>
+          <span class="cf-num is-in">{% if row.inflow %}+${{ row.inflow|floatformat:2|intcomma }}{% else %}—{% endif %}</span>
+          <span class="cf-num is-out">{% if row.outflow %}−${{ row.outflow|floatformat:2|intcomma }}{% else %}—{% endif %}</span>
+          <span class="cf-num">${{ row.net|floatformat:2|intcomma }}</span>
+        </div>
+        {% endfor %}
+      {% endif %}
+    {% empty %}
+      <div class="cf-empty">No hay movimientos de efectivo en este mes.</div>
+    {% endfor %}
+  </div>
+
+  <div class="cf-panel">
+    <div class="cf-panel-head"><h2>Resumen del periodo</h2></div>
+    <div class="cf-resume"><span class="cf-resume-label">Efectivo al inicio</span><span class="cf-resume-value">${{ flow_opening|floatformat:2|intcomma }}</span></div>
+    <div class="cf-resume"><span class="cf-resume-label">Total de entradas</span><span class="cf-resume-value is-in">+${{ flow_total_in|floatformat:2|intcomma }}</span></div>
+    <div class="cf-resume"><span class="cf-resume-label">Total de salidas</span><span class="cf-resume-value is-out">−${{ flow_total_out|floatformat:2|intcomma }}</span></div>
+    <div class="cf-resume is-total"><span class="cf-resume-label">Variación del mes</span><span class="cf-resume-value">${{ flow_net_change|floatformat:2|intcomma }}</span></div>
+    <div class="cf-resume is-total"><span class="cf-resume-label">Efectivo al cierre</span><span class="cf-resume-value">${{ flow_closing|floatformat:2|intcomma }}</span></div>
+    <div class="cf-resume">
+      <span class="cf-resume-label">Comprobación contra el saldo contable (${{ flow_closing_real|floatformat:2|intcomma }})</span>
+      {% if flow_check_ok %}<span class="cf-badge cf-badge--ok">Cuadra</span>{% else %}<span class="cf-badge cf-badge--bad">No cuadra</span>{% endif %}
+    </div>
+  </div>
+
+  <div class="cf-panel">
+    <div class="cf-panel-head">
+      <h2>De la utilidad al efectivo</h2>
+      <span>Método indirecto</span>
+    </div>
+    <div class="cf-resume"><span class="cf-resume-label">Utilidad neta del mes</span><span class="cf-resume-value">${{ flow_net_profit|floatformat:2|intcomma }}</span></div>
+    {% for ajuste in flow_adjustments %}
+    <div class="cf-resume">
+      <span class="cf-resume-label">{{ ajuste.name }}<br><small style="color:var(--cc-muted);font-size:.78rem;">{{ ajuste.hint }}</small></span>
+      <span class="cf-resume-value {% if ajuste.effect >= 0 %}is-in{% else %}is-out{% endif %}">${{ ajuste.effect|floatformat:2|intcomma }}</span>
+    </div>
+    {% empty %}
+    <div class="cf-resume"><span class="cf-resume-label">Sin cambios en inventario, clientes ni proveedores este mes.</span><span class="cf-resume-value">—</span></div>
+    {% endfor %}
+    <div class="cf-resume is-total">
+      <span class="cf-resume-label">Efectivo generado</span>
+      <span class="cf-resume-value">${{ flow_indirect_total|floatformat:2|intcomma }}</span>
+    </div>
+    <div class="cf-resume">
+      <span class="cf-resume-label">¿Coincide con la variación de efectivo?</span>
+      {% if flow_indirect_matches %}
+        <span class="cf-badge cf-badge--ok">Sí</span>
+      {% else %}
+        <span class="cf-badge cf-badge--bad">No: faltan movimientos por clasificar</span>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,167 @@
+{% extends "admin/base_site.html" %}
+{% load humanize %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+  .rz-wrap { max-width: 1200px; }
+
+  .rz-header {
+    background: var(--cc-panel) !important;
+    border: 1px solid var(--cc-border) !important;
+    border-radius: 14px; padding: 1.3rem 1.5rem; margin-bottom: 1rem;
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
+  }
+  .rz-header h1 { margin: 0 0 .25rem; font-size: 1.25rem; }
+  .rz-header p { margin: 0; color: var(--cc-muted); font-size: .9rem; }
+  .rz-nav { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
+  .rz-nav strong { color: #fff !important; min-width: 9rem; text-align: center; }
+
+  .rz-guide {
+    padding: .85rem 1.1rem; border-radius: 14px; background: #161616;
+    border: 1px solid var(--cc-border-2); margin-bottom: 1rem;
+    font-size: .88rem; color: var(--cc-muted); line-height: 1.55;
+  }
+  .rz-guide strong { color: var(--cc-text); }
+
+  .rz-group { margin-bottom: 1.2rem; }
+  .rz-group-head { margin-bottom: .6rem; }
+  .rz-group-head h2 { margin: 0 0 .15rem; font-size: 1.02rem; }
+  .rz-group-head p { margin: 0; color: var(--cc-muted); font-size: .85rem; }
+
+  .rz-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: .8rem; }
+  .rz-card {
+    background: var(--cc-panel) !important;
+    border: 1px solid var(--cc-border) !important;
+    border-radius: 14px; padding: 1rem 1.1rem;
+    display: flex; flex-direction: column; gap: .5rem;
+  }
+  .rz-card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: .8rem; }
+  .rz-name { font-weight: 700; color: #fff !important; font-size: .95rem; }
+  .rz-formula { font-size: .76rem; color: var(--cc-muted) !important; font-family: var(--font-family-monospace); margin-top: 2px; }
+  .rz-value {
+    font-size: 1.5rem; font-weight: 800; line-height: 1;
+    font-variant-numeric: tabular-nums; white-space: nowrap;
+  }
+  .rz-value--ok { color: var(--cc-green) !important; }
+  .rz-value--warn { color: var(--cc-yellow) !important; }
+  .rz-value--danger { color: var(--cc-red) !important; }
+  .rz-value--neutral { color: #fff !important; }
+  .rz-value--muted { color: #666 !important; font-size: 1rem; }
+  .rz-lectura { font-size: .85rem; color: #bbb !important; line-height: 1.5; }
+  .rz-alerta {
+    font-size: .78rem; color: var(--cc-yellow) !important;
+    background: rgba(240,165,0,.10); border: 1px solid rgba(240,165,0,.3);
+    border-radius: 9px; padding: .4rem .6rem; line-height: 1.45;
+  }
+  .rz-ref {
+    font-size: .76rem; color: var(--cc-muted) !important;
+    border-top: 1px solid var(--cc-border); padding-top: .5rem; margin-top: auto;
+  }
+
+  .rz-base {
+    background: var(--cc-panel) !important;
+    border: 1px solid var(--cc-border) !important;
+    border-radius: 14px; overflow: hidden;
+  }
+  .rz-base-head { padding: .9rem 1.1rem; border-bottom: 1px solid var(--cc-border); background: #141414; }
+  .rz-base-head h2 { margin: 0; font-size: .98rem; }
+  .rz-base-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
+  .rz-base-item { padding: .8rem 1.1rem; border-right: 1px solid var(--cc-border); border-bottom: 1px solid var(--cc-border); }
+  .rz-base-label { font-size: .72rem; text-transform: uppercase; letter-spacing: .07em; color: var(--cc-muted) !important; font-weight: 700; }
+  .rz-base-value { font-size: 1.05rem; font-weight: 800; color: #fff !important; margin-top: .2rem; font-variant-numeric: tabular-nums; }
+
+  .rz-aviso {
+    display: flex; gap: .9rem; align-items: flex-start;
+    padding: .85rem 1.1rem; border-radius: 14px; margin-bottom: 1rem;
+    border: 1px solid rgba(224,80,80,.4); background: rgba(224,80,80,.08);
+  }
+  .rz-aviso-title { font-weight: 700; color: #fff !important; font-size: .92rem; }
+  .rz-aviso-text { color: var(--cc-muted) !important; font-size: .86rem; margin-top: .2rem; line-height: 1.5; }
+
+  html.light-mode .rz-header, html.light-mode .rz-card, html.light-mode .rz-base { background: #fff !important; border-color: #e5e7eb !important; }
+  html.light-mode .rz-base-head { background: #f8fafc; }
+  html.light-mode .rz-name, html.light-mode .rz-base-value, html.light-mode .rz-value--neutral, html.light-mode .rz-nav strong { color: #111827 !important; }
+  html.light-mode .rz-lectura { color: #374151 !important; }
+
+  @media (max-width: 900px) { .rz-header { flex-direction: column; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="rz-wrap">
+
+  <div class="rz-header">
+    <div>
+      <h1>Razones financieras</h1>
+      <p>Qué dicen los números de {{ month_label }} sobre la salud del negocio.</p>
+    </div>
+    <div class="rz-nav">
+      <a class="button" href="?month={{ previous_month }}">←</a>
+      <strong>{{ month_label }}</strong>
+      <a class="button" href="?month={{ next_month }}">→</a>
+      <a class="button default" href="{% url 'admin:tienda_journalentry_finance_dashboard' %}?month={{ current_month_value }}">Finanzas</a>
+    </div>
+  </div>
+
+  {% for aviso in avisos %}{% if aviso.tono == 'danger' %}
+  <div class="rz-aviso">
+    <div style="flex:1;min-width:0;">
+      <div class="rz-aviso-title">{{ aviso.titulo }}</div>
+      <div class="rz-aviso-text">{{ aviso.detalle }} Mientras esto no se corrija, las razones que dependen de esa cuenta no son confiables.</div>
+    </div>
+    <a class="button" href="{{ aviso.url }}">{{ aviso.accion }}</a>
+  </div>
+  {% endif %}{% endfor %}
+
+  <div class="rz-guide">
+    <strong>Cómo leer esto —</strong> cada tarjeta trae la fórmula, el resultado y qué significa en palabras.
+    El color solo aparece donde hay un parámetro claro de referencia; lo demás queda neutro porque depende de tu giro.
+    Todo sale de las pólizas contabilizadas del periodo.
+  </div>
+
+  {% for grupo in ratio_groups %}
+  <div class="rz-group">
+    <div class="rz-group-head">
+      <h2>{{ grupo.titulo }}</h2>
+      <p>{{ grupo.descripcion }}</p>
+    </div>
+    <div class="rz-cards">
+      {% for razon in grupo.razones %}
+      <div class="rz-card">
+        <div class="rz-card-top">
+          <div>
+            <div class="rz-name">{{ razon.nombre }}</div>
+            <div class="rz-formula">{{ razon.formula }}</div>
+          </div>
+          <div class="rz-value rz-value--{{ razon.tono }}">{{ razon.display }}</div>
+        </div>
+        <div class="rz-lectura">{{ razon.lectura }}</div>
+        {% if razon.afectada %}<div class="rz-alerta">⚠ {{ razon.afectada }}</div>{% endif %}
+        <div class="rz-ref">{{ razon.referencia }}</div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+
+  <div class="rz-base">
+    <div class="rz-base-head"><h2>Con qué números se calculó</h2></div>
+    <div class="rz-base-grid">
+      <div class="rz-base-item"><div class="rz-base-label">Efectivo</div><div class="rz-base-value">${{ ratio_base.efectivo|floatformat:2|intcomma }}</div></div>
+      <div class="rz-base-item"><div class="rz-base-label">Inventario</div><div class="rz-base-value">${{ ratio_base.inventario|floatformat:2|intcomma }}</div></div>
+      <div class="rz-base-item"><div class="rz-base-label">Clientes</div><div class="rz-base-value">${{ ratio_base.clientes|floatformat:2|intcomma }}</div></div>
+      <div class="rz-base-item"><div class="rz-base-label">Terminal por cobrar</div><div class="rz-base-value">${{ ratio_base.terminal|floatformat:2|intcomma }}</div></div>
+      <div class="rz-base-item"><div class="rz-base-label">Proveedores</div><div class="rz-base-value">${{ ratio_base.proveedores|floatformat:2|intcomma }}</div></div>
+      <div class="rz-base-item"><div class="rz-base-label">Tarjetas por pagar</div><div class="rz-base-value">${{ ratio_base.tarjetas|floatformat:2|intcomma }}</div></div>
+      <div class="rz-base-item"><div class="rz-base-label">Activo circulante</div><div class="rz-base-value">${{ ratio_base.activo_circulante|floatformat:2|intcomma }}</div></div>
+      <div class="rz-base-item"><div class="rz-base-label">Pasivo corto plazo</div><div class="rz-base-value">${{ ratio_base.pasivo_corto|floatformat:2|intcomma }}</div></div>
+      <div class="rz-base-item"><div class="rz-base-label">Ingresos del mes</div><div class="rz-base-value">${{ ratio_base.ingresos|floatformat:2|intcomma }}</div></div>
+      <div class="rz-base-item"><div class="rz-base-label">Costo de ventas</div><div class="rz-base-value">${{ ratio_base.costo|floatformat:2|intcomma }}</div></div>
+      <div class="rz-base-item"><div class="rz-base-label">Gastos</div><div class="rz-base-value">${{ ratio_base.gastos|floatformat:2|intcomma }}</div></div>
+      <div class="rz-base-item"><div class="rz-base-label">Utilidad neta</div><div class="rz-base-value">${{ ratio_base.utilidad_neta|floatformat:2|intcomma }}</div></div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

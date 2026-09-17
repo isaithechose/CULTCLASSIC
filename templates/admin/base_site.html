@@ -648,6 +648,28 @@
   </div>
 
   <div class="cc-sidebar-section">
+    <span class="cc-section-label">Finanzas</span>
+    <a class="cc-nav-item {% if 'finanzas' in request.path %}active{% endif %}" href="{% url 'admin:tienda_journalentry_finance_dashboard' %}">
+      <i class="ti ti-chart-pie cc-nav-icon" aria-hidden="true"></i><span class="cc-nav-label">Panel</span>
+    </a>
+    <a class="cc-nav-item {% if 'flujo-de-efectivo' in request.path %}active{% endif %}" href="{% url 'admin:tienda_journalentry_cash_flow' %}">
+      <i class="ti ti-cash cc-nav-icon" aria-hidden="true"></i><span class="cc-nav-label">Flujo de efectivo</span>
+    </a>
+    <a class="cc-nav-item {% if 'razones-financieras' in request.path %}active{% endif %}" href="{% url 'admin:tienda_journalentry_financial_ratios' %}">
+      <i class="ti ti-percentage cc-nav-icon" aria-hidden="true"></i><span class="cc-nav-label">Razones</span>
+    </a>
+    <a class="cc-nav-item {% if 'income-statement' in request.path %}active{% endif %}" href="{% url 'admin:tienda_journalentry_income_statement' %}">
+      <i class="ti ti-file-analytics cc-nav-icon" aria-hidden="true"></i><span class="cc-nav-label">Estado de resultados</span>
+    </a>
+    <a class="cc-nav-item {% if 'balance-sheet' in request.path %}active{% endif %}" href="{% url 'admin:tienda_journalentry_balance_sheet' %}">
+      <i class="ti ti-scale cc-nav-icon" aria-hidden="true"></i><span class="cc-nav-label">Balance general</span>
+    </a>
+    <a class="cc-nav-item {% if 'trial-balance' in request.path %}active{% endif %}" href="{% url 'admin:tienda_journalentry_trial_balance' %}">
+      <i class="ti ti-list-numbers cc-nav-icon" aria-hidden="true"></i><span class="cc-nav-label">Balanza</span>
+    </a>
+  </div>
+
+  <div class="cc-sidebar-section">
     <span class="cc-section-label">Contabilidad</span>
     <a class="cc-nav-item {% if 'accounting-dashboard' in request.path %}active{% endif %}" href="{% url 'admin:tienda_expense_accounting_dashboard' %}">
       <i class="ti ti-report-analytics cc-nav-icon" aria-hidden="true"></i><span class="cc-nav-label">Dashboard</span>

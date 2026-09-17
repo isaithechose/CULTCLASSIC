@@ -346,3 +346,93 @@ class FrozenUnitCostTests(TestCase):
         item = order.items.get()
         self.assertEqual(item.unit_cost, Decimal("100.00"))
         self.assertEqual(item.quantity, 3)
+
+
+# ---------------------------------------------------------------------------
+# Sección de finanzas
+# ---------------------------------------------------------------------------
+
+
+class FinanceSectionTests(TestCase):
+    """Flujo de efectivo y razones calculados sobre pólizas reales."""
+
+    def setUp(self):
+        self.user = User.objects.create_superuser(
+            username="finanzas", email="fin@example.com", password="clave-secreta"
+        )
+        self.client = Client()
+        self.client.force_login(self.user)
+
+        def cuenta(code, name, tipo):
+            return AccountingAccount.objects.get_or_create(
+                code=code, defaults={"name": name, "account_type": tipo}
+            )[0]
+
+        self.caja = cuenta("1000", "Caja", "asset")
+        self.ventas = cuenta("4000", "Ventas", "income")
+        self.gastos = cuenta("6000", "Gastos generales", "expense")
+
+        # Una venta cobrada en efectivo y un gasto pagado en efectivo.
+        venta = JournalEntry.objects.create(
+            date=date(2026, 5, 10), entry_type="income", source="pos",
+            concept="Venta de prueba", is_posted=True,
+        )
+        JournalEntryLine.objects.create(journal_entry=venta, account=self.caja, debit=Decimal("1000"), credit=Decimal("0"))
+        JournalEntryLine.objects.create(journal_entry=venta, account=self.ventas, debit=Decimal("0"), credit=Decimal("1000"))
+
+        gasto = JournalEntry.objects.create(
+            date=date(2026, 5, 20), entry_type="expense", source="expense",
+            concept="Gasto de prueba", is_posted=True,
+        )
+        JournalEntryLine.objects.create(journal_entry=gasto, account=self.gastos, debit=Decimal("300"), credit=Decimal("0"))
+        JournalEntryLine.objects.create(journal_entry=gasto, account=self.caja, debit=Decimal("0"), credit=Decimal("300"))
+
+    def _admin(self):
+        from django.contrib import admin as dj_admin
+
+        return dj_admin.site._registry[JournalEntry]
+
+    def _bounds(self, mes="2026-05"):
+        class Req:
+            GET = {"month": mes}
+
+        return self._admin()._month_bounds(Req())
+
+    def test_flujo_clasifica_entradas_y_salidas(self):
+        data = self._admin()._cash_flow_data(self._bounds())
+        self.assertEqual(data["flow_total_in"], Decimal("1000"))
+        self.assertEqual(data["flow_total_out"], Decimal("300"))
+        self.assertEqual(data["flow_net_change"], Decimal("700"))
+        self.assertTrue(data["flow_check_ok"])
+
+        operacion = next(s for s in data["flow_sections"] if s["key"] == "operacion")
+        etiquetas = {row["label"] for row in operacion["rows"]}
+        self.assertIn("Cobros de venta", etiquetas)
+        self.assertIn("Gastos de operación", etiquetas)
+
+    def test_metodo_indirecto_llega_al_mismo_efectivo(self):
+        data = self._admin()._cash_flow_data(self._bounds())
+        self.assertTrue(data["flow_indirect_matches"])
+        self.assertEqual(data["flow_indirect_total"], data["flow_net_change"])
+
+    def test_razones_se_calculan_y_se_formatean(self):
+        data = self._admin()._financial_ratios_data(self._bounds())
+        base = data["ratio_base"]
+        self.assertEqual(base["ingresos"], Decimal("1000"))
+        self.assertEqual(base["gastos"], Decimal("300"))
+        self.assertEqual(base["utilidad_neta"], Decimal("700"))
+
+        razones = {r["nombre"]: r for g in data["ratio_groups"] for r in g["razones"]}
+        self.assertEqual(razones["Margen neto"]["display"], "70.0%")
+        self.assertEqual(razones["Peso de los gastos"]["display"], "30.0%")
+        # sin pasivos no hay razón corriente: debe decirlo, no tronar
+        self.assertEqual(razones["Razón corriente"]["display"], "Sin dato")
+
+    def test_las_tres_pantallas_responden(self):
+        for url in (
+            reverse("admin:tienda_journalentry_finance_dashboard"),
+            reverse("admin:tienda_journalentry_cash_flow"),
+            reverse("admin:tienda_journalentry_financial_ratios"),
+        ):
+            response = self.client.get(url, {"month": "2026-05"})
+            self.assertEqual(response.status_code, 200)
