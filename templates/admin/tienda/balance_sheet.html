@@ -13,23 +13,22 @@
     margin-bottom: 1rem;
   }
   .balance-nav strong {
-    color: #111827;
+    color: #fff !important;
     min-width: 8rem;
     text-align: center;
   }
   .balance-summary span {
     padding: 0.5rem 0.8rem;
     border-radius: 999px;
-    background: #f8fafc;
-    font-weight: 800;
-  }
+    background: #1f1f1f;
+    font-weight: 800; border: 1px solid var(--cc-border-2); color: #ddd !important;}
   .balance-summary .is-ok {
     background: #dcfce7;
     color: #166534;
   }
   .balance-summary .is-danger {
-    background: #fee2e2;
-    color: #991b1b;
+    background: rgba(224,80,80,.14);
+    color: var(--cc-red) !important;
   }
   .balance-grid {
     display: grid;
@@ -68,7 +67,7 @@
     font-weight: 800;
   }
   .balance-total {
-    background: #f8fafc;
+    background: #141414;
     font-weight: 900;
   }
   @media (max-width: 900px) {
@@ -76,6 +75,13 @@
       grid-template-columns: 1fr;
     }
   }
+
+  /* ── light mode ── */
+
+  html.light-mode .balance-nav strong { color:#111827 !important; }
+  html.light-mode .balance-summary span { background:#f8fafc; color:#344054 !important; border-color:#e5e7eb; }
+  html.light-mode .balance-summary .is-danger { background:#fee2e2; color:#991b1b !important; }
+  html.light-mode .balance-total { background:#f8fafc; }
 </style>
 {% endblock %}
 

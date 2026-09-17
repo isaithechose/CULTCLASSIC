@@ -1707,8 +1707,18 @@ class ProductoAdmin(admin.ModelAdmin):
                 )
             formset = StockCountFormSet(initial=initial, prefix="count")
 
+        # Los datos visibles salen de la variante, no de form.initial: en un POST con
+        # errores los formularios vienen ligados y initial llega vacío (etiquetas en blanco).
         rows = []
-        for form in formset:
+        for variant, form in zip(variants, formset.forms):
+            rows.append(
+                {
+                    "form": form,
+                    "label": f"{variant.color} / {variant.talla}",
+                    "current_stock": variant.stock,
+                }
+            )
+        for form in formset.forms[len(variants):]:
             rows.append(
                 {
                     "form": form,
@@ -2300,7 +2310,18 @@ class ProductoAdmin(admin.ModelAdmin):
 
         class BulkStockCountLineForm(forms.Form):
             variant_id = forms.IntegerField(widget=forms.HiddenInput)
-            counted_stock = forms.IntegerField(min_value=0, label="Conteo real")
+            counted_stock = forms.IntegerField(
+                min_value=0,
+                label="Conteo real",
+                widget=forms.NumberInput(attrs={
+                    "class": "bulk-qty",
+                    "min": "0",
+                    "step": "1",
+                    "inputmode": "numeric",
+                    "autocomplete": "off",
+                    "aria-label": "Conteo real",
+                }),
+            )
 
         BulkStockCountFormSet = formset_factory(BulkStockCountLineForm, extra=0)
 
@@ -2361,12 +2382,19 @@ class ProductoAdmin(admin.ModelAdmin):
                 }
             )
 
+        note_value = request.POST.get("note", "") if request.method == "POST" else ""
+
         context = dict(
             self.admin_site.each_context(request),
             title="Conteo físico masivo",
             rows=rows,
             formset=formset,
             opts=self.model._meta,
+            filter_colors=sorted({v.color for v in variants if v.color}),
+            filter_tallas=sorted({v.talla for v in variants if v.talla}),
+            filter_productos=sorted({v.product.nombre for v in variants}),
+            total_variants=len(variants),
+            note_value=note_value or "Conteo físico masivo desde admin.",
         )
         return TemplateResponse(request, "admin/tienda/product_stock_count_bulk.html", context)
 
@@ -3145,13 +3173,43 @@ class InventoryMovementAdmin(admin.ModelAdmin):
         selected_variant = None
         if variant_id:
             selected_variant = next((variant for variant in variants if variant.id == variant_id), None)
+        # El formset solo lleva las variantes que se renderizan: si la pantalla está
+        # filtrada a una variante, TOTAL_FORMS tiene que coincidir con esa única fila.
+        form_variants = [selected_variant] if selected_variant else variants
 
         class PurchaseReceiptLineForm(forms.Form):
             variant_id = forms.IntegerField(widget=forms.HiddenInput)
-            quantity = forms.IntegerField(min_value=0, required=False, initial=0, label="Cantidad")
-            unit_cost = forms.DecimalField(min_value=0, decimal_places=2, max_digits=10, required=False, label="Costo producto")
+            quantity = forms.IntegerField(
+                min_value=0,
+                required=False,
+                initial=0,
+                label="Cantidad",
+                widget=forms.NumberInput(attrs={
+                    "class": "rp-qty",
+                    "min": "0",
+                    "step": "1",
+                    "inputmode": "numeric",
+                    "autocomplete": "off",
+                    "aria-label": "Cantidad recibida",
+                }),
+            )
+            unit_cost = forms.DecimalField(
+                min_value=0,
+                decimal_places=2,
+                max_digits=10,
+                required=False,
+                label="Costo producto",
+                widget=forms.HiddenInput(attrs={"class": "rp-cost"}),
+            )
 
         PurchaseReceiptFormSet = formset_factory(PurchaseReceiptLineForm, extra=0)
+
+        form_values = {
+            "supplier": "",
+            "note": "Recepción de compra desde admin.",
+            "receipt_date": str(timezone.localdate()),
+            "create_expense": False,
+        }
 
         if request.method == "POST":
             formset = PurchaseReceiptFormSet(request.POST, prefix="receipt")
@@ -3159,6 +3217,12 @@ class InventoryMovementAdmin(admin.ModelAdmin):
             note = request.POST.get("note", "").strip() or "Recepción de compra desde admin."
             create_expense = request.POST.get("create_expense") == "on"
             receipt_date = request.POST.get("receipt_date", "").strip() or str(timezone.localdate())
+            form_values = {
+                "supplier": supplier,
+                "note": note,
+                "receipt_date": receipt_date,
+                "create_expense": create_expense,
+            }
 
             if formset.is_valid():
                 variant_map = {variant.id: variant for variant in variants}
@@ -3220,6 +3284,12 @@ class InventoryMovementAdmin(admin.ModelAdmin):
                         level=messages.INFO,
                     )
                 return HttpResponseRedirect(reverse("admin:tienda_inventorymovement_changelist"))
+
+            self.message_user(
+                request,
+                "Revisa la captura: hay cantidades o costos con valores inválidos. No se registró nada.",
+                level=messages.ERROR,
+            )
         else:
             initial = [
                 {
@@ -3227,22 +3297,54 @@ class InventoryMovementAdmin(admin.ModelAdmin):
                     "quantity": 0,
                     "unit_cost": variant.product.costo or "",
                 }
-                for variant in variants
+                for variant in form_variants
             ]
             formset = PurchaseReceiptFormSet(initial=initial, prefix="receipt")
 
-        rows = []
-        for variant, form in zip(variants, formset.forms):
-            if selected_variant and variant.id != selected_variant.id:
-                continue
-            rows.append({"variant": variant, "form": form})
+        rows = [
+            {"variant": variant, "form": form}
+            for variant, form in zip(form_variants, formset.forms)
+        ]
+
+        groups = []
+        groups_by_product = {}
+        for row in rows:
+            variant = row["variant"]
+            product = variant.product
+            group = groups_by_product.get(product.id)
+            if group is None:
+                group = {
+                    "product": product,
+                    "rows": [],
+                    "unit_cost": product.costo if product.costo is not None else "",
+                    "image_url": None,
+                    "stock_total": 0,
+                    "low_count": 0,
+                }
+                groups_by_product[product.id] = group
+                groups.append(group)
+            group["rows"].append(row)
+            group["stock_total"] += variant.stock or 0
+            if (variant.stock or 0) <= 3:
+                group["low_count"] += 1
+            if not group["image_url"]:
+                group["image_url"] = variant.display_image_url
+
+        filter_colors = sorted({row["variant"].color for row in rows if row["variant"].color})
+        filter_tallas = sorted({row["variant"].talla for row in rows if row["variant"].talla})
 
         context = dict(
             self.admin_site.each_context(request),
             title="Recepción de compra",
             rows=rows,
+            groups=groups,
             formset=formset,
             selected_variant=selected_variant,
+            form_values=form_values,
+            filter_colors=filter_colors,
+            filter_tallas=filter_tallas,
+            total_variants=len(rows),
+            total_products=len(groups),
             today=str(timezone.localdate()),
             opts=self.model._meta,
         )

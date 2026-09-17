@@ -14,7 +14,7 @@
   .audit-nav strong {
     min-width: 8rem;
     text-align: center;
-    color: #111827;
+    color: #fff !important;
   }
   .audit-status {
     padding: 0.45rem 0.75rem;
@@ -26,8 +26,8 @@
     color: #166534;
   }
   .audit-status--danger {
-    background: #fee2e2;
-    color: #991b1b;
+    background: rgba(224,80,80,.14);
+    color: var(--cc-red) !important;
   }
   .audit-card {
     background: #fff;
@@ -58,6 +58,11 @@
     letter-spacing: 0.08em;
     text-transform: uppercase;
   }
+
+  /* ── light mode ── */
+
+  html.light-mode .audit-nav strong { color:#111827 !important; }
+  html.light-mode .audit-status--danger { background:#fee2e2; color:#991b1b !important; }
 </style>
 {% endblock %}
 

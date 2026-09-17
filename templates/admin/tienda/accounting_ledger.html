@@ -15,15 +15,14 @@
   .ledger-nav strong {
     min-width: 8rem;
     text-align: center;
-    color: #111827;
+    color: #fff !important;
   }
   .ledger-pill {
     padding: 0.55rem 0.85rem;
     border-radius: 999px;
-    background: #f8fafc;
-    color: #344054;
-    font-weight: 800;
-  }
+    background: #1f1f1f;
+    color: #ddd !important;
+    font-weight: 800; border: 1px solid var(--cc-border-2);}
   .ledger-card {
     background: #fff;
     border: 1px solid #e8e8ef;
@@ -56,9 +55,15 @@
     text-transform: uppercase;
   }
   .ledger-total {
-    background: #f8fafc;
+    background: #141414;
     font-weight: 800;
   }
+
+  /* ── light mode ── */
+
+  html.light-mode .ledger-nav strong { color:#111827 !important; }
+  html.light-mode .ledger-pill { background:#f8fafc; color:#344054 !important; border-color:#e5e7eb; }
+  html.light-mode .ledger-total { background:#f8fafc; }
 </style>
 {% endblock %}
 

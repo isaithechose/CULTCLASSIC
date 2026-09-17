@@ -12,7 +12,7 @@
     margin-bottom: 1rem;
   }
   .statement-nav strong {
-    color: #111827;
+    color: #fff !important;
     min-width: 8rem;
     text-align: center;
   }
@@ -49,11 +49,16 @@
     text-align: right;
   }
   .statement-total {
-    background: #f8fafc;
+    background: #141414;
     font-weight: 900;
   }
   .statement-total .statement-amount--ok { color: #05603a; }
   .statement-total .statement-amount--danger { color: #b42318; }
+
+  /* ── light mode ── */
+
+  html.light-mode .statement-nav strong { color:#111827 !important; }
+  html.light-mode .statement-total { background:#f8fafc; }
 </style>
 {% endblock %}
 

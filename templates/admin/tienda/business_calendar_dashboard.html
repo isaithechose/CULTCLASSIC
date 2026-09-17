@@ -61,7 +61,7 @@
   .business-calendar__title {
     font-size: 1.4rem;
     font-weight: 800;
-    color: #111827;
+    color: #fff !important;
   }
   .business-calendar__nav {
     display: flex;
@@ -83,10 +83,10 @@
   }
   .business-day {
     min-height: 132px;
-    border: 1px solid #ececf3;
+    border: 1px solid var(--cc-border);
     border-radius: 16px;
     padding: 0.7rem;
-    background: #fbfbfd;
+    background: #161616;
   }
   .business-day--muted {
     opacity: 0.45;
@@ -97,7 +97,7 @@
   }
   .business-day__number {
     font-weight: 800;
-    color: #111827;
+    color: #fff !important;
     margin-bottom: 0.55rem;
   }
   .business-day__events {
@@ -120,16 +120,16 @@
     color: #05603a;
   }
   .business-event--danger {
-    background: #fee4e2;
-    color: #b42318;
+    background: rgba(224,80,80,.14);
+    color: var(--cc-red) !important;
   }
   .business-event--warn {
-    background: #fff4d6;
-    color: #9a6700;
+    background: rgba(240,165,0,.14);
+    color: var(--cc-yellow) !important;
   }
   .business-event--neutral {
-    background: #ececf3;
-    color: #4b5563;
+    background: #1f1f1f;
+    color: #ccc !important;
   }
   .business-panels {
     align-items: flex-start;
@@ -171,6 +171,14 @@
       display: none;
     }
   }
+
+  /* ── light mode ── */
+
+  html.light-mode .business-calendar__title, html.light-mode .business-day__number { color:#111827 !important; }
+  html.light-mode .business-day { background:#fbfbfd; border-color:#ececf3; }
+  html.light-mode .business-event--danger  { background:#fee4e2; color:#b42318 !important; }
+  html.light-mode .business-event--warn    { background:#fff4d6; color:#9a6700 !important; }
+  html.light-mode .business-event--neutral { background:#ececf3; color:#4b5563 !important; }
 </style>
 {% endblock %}
 

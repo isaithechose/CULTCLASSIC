@@ -10,10 +10,9 @@
     margin-bottom: 1rem;
   }
   .pos-panel {
-    background: #fff;
-    border: 1px solid #e8e8ef;
+    background: var(--cc-panel);
+    border: 1px solid var(--cc-border);
     border-radius: 14px;
-    box-shadow: 0 12px 30px rgba(16, 24, 40, 0.06);
     margin-bottom: 1rem;
     padding: 1rem;
   }
@@ -34,7 +33,7 @@
     gap: 0.35rem;
   }
   .pos-header-grid label {
-    color: #344054;
+    color: var(--cc-muted);
     font-size: 0.78rem;
     font-weight: 700;
     letter-spacing: 0.04em;
@@ -46,10 +45,10 @@
     width: 100%;
     min-height: 2.65rem;
     padding: 0.55rem 0.75rem;
-    border: 1px solid #d0d5dd;
+    border: 1px solid var(--cc-border-2);
     border-radius: 10px;
-    background: #fff;
-    color: #111827;
+    background: #1a1a1a;
+    color: #ddd;
     font-size: 0.95rem;
     transition: border-color 0.15s, box-shadow 0.15s;
   }
@@ -61,21 +60,21 @@
   .pos-header-grid select:focus,
   .pos-header-grid input:focus {
     outline: none;
-    border-color: #7c3aed;
-    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.18);
+    border-color: var(--cc-blue);
+    box-shadow: 0 0 0 3px rgba(74, 158, 255, 0.18);
   }
   .pos-header-grid .pos-field-help {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 0.5rem;
-    color: #6b7280;
+    color: var(--cc-muted);
     font-size: 0.78rem;
   }
   .pos-header-grid .pos-field-help button {
     background: none;
     border: none;
-    color: #7c3aed;
+    color: var(--cc-blue);
     cursor: pointer;
     font-size: 0.78rem;
     font-weight: 700;
@@ -83,10 +82,10 @@
     text-decoration: underline;
   }
   .pos-header-grid .pos-field-help button:hover {
-    color: #5b21b6;
+    color: #9ec4f5;
   }
   .pos-note {
-    color: #6b7280;
+    color: var(--cc-muted);
     margin: 0.35rem 0 0;
   }
   .pos-toolbar {
@@ -100,17 +99,22 @@
     width: 100%;
     min-height: 2.65rem;
     padding: 0.65rem 0.85rem;
-    border: 1px solid #d0d5dd;
+    border: 1px solid var(--cc-border-2);
     border-radius: 10px;
+    background: #1a1a1a;
+    color: #ddd;
   }
+  .pos-search::placeholder { color: #555; }
+  .pos-search:focus { outline: none; border-color: var(--cc-blue); }
   .pos-selected-count {
     display: inline-flex;
     align-items: center;
     min-height: 2.65rem;
     padding: 0 0.85rem;
     border-radius: 10px;
-    background: #f8fafc;
-    color: #344054;
+    background: #1f1f1f;
+    border: 1px solid var(--cc-border-2);
+    color: #ddd;
     font-weight: 800;
   }
   .pos-toggle {
@@ -120,10 +124,11 @@
     min-height: 2.65rem;
     padding: 0 0.85rem;
     border-radius: 10px;
-    background: #fff;
-    border: 1px solid #d0d5dd;
-    color: #344054;
+    background: #1a1a1a;
+    border: 1px solid var(--cc-border-2);
+    color: #ddd;
     font-weight: 700;
+    cursor: pointer;
   }
   .pos-table {
     width: 100%;
@@ -131,20 +136,20 @@
   }
   .pos-table th,
   .pos-table td {
-    border-bottom: 1px solid #edf0f5;
+    border-bottom: 1px solid var(--cc-border);
     padding: 0.75rem;
     text-align: left;
     vertical-align: middle;
   }
   .pos-table th {
-    color: #6b7280;
+    color: #888;
     font-size: 0.78rem;
     letter-spacing: 0.08em;
     text-transform: uppercase;
   }
   .pos-product strong {
     display: block;
-    color: #111827;
+    color: #fff !important;
   }
   .pos-product {
     min-width: 19rem;
@@ -158,24 +163,24 @@
     flex: 0 0 auto;
     width: 4.6rem;
     height: 4.6rem;
-    border: 1px solid #e4e7ec;
+    border: 1px solid var(--cc-border-2);
     border-radius: 12px;
-    background: #f8fafc;
+    background: #1a1a1a;
     object-fit: cover;
   }
   .pos-image--empty {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    color: #98a2b3;
+    color: #666;
     font-weight: 800;
   }
   .pos-product span {
-    color: #6b7280;
+    color: var(--cc-muted) !important;
     font-size: 0.92rem;
   }
   .pos-table tr.is-selected {
-    background: #f0fdf4;
+    background: rgba(45, 190, 108, 0.09);
   }
   .pos-table tr.is-hidden {
     display: none;
@@ -192,15 +197,18 @@
   .pos-qty-btn {
     width: 2.2rem;
     height: 2.2rem;
-    border: 1px solid #d0d5dd;
+    border: 1px solid var(--cc-border-2);
     border-radius: 8px;
-    background: #fff;
-    color: #111827;
+    background: #1f1f1f;
+    color: #ddd;
     font-weight: 900;
     line-height: 1;
+    cursor: pointer;
+    transition: background .12s, color .12s;
   }
+  .pos-qty-btn:hover { background: #2a2a2a; color: #fff; }
   .pos-line-subtotal {
-    color: #111827;
+    color: #fff !important;
     font-weight: 800;
   }
   .pos-total-bar {
@@ -215,10 +223,11 @@
     margin-top: 1rem;
     padding: 1rem;
     border-radius: 12px;
-    background: #f8fafc;
+    background: #141414;
+    border: 1px solid var(--cc-border-2);
   }
   .pos-total {
-    color: #05603a;
+    color: var(--cc-green) !important;
     font-size: 1.7rem;
     font-weight: 800;
   }
@@ -227,7 +236,7 @@
   }
   .pos-summary-item strong {
     display: block;
-    color: #111827;
+    color: #fff !important;
   }
   .pos-clear {
     min-height: 2.4rem;
@@ -256,9 +265,9 @@
     place-items: center;
     min-height: 8rem;
     margin: 0;
-    border: 1px dashed #d0d5dd;
+    border: 1px dashed var(--cc-border-2);
     border-radius: 12px;
-    color: #667085;
+    color: var(--cc-muted);
     text-align: center;
   }
   .pos-ticket-item {
@@ -266,16 +275,16 @@
     grid-template-columns: 3.8rem minmax(0, 1fr);
     gap: 0.75rem;
     padding: 0.75rem;
-    border: 1px solid #edf0f5;
+    border: 1px solid var(--cc-border);
     border-radius: 12px;
-    background: #fcfcfd;
+    background: #161616;
   }
   .pos-ticket-image {
     width: 3.8rem;
     height: 3.8rem;
-    border: 1px solid #e4e7ec;
+    border: 1px solid var(--cc-border-2);
     border-radius: 10px;
-    background: #f8fafc;
+    background: #1a1a1a;
     object-fit: cover;
   }
   .pos-ticket-body strong,
@@ -283,7 +292,7 @@
     display: block;
   }
   .pos-ticket-body span {
-    color: #667085;
+    color: var(--cc-muted) !important;
     font-size: 0.86rem;
   }
   .pos-ticket-row {
@@ -306,7 +315,7 @@
   .pos-ticket-remove {
     border: 0;
     background: transparent;
-    color: #b42318;
+    color: var(--cc-red);
     cursor: pointer;
     font-weight: 800;
     padding: 0;
@@ -316,20 +325,20 @@
     gap: 0.65rem;
     margin-top: 1rem;
     padding-top: 1rem;
-    border-top: 1px solid #edf0f5;
+    border-top: 1px solid var(--cc-border);
   }
   .pos-ticket-summary div {
     display: flex;
     justify-content: space-between;
     gap: 1rem;
-    color: #475467;
+    color: #aaa;
   }
   .pos-ticket-summary strong {
-    color: #111827;
+    color: #fff !important;
   }
   .pos-ticket-summary .is-total {
     align-items: baseline;
-    color: #111827;
+    color: #fff !important;
     font-size: 1.1rem;
     font-weight: 800;
   }
@@ -338,6 +347,29 @@
     min-height: 2.75rem;
     margin-top: 1rem;
   }
+  /* ── light mode ── */
+  html.light-mode .pos-panel { background: #fff !important; border-color: #e5e7eb !important; }
+  html.light-mode .pos-header-grid label { color: #344054; }
+  html.light-mode .pos-header-grid textarea,
+  html.light-mode .pos-header-grid select,
+  html.light-mode .pos-header-grid input,
+  html.light-mode .pos-search { background: #fff !important; color: #111827 !important; border-color: #d0d5dd !important; }
+  html.light-mode .pos-selected-count { background: #f8fafc; color: #344054; border-color: #e5e7eb; }
+  html.light-mode .pos-toggle { background: #fff; color: #344054; border-color: #d0d5dd; }
+  html.light-mode .pos-product strong,
+  html.light-mode .pos-line-subtotal,
+  html.light-mode .pos-summary-item strong,
+  html.light-mode .pos-ticket-summary strong,
+  html.light-mode .pos-ticket-summary .is-total { color: #111827 !important; }
+  html.light-mode .pos-image, html.light-mode .pos-ticket-image { background: #f8fafc; border-color: #e4e7ec; }
+  html.light-mode .pos-table tr.is-selected { background: #f0fdf4; }
+  html.light-mode .pos-qty-btn { background: #fff; color: #111827; border-color: #d0d5dd; }
+  html.light-mode .pos-qty-btn:hover { background: #f3f4f6; color: #111827; }
+  html.light-mode .pos-total-bar { background: #f8fafc; border-color: #e5e7eb; }
+  html.light-mode .pos-total { color: #05603a !important; }
+  html.light-mode .pos-ticket-item { background: #fcfcfd; border-color: #edf0f5; }
+  html.light-mode .pos-ticket-summary div { color: #475467; }
+
   @media (max-width: 900px) {
     .pos-header-grid {
       grid-template-columns: 1fr;
