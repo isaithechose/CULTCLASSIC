@@ -35,6 +35,29 @@
 </script>
 {% endblock %}
 
+{% block hero %}
+<nav class="product-breadcrumb" aria-label="Ruta de navegación">
+    <div class="container px-4 px-lg-5">
+        <a href="{% url 'tienda:tienda' %}">Inicio</a>
+        <span aria-hidden="true">/</span>
+        <a href="{% url 'tienda:lista_productos' %}">Productos</a>
+        <span aria-hidden="true">/</span>
+        <span class="is-current">{{ producto.nombre }}</span>
+    </div>
+</nav>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {"@type": "ListItem", "position": 1, "name": "Inicio", "item": "{{ request.scheme }}://{{ request.get_host }}{% url 'tienda:tienda' %}"},
+    {"@type": "ListItem", "position": 2, "name": "Productos", "item": "{{ request.scheme }}://{{ request.get_host }}{% url 'tienda:lista_productos' %}"},
+    {"@type": "ListItem", "position": 3, "name": "{{ producto.nombre|escapejs }}"}
+  ]
+}
+</script>
+{% endblock %}
+
 {% block content %}
 <style>
     main {
@@ -247,6 +270,20 @@
         color: var(--cc-ink);
     }
 
+    .product-breadcrumb {
+        padding: 1.1rem 0 0.2rem;
+        font-size: 0.86rem;
+        letter-spacing: 0.02em;
+    }
+    .product-breadcrumb a {
+        color: var(--cc-ink);
+        opacity: 0.6;
+        text-decoration: none;
+    }
+    .product-breadcrumb a:hover { opacity: 1; text-decoration: underline; }
+    .product-breadcrumb span { opacity: 0.4; margin: 0 0.4rem; }
+    .product-breadcrumb .is-current { opacity: 0.85; margin: 0; font-weight: 600; }
+
     .detail-title {
         font-family: "Teko", sans-serif;
         font-size: clamp(2.6rem, 4.2vw, 4.2rem);
@@ -284,6 +321,24 @@
         gap: 0.7rem;
         margin-bottom: 1.2rem;
     }
+
+    .btn-talla.is-agotado {
+        opacity: 0.32;
+        text-decoration: line-through;
+        cursor: not-allowed;
+        pointer-events: none;
+    }
+    .color-circle.is-agotado { opacity: 0.3; cursor: not-allowed; pointer-events: none; }
+    .detail-stock-hint {
+        margin-top: 0.55rem;
+        font-size: 0.86rem;
+        font-weight: 600;
+        letter-spacing: 0.01em;
+        min-height: 1.2em;
+    }
+    .detail-stock-hint.is-low { color: #b45309; }
+    .detail-stock-hint.is-out { color: #b42318; }
+    .detail-stock-hint.is-ok { color: #15803d; }
 
     .btn-talla {
         padding: 1rem 0.75rem;
@@ -1138,7 +1193,7 @@
                         {% if producto.slug_imagen and producto.slug_imagen != "max_overweight_oversized" %}
                             <div class="detail-kicker__line">Garment Dye</div>
                         {% endif %}
-                        <h2 class="detail-title">{{ producto.nombre }}</h2>
+                        <h1 class="detail-title">{{ producto.nombre }}</h1>
                     </div>
                 </div>
 
@@ -1180,6 +1235,7 @@
                             <button type="button" class="btn btn-outline-dark btn-sm btn-talla" data-talla="{{ talla }}">{{ talla }}</button>
                           {% endfor %}
                         </div>
+                        <p class="detail-stock-hint" id="stockHint" role="status" aria-live="polite"></p>
                       </div>
 
                       <div class="detail-secondary-actions">
@@ -1705,6 +1761,71 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   });
 
+  // ── Existencias por combinacion ──────────────────────────────────────
+  // El cliente ve que hay disponible ANTES de elegir, en vez de toparse con
+  // el "sin stock" hasta el carrito.
+  const STOCK_VARIANTE = {{ stock_por_variante|safe }};
+  const STOCK_COLOR = {{ stock_por_color|safe }};
+  const stockHint = document.getElementById('stockHint');
+
+  function stockDe(color, talla) {
+    if (!color || !talla) return null;
+    const valor = STOCK_VARIANTE[color + '|' + talla];
+    return valor === undefined ? null : valor;
+  }
+
+  function colorSeleccionado() {
+    const activo = document.querySelector('.color-circle.is-active');
+    return activo ? activo.dataset.color : (document.getElementById('colorInput') || {}).value || '';
+  }
+
+  function tallaSeleccionada() {
+    const activa = document.querySelector('.btn-talla.active');
+    return activa ? activa.dataset.talla : '';
+  }
+
+  function pintarDisponibilidad() {
+    const color = colorSeleccionado();
+
+    // colores sin una sola pieza
+    document.querySelectorAll('.color-circle').forEach(circulo => {
+      const total = STOCK_COLOR[circulo.dataset.color];
+      circulo.classList.toggle('is-agotado', total !== undefined && total <= 0);
+    });
+
+    // tallas del color elegido
+    document.querySelectorAll('.btn-talla').forEach(boton => {
+      const existencia = stockDe(color, boton.dataset.talla);
+      const agotada = color && existencia !== null && existencia <= 0;
+      boton.classList.toggle('is-agotado', !!agotada);
+      boton.title = agotada ? 'Agotada en este color' : '';
+      if (agotada && boton.classList.contains('active')) {
+        boton.classList.remove('active', 'btn-dark');
+        const inputTalla = document.getElementById('tallaInput');
+        const etiqueta = document.getElementById('tallaLabel');
+        if (inputTalla) inputTalla.value = '';
+        if (etiqueta) etiqueta.textContent = 'Selecciona una talla';
+      }
+    });
+
+    if (!stockHint) return;
+    const talla = tallaSeleccionada();
+    const existencia = stockDe(color, talla);
+    stockHint.className = 'detail-stock-hint';
+    if (!color || !talla || existencia === null) {
+      stockHint.textContent = '';
+    } else if (existencia <= 0) {
+      stockHint.textContent = 'Agotada en esta combinación — elige otra talla o color.';
+      stockHint.classList.add('is-out');
+    } else if (existencia <= 3) {
+      stockHint.textContent = existencia === 1 ? 'Queda 1 pieza' : 'Quedan solo ' + existencia + ' piezas';
+      stockHint.classList.add('is-low');
+    } else {
+      stockHint.textContent = 'Disponible para envío inmediato';
+      stockHint.classList.add('is-ok');
+    }
+  }
+
   // Cambiar color
   document.querySelectorAll('.color-circle').forEach(circle => {
     circle.addEventListener('click', () => {
@@ -1721,6 +1842,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
       document.querySelectorAll('.color-circle').forEach(c => c.classList.remove("is-active"));
       circle.classList.add("is-active");
+      pintarDisponibilidad();
       actualizarResumen();
     });
   });
@@ -1733,6 +1855,7 @@ document.addEventListener("DOMContentLoaded", function () {
       document.getElementById("tallaLabel").textContent = talla;
       document.querySelectorAll('.btn-talla').forEach(b => b.classList.remove("active", "btn-dark"));
       btn.classList.add("active", "btn-dark");
+      pintarDisponibilidad();
       actualizarResumen();
     });
   });
@@ -1904,6 +2027,7 @@ document.addEventListener("DOMContentLoaded", function () {
   })();
 
   actualizarPrecio();
+  pintarDisponibilidad();   // marca agotados desde que carga la pagina
   actualizarResumen();
 
   const firstColorCircle = document.querySelector('.color-circle');

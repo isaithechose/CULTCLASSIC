@@ -313,6 +313,16 @@ def detalle_producto(request, producto_id):
         tallas_disponibles = producto.tallas_disponibles.split(",") if producto.tallas_disponibles else []
         colores_disponibles = producto.colores_disponibles.split(",") if producto.colores_disponibles else []
 
+    # Existencia real por combinacion, para que el cliente vea que puede comprar
+    # antes de elegir y no se entere hasta el carrito.
+    stock_por_variante = {
+        f"{v.color}|{v.talla}": int(v.stock or 0)
+        for v in variantes_activas
+    }
+    stock_por_color = {}
+    for v in variantes_activas:
+        stock_por_color[v.color] = stock_por_color.get(v.color, 0) + int(v.stock or 0)
+
     diseño_seleccionado = request.GET.get("diseño")
     designs_dir = Path(settings.MEDIA_ROOT) / "diseños_propios"
     designs_dir.mkdir(parents=True, exist_ok=True)
@@ -402,6 +412,8 @@ def detalle_producto(request, producto_id):
         'reseñas': reseñas,
         'gallery_images': gallery_images,
         'size_chart': size_chart,
+        'stock_por_variante': json.dumps(stock_por_variante),
+        'stock_por_color': json.dumps(stock_por_color),
     })
 
 
