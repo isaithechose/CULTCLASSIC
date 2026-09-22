@@ -4,7 +4,7 @@ from django.contrib import admin
 from django.contrib import messages
 from django.contrib.admin.sites import AdminSite
 from django import forms
-from django.db import transaction
+from django.db import models, transaction
 from django.db.models import Case, Count, DecimalField, ExpressionWrapper, F, Prefetch, Sum, Value, When
 from django.db.models.functions import Coalesce
 from django.forms import formset_factory
@@ -5460,6 +5460,76 @@ class BankMovementAdmin(admin.ModelAdmin):
         return format_html('<span style="display:inline-block;padding:0.25rem 0.6rem;border-radius:999px;background:#fee2e2;color:#991b1b;font-weight:800;">No</span>')
 
 
+def _ultima_ocurrencia_recurrente(expense):
+    """El gasto mas reciente de esa serie (el origen o el ultimo generado)."""
+    origen = expense.gasto_origen or expense
+    return (
+        Expense.objects.filter(models.Q(pk=origen.pk) | models.Q(gasto_origen=origen))
+        .order_by("-fecha", "-id")
+        .first()
+    ) or expense
+
+
+def _ocurrencias_pendientes(expense, hasta=None):
+    """Fechas que ya se debieron registrar y todavia no existen.
+
+    Cada ocurrencia se calcula desde la fecha ORIGINAL de la serie, no desde la
+    ultima generada: si el gasto nace un 31 de enero, la siguiente es el 28 de
+    febrero pero la de marzo vuelve al 31. Encadenar una fecha tras otra hacia
+    correrse el dia mes con mes.
+    """
+    hasta = hasta or timezone.localdate()
+    origen = expense.gasto_origen or expense
+    if not origen.recurrencia_activa or origen.recurrencia == "none":
+        return []
+
+    existentes = set(
+        Expense.objects.filter(models.Q(pk=origen.pk) | models.Q(gasto_origen=origen))
+        .values_list("fecha", flat=True)
+    )
+
+    pendientes = []
+    for n in range(1, 121):  # tope de seguridad
+        if origen.recurrencia == "weekly":
+            fecha = origen.fecha + timedelta(days=7 * n)
+        elif origen.recurrencia == "monthly":
+            fecha = _add_months(origen.fecha, n)
+        elif origen.recurrencia == "yearly":
+            fecha = _add_months(origen.fecha, 12 * n)
+        else:
+            break
+        if fecha > hasta:
+            break
+        if origen.recurrencia_fin and fecha > origen.recurrencia_fin:
+            break
+        if fecha not in existentes:
+            pendientes.append(fecha)
+    return pendientes
+
+
+def _generar_ocurrencia(expense, fecha, usuario=None):
+    """Crea el gasto de esa fecha con su poliza. Idempotente."""
+    origen = expense.gasto_origen or expense
+    if Expense.objects.filter(gasto_origen=origen, fecha=fecha, concepto=expense.concepto).exists():
+        return None
+    nuevo = Expense.objects.create(
+        fecha=fecha,
+        categoria=expense.categoria,
+        concepto=expense.concepto,
+        monto=expense.monto,
+        metodo_pago=expense.metodo_pago,
+        proveedor=expense.proveedor,
+        nota=expense.nota,
+        recurrencia=expense.recurrencia,
+        recurrencia_activa=expense.recurrencia_activa,
+        recurrencia_fin=expense.recurrencia_fin,
+        gasto_origen=origen,
+        created_by=usuario or expense.created_by,
+    )
+    _post_expense_journal_entry(nuevo, created_by=usuario or expense.created_by)
+    return nuevo
+
+
 @admin.action(description="Generar siguiente gasto recurrente")
 def generar_siguiente_gasto_recurrente(modeladmin, request, queryset):
     created = 0
@@ -5518,6 +5588,7 @@ def generar_siguiente_gasto_recurrente(modeladmin, request, queryset):
 
 @admin.register(Expense)
 class ExpenseAdmin(admin.ModelAdmin):
+    change_list_template = "admin/tienda/expense_change_list.html"
     list_select_related = ("categoria", "created_by")
     list_display = (
         "fecha",
@@ -5555,6 +5626,11 @@ class ExpenseAdmin(admin.ModelAdmin):
                 self.admin_site.admin_view(self.accounting_dashboard_view),
                 name="tienda_expense_accounting_dashboard",
             ),
+            path(
+                "recurrentes/",
+                self.admin_site.admin_view(self.recurring_expenses_view),
+                name="tienda_expense_recurring",
+            ),
         ]
         return custom_urls + urls
 
@@ -5584,6 +5660,78 @@ class ExpenseAdmin(admin.ModelAdmin):
         if not obj or not obj.pk:
             return 0
         return obj.gastos_generados.count()
+
+    def recurring_expenses_view(self, request):
+        """Pantalla de gastos recurrentes: qué se repite y qué falta registrar."""
+        hoy = timezone.localdate()
+
+        if request.method == "POST":
+            objetivo = request.POST.get("expense_id")
+            series = Expense.objects.filter(
+                recurrencia_activa=True, gasto_origen__isnull=True
+            ).exclude(recurrencia="none")
+            if objetivo:
+                series = series.filter(pk=objetivo)
+
+            creados = 0
+            for serie in series:
+                for fecha in _ocurrencias_pendientes(serie, hasta=hoy):
+                    if _generar_ocurrencia(serie, fecha, usuario=request.user):
+                        creados += 1
+
+            if creados:
+                self.message_user(
+                    request,
+                    f"Se registraron {creados} gasto{'s' if creados != 1 else ''} con su póliza contable.",
+                    level=messages.SUCCESS,
+                )
+            else:
+                self.message_user(request, "No había gastos pendientes por registrar.", level=messages.INFO)
+            return HttpResponseRedirect(reverse("admin:tienda_expense_recurring"))
+
+        filas = []
+        total_pendiente = Decimal("0.00")
+        total_mensual = Decimal("0.00")
+        for serie in (
+            Expense.objects.filter(recurrencia_activa=True, gasto_origen__isnull=True)
+            .exclude(recurrencia="none")
+            .select_related("categoria")
+            .order_by("concepto")
+        ):
+            ultima = _ultima_ocurrencia_recurrente(serie)
+            pendientes = _ocurrencias_pendientes(serie, hasta=hoy)
+            generados = Expense.objects.filter(gasto_origen=serie).count()
+            if serie.recurrencia == "monthly":
+                total_mensual += _money(serie.monto)
+            total_pendiente += _money(serie.monto) * len(pendientes)
+            filas.append({
+                "expense": serie,
+                "ultima_fecha": ultima.fecha,
+                "generados": generados,
+                "pendientes": pendientes,
+                "proxima": _next_expense_recurrence_date(ultima),
+                "atrasado": bool(pendientes),
+            })
+
+        inactivos = (
+            Expense.objects.filter(recurrencia_activa=False)
+            .exclude(recurrencia="none")
+            .select_related("categoria")
+            .order_by("-fecha")[:10]
+        )
+
+        context = dict(
+            self.admin_site.each_context(request),
+            title="Gastos recurrentes",
+            opts=self.model._meta,
+            filas=filas,
+            inactivos=inactivos,
+            total_pendiente=total_pendiente,
+            total_mensual=total_mensual,
+            pendientes_totales=sum(len(f["pendientes"]) for f in filas),
+            hoy=hoy,
+        )
+        return TemplateResponse(request, "admin/tienda/recurring_expenses.html", context)
 
     def accounting_dashboard_view(self, request):
         today = timezone.localdate()

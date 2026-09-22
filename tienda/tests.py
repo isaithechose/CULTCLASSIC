@@ -635,3 +635,76 @@ class AutomaticAccountingTests(TestCase):
         for nombre in ("tienda_journalentry_month_close", "tienda_journalentry_card_payment"):
             response = self.client.get(reverse(f"admin:{nombre}"))
             self.assertEqual(response.status_code, 200)
+
+
+# ---------------------------------------------------------------------------
+# Gastos recurrentes
+# ---------------------------------------------------------------------------
+
+
+class RecurringExpenseTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_superuser(
+            username="recurrentes", email="rec@example.com", password="clave-secreta"
+        )
+        self.client = Client()
+        self.client.force_login(self.user)
+        self.categoria = ExpenseCategory.objects.create(nombre="Servicios")
+        for code, nombre, tipo in (("1000", "Caja", "asset"), ("6000", "Gastos generales", "expense")):
+            AccountingAccount.objects.get_or_create(code=code, defaults={"name": nombre, "account_type": tipo})
+
+    def _serie(self, fecha=date(2026, 1, 31), recurrencia="monthly", activa=True):
+        return Expense.objects.create(
+            fecha=fecha, categoria=self.categoria, concepto="Publicidad",
+            monto=Decimal("500"), metodo_pago="cash",
+            recurrencia=recurrencia, recurrencia_activa=activa, created_by=self.user,
+        )
+
+    def test_las_fechas_no_se_corren_mes_con_mes(self):
+        from tienda.admin import _ocurrencias_pendientes
+
+        pendientes = _ocurrencias_pendientes(self._serie(), hasta=date(2026, 8, 31))
+        # nace el 31: febrero se recorta a 28 pero marzo vuelve al 31
+        self.assertEqual(pendientes[0], date(2026, 2, 28))
+        self.assertEqual(pendientes[1], date(2026, 3, 31))
+        self.assertEqual(pendientes[2], date(2026, 4, 30))
+        self.assertEqual(pendientes[-1], date(2026, 8, 31))
+
+    def test_genera_todos_los_periodos_atrasados_de_una_vez(self):
+        serie = self._serie(fecha=date(2026, 1, 15))
+        antes = Expense.objects.count()
+        response = self.client.post(reverse("admin:tienda_expense_recurring"), {"expense_id": serie.id})
+        self.assertEqual(response.status_code, 302)
+        generados = Expense.objects.filter(gasto_origen=serie)
+        self.assertGreater(generados.count(), 1)
+        self.assertEqual(Expense.objects.count(), antes + generados.count())
+        # cada gasto generado trae su póliza
+        for gasto in generados:
+            self.assertTrue(JournalEntry.objects.filter(expense=gasto).exists())
+
+    def test_no_duplica_si_se_corre_otra_vez(self):
+        serie = self._serie(fecha=date(2026, 1, 15))
+        self.client.post(reverse("admin:tienda_expense_recurring"), {"expense_id": serie.id})
+        cuantos = Expense.objects.filter(gasto_origen=serie).count()
+        self.client.post(reverse("admin:tienda_expense_recurring"), {"expense_id": serie.id})
+        self.assertEqual(Expense.objects.filter(gasto_origen=serie).count(), cuantos)
+
+    def test_una_serie_apagada_no_genera_nada(self):
+        from tienda.admin import _ocurrencias_pendientes
+
+        self.assertEqual(_ocurrencias_pendientes(self._serie(activa=False)), [])
+
+    def test_respeta_la_fecha_de_termino(self):
+        from tienda.admin import _ocurrencias_pendientes
+
+        serie = self._serie(fecha=date(2026, 1, 15))
+        serie.recurrencia_fin = date(2026, 3, 31)
+        serie.save(update_fields=["recurrencia_fin"])
+        pendientes = _ocurrencias_pendientes(serie, hasta=date(2026, 8, 31))
+        self.assertEqual(pendientes, [date(2026, 2, 15), date(2026, 3, 15)])
+
+    def test_la_pantalla_y_el_boton_existen(self):
+        respuesta = self.client.get(reverse("admin:tienda_expense_recurring"))
+        self.assertEqual(respuesta.status_code, 200)
+        listado = self.client.get(reverse("admin:tienda_expense_changelist"))
+        self.assertContains(listado, "Gastos recurrentes")

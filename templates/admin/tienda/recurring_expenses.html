@@ -1,0 +1,174 @@
+{% extends "admin/base_site.html" %}
+{% load humanize %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+  .gr-wrap { max-width: 1050px; }
+  .gr-header {
+    background: var(--cc-panel) !important; border: 1px solid var(--cc-border) !important;
+    border-radius: 14px; padding: 1.3rem 1.5rem; margin-bottom: 1rem;
+    display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap;
+  }
+  .gr-header h1 { margin: 0 0 .25rem; font-size: 1.25rem; }
+  .gr-header p { margin: 0; color: var(--cc-muted); font-size: .9rem; }
+
+  .gr-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: .8rem; margin-bottom: 1rem; }
+  .gr-card { background: var(--cc-panel) !important; border: 1px solid var(--cc-border) !important; border-radius: 14px; padding: 1rem 1.1rem; }
+  .gr-label { font-size: .7rem; text-transform: uppercase; letter-spacing: .08em; color: var(--cc-muted) !important; font-weight: 700; }
+  .gr-value { font-size: 1.5rem; font-weight: 800; color: #fff !important; margin-top: .3rem; font-variant-numeric: tabular-nums; }
+  .gr-value.is-warn { color: var(--cc-yellow) !important; }
+  .gr-hint { font-size: .78rem; color: var(--cc-muted) !important; margin-top: .25rem; }
+
+  .gr-aviso {
+    display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+    padding: 1rem 1.2rem; border-radius: 14px; margin-bottom: 1rem;
+    border: 1px solid rgba(240,165,0,.4); background: rgba(240,165,0,.08);
+  }
+  .gr-aviso-texto { flex: 1; min-width: 240px; }
+  .gr-aviso-titulo { font-weight: 700; color: #fff !important; }
+  .gr-aviso-sub { color: var(--cc-muted) !important; font-size: .87rem; margin-top: .2rem; line-height: 1.5; }
+
+  .gr-panel { background: var(--cc-panel) !important; border: 1px solid var(--cc-border) !important; border-radius: 14px; overflow: hidden; margin-bottom: 1rem; }
+  .gr-panel-head { padding: .9rem 1.1rem; border-bottom: 1px solid var(--cc-border); background: #141414; display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+  .gr-panel-head h2 { margin: 0; font-size: .98rem; }
+
+  .gr-fila { display: grid; grid-template-columns: 1fr 7rem 8rem 9rem auto; gap: 1rem; padding: .85rem 1.1rem; align-items: center; }
+  .gr-fila + .gr-fila { border-top: 1px solid var(--cc-border); }
+  .gr-fila.is-atrasado { background: rgba(240,165,0,.06); }
+  .gr-concepto { font-weight: 700; color: #fff !important; font-size: .92rem; }
+  .gr-meta { color: var(--cc-muted) !important; font-size: .79rem; margin-top: .15rem; }
+  .gr-monto { font-weight: 800; color: #fff !important; font-variant-numeric: tabular-nums; text-align: right; }
+  .gr-col { font-size: .84rem; color: #bbb !important; }
+  .gr-chip { display: inline-flex; padding: .2rem .55rem; border-radius: 999px; font-size: .74rem; font-weight: 700; white-space: nowrap; }
+  .gr-chip--ok { color: var(--cc-green) !important; background: rgba(45,190,108,.13); }
+  .gr-chip--warn { color: var(--cc-yellow) !important; background: rgba(240,165,0,.14); }
+  .gr-empty { padding: 2rem 1.1rem; text-align: center; color: var(--cc-muted); line-height: 1.6; }
+  .gr-btn { padding: .5rem 1.1rem !important; font-weight: 700 !important; border-radius: 9px !important; cursor: pointer; }
+
+  html.light-mode .gr-header, html.light-mode .gr-card, html.light-mode .gr-panel { background: #fff !important; border-color: #e5e7eb !important; }
+  html.light-mode .gr-panel-head { background: #f8fafc; }
+  html.light-mode .gr-value, html.light-mode .gr-concepto, html.light-mode .gr-monto, html.light-mode .gr-aviso-titulo { color: #111827 !important; }
+  html.light-mode .gr-col { color: #374151 !important; }
+
+  @media (max-width: 900px) {
+    .gr-header { flex-direction: column; }
+    .gr-fila { grid-template-columns: 1fr auto; }
+    .gr-fila .gr-col { display: none; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="gr-wrap">
+
+  <div class="gr-header">
+    <div>
+      <h1>Gastos recurrentes</h1>
+      <p>Los gastos que se repiten solos: renta, publicidad, servicios. Aquí ves cuáles están al día y cuáles se te pasaron.</p>
+    </div>
+    <div style="display:flex;gap:.6rem;flex-wrap:wrap;">
+      <a class="button" href="{% url 'admin:tienda_expense_add' %}">Nuevo gasto</a>
+      <a class="button" href="{% url 'admin:tienda_expense_changelist' %}">Todos los gastos</a>
+    </div>
+  </div>
+
+  <div class="gr-cards">
+    <div class="gr-card">
+      <div class="gr-label">Gasto fijo mensual</div>
+      <div class="gr-value">${{ total_mensual|floatformat:2|intcomma }}</div>
+      <div class="gr-hint">Suma de lo que se repite cada mes</div>
+    </div>
+    <div class="gr-card">
+      <div class="gr-label">Pendientes de registrar</div>
+      <div class="gr-value {% if pendientes_totales %}is-warn{% endif %}">{{ pendientes_totales }}</div>
+      <div class="gr-hint">Periodos que ya pasaron y no están capturados</div>
+    </div>
+    <div class="gr-card">
+      <div class="gr-label">Importe pendiente</div>
+      <div class="gr-value {% if total_pendiente %}is-warn{% endif %}">${{ total_pendiente|floatformat:2|intcomma }}</div>
+      <div class="gr-hint">Lo que falta por reflejar en tus gastos</div>
+    </div>
+  </div>
+
+  {% if pendientes_totales %}
+  <form method="post" class="gr-aviso">
+    {% csrf_token %}
+    <div class="gr-aviso-texto">
+      <div class="gr-aviso-titulo">Tienes {{ pendientes_totales }} gasto{{ pendientes_totales|pluralize:"s" }} sin registrar</div>
+      <div class="gr-aviso-sub">
+        Al generarlos se crea cada gasto en su fecha con su póliza contable, igual que si los hubieras capturado a tiempo.
+        No se duplica nada: si un periodo ya existe, se salta.
+      </div>
+    </div>
+    <button type="submit" class="button default gr-btn">Registrar los {{ pendientes_totales }} pendientes</button>
+  </form>
+  {% endif %}
+
+  <div class="gr-panel">
+    <div class="gr-panel-head">
+      <h2>Series activas</h2>
+      <span style="color:var(--cc-muted);font-size:.82rem;">Al {{ hoy }}</span>
+    </div>
+    {% for fila in filas %}
+    <div class="gr-fila {% if fila.atrasado %}is-atrasado{% endif %}">
+      <div>
+        <div class="gr-concepto">{{ fila.expense.concepto }}</div>
+        <div class="gr-meta">
+          {{ fila.expense.get_recurrencia_display }} ·
+          {{ fila.expense.categoria.nombre|default:"Sin categoría" }} ·
+          {{ fila.generados }} generado{{ fila.generados|pluralize:"s" }}
+          {% if fila.expense.recurrencia_fin %} · termina {{ fila.expense.recurrencia_fin }}{% endif %}
+        </div>
+      </div>
+      <div class="gr-monto">${{ fila.expense.monto|floatformat:2|intcomma }}</div>
+      <div class="gr-col">Último: {{ fila.ultima_fecha }}</div>
+      <div class="gr-col">
+        {% if fila.atrasado %}
+          Faltan: {% for f in fila.pendientes %}{{ f }}{% if not forloop.last %}, {% endif %}{% endfor %}
+        {% else %}
+          Próximo: {{ fila.proxima|default:"—" }}
+        {% endif %}
+      </div>
+      <div>
+        {% if fila.atrasado %}
+          <form method="post" style="margin:0;">
+            {% csrf_token %}
+            <input type="hidden" name="expense_id" value="{{ fila.expense.id }}">
+            <button type="submit" class="button gr-btn">Registrar {{ fila.pendientes|length }}</button>
+          </form>
+        {% else %}
+          <span class="gr-chip gr-chip--ok">Al día</span>
+        {% endif %}
+      </div>
+    </div>
+    {% empty %}
+    <div class="gr-empty">
+      Todavía no tienes gastos recurrentes.<br>
+      Para crear uno: captura el gasto normal, y en la sección <strong>Recurrencia</strong> elige cada cuánto se repite
+      y marca <strong>“Recurrencia activa”</strong>. A partir de ahí aparece aquí y se puede generar solo.
+      <div style="margin-top:1rem;"><a class="button default" href="{% url 'admin:tienda_expense_add' %}">Crear el primero</a></div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% if inactivos %}
+  <div class="gr-panel">
+    <div class="gr-panel-head"><h2>Tienen periodicidad pero están apagados</h2></div>
+    {% for gasto in inactivos %}
+    <div class="gr-fila">
+      <div>
+        <div class="gr-concepto">{{ gasto.concepto }}</div>
+        <div class="gr-meta">{{ gasto.get_recurrencia_display }} · {{ gasto.fecha }}</div>
+      </div>
+      <div class="gr-monto">${{ gasto.monto|floatformat:2|intcomma }}</div>
+      <div class="gr-col"></div>
+      <div class="gr-col"><span class="gr-chip gr-chip--warn">Recurrencia apagada</span></div>
+      <div><a class="button" href="{% url 'admin:tienda_expense_change' gasto.id %}">Activar</a></div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}
