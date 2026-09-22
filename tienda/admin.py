@@ -50,7 +50,7 @@ from .models import (
 
 import os
 import types
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 
 from django.utils import timezone
 
@@ -3836,6 +3836,16 @@ class JournalEntryAdmin(admin.ModelAdmin):
                 name="tienda_journalentry_generate_missing",
             ),
             path(
+                "cierre-mensual/",
+                self.admin_site.admin_view(self.month_close_view),
+                name="tienda_journalentry_month_close",
+            ),
+            path(
+                "pago-tarjeta/",
+                self.admin_site.admin_view(self.card_payment_view),
+                name="tienda_journalentry_card_payment",
+            ),
+            path(
                 "finanzas/",
                 self.admin_site.admin_view(self.finance_dashboard_view),
                 name="tienda_journalentry_finance_dashboard",
@@ -4658,6 +4668,286 @@ class JournalEntryAdmin(admin.ModelAdmin):
                 "accion": "Registrar póliza",
             })
         return avisos
+
+    def _month_close_checklist(self, bounds):
+        """Qué falta para dar por cerrado el mes.
+
+        Cada punto revisa un hecho del negocio contra su registro contable: si
+        vendiste, debe haber póliza; si compraste, debe estar en inventario; si
+        le abonaste a la tarjeta, debe verse. La idea es que el mes se cierre
+        mirando esta lista, no la memoria.
+        """
+        from mercadolibre.models import MercadoLibreOrder
+        from .accounting import ML_ESTADOS_VALIDOS, ML_REFERENCIA
+
+        inicio, fin = bounds["month_start"], bounds["month_end"]
+        puntos = []
+
+        def punto(titulo, ok, detalle, url=None, accion=None, tono_falla="danger"):
+            puntos.append({
+                "titulo": titulo,
+                "estado": "ok" if ok else tono_falla,
+                "detalle": detalle,
+                "url": url,
+                "accion": accion,
+            })
+
+        # ── Ventas propias (punto de venta y tienda) ──
+        pedidos = Order.objects.filter(
+            status="Completed", created_at__date__gte=inicio, created_at__date__lte=fin
+        )
+        sin_poliza = pedidos.filter(journal_entries__isnull=True).distinct().count()
+        punto(
+            "Ventas del mes registradas",
+            sin_poliza == 0,
+            (f"{pedidos.count()} pedidos completados, todos con su póliza."
+             if sin_poliza == 0 else
+             f"{sin_poliza} de {pedidos.count()} pedidos no tienen póliza contable."),
+            reverse("admin:tienda_order_changelist") + "?status__exact=Completed",
+            "Ver pedidos",
+        )
+
+        # ── Ventas de Mercado Libre ──
+        ml = MercadoLibreOrder.objects.filter(
+            status__in=ML_ESTADOS_VALIDOS,
+            date_created__date__gte=inicio,
+            date_created__date__lte=fin,
+        )
+        ml_sin = [o for o in ml if not JournalEntry.objects.filter(reference=ML_REFERENCIA.format(ml_id=o.ml_id)).exists()]
+        punto(
+            "Ventas de Mercado Libre registradas",
+            not ml_sin,
+            (f"{ml.count()} pedidos de ML, todos contabilizados." if not ml_sin else
+             f"{len(ml_sin)} pedidos de ML sin póliza. Corre la sincronización para registrarlos."),
+            reverse("admin:mercadolibre_mercadolibreorder_changelist"),
+            "Ver pedidos ML",
+        )
+
+        # ── Compras recibidas ──
+        recepciones = InventoryMovement.objects.filter(
+            movement_type="purchase", created_at__date__gte=inicio, created_at__date__lte=fin
+        )
+        # Lo que importa no es de qué pantalla salió la póliza sino que la
+        # mercancía haya entrado a la cuenta de inventario en el periodo.
+        entradas_inventario = _money(
+            JournalEntryLine.objects.filter(
+                journal_entry__is_posted=True,
+                journal_entry__date__gte=inicio,
+                journal_entry__date__lte=fin,
+                account__code="1100",
+            ).aggregate(d=Sum("debit"))["d"]
+        )
+        piezas = recepciones.aggregate(s=Sum("quantity_change"))["s"] or 0
+        punto(
+            "Compras capitalizadas",
+            not (recepciones.exists() and entradas_inventario <= 0),
+            (f"{recepciones.count()} recepciones ({piezas} piezas) y ${entradas_inventario:,.2f} cargados a inventario."
+             + (" Si esa mercancía se compró en un mes anterior, está bien." if entradas_inventario <= 0 else "")
+             if recepciones.exists() else
+             (f"No hubo recepciones; entraron ${entradas_inventario:,.2f} a inventario."
+              if entradas_inventario else "No hubo recepciones de mercancía este mes.")),
+            reverse("admin:tienda_inventorymovement_receive_purchase"),
+            "Ir a recepción",
+            tono_falla="warn",
+        )
+
+        # ── Gastos ──
+        gastos_mes = Expense.objects.filter(fecha__gte=inicio, fecha__lte=fin)
+        mes_previo_fin = inicio - timedelta(days=1)
+        mes_previo_inicio = mes_previo_fin.replace(day=1)
+        conceptos_previos = set(
+            Expense.objects.filter(fecha__gte=mes_previo_inicio, fecha__lte=mes_previo_fin)
+            .values_list("concepto", flat=True)
+        )
+        conceptos_mes = set(gastos_mes.values_list("concepto", flat=True))
+        faltantes = sorted(conceptos_previos - conceptos_mes)
+        gastos_contables = _money(
+            JournalEntryLine.objects.filter(
+                journal_entry__is_posted=True,
+                journal_entry__date__gte=inicio,
+                journal_entry__date__lte=fin,
+                account__account_type="expense",
+            ).aggregate(d=Sum("debit"))["d"]
+        )
+        punto(
+            "Gastos del mes capturados",
+            not faltantes,
+            (f"{gastos_mes.count()} gastos capturados, ${gastos_contables:,.2f} en total."
+             if not faltantes else
+             "El mes pasado registraste gastos que este mes no aparecen: " + ", ".join(faltantes[:4])),
+            reverse("admin:tienda_expense_changelist"),
+            "Ver gastos",
+            tono_falla="warn",
+        )
+
+        # ── Tarjeta ──
+        deuda = self._saldo_cuenta("2100", naturaleza="acreedora", date_to=fin)
+        pagos_mes = JournalEntry.objects.filter(
+            source="credit_card", is_posted=True, date__gte=inicio, date__lte=fin
+        )
+        total_pagos = sum((e.total_debit for e in pagos_mes), Decimal("0.00"))
+        punto(
+            "Pagos a la tarjeta registrados",
+            bool(pagos_mes) or deuda <= 0,
+            (f"{pagos_mes.count()} pagos por ${total_pagos:,.2f} este mes." if pagos_mes else
+             f"No registraste ningún abono y debes ${deuda:,.2f}. Si pagaste, captúralo para que la deuda baje."),
+            reverse("admin:tienda_journalentry_card_payment"),
+            "Registrar pago",
+            tono_falla="warn",
+        )
+
+        # ── Dinero de Mercado Libre pendiente ──
+        por_cobrar = self._saldo_cuenta("1030", date_to=fin)
+        punto(
+            "Depósitos de Mercado Libre aplicados",
+            por_cobrar <= 0,
+            ("No hay dinero de ML pendiente de registrar." if por_cobrar <= 0 else
+             f"Quedan ${por_cobrar:,.2f} en 'Mercado Libre por cobrar'. Si ya te depositaron, registra la entrada."),
+            reverse("admin:tienda_journalentry_add"),
+            "Registrar depósito",
+            tono_falla="warn",
+        )
+
+        # ── Pólizas en orden ──
+        sin_contabilizar = JournalEntry.objects.filter(is_posted=False, date__gte=inicio, date__lte=fin).count()
+        punto(
+            "Pólizas contabilizadas",
+            sin_contabilizar == 0,
+            ("Todas las pólizas del mes están contabilizadas." if sin_contabilizar == 0 else
+             f"{sin_contabilizar} pólizas siguen como borrador y no entran a los estados."),
+            reverse("admin:tienda_journalentry_changelist") + "?is_posted__exact=0",
+            "Revisar",
+        )
+
+        descuadradas = [
+            e for e in JournalEntry.objects.filter(is_posted=True, date__gte=inicio, date__lte=fin).prefetch_related("lines")
+            if not e.is_balanced
+        ]
+        punto(
+            "Pólizas cuadradas",
+            not descuadradas,
+            ("Cada póliza del mes cuadra debe contra haber." if not descuadradas else
+             f"{len(descuadradas)} pólizas no cuadran."),
+            reverse("admin:tienda_journalentry_unbalanced"),
+            "Ver descuadradas",
+        )
+
+        # ── Inventario contra la bodega (a hoy, no al cierre) ──
+        contable = self._saldo_cuenta("1100")
+        fisico = Decimal("0.00")
+        for variante in ProductVariant.objects.filter(activo=True).select_related("product"):
+            fisico += _money(variante.product.costo) * Decimal(str(variante.stock or 0))
+        diferencia = contable - fisico
+        punto(
+            "Inventario contable igual al físico",
+            abs(diferencia) < Decimal("1"),
+            (f"Ambos dan ${fisico:,.2f}." if abs(diferencia) < Decimal("1") else
+             f"La cuenta 1100 tiene ${contable:,.2f} y la bodega vale ${fisico:,.2f}: sobran ${diferencia:,.2f}."),
+            reverse("admin:tienda_producto_inventory_matrix"),
+            "Ver inventario",
+            tono_falla="warn",
+        )
+
+        # ── Balance ──
+        balance = self._balance_sheet_data(bounds)
+        punto(
+            "Balance cuadrado",
+            abs(balance["difference"]) < Decimal("0.01"),
+            ("Activo igual a pasivo más capital." if abs(balance["difference"]) < Decimal("0.01") else
+             f"Hay una diferencia de ${balance['difference']:,.2f}."),
+            reverse("admin:tienda_journalentry_balance_sheet") + f"?month={bounds['current_month_value']}",
+            "Ver balance",
+        )
+
+        pendientes = [p for p in puntos if p["estado"] != "ok"]
+        return {
+            "checklist": puntos,
+            "checklist_pendientes": len(pendientes),
+            "checklist_total": len(puntos),
+            "checklist_listo": not pendientes,
+        }
+
+    def month_close_view(self, request):
+        bounds = self._month_bounds(request)
+        contexto = self._month_close_checklist(bounds)
+        statement = self._income_statement_data(bounds)
+        context = dict(
+            self.admin_site.each_context(request),
+            title="Cierre del mes",
+            opts=self.model._meta,
+            **bounds,
+            **contexto,
+            **statement,
+        )
+        return TemplateResponse(request, "admin/tienda/month_close.html", context)
+
+    def card_payment_view(self, request):
+        """Registrar un abono a la tarjeta para que la deuda baje en los libros."""
+        from .accounting import post_card_payment
+
+        hoy = timezone.localdate()
+        valores = {"fecha": str(hoy), "monto": "", "origen": "cash", "nota": ""}
+
+        if request.method == "POST":
+            valores = {
+                "fecha": request.POST.get("fecha", "").strip() or str(hoy),
+                "monto": request.POST.get("monto", "").strip(),
+                "origen": request.POST.get("origen", "cash"),
+                "nota": request.POST.get("nota", "").strip(),
+            }
+            try:
+                monto = Decimal(valores["monto"] or "0")
+            except (InvalidOperation, ValueError):
+                monto = Decimal("0")
+
+            if monto <= 0:
+                self.message_user(request, "Captura un monto mayor a cero.", level=messages.ERROR)
+            else:
+                entry = post_card_payment(
+                    fecha=valores["fecha"],
+                    monto=monto,
+                    origen=valores["origen"],
+                    nota=valores["nota"],
+                    created_by=request.user,
+                )
+                if entry is None:
+                    self.message_user(request, "Ese pago ya estaba registrado.", level=messages.WARNING)
+                else:
+                    self.message_user(
+                        request,
+                        f"Pago registrado. La deuda de la tarjeta bajó ${monto:,.2f} (póliza #{entry.id}).",
+                        level=messages.SUCCESS,
+                    )
+                    return HttpResponseRedirect(
+                        reverse("admin:tienda_journalentry_card_payment")
+                    )
+
+        saldo_tarjeta = self._saldo_cuenta("2100", naturaleza="acreedora")
+        efectivo = self._saldo_cuenta("1000") + self._saldo_cuenta("1010")
+        pagos = (
+            JournalEntry.objects.filter(source="credit_card", is_posted=True)
+            .order_by("-date", "-id")[:12]
+        )
+        context = dict(
+            self.admin_site.each_context(request),
+            title="Pago de tarjeta",
+            opts=self.model._meta,
+            valores=valores,
+            saldo_tarjeta=saldo_tarjeta,
+            efectivo_disponible=efectivo,
+            pagos=pagos,
+        )
+        return TemplateResponse(request, "admin/tienda/card_payment.html", context)
+
+    def _saldo_cuenta(self, code, naturaleza="deudora", date_to=None):
+        queryset = JournalEntryLine.objects.filter(
+            journal_entry__is_posted=True, account__code=code
+        )
+        if date_to:
+            queryset = queryset.filter(journal_entry__date__lte=date_to)
+        totales = queryset.aggregate(d=Sum("debit"), c=Sum("credit"))
+        saldo = _money(totales["d"]) - _money(totales["c"])
+        return -saldo if naturaleza == "acreedora" else saldo
 
     def finance_dashboard_view(self, request):
         bounds = self._month_bounds(request)

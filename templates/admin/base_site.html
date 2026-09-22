@@ -652,6 +652,12 @@
     <a class="cc-nav-item {% if 'finanzas' in request.path %}active{% endif %}" href="{% url 'admin:tienda_journalentry_finance_dashboard' %}">
       <i class="ti ti-chart-pie cc-nav-icon" aria-hidden="true"></i><span class="cc-nav-label">Panel</span>
     </a>
+    <a class="cc-nav-item {% if 'cierre-mensual' in request.path %}active{% endif %}" href="{% url 'admin:tienda_journalentry_month_close' %}">
+      <i class="ti ti-checklist cc-nav-icon" aria-hidden="true"></i><span class="cc-nav-label">Cierre del mes</span>
+    </a>
+    <a class="cc-nav-item {% if 'pago-tarjeta' in request.path %}active{% endif %}" href="{% url 'admin:tienda_journalentry_card_payment' %}">
+      <i class="ti ti-credit-card-pay cc-nav-icon" aria-hidden="true"></i><span class="cc-nav-label">Pago de tarjeta</span>
+    </a>
     <a class="cc-nav-item {% if 'flujo-de-efectivo' in request.path %}active{% endif %}" href="{% url 'admin:tienda_journalentry_cash_flow' %}">
       <i class="ti ti-cash cc-nav-icon" aria-hidden="true"></i><span class="cc-nav-label">Flujo de efectivo</span>
     </a>

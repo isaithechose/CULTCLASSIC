@@ -517,3 +517,121 @@ class PurchaseCapitalizationTests(TestCase):
         lineas = self._lineas(entry)
         self.assertEqual(lineas["6000"][0], Decimal("8000"))
         self.assertNotIn("1100", lineas)
+
+
+# ---------------------------------------------------------------------------
+# Contabilidad automática: Mercado Libre, tarjeta y cierre del mes
+# ---------------------------------------------------------------------------
+
+
+class AutomaticAccountingTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_superuser(
+            username="conta", email="conta@example.com", password="clave-secreta"
+        )
+        self.client = Client()
+        self.client.force_login(self.user)
+        self.producto = make_producto(precio=500)
+        self.producto.costo = Decimal("100.00")
+        self.producto.save(update_fields=["costo"])
+
+    def _ml_order(self, ml_id=999, status="paid"):
+        from mercadolibre.models import MercadoLibreListing, MercadoLibreOrder, MercadoLibreOrderItem
+        from django.utils import timezone as tz
+
+        listing = MercadoLibreListing.objects.create(
+            ml_id="MLM123", title="Playera", price=Decimal("400"), producto=self.producto
+        )
+        order = MercadoLibreOrder.objects.create(
+            ml_id=ml_id, status=status, date_created=tz.now(),
+            total_amount=Decimal("400.00"), marketplace_fee=Decimal("78.00"),
+            shipping_cost=Decimal("67.60"), net_received_amount=Decimal("254.40"),
+        )
+        MercadoLibreOrderItem.objects.create(
+            order=order, item_id=listing.ml_id, title="Playera", quantity=1, unit_price=Decimal("400")
+        )
+        return order
+
+    def test_venta_de_ml_genera_poliza_completa(self):
+        from tienda.accounting import post_ml_order_entry
+
+        entry = post_ml_order_entry(self._ml_order(), created_by=self.user)
+        self.assertIsNotNone(entry)
+        lineas = {l.account.code: (l.debit, l.credit) for l in entry.lines.all()}
+        self.assertEqual(lineas["1030"][0], Decimal("254.40"))   # lo que ML depositará
+        self.assertEqual(lineas["6200"][0], Decimal("78.00"))    # comisión
+        self.assertEqual(lineas["6100"][0], Decimal("67.60"))    # envío
+        self.assertEqual(lineas["4000"][1], Decimal("400.00"))   # venta completa
+        self.assertEqual(lineas["5000"][0], Decimal("100.00"))   # costo
+        self.assertEqual(lineas["1100"][1], Decimal("100.00"))   # sale de inventario
+        self.assertEqual(entry.total_debit, entry.total_credit)
+
+    def test_no_duplica_la_poliza_de_ml(self):
+        from tienda.accounting import post_ml_order_entry
+
+        order = self._ml_order()
+        self.assertIsNotNone(post_ml_order_entry(order))
+        self.assertIsNone(post_ml_order_entry(order))
+        self.assertEqual(JournalEntry.objects.filter(reference=f"ML-{order.ml_id}").count(), 1)
+
+    def test_cancelacion_de_ml_genera_la_reversa(self):
+        from tienda.accounting import post_ml_order_entry, sincronizar_poliza_ml
+
+        order = self._ml_order()
+        post_ml_order_entry(order)
+        order.status = "cancelled"
+        order.save(update_fields=["status"])
+        reversa = sincronizar_poliza_ml(order)
+        self.assertIsNotNone(reversa)
+        # la reversa deja el efecto neto en cero
+        neto = Decimal("0")
+        for entry in JournalEntry.objects.filter(reference__contains=str(order.ml_id)):
+            for linea in entry.lines.all():
+                if linea.account.code == "4000":
+                    neto += linea.credit - linea.debit
+        self.assertEqual(neto, Decimal("0"))
+
+    def test_pago_de_tarjeta_baja_la_deuda(self):
+        from tienda.accounting import cuenta, crear_poliza, post_card_payment
+
+        # deuda inicial: una compra con la tarjeta
+        crear_poliza(
+            date_value=date(2026, 9, 1), concept="Compra", reference="TEST-COMPRA",
+            lines=[
+                {"account": cuenta("1100"), "debit": Decimal("1000")},
+                {"account": cuenta("2100"), "credit": Decimal("1000")},
+            ],
+        )
+        pago = post_card_payment(fecha=date(2026, 9, 20), monto=Decimal("400"), origen="cash", created_by=self.user)
+        self.assertIsNotNone(pago)
+        lineas = {l.account.code: (l.debit, l.credit) for l in pago.lines.all()}
+        self.assertEqual(lineas["2100"][0], Decimal("400"))
+        self.assertEqual(lineas["1000"][1], Decimal("400"))
+
+    def test_el_mismo_pago_no_se_registra_dos_veces(self):
+        from tienda.accounting import post_card_payment
+
+        datos = dict(fecha=date(2026, 9, 20), monto=Decimal("400"), origen="cash", nota="septiembre")
+        self.assertIsNotNone(post_card_payment(**datos))
+        self.assertIsNone(post_card_payment(**datos))
+
+    def test_cierre_detecta_una_venta_sin_poliza(self):
+        from django.contrib import admin as dj_admin
+        from django.utils import timezone as tz
+
+        order = Order.objects.create(status="Completed")
+        Order.objects.filter(pk=order.pk).update(created_at=tz.now())
+        OrderItem.objects.create(order=order, product=self.producto, quantity=1, price=Decimal("500"))
+
+        ja = dj_admin.site._registry[JournalEntry]
+        class Req:
+            GET = {"month": tz.localdate().strftime("%Y-%m")}
+        datos = ja._month_close_checklist(ja._month_bounds(Req()))
+        ventas = next(p for p in datos["checklist"] if p["titulo"] == "Ventas del mes registradas")
+        self.assertNotEqual(ventas["estado"], "ok")
+        self.assertIn("no tienen póliza", ventas["detalle"])
+
+    def test_las_pantallas_nuevas_responden(self):
+        for nombre in ("tienda_journalentry_month_close", "tienda_journalentry_card_payment"):
+            response = self.client.get(reverse(f"admin:{nombre}"))
+            self.assertEqual(response.status_code, 200)

@@ -1,0 +1,138 @@
+{% extends "admin/base_site.html" %}
+{% load humanize %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+  .pt-wrap { max-width: 860px; }
+  .pt-header {
+    background: var(--cc-panel) !important; border: 1px solid var(--cc-border) !important;
+    border-radius: 14px; padding: 1.3rem 1.5rem; margin-bottom: 1rem;
+    display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap;
+  }
+  .pt-header h1 { margin: 0 0 .25rem; font-size: 1.25rem; }
+  .pt-header p { margin: 0; color: var(--cc-muted); font-size: .9rem; }
+
+  .pt-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: .8rem; margin-bottom: 1rem; }
+  .pt-card {
+    background: var(--cc-panel) !important; border: 1px solid var(--cc-border) !important;
+    border-radius: 14px; padding: 1rem 1.1rem;
+  }
+  .pt-label { font-size: .7rem; text-transform: uppercase; letter-spacing: .08em; color: var(--cc-muted) !important; font-weight: 700; }
+  .pt-value { font-size: 1.5rem; font-weight: 800; color: #fff !important; margin-top: .3rem; font-variant-numeric: tabular-nums; }
+  .pt-value.is-debt { color: var(--cc-red) !important; }
+  .pt-hint { font-size: .78rem; color: var(--cc-muted) !important; margin-top: .25rem; }
+
+  .pt-panel {
+    background: var(--cc-panel) !important; border: 1px solid var(--cc-border) !important;
+    border-radius: 14px; overflow: hidden; margin-bottom: 1rem;
+  }
+  .pt-panel-head { padding: .9rem 1.1rem; border-bottom: 1px solid var(--cc-border); background: #141414; }
+  .pt-panel-head h2 { margin: 0; font-size: .98rem; }
+  .pt-form { padding: 1.2rem 1.3rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 1rem; align-items: end; }
+  .pt-field label {
+    display: block; font-size: .74rem; text-transform: uppercase; letter-spacing: .07em;
+    color: var(--cc-muted); font-weight: 700; margin-bottom: .4rem;
+  }
+  .pt-field input, .pt-field select {
+    width: 100%; padding: .55rem .8rem; border-radius: 10px; font-size: .95rem;
+  }
+  .pt-field input:focus, .pt-field select:focus { outline: none; border-color: var(--cc-blue) !important; }
+  .pt-submit { padding: .62rem 1.5rem !important; font-weight: 700 !important; border-radius: 10px !important; cursor: pointer; }
+  .pt-guide {
+    padding: .85rem 1.1rem; border-radius: 14px; background: #161616; border: 1px solid var(--cc-border-2);
+    margin-bottom: 1rem; font-size: .88rem; color: var(--cc-muted); line-height: 1.55;
+  }
+  .pt-guide strong { color: var(--cc-text); }
+
+  .pt-row { display: grid; grid-template-columns: 7rem 1fr auto; gap: 1rem; padding: .65rem 1.1rem; align-items: center; }
+  .pt-row + .pt-row { border-top: 1px solid var(--cc-border); }
+  .pt-fecha { color: var(--cc-muted) !important; font-size: .85rem; }
+  .pt-concepto { color: #ddd !important; font-size: .89rem; }
+  .pt-monto { font-weight: 800; color: var(--cc-green) !important; font-variant-numeric: tabular-nums; }
+  .pt-empty { padding: 1.5rem 1.1rem; text-align: center; color: var(--cc-muted); }
+
+  html.light-mode .pt-header, html.light-mode .pt-card, html.light-mode .pt-panel { background: #fff !important; border-color: #e5e7eb !important; }
+  html.light-mode .pt-panel-head { background: #f8fafc; }
+  html.light-mode .pt-value { color: #111827 !important; }
+  html.light-mode .pt-concepto { color: #374151 !important; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pt-wrap">
+
+  <div class="pt-header">
+    <div>
+      <h1>Pago de tarjeta</h1>
+      <p>Registra lo que le abonas a la tarjeta para que la deuda baje también en los libros.</p>
+    </div>
+    <div style="display:flex;gap:.6rem;flex-wrap:wrap;">
+      <a class="button" href="{% url 'admin:tienda_journalentry_finance_dashboard' %}">Finanzas</a>
+      <a class="button" href="{% url 'admin:tienda_journalentry_changelist' %}?source__exact=credit_card">Ver pólizas</a>
+    </div>
+  </div>
+
+  <div class="pt-cards">
+    <div class="pt-card">
+      <div class="pt-label">Deuda actual</div>
+      <div class="pt-value is-debt">${{ saldo_tarjeta|floatformat:2|intcomma }}</div>
+      <div class="pt-hint">Cuenta 2100 · Tarjetas por pagar</div>
+    </div>
+    <div class="pt-card">
+      <div class="pt-label">Dinero disponible</div>
+      <div class="pt-value">${{ efectivo_disponible|floatformat:2|intcomma }}</div>
+      <div class="pt-hint">Caja más bancos</div>
+    </div>
+  </div>
+
+  <div class="pt-guide">
+    <strong>Qué hace esto —</strong> genera la póliza que carga <strong>2100 Tarjetas por pagar</strong> contra el
+    dinero del que salió el abono. Es lo que mantiene tu deuda al día: cada compra que haces con la tarjeta la sube,
+    y cada pago que registras aquí la baja.
+  </div>
+
+  <div class="pt-panel">
+    <div class="pt-panel-head"><h2>Registrar un abono</h2></div>
+    <form method="post" class="pt-form">
+      {% csrf_token %}
+      <div class="pt-field">
+        <label for="id_fecha">Fecha del pago</label>
+        <input id="id_fecha" type="date" name="fecha" value="{{ valores.fecha }}" required>
+      </div>
+      <div class="pt-field">
+        <label for="id_monto">Monto</label>
+        <input id="id_monto" type="number" step="0.01" min="0.01" name="monto" value="{{ valores.monto }}" placeholder="0.00" required>
+      </div>
+      <div class="pt-field">
+        <label for="id_origen">¿De dónde salió?</label>
+        <select id="id_origen" name="origen">
+          <option value="cash" {% if valores.origen == 'cash' %}selected{% endif %}>Efectivo de caja</option>
+          <option value="transfer" {% if valores.origen == 'transfer' %}selected{% endif %}>Transferencia / banco</option>
+        </select>
+      </div>
+      <div class="pt-field">
+        <label for="id_nota">Nota</label>
+        <input id="id_nota" type="text" name="nota" value="{{ valores.nota }}" placeholder="Ej. pago de septiembre" autocomplete="off">
+      </div>
+      <div>
+        <button type="submit" class="button default pt-submit">Registrar pago</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="pt-panel">
+    <div class="pt-panel-head"><h2>Últimos pagos registrados</h2></div>
+    {% for pago in pagos %}
+    <div class="pt-row">
+      <span class="pt-fecha">{{ pago.date }}</span>
+      <span class="pt-concepto">{{ pago.concept }}</span>
+      <span class="pt-monto">${{ pago.total_debit|floatformat:2|intcomma }}</span>
+    </div>
+    {% empty %}
+    <div class="pt-empty">Todavía no has registrado ningún pago a la tarjeta.</div>
+    {% endfor %}
+  </div>
+
+</div>
+{% endblock %}

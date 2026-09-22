@@ -439,6 +439,14 @@ def sync_single_order(cred, order_id):
         )
         items_for_stock.append((item.get("id"), it.get("quantity", 1) or 1))
     _apply_stock_transition(order, items_for_stock, o.get("status", ""))
+
+    # La venta entra a la contabilidad igual que una del punto de venta: si el
+    # pedido se cancela despues, sincronizar_poliza_ml genera la reversa.
+    from tienda.accounting import sincronizar_poliza_ml
+
+    order.refresh_from_db()
+    sincronizar_poliza_ml(order)
+
     return order, was_new
 
 

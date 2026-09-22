@@ -1,0 +1,130 @@
+{% extends "admin/base_site.html" %}
+{% load humanize %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+  .cm-wrap { max-width: 1000px; }
+  .cm-header {
+    background: var(--cc-panel) !important; border: 1px solid var(--cc-border) !important;
+    border-radius: 14px; padding: 1.3rem 1.5rem; margin-bottom: 1rem;
+    display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap;
+  }
+  .cm-header h1 { margin: 0 0 .25rem; font-size: 1.25rem; }
+  .cm-header p { margin: 0; color: var(--cc-muted); font-size: .9rem; }
+  .cm-nav { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
+  .cm-nav strong { color: #fff !important; min-width: 9rem; text-align: center; }
+
+  .cm-resumen {
+    display: flex; align-items: center; gap: 1.2rem; flex-wrap: wrap;
+    padding: 1.1rem 1.3rem; border-radius: 14px; margin-bottom: 1rem;
+    border: 1px solid var(--cc-border-2); background: #161616;
+  }
+  .cm-resumen.is-listo { border-color: rgba(45,190,108,.4); background: rgba(45,190,108,.08); }
+  .cm-resumen.is-pendiente { border-color: rgba(240,165,0,.4); background: rgba(240,165,0,.07); }
+  .cm-resumen-num { font-size: 2rem; font-weight: 800; line-height: 1; color: #fff !important; }
+  .cm-resumen.is-listo .cm-resumen-num { color: var(--cc-green) !important; }
+  .cm-resumen.is-pendiente .cm-resumen-num { color: var(--cc-yellow) !important; }
+  .cm-resumen-texto { flex: 1; min-width: 220px; }
+  .cm-resumen-titulo { font-weight: 700; color: #fff !important; font-size: 1rem; }
+  .cm-resumen-sub { color: var(--cc-muted) !important; font-size: .87rem; margin-top: .2rem; }
+
+  .cm-panel {
+    background: var(--cc-panel) !important; border: 1px solid var(--cc-border) !important;
+    border-radius: 14px; overflow: hidden; margin-bottom: 1rem;
+  }
+  .cm-item {
+    display: grid; grid-template-columns: 28px 1fr auto; gap: 1rem;
+    padding: .9rem 1.2rem; align-items: center;
+  }
+  .cm-item + .cm-item { border-top: 1px solid var(--cc-border); }
+  .cm-check {
+    width: 22px; height: 22px; border-radius: 50%; display: flex;
+    align-items: center; justify-content: center; font-size: .8rem; font-weight: 800;
+  }
+  .cm-check--ok { background: rgba(45,190,108,.16); color: var(--cc-green); }
+  .cm-check--warn { background: rgba(240,165,0,.16); color: var(--cc-yellow); }
+  .cm-check--danger { background: rgba(224,80,80,.16); color: var(--cc-red); }
+  .cm-titulo { font-weight: 700; color: #fff !important; font-size: .92rem; }
+  .cm-item--ok .cm-titulo { color: #bbb !important; font-weight: 600; }
+  .cm-detalle { color: var(--cc-muted) !important; font-size: .85rem; margin-top: .18rem; line-height: 1.45; }
+
+  .cm-cifras { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+  .cm-cifra { padding: .9rem 1.2rem; border-right: 1px solid var(--cc-border); border-top: 1px solid var(--cc-border); }
+  .cm-cifra-label { font-size: .7rem; text-transform: uppercase; letter-spacing: .08em; color: var(--cc-muted) !important; font-weight: 700; }
+  .cm-cifra-valor { font-size: 1.2rem; font-weight: 800; color: #fff !important; margin-top: .2rem; font-variant-numeric: tabular-nums; }
+  .cm-cifra-valor.is-bad { color: var(--cc-red) !important; }
+
+  html.light-mode .cm-header, html.light-mode .cm-panel { background: #fff !important; border-color: #e5e7eb !important; }
+  html.light-mode .cm-titulo, html.light-mode .cm-resumen-titulo, html.light-mode .cm-resumen-num, html.light-mode .cm-cifra-valor, html.light-mode .cm-nav strong { color: #111827 !important; }
+  html.light-mode .cm-resumen { background: #f8fafc; }
+
+  @media (max-width: 900px) { .cm-header { flex-direction: column; } .cm-item { grid-template-columns: 28px 1fr; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="cm-wrap">
+
+  <div class="cm-header">
+    <div>
+      <h1>Cierre del mes</h1>
+      <p>Lo que falta registrar para que {{ month_label }} quede bien cerrado.</p>
+    </div>
+    <div class="cm-nav">
+      <a class="button" href="?month={{ previous_month }}">←</a>
+      <strong>{{ month_label }}</strong>
+      <a class="button" href="?month={{ next_month }}">→</a>
+      <a class="button default" href="{% url 'admin:tienda_journalentry_finance_dashboard' %}?month={{ current_month_value }}">Finanzas</a>
+    </div>
+  </div>
+
+  <div class="cm-resumen {% if checklist_listo %}is-listo{% else %}is-pendiente{% endif %}">
+    <div class="cm-resumen-num">{% if checklist_listo %}✓{% else %}{{ checklist_pendientes }}{% endif %}</div>
+    <div class="cm-resumen-texto">
+      {% if checklist_listo %}
+        <div class="cm-resumen-titulo">El mes está completo</div>
+        <div class="cm-resumen-sub">Los {{ checklist_total }} puntos de revisión pasaron. Tus estados financieros de {{ month_label }} reflejan lo que pasó.</div>
+      {% else %}
+        <div class="cm-resumen-titulo">Falta{{ checklist_pendientes|pluralize:"n" }} {{ checklist_pendientes }} de {{ checklist_total }} punto{{ checklist_pendientes|pluralize:"s" }}</div>
+        <div class="cm-resumen-sub">Mientras no los resuelvas, los números de {{ month_label }} están incompletos.</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="cm-panel">
+    {% for punto in checklist %}
+    <div class="cm-item {% if punto.estado == 'ok' %}cm-item--ok{% endif %}">
+      <span class="cm-check cm-check--{{ punto.estado }}">{% if punto.estado == 'ok' %}✓{% else %}!{% endif %}</span>
+      <div>
+        <div class="cm-titulo">{{ punto.titulo }}</div>
+        <div class="cm-detalle">{{ punto.detalle }}</div>
+      </div>
+      {% if punto.url and punto.estado != 'ok' %}
+        <a class="button" href="{{ punto.url }}">{{ punto.accion }}</a>
+      {% endif %}
+    </div>
+    {% endfor %}
+
+    <div class="cm-cifras">
+      <div class="cm-cifra">
+        <div class="cm-cifra-label">Ingresos del mes</div>
+        <div class="cm-cifra-valor">${{ total_income|floatformat:2|intcomma }}</div>
+      </div>
+      <div class="cm-cifra">
+        <div class="cm-cifra-label">Costo de ventas</div>
+        <div class="cm-cifra-valor">${{ total_cost|floatformat:2|intcomma }}</div>
+      </div>
+      <div class="cm-cifra">
+        <div class="cm-cifra-label">Gastos</div>
+        <div class="cm-cifra-valor">${{ total_expense|floatformat:2|intcomma }}</div>
+      </div>
+      <div class="cm-cifra">
+        <div class="cm-cifra-label">Utilidad del mes</div>
+        <div class="cm-cifra-valor {% if net_profit < 0 %}is-bad{% endif %}">${{ net_profit|floatformat:2|intcomma }}</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

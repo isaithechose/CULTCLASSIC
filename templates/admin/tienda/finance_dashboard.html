@@ -234,6 +234,8 @@
     <div class="fin-panel-head"><h2>Otros reportes</h2></div>
     <div class="fin-panel-body" style="padding:1rem 1.1rem;">
       <div class="fin-links">
+        <a class="button default" href="{% url 'admin:tienda_journalentry_month_close' %}?month={{ current_month_value }}">Cierre del mes</a>
+        <a class="button" href="{% url 'admin:tienda_journalentry_card_payment' %}">Pago de tarjeta</a>
         <a class="button" href="{% url 'admin:tienda_journalentry_trial_balance' %}?month={{ current_month_value }}">Balanza de comprobación</a>
         <a class="button" href="{% url 'admin:tienda_moneyaccount_changelist' %}">Conciliación bancaria</a>
         <a class="button" href="{% url 'admin:tienda_expense_accounting_dashboard' %}">Dashboard contable</a>
