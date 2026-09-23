@@ -714,6 +714,8 @@
     }
     .design-canvas { position: relative; }
     .design-canvas__viewport {
+        position: absolute;
+        inset: 0;
         transform-origin: center center;
         transition: transform 0.18s ease;
         will-change: transform;
@@ -780,6 +782,20 @@
         .dc3-nav::-webkit-scrollbar { display: none; }
         .dc3-nav__btn { min-width: 78px; flex-shrink: 0; }
     }
+
+    /* Snap guides tipo Figma/Printful */
+    .dc3-guide {
+        position: absolute;
+        pointer-events: none;
+        z-index: 11;
+        display: none;
+        box-shadow: 0 0 3px rgba(0,0,0,0.4);
+    }
+    .dc3-guide--v { top: -3%; bottom: -3%; width: 1px; transform: translateX(-0.5px); }
+    .dc3-guide--h { left: -3%; right: -3%; height: 1px; transform: translateY(-0.5px); }
+    .dc3-guide--center { background: rgba(255, 90, 100, 0.9); }
+    .dc3-guide--edge   { background: rgba(255, 160, 90, 0.9); }
+    .dc3-guide--obj    { background: rgba(120, 200, 255, 0.95); }
 </style>
 
 <section class="design-creator">
@@ -851,7 +867,11 @@
                                         </span>
                                     </button>
                                     {% for producto in customizable_products %}
-                                    <button type="button" class="dc3-product-picker__option{% if selected_product_id == producto.id|stringformat:"s" %} is-active{% endif %}" data-product-id="{{ producto.id }}">
+                                    <button type="button"
+                                            class="dc3-product-picker__option{% if selected_product_id == producto.id|stringformat:"s" %} is-active{% endif %}"
+                                            data-product-id="{{ producto.id }}"
+                                            data-image="{% if producto.imagen %}{{ producto.imagen.url }}{% endif %}"
+                                            data-colors="{{ producto.colores_disponibles|default:'' }}">
                                         <span class="dc3-product-picker__radio"></span>
                                         <span class="dc3-product-picker__body">
                                             <span class="dc3-product-picker__title">{{ producto.nombre }}</span>
@@ -1163,8 +1183,14 @@
                             <div class="design-canvas__print-area" id="printArea">
                                 <div class="design-canvas__empty" id="emptyState">Sube un diseño, agrega texto o una forma para empezar.</div>
                                 <canvas id="designFabricCanvas" class="design-canvas__surface" width="720" height="720"></canvas>
-                                <div id="guideV" style="position:absolute;left:50%;top:0;bottom:0;width:1px;background:rgba(214,195,161,0.9);pointer-events:none;display:none;transform:translateX(-50%);z-index:10;"></div>
-                                <div id="guideH" style="position:absolute;top:50%;left:0;right:0;height:1px;background:rgba(214,195,161,0.9);pointer-events:none;display:none;transform:translateY(-50%);z-index:10;"></div>
+                                <div id="guideV"       class="dc3-guide dc3-guide--v dc3-guide--center" style="left:50%;"></div>
+                                <div id="guideH"       class="dc3-guide dc3-guide--h dc3-guide--center" style="top:50%;"></div>
+                                <div id="guideVLeft"   class="dc3-guide dc3-guide--v dc3-guide--edge"   style="left:0;"></div>
+                                <div id="guideVRight"  class="dc3-guide dc3-guide--v dc3-guide--edge"   style="left:100%;"></div>
+                                <div id="guideHTop"    class="dc3-guide dc3-guide--h dc3-guide--edge"   style="top:0;"></div>
+                                <div id="guideHBottom" class="dc3-guide dc3-guide--h dc3-guide--edge"   style="top:100%;"></div>
+                                <div id="guideVObj"    class="dc3-guide dc3-guide--v dc3-guide--obj"></div>
+                                <div id="guideHObj"    class="dc3-guide dc3-guide--h dc3-guide--obj"></div>
                             </div>
                         </div>
                         <div class="dc3-zoom" role="group" aria-label="Zoom del lienzo">
@@ -1566,16 +1592,80 @@
         el?.addEventListener("input", () => { if (gradientToggle.classList.contains("is-active")) applyGradient(); });
     });
 
-    // ── Snap guides (NEW) ─────────────────────────────────────────────────────
+    // ── Snap guides v2: canvas edges/center + otros objetos ─────────────────
 
-    const SNAP_THRESHOLD = 9;
+    const SNAP_THRESHOLD = 8;
+    const dc3GuideEls = {
+        v_center: document.getElementById("guideV"),
+        h_center: document.getElementById("guideH"),
+        v_left:   document.getElementById("guideVLeft"),
+        v_right:  document.getElementById("guideVRight"),
+        h_top:    document.getElementById("guideHTop"),
+        h_bottom: document.getElementById("guideHBottom"),
+        v_obj:    document.getElementById("guideVObj"),
+        h_obj:    document.getElementById("guideHObj"),
+    };
 
+    function hideGuides() {
+        for (const k in dc3GuideEls) { const g = dc3GuideEls[k]; if (g) g.style.display = "none"; }
+    }
+    // Compat: llamadas antiguas showGuides(showV, showH) siguen ocultando/mostrando el par central
     function showGuides(showV, showH) {
-        if (guideV) guideV.style.display = showV ? "block" : "none";
-        if (guideH) guideH.style.display = showH ? "block" : "none";
+        if (dc3GuideEls.v_center) dc3GuideEls.v_center.style.display = showV ? "block" : "none";
+        if (dc3GuideEls.h_center) dc3GuideEls.h_center.style.display = showH ? "block" : "none";
     }
 
-    function hideGuides() { showGuides(false, false); }
+    function dc3ShowGuide(key, posPct) {
+        const g = dc3GuideEls[key];
+        if (!g) return;
+        g.style.display = "block";
+        if (key.startsWith("v_") && !key.endsWith("center")) g.style.left = posPct + "%";
+        else if (key.startsWith("h_") && !key.endsWith("center")) g.style.top = posPct + "%";
+    }
+
+    function dc3SnapAndGuide(obj) {
+        hideGuides();
+        if (!obj) return;
+        const b  = obj.getBoundingRect(true);
+        const cw = fabricCanvas.getWidth(), ch = fabricCanvas.getHeight();
+        const xRefs = [b.left, b.left + b.width / 2, b.left + b.width];
+        const yRefs = [b.top,  b.top  + b.height / 2, b.top  + b.height];
+
+        const targetsX = [
+            { key: "v_left",   pos: 0 },
+            { key: "v_center", pos: cw / 2 },
+            { key: "v_right",  pos: cw },
+        ];
+        const targetsY = [
+            { key: "h_top",    pos: 0 },
+            { key: "h_center", pos: ch / 2 },
+            { key: "h_bottom", pos: ch },
+        ];
+        // Otros objetos como snap targets (bordes + centros)
+        for (const o of fabricCanvas.getObjects()) {
+            if (o === obj || o.visible === false) continue;
+            const ob = o.getBoundingRect(true);
+            targetsX.push({ key: "v_obj", pos: ob.left });
+            targetsX.push({ key: "v_obj", pos: ob.left + ob.width / 2 });
+            targetsX.push({ key: "v_obj", pos: ob.left + ob.width });
+            targetsY.push({ key: "h_obj", pos: ob.top });
+            targetsY.push({ key: "h_obj", pos: ob.top  + ob.height / 2 });
+            targetsY.push({ key: "h_obj", pos: ob.top  + ob.height });
+        }
+
+        // Mejor candidato por eje
+        let bestX = null, bestY = null;
+        for (const t of targetsX) for (const v of xRefs) {
+            const d = Math.abs(v - t.pos);
+            if (d < SNAP_THRESHOLD && (!bestX || d < bestX.d)) bestX = { d, delta: t.pos - v, key: t.key, pos: t.pos };
+        }
+        for (const t of targetsY) for (const v of yRefs) {
+            const d = Math.abs(v - t.pos);
+            if (d < SNAP_THRESHOLD && (!bestY || d < bestY.d)) bestY = { d, delta: t.pos - v, key: t.key, pos: t.pos };
+        }
+        if (bestX) { obj.set({ left: obj.left + bestX.delta }); obj.setCoords(); dc3ShowGuide(bestX.key, (bestX.pos / cw) * 100); }
+        if (bestY) { obj.set({ top:  obj.top  + bestY.delta }); obj.setCoords(); dc3ShowGuide(bestY.key, (bestY.pos / ch) * 100); }
+    }
 
     // ── Export PNG HD (NEW) ───────────────────────────────────────────────────
 
@@ -1594,10 +1684,15 @@
     // ── Shirt color ───────────────────────────────────────────────────────────
 
     const MOCKUP_BASE = "/media/productos/9_0_garment_dye_designer_tshirt_";
+    // Estado del producto activo (setteado por el picker v2). Si tiene imagen propia,
+    // los colores solo actualizan el label — no reemplazan el mockup (evita URLs rotas).
+    window.dc3CurrentProductImage = "";
     document.querySelectorAll(".shirt-color-btn").forEach(btn => {
         btn.addEventListener("click", () => {
             const mockup = btn.dataset.mockup || "cream";
-            shirtBg.style.setProperty("--shirt-mockup", `url("${MOCKUP_BASE}${mockup}_001.webp")`);
+            if (!window.dc3CurrentProductImage) {
+                shirtBg.style.setProperty("--shirt-mockup", `url("${MOCKUP_BASE}${mockup}_001.webp")`);
+            }
             document.getElementById("shirtColorLabel").textContent = btn.dataset.label;
             document.querySelectorAll(".shirt-color-btn").forEach(b => b.classList.remove("is-active"));
             btn.classList.add("is-active");
@@ -1815,22 +1910,7 @@
     fabricCanvas.on("object:modified",   () => { updateControlsFromObject(); renderLayersList(); hideGuides(); pushHistory(); });
     fabricCanvas.on("object:moving",     (e) => {
         clampArtworkToArea(); updateControlsFromObject();
-        // Snap guides
-        const obj = e.target;
-        const b = obj.getBoundingRect(true);
-        const cw = fabricCanvas.getWidth(), ch = fabricCanvas.getHeight();
-        const objCx = b.left + b.width  / 2;
-        const objCy = b.top  + b.height / 2;
-        let snapV = false, snapH = false;
-        if (Math.abs(objCx - cw / 2) < SNAP_THRESHOLD) {
-            obj.set({ left: obj.left + (cw / 2 - objCx) });
-            obj.setCoords(); snapV = true;
-        }
-        if (Math.abs(objCy - ch / 2) < SNAP_THRESHOLD) {
-            obj.set({ top: obj.top + (ch / 2 - objCy) });
-            obj.setCoords(); snapH = true;
-        }
-        showGuides(snapV, snapH);
+        dc3SnapAndGuide(e.target);
         fabricCanvas.requestRenderAll();
     });
     fabricCanvas.on("mouse:up",          () => hideGuides());
@@ -2178,26 +2258,72 @@
         else if (e.key === "0") { dc3Zoom = 1; dc3ApplyZoom(); }
     });
 
-    // ── v2 · Selector visual de producto ↔ #productSelect y #productIdInput ─
+    // ── v2 · Selector visual de producto ↔ mockup + colores filtrados ──────
     const dc3ProductPicker = document.getElementById("dc3ProductPicker");
-    const productSelectEl = document.getElementById("productSelect");
+    const productSelectEl  = document.getElementById("productSelect");
     const productIdInputEl = document.getElementById("productIdInput");
+    const shirtBgEl        = document.getElementById("shirtBg");
+    const shirtColorLabelEl = document.getElementById("shirtColorLabel");
+    const DEFAULT_MOCKUP_URL = `${MOCKUP_BASE}cream_001.webp`;
+
+    function dc3ApplyProduct(opt) {
+        if (!opt) return;
+        const image     = opt.dataset.image || "";
+        const colorsRaw = (opt.dataset.colors || "").trim();
+        const title     = opt.querySelector(".dc3-product-picker__title")?.textContent?.trim() || "";
+
+        if (image) {
+            // Mostrar la imagen real del producto como mockup
+            if (shirtBgEl) shirtBgEl.style.setProperty("--shirt-mockup", `url("${image}")`);
+            if (shirtColorLabelEl) shirtColorLabelEl.textContent = title;
+            window.dc3CurrentProductImage = image;
+        } else {
+            // "Solo guardar diseño" → mockup por defecto (playera crema)
+            if (shirtBgEl) shirtBgEl.style.setProperty("--shirt-mockup", `url("${DEFAULT_MOCKUP_URL}")`);
+            if (shirtColorLabelEl) shirtColorLabelEl.textContent = "Crema";
+            window.dc3CurrentProductImage = "";
+        }
+
+        // Filtrar botones de color de playera segun colores_disponibles
+        const colors = colorsRaw
+            ? colorsRaw.toLowerCase().split(/[,;]/).map(c => c.trim().replace(/[_\-\s]+/g, "")).filter(Boolean)
+            : null;
+        const shirtBtns = document.querySelectorAll(".shirt-color-btn");
+        let anyVisible = false;
+        shirtBtns.forEach(btn => {
+            const label = (btn.dataset.label || "").toLowerCase().replace(/[_\-\s]+/g, "");
+            const mock  = (btn.dataset.mockup || "").toLowerCase().replace(/[_\-\s]+/g, "");
+            let show = !colors || !colors.length;  // sin filtro = mostrar todos
+            if (!show && colors) {
+                show = colors.some(c => label.includes(c) || c.includes(label) || mock.includes(c) || c.includes(mock));
+            }
+            btn.style.display = show ? "" : "none";
+            if (show) anyVisible = true;
+        });
+        // Si el producto no matchea ningun color de la paleta, mostrar todos (mejor UX que dejar vacio)
+        if (!anyVisible) shirtBtns.forEach(btn => btn.style.display = "");
+    }
+
     dc3ProductPicker?.addEventListener("click", (e) => {
         const opt = e.target.closest(".dc3-product-picker__option");
         if (!opt) return;
         dc3ProductPicker.querySelectorAll(".dc3-product-picker__option").forEach(o => o.classList.toggle("is-active", o === opt));
         const pid = opt.dataset.productId || "";
-        if (productSelectEl) productSelectEl.value = pid;
+        if (productSelectEl)  productSelectEl.value  = pid;
         if (productIdInputEl) productIdInputEl.value = pid;
+        dc3ApplyProduct(opt);
     });
     // Reflejar hacia atrás si el usuario cambia el select oculto
     productSelectEl?.addEventListener("change", () => {
         const pid = productSelectEl.value || "";
         if (productIdInputEl) productIdInputEl.value = pid;
-        dc3ProductPicker?.querySelectorAll(".dc3-product-picker__option").forEach(o => {
-            o.classList.toggle("is-active", (o.dataset.productId || "") === pid);
-        });
+        const matching = dc3ProductPicker?.querySelector(`.dc3-product-picker__option[data-product-id="${pid}"]`);
+        dc3ProductPicker?.querySelectorAll(".dc3-product-picker__option").forEach(o => o.classList.toggle("is-active", o === matching));
+        if (matching) dc3ApplyProduct(matching);
     });
+    // Si al cargar hay producto preseleccionado, aplicarlo
+    const dc3Preselected = dc3ProductPicker?.querySelector(".dc3-product-picker__option.is-active");
+    if (dc3Preselected && dc3Preselected.dataset.productId) dc3ApplyProduct(dc3Preselected);
 
     // Tab inicial: si ya hay un archivo cargado, arranca en Diseño; si no, en Producto
     dc3SetTab("{{ selected_design_url|default:'' }}" ? "diseno" : "producto");
