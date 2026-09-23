@@ -68,7 +68,9 @@
     font-size: .76rem; font-weight: 700;
   }
   .ms-pill-best { background: rgba(74,158,255,.15); color: var(--cc-blue); }
+  .ms-pill-sim  { background: rgba(255,183,77,.15); color: #ffb74d; margin-left:.35rem; }
   .ms-empty-row td { color: var(--cc-faint); }
+  html.light-mode .ms-pill-sim { background:#fff4e0; color:#a06400; }
 
   /* light mode */
   html.light-mode .ms-header, html.light-mode .ms-card, html.light-mode .ms-panel { background:#fff !important; border-color:#e5e7eb !important; }
@@ -146,8 +148,12 @@
       </thead>
       <tbody>
         {% for r in rows_desc %}
-        <tr {% if r.orders == 0 %}class="ms-empty-row"{% endif %}>
-          <td>{{ r.label }}{% if best_month and r.label == best_month.label %} <span class="ms-pill ms-pill-best">Mejor</span>{% endif %}</td>
+        <tr {% if r.revenue == 0 %}class="ms-empty-row"{% endif %}>
+          <td>
+            {{ r.label }}
+            {% if best_month and r.label == best_month.label %}<span class="ms-pill ms-pill-best">Mejor</span>{% endif %}
+            {% if r.has_sim %}<span class="ms-pill ms-pill-sim" title="Incluye ${{ r.sim_revenue|floatformat:2 }} de ventas simuladas (poliza SIM-VENTA)">sim</span>{% endif %}
+          </td>
           <td>{{ r.orders }}</td>
           <td>{{ r.units }}</td>
           <td class="ms-rev">${{ r.revenue|floatformat:2 }}</td>

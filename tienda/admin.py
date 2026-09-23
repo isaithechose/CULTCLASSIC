@@ -1905,7 +1905,7 @@ class ProductoAdmin(admin.ModelAdmin):
     def monthly_sales_view(self, request):
         """Ventas mes a mes: ingresos, pedidos, piezas, costo y utilidad."""
         import json
-        from django.db.models import Sum, Count, F
+        from django.db.models import Sum, Count, F, Q
         from django.db.models.functions import TruncMonth
 
         months_back = int(request.GET.get("months", 12))
@@ -1953,6 +1953,31 @@ class ProductoAdmin(admin.ModelAdmin):
             by_month.setdefault(key, {})
             by_month[key]["orders"] = r["orders"] or 0
 
+        # Ventas simuladas (polizas SIM-VENTA-YYYY-MM): ingreso en cta 4000, costo en cta 5000.
+        # No aportan pedidos ni piezas, solo ingreso/COGS.
+        sim_rows = (
+            JournalEntry.objects
+            .filter(reference__istartswith="SIM-VENTA")
+            .annotate(month=TruncMonth("date"))
+            .values("month")
+            .annotate(
+                sim_revenue=Sum("lines__credit", filter=Q(lines__account__code="4000")),
+                sim_cogs=Sum("lines__debit", filter=Q(lines__account__code="5000")),
+            )
+        )
+        for r in sim_rows:
+            m = r["month"]
+            if not m:
+                continue
+            key = (m.year, m.month)
+            entry = by_month.setdefault(key, {})
+            sim_rev = r["sim_revenue"] or Decimal("0")
+            sim_cogs = r["sim_cogs"] or Decimal("0")
+            entry["revenue"] = entry.get("revenue", Decimal("0")) + sim_rev
+            entry["cogs"] = entry.get("cogs", Decimal("0")) + sim_cogs
+            entry["sim_revenue"] = sim_rev
+            entry["sim_cogs"] = sim_cogs
+
         # Construir rango continuo de los últimos N meses (incluye meses sin ventas)
         today = timezone.localdate()
         year, month = today.year, today.month
@@ -1967,6 +1992,7 @@ class ProductoAdmin(admin.ModelAdmin):
 
         rows = []
         total_rev = total_cogs = Decimal("0")
+        total_sim_rev = total_sim_cogs = Decimal("0")
         total_units = total_orders = 0
         for (y, mo) in sequence:
             data = by_month.get((y, mo), {})
@@ -1974,6 +2000,8 @@ class ProductoAdmin(admin.ModelAdmin):
             cogs = data.get("cogs", Decimal("0"))
             units = data.get("units", 0)
             orders = data.get("orders", 0)
+            sim_rev = data.get("sim_revenue", Decimal("0"))
+            sim_cogs = data.get("sim_cogs", Decimal("0"))
             profit = rev - cogs
             margin = float(profit / rev * 100) if rev > 0 else 0.0
             ticket = float(rev / orders) if orders > 0 else 0.0
@@ -1983,9 +2011,13 @@ class ProductoAdmin(admin.ModelAdmin):
                 "revenue": rev, "cogs": cogs, "profit": profit,
                 "units": units, "orders": orders,
                 "margin": margin, "ticket": ticket,
+                "sim_revenue": sim_rev, "sim_cogs": sim_cogs,
+                "has_sim": sim_rev > 0,
             })
             total_rev += rev
             total_cogs += cogs
+            total_sim_rev += sim_rev
+            total_sim_cogs += sim_cogs
             total_units += units
             total_orders += orders
 
@@ -1997,14 +2029,20 @@ class ProductoAdmin(admin.ModelAdmin):
 
         best = max(rows, key=lambda r: r["revenue"]) if rows else None
 
+        sim_share_pct = float(total_sim_rev / total_rev * 100) if total_rev > 0 else 0.0
+        subtitle = f"Últimos {months_back} meses · pedidos completados + ventas simuladas"
+        if total_sim_rev > 0:
+            subtitle += f" (${total_sim_rev:,.0f} simulados · {sim_share_pct:.1f}% del total)"
+
         context = dict(
             self.admin_site.each_context(request),
             title="Ventas por mes",
-            subtitle=f"Últimos {months_back} meses · solo pedidos completados",
+            subtitle=subtitle,
             rows=rows,
             rows_desc=list(reversed(rows)),
             months_back=months_back,
             total_rev=total_rev, total_cogs=total_cogs, total_profit=total_profit,
+            total_sim_rev=total_sim_rev, total_sim_cogs=total_sim_cogs,
             total_units=total_units, total_orders=total_orders,
             avg_ticket=(float(total_rev / total_orders) if total_orders else 0.0),
             delta_pct=delta_pct,
