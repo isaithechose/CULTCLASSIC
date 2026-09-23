@@ -1855,12 +1855,12 @@
 
     function fitArtwork() {
         if (!state.artwork) return;
-        // El diseño se ajusta dentro del área de impresión con un margen limpio.
-        // Guarda la escala de "fit" para mapear el slider a % del area de impresion
-        // (asi 100% del slider = ajustado al area, no la escala cruda de Fabric).
-        const margin = 0.90;
-        const maxW = fabricCanvas.getWidth() * margin;
-        const maxH = fabricCanvas.getHeight() * margin;
+        // El diseño se ajusta al AREA REALISTA de impresion (una porcion del canvas
+        // Fabric): el canvas cubre todo el print-area del mockup pero la impresion
+        // real es solo un cuadro central mas chico. 100% del slider = ese tamaño.
+        const PRINT_AREA_FRACTION = 0.35;
+        const maxW = fabricCanvas.getWidth()  * PRINT_AREA_FRACTION;
+        const maxH = fabricCanvas.getHeight() * PRINT_AREA_FRACTION;
         const s = Math.min(maxW / state.artwork.width, maxH / state.artwork.height);
         state.artwork._dc3FitScale = s;
         state.artwork.set({ scaleX: s, scaleY: s, angle: 0, flipX: false, flipY: false,
