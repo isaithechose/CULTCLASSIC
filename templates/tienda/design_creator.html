@@ -208,11 +208,20 @@
     }
     /* Cortes: cada uno ajusta width / posicion / aspecto del area de impresion.
        --print-y mas negativo = sube el area de impresion hacia el pecho. */
-    .design-canvas[data-cut="oversize"]    { --print-w: 32%; --print-y: -54%; --print-aspect: 0.82; }
-    .design-canvas[data-cut="regular"]     { --print-w: 28%; --print-y: -56%; --print-aspect: 0.85; }
-    .design-canvas[data-cut="dropshoulder"]{ --print-w: 36%; --print-y: -50%; --print-aspect: 0.85; }
+    /* Print-area: tamaño realista de estampación sobre el pecho (~mitad del ancho de la playera). */
+    .design-canvas[data-cut="oversize"]    { --print-w: 18%; --print-y: -50%; --print-aspect: 0.85; }
+    .design-canvas[data-cut="regular"]     { --print-w: 15%; --print-y: -52%; --print-aspect: 0.90; }
+    .design-canvas[data-cut="dropshoulder"]{ --print-w: 20%; --print-y: -48%; --print-aspect: 0.90; }
 
     .design-canvas__surface { width: 100%; height: 100%; display: block; }
+    /* Fabric.js inyecta un .canvas-container con tamaño inline fijo (720x720).
+       Forzamos que el wrapper y los canvases hijos se ajusten al print-area
+       visible, así el buffer 720x720 interno se escala al tamaño real del mockup. */
+    .design-canvas__print-area > .canvas-container,
+    .design-canvas__print-area > .canvas-container > canvas {
+        width: 100% !important;
+        height: 100% !important;
+    }
 
     .design-canvas__empty {
         position: absolute;
@@ -1631,22 +1640,24 @@
         if (!obj) return;
         const b  = obj.getBoundingRect(true);
         const cw = fabricCanvas.getWidth(), ch = fabricCanvas.getHeight();
+        const pb = dc3PrintBounds();
         const xRefs = [b.left, b.left + b.width / 2, b.left + b.width];
         const yRefs = [b.top,  b.top  + b.height / 2, b.top  + b.height];
 
+        // Snap contra los bordes del AREA REALISTA de impresión (no el canvas entero)
         const targetsX = [
-            { key: "v_left",   pos: 0 },
-            { key: "v_center", pos: cw / 2 },
-            { key: "v_right",  pos: cw },
+            { key: "v_left",   pos: pb.left },
+            { key: "v_center", pos: pb.left + pb.w / 2 },
+            { key: "v_right",  pos: pb.right },
         ];
         const targetsY = [
-            { key: "h_top",    pos: 0 },
-            { key: "h_center", pos: ch / 2 },
-            { key: "h_bottom", pos: ch },
+            { key: "h_top",    pos: pb.top },
+            { key: "h_center", pos: pb.top + pb.h / 2 },
+            { key: "h_bottom", pos: pb.bottom },
         ];
         // Otros objetos como snap targets (bordes + centros)
         for (const o of fabricCanvas.getObjects()) {
-            if (o === obj || o.visible === false) continue;
+            if (o === obj || o.visible === false || o.excludeFromSnap) continue;
             const ob = o.getBoundingRect(true);
             targetsX.push({ key: "v_obj", pos: ob.left });
             targetsX.push({ key: "v_obj", pos: ob.left + ob.width / 2 });
@@ -1744,10 +1755,11 @@
     // ── Canvas state ──────────────────────────────────────────────────────────
 
     function syncEmptyState() {
-        const has = fabricCanvas.getObjects().length > 0;
+        const objs = fabricCanvas.getObjects();
+        const has = objs.length > 0;
         emptyState.hidden = has;
         hudStatus.textContent = has ? "Listo" : "Sin diseño";
-        hudLayers.textContent = String(fabricCanvas.getObjects().length);
+        hudLayers.textContent = String(objs.length);
     }
 
     function syncEffectControls(obj) {
@@ -1841,26 +1853,38 @@
 
     // ── Artwork helpers ───────────────────────────────────────────────────────
 
+    // Área de impresión = canvas Fabric completo (el CSS del print-area del mockup
+    // ya la representa visualmente sobre el pecho de la playera).
+    function dc3PrintBounds() {
+        const cw = fabricCanvas.getWidth(), ch = fabricCanvas.getHeight();
+        return { left: 0, top: 0, right: cw, bottom: ch, w: cw, h: ch };
+    }
+    function dc3ClampObjectToPrint(obj) {
+        if (!obj) return;
+        const b = obj.getBoundingRect();
+        const pb = dc3PrintBounds();
+        let l = obj.left, t = obj.top;
+        if (b.left < pb.left)                 l += (pb.left - b.left);
+        if (b.top  < pb.top)                  t += (pb.top  - b.top);
+        if (b.left + b.width  > pb.right)     l -= (b.left + b.width  - pb.right);
+        if (b.top  + b.height > pb.bottom)    t -= (b.top  + b.height - pb.bottom);
+        // Si el objeto es mas grande que el area, forzar centrado
+        if (b.width  > pb.w) l = pb.left + pb.w / 2 + (obj.left - (b.left + b.width  / 2));
+        if (b.height > pb.h) t = pb.top  + pb.h / 2 + (obj.top  - (b.top  + b.height / 2));
+        obj.set({ left: l, top: t });
+        obj.setCoords();
+    }
     function clampArtworkToArea() {
-        if (!state.artwork) return;
-        const b = state.artwork.getBoundingRect();
-        let l = state.artwork.left, t = state.artwork.top;
-        if (b.left < 0) l += Math.abs(b.left);
-        if (b.top  < 0) t += Math.abs(b.top);
-        if (b.left + b.width  > fabricCanvas.getWidth())  l -= (b.left + b.width  - fabricCanvas.getWidth());
-        if (b.top  + b.height > fabricCanvas.getHeight()) t -= (b.top  + b.height - fabricCanvas.getHeight());
-        state.artwork.set({ left: l, top: t });
-        state.artwork.setCoords();
+        const obj = fabricCanvas.getActiveObject() || state.artwork;
+        if (obj) dc3ClampObjectToPrint(obj);
     }
 
     function fitArtwork() {
         if (!state.artwork) return;
-        // El diseño se ajusta al AREA REALISTA de impresion (una porcion del canvas
-        // Fabric): el canvas cubre todo el print-area del mockup pero la impresion
-        // real es solo un cuadro central mas chico. 100% del slider = ese tamaño.
-        const PRINT_AREA_FRACTION = 0.35;
-        const maxW = fabricCanvas.getWidth()  * PRINT_AREA_FRACTION;
-        const maxH = fabricCanvas.getHeight() * PRINT_AREA_FRACTION;
+        // 100% del slider = diseño ajustado al area de impresion con margen limpio.
+        const margin = 0.92;
+        const maxW = fabricCanvas.getWidth()  * margin;
+        const maxH = fabricCanvas.getHeight() * margin;
         const s = Math.min(maxW / state.artwork.width, maxH / state.artwork.height);
         state.artwork._dc3FitScale = s;
         state.artwork.set({ scaleX: s, scaleY: s, angle: 0, flipX: false, flipY: false,
