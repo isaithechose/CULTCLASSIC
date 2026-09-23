@@ -592,14 +592,229 @@
         .design-creator__align-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
         .design-creator__layers-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
+
+    /* ── v2: layout 3 columnas tipo Printful ────────────────────── */
+    .design-creator__layout {
+        grid-template-columns: 88px minmax(0, 1fr) 360px;
+        gap: 1rem;
+        align-items: stretch;
+    }
+    .design-creator__nav-col { order: 0; }
+    .design-creator__preview { order: 1; min-width: 0; }
+    .design-creator__form-col { order: 2; }
+    .design-creator__form-col .design-creator__panel { max-width: none; }
+
+    .dc3-nav {
+        position: sticky;
+        top: 6.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+        padding: 0.55rem 0.4rem;
+        border: 1px solid var(--cc-line);
+        border-radius: 1.4rem;
+        background:
+            radial-gradient(circle at top, rgba(214,195,161,0.08), transparent 60%),
+            linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01));
+        box-shadow: var(--cc-shadow);
+    }
+    .dc3-nav__btn {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.22rem;
+        padding: 0.6rem 0.25rem;
+        border: 1px solid transparent;
+        border-radius: 0.95rem;
+        background: transparent;
+        color: rgba(255,255,255,0.75);
+        font-size: 0.62rem;
+        line-height: 1.05;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-weight: 700;
+        cursor: pointer;
+        transition: background 0.15s, color 0.15s, border-color 0.15s;
+    }
+    .dc3-nav__btn:hover { color: #fff; background: rgba(214,195,161,0.09); }
+    .dc3-nav__btn.is-active {
+        color: var(--cc-accent);
+        background: rgba(214,195,161,0.14);
+        border-color: rgba(214,195,161,0.4);
+    }
+    .dc3-nav__btn .icon {
+        font-size: 1.35rem;
+        line-height: 1;
+        margin-bottom: 0.05rem;
+    }
+
+    /* Tabs de props: mostrar/ocultar elementos por tab activa */
+    .design-creator__form-col[data-active-tab] [data-dc-tab] { display: none; }
+    .design-creator__form-col[data-active-tab="producto"] [data-dc-tab~="producto"],
+    .design-creator__form-col[data-active-tab="diseno"]   [data-dc-tab~="diseno"],
+    .design-creator__form-col[data-active-tab="texto"]    [data-dc-tab~="texto"],
+    .design-creator__form-col[data-active-tab="formas"]   [data-dc-tab~="formas"],
+    .design-creator__form-col[data-active-tab="efectos"]  [data-dc-tab~="efectos"],
+    .design-creator__form-col[data-active-tab="capas"]    [data-dc-tab~="capas"],
+    .design-creator__form-col[data-active-tab="historia"] [data-dc-tab~="historia"] { display: block; }
+    /* Los elementos sin data-dc-tab (acciones globales, handoff) siempre visibles */
+
+    /* Header contextual del panel derecho */
+    .dc3-props__head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 0.8rem;
+        margin-bottom: 0.75rem;
+        padding-bottom: 0.55rem;
+        border-bottom: 1px solid var(--cc-line);
+    }
+    .dc3-props__head strong { font-size: 1rem; color: #fff; }
+    .dc3-props__head small { color: var(--cc-muted); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; }
+
+    /* Zoom overlay sobre el canvas */
+    .dc3-zoom {
+        position: absolute;
+        right: 0.9rem;
+        bottom: 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 0.15rem;
+        background: rgba(0,0,0,0.65);
+        backdrop-filter: blur(8px);
+        padding: 0.35rem 0.45rem;
+        border-radius: 999px;
+        border: 1px solid rgba(214,195,161,0.28);
+        z-index: 14;
+    }
+    .dc3-zoom__btn {
+        background: transparent;
+        border: none;
+        color: #fff;
+        width: 1.85rem;
+        height: 1.85rem;
+        border-radius: 50%;
+        font-size: 1rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
+    }
+    .dc3-zoom__btn:hover { background: rgba(214,195,161,0.18); }
+    .dc3-zoom__label {
+        color: #fff;
+        padding: 0 0.4rem;
+        font-size: 0.75rem;
+        font-weight: 700;
+        min-width: 2.9rem;
+        text-align: center;
+        letter-spacing: 0.03em;
+    }
+    .design-canvas { position: relative; }
+    .design-canvas__viewport {
+        transform-origin: center center;
+        transition: transform 0.18s ease;
+        will-change: transform;
+    }
+
+    /* Selector de producto integrado */
+    .dc3-product-picker {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0.55rem;
+    }
+    .dc3-product-picker__option {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        padding: 0.55rem 0.7rem;
+        border: 1px solid var(--cc-line);
+        border-radius: 0.85rem;
+        background: rgba(255,255,255,0.02);
+        color: #fff;
+        cursor: pointer;
+        transition: background 0.15s, border-color 0.15s;
+    }
+    .dc3-product-picker__option:hover { background: rgba(214,195,161,0.08); }
+    .dc3-product-picker__option.is-active {
+        border-color: var(--cc-accent);
+        background: rgba(214,195,161,0.14);
+    }
+    .dc3-product-picker__radio {
+        width: 0.9rem;
+        height: 0.9rem;
+        border-radius: 50%;
+        border: 2px solid rgba(214,195,161,0.55);
+        flex-shrink: 0;
+        position: relative;
+    }
+    .dc3-product-picker__option.is-active .dc3-product-picker__radio::after {
+        content: "";
+        position: absolute;
+        inset: 2px;
+        border-radius: 50%;
+        background: var(--cc-accent);
+    }
+    .dc3-product-picker__body { flex: 1; min-width: 0; }
+    .dc3-product-picker__title {
+        font-size: 0.85rem;
+        font-weight: 700;
+        line-height: 1.15;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .dc3-product-picker__price { font-size: 0.75rem; color: var(--cc-muted); }
+
+    @media (max-width: 991px) {
+        .design-creator__layout { grid-template-columns: 1fr; }
+        .dc3-nav {
+            position: static;
+            flex-direction: row;
+            overflow-x: auto;
+            padding: 0.4rem;
+            scrollbar-width: none;
+        }
+        .dc3-nav::-webkit-scrollbar { display: none; }
+        .dc3-nav__btn { min-width: 78px; flex-shrink: 0; }
+    }
 </style>
 
 <section class="design-creator">
     <div class="container px-4 px-lg-5">
         <div class="design-creator__layout">
 
-            <!-- ── Top: controls ── -->
-            <div class="design-creator__form-col">
+            <!-- ── Nav sidebar (izquierda, iconos) ── -->
+            <div class="design-creator__nav-col">
+                <nav class="dc3-nav" id="dc3Nav" aria-label="Herramientas del creador">
+                    <button type="button" class="dc3-nav__btn is-active" data-dc-target="producto" title="Producto">
+                        <span class="icon" aria-hidden="true">👕</span>Producto
+                    </button>
+                    <button type="button" class="dc3-nav__btn" data-dc-target="diseno" title="Diseño">
+                        <span class="icon" aria-hidden="true">🖼️</span>Diseño
+                    </button>
+                    <button type="button" class="dc3-nav__btn" data-dc-target="texto" title="Texto">
+                        <span class="icon" aria-hidden="true">🅰</span>Texto
+                    </button>
+                    <button type="button" class="dc3-nav__btn" data-dc-target="formas" title="Formas">
+                        <span class="icon" aria-hidden="true">◇</span>Formas
+                    </button>
+                    <button type="button" class="dc3-nav__btn" data-dc-target="efectos" title="Efectos">
+                        <span class="icon" aria-hidden="true">✦</span>Efectos
+                    </button>
+                    <button type="button" class="dc3-nav__btn" data-dc-target="capas" title="Capas">
+                        <span class="icon" aria-hidden="true">☰</span>Capas
+                    </button>
+                    <button type="button" class="dc3-nav__btn" data-dc-target="historia" title="Historial">
+                        <span class="icon" aria-hidden="true">⟲</span>Historia
+                    </button>
+                </nav>
+            </div>
+
+            <!-- ── Panel de propiedades (derecha, cambia por tab) ── -->
+            <div class="design-creator__form-col" data-active-tab="producto">
             <div class="design-creator__panel">
                 <p class="design-creator__eyebrow">Herramienta</p>
                 <h2 class="design-creator__title">Tu diseño listo para usar</h2>
@@ -614,19 +829,55 @@
 
                     <div class="design-creator__toolbar">
 
-                        <!-- Name + File -->
-                        <div class="design-creator__group">
-                            <label for="{{ form.name.id_for_label }}">Nombre del diseño</label>
-                            {{ form.name }}
+                        <!-- Header contextual del panel (cambia según la tab) -->
+                        <div class="dc3-props__head">
+                            <strong id="dc3PropsTitle">Producto</strong>
+                            <small id="dc3PropsHint">Elige color y modelo</small>
                         </div>
 
-                        <div class="design-creator__group">
-                            <label for="{{ form.image.id_for_label }}">Archivo base (PNG / JPG / WebP · máx 15 MB)</label>
-                            {{ form.image }}
+                        <!-- Selector de producto integrado (tab Producto) -->
+                        <div data-dc-tab="producto">
+                            <div class="design-creator__tool-group" style="border:none;background:transparent;padding:0;">
+                                <div class="design-creator__tool-head">
+                                    <strong>Playera</strong>
+                                    <span>Modelo a personalizar</span>
+                                </div>
+                                <div class="dc3-product-picker" id="dc3ProductPicker">
+                                    <button type="button" class="dc3-product-picker__option is-active" data-product-id="">
+                                        <span class="dc3-product-picker__radio"></span>
+                                        <span class="dc3-product-picker__body">
+                                            <span class="dc3-product-picker__title">Solo guardar diseño</span>
+                                            <span class="dc3-product-picker__price">No mandar a playera</span>
+                                        </span>
+                                    </button>
+                                    {% for producto in customizable_products %}
+                                    <button type="button" class="dc3-product-picker__option{% if selected_product_id == producto.id|stringformat:"s" %} is-active{% endif %}" data-product-id="{{ producto.id }}">
+                                        <span class="dc3-product-picker__radio"></span>
+                                        <span class="dc3-product-picker__body">
+                                            <span class="dc3-product-picker__title">{{ producto.nombre }}</span>
+                                            <span class="dc3-product-picker__price">${{ producto.precio }}</span>
+                                        </span>
+                                    </button>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Name + File (tab Diseño) -->
+                        <div data-dc-tab="diseno">
+                            <div class="design-creator__group">
+                                <label for="{{ form.name.id_for_label }}">Nombre del diseño</label>
+                                {{ form.name }}
+                            </div>
+
+                            <div class="design-creator__group">
+                                <label for="{{ form.image.id_for_label }}">Archivo base (PNG / JPG / WebP · máx 15 MB)</label>
+                                {{ form.image }}
+                            </div>
                         </div>
 
                         <!-- Color de playera -->
-                        <div class="design-creator__tool-group">
+                        <div class="design-creator__tool-group" data-dc-tab="producto">
                             <div class="design-creator__tool-head">
                                 <strong>Color de playera</strong>
                                 <span id="shirtColorLabel">Beige</span>
@@ -644,7 +895,7 @@
 
 
                         <!-- Opacidad -->
-                        <div class="design-creator__tool-group">
+                        <div class="design-creator__tool-group" data-dc-tab="diseno">
                             <div class="design-creator__tool-head">
                                 <strong>Opacidad</strong>
                                 <span id="opacityValue">100%</span>
@@ -653,7 +904,7 @@
                         </div>
 
                         <!-- Alineación (NEW) -->
-                        <div class="design-creator__tool-group">
+                        <div class="design-creator__tool-group" data-dc-tab="diseno">
                             <div class="design-creator__tool-head">
                                 <strong>Alineación</strong>
                                 <span>Respecto al lienzo</span>
@@ -669,7 +920,7 @@
                         </div>
 
                         <!-- Escala / Rotación -->
-                        <div class="design-creator__tool-grid">
+                        <div class="design-creator__tool-grid" data-dc-tab="diseno">
                             <div class="design-creator__tool-group">
                                 <div class="design-creator__tool-head">
                                     <strong>Escala</strong>
@@ -687,7 +938,7 @@
                         </div>
 
                         <!-- Posición / Transformar -->
-                        <div class="design-creator__tool-grid">
+                        <div class="design-creator__tool-grid" data-dc-tab="diseno">
                             <div class="design-creator__tool-group">
                                 <div class="design-creator__tool-head">
                                     <strong>Posición</strong>
@@ -711,7 +962,7 @@
                         </div>
 
                         <!-- Formas básicas (NEW) -->
-                        <div class="design-creator__tool-group">
+                        <div class="design-creator__tool-group" data-dc-tab="formas">
                             <div class="design-creator__tool-head">
                                 <strong>Formas</strong>
                                 <span>Agregar al lienzo</span>
@@ -734,7 +985,7 @@
                         </div>
 
                         <!-- Texto -->
-                        <div class="design-creator__tool-group">
+                        <div class="design-creator__tool-group" data-dc-tab="texto">
                             <div class="design-creator__tool-head">
                                 <strong>Texto</strong>
                                 <span>Agregar y editar</span>
@@ -780,7 +1031,7 @@
                         </div>
 
                         <!-- Efectos: sombra + contorno (NEW) -->
-                        <div class="design-creator__tool-group">
+                        <div class="design-creator__tool-group" data-dc-tab="efectos">
                             <div class="design-creator__tool-head">
                                 <strong>Efectos</strong>
                                 <span>Objeto seleccionado</span>
@@ -836,7 +1087,7 @@
                         </div>
 
                         <!-- Capas -->
-                        <div class="design-creator__tool-group">
+                        <div class="design-creator__tool-group" data-dc-tab="capas">
                             <div class="design-creator__tool-head">
                                 <strong>Capas</strong>
                                 <span id="layersCount">0</span>
@@ -853,7 +1104,7 @@
                         </div>
 
                         <!-- Historial -->
-                        <div class="design-creator__tool-group">
+                        <div class="design-creator__tool-group" data-dc-tab="historia">
                             <div class="design-creator__tool-head">
                                 <strong>Historial</strong>
                                 <span id="historyLabel">0 / 0</span>
@@ -907,12 +1158,20 @@
                         <button type="button" class="cut-pill shirt-side-btn"            data-side="espalda">Espalda</button>
                     </div>
                     <div class="design-canvas" id="designCanvas" data-cut="oversize">
-                        <div class="design-canvas__shirt" id="shirtBg"></div>
-                        <div class="design-canvas__print-area" id="printArea">
-                            <div class="design-canvas__empty" id="emptyState">Sube un diseño, agrega texto o una forma para empezar.</div>
-                            <canvas id="designFabricCanvas" class="design-canvas__surface" width="720" height="720"></canvas>
-                            <div id="guideV" style="position:absolute;left:50%;top:0;bottom:0;width:1px;background:rgba(214,195,161,0.9);pointer-events:none;display:none;transform:translateX(-50%);z-index:10;"></div>
-                            <div id="guideH" style="position:absolute;top:50%;left:0;right:0;height:1px;background:rgba(214,195,161,0.9);pointer-events:none;display:none;transform:translateY(-50%);z-index:10;"></div>
+                        <div class="design-canvas__viewport" id="dc3Viewport">
+                            <div class="design-canvas__shirt" id="shirtBg"></div>
+                            <div class="design-canvas__print-area" id="printArea">
+                                <div class="design-canvas__empty" id="emptyState">Sube un diseño, agrega texto o una forma para empezar.</div>
+                                <canvas id="designFabricCanvas" class="design-canvas__surface" width="720" height="720"></canvas>
+                                <div id="guideV" style="position:absolute;left:50%;top:0;bottom:0;width:1px;background:rgba(214,195,161,0.9);pointer-events:none;display:none;transform:translateX(-50%);z-index:10;"></div>
+                                <div id="guideH" style="position:absolute;top:50%;left:0;right:0;height:1px;background:rgba(214,195,161,0.9);pointer-events:none;display:none;transform:translateY(-50%);z-index:10;"></div>
+                            </div>
+                        </div>
+                        <div class="dc3-zoom" role="group" aria-label="Zoom del lienzo">
+                            <button type="button" class="dc3-zoom__btn" id="dc3ZoomOut" title="Alejar (−)">−</button>
+                            <span class="dc3-zoom__label" id="dc3ZoomLabel">100%</span>
+                            <button type="button" class="dc3-zoom__btn" id="dc3ZoomIn" title="Acercar (+)">+</button>
+                            <button type="button" class="dc3-zoom__btn" id="dc3ZoomReset" title="Ajustar a la vista (0)" style="font-size:0.85rem;">◉</button>
                         </div>
                     </div>
                     <div class="design-creator__hud">
@@ -1862,6 +2121,86 @@
         });
         applyFilter();
     }
+
+    // ── v2 · Sidebar de tabs ────────────────────────────────────────
+    const dc3Nav = document.getElementById("dc3Nav");
+    const dc3FormCol = document.querySelector(".design-creator__form-col");
+    const dc3PropsTitle = document.getElementById("dc3PropsTitle");
+    const dc3PropsHint = document.getElementById("dc3PropsHint");
+    const DC3_META = {
+        producto: ["Producto",  "Modelo, color y corte"],
+        diseno:   ["Diseño",    "Archivo, escala y posición"],
+        texto:    ["Texto",     "Fuente, color y estilo"],
+        formas:   ["Formas",    "Rectángulos, círculos y triángulos"],
+        efectos:  ["Efectos",   "Sombra, contorno y gradiente"],
+        capas:    ["Capas",     "Orden y bloqueo de elementos"],
+        historia: ["Historial", "Deshacer y rehacer cambios"],
+    };
+    const dc3SetTab = (tab) => {
+        if (!DC3_META[tab] || !dc3FormCol) return;
+        dc3FormCol.dataset.activeTab = tab;
+        dc3Nav?.querySelectorAll(".dc3-nav__btn").forEach(b => {
+            b.classList.toggle("is-active", b.dataset.dcTarget === tab);
+        });
+        const [title, hint] = DC3_META[tab];
+        if (dc3PropsTitle) dc3PropsTitle.textContent = title;
+        if (dc3PropsHint)  dc3PropsHint.textContent  = hint;
+    };
+    dc3Nav?.addEventListener("click", (e) => {
+        const b = e.target.closest(".dc3-nav__btn");
+        if (!b) return;
+        dc3SetTab(b.dataset.dcTarget);
+    });
+
+    // ── v2 · Zoom del lienzo (CSS transform sobre #printArea) ──────
+    const dc3ZoomLabel = document.getElementById("dc3ZoomLabel");
+    const dc3ViewportEl = document.getElementById("dc3Viewport");
+    let dc3Zoom = 1;
+    const dc3ApplyZoom = () => {
+        if (!dc3ViewportEl) return;
+        dc3ViewportEl.style.transformOrigin = "center center";
+        dc3ViewportEl.style.transform = dc3Zoom === 1 ? "" : `scale(${dc3Zoom})`;
+        if (dc3ZoomLabel) dc3ZoomLabel.textContent = Math.round(dc3Zoom * 100) + "%";
+    };
+    document.getElementById("dc3ZoomIn")?.addEventListener("click", () => {
+        dc3Zoom = Math.min(2.5, +(dc3Zoom + 0.15).toFixed(2)); dc3ApplyZoom();
+    });
+    document.getElementById("dc3ZoomOut")?.addEventListener("click", () => {
+        dc3Zoom = Math.max(0.5, +(dc3Zoom - 0.15).toFixed(2)); dc3ApplyZoom();
+    });
+    document.getElementById("dc3ZoomReset")?.addEventListener("click", () => {
+        dc3Zoom = 1; dc3ApplyZoom();
+    });
+    document.addEventListener("keydown", (e) => {
+        if (e.target && ["INPUT","TEXTAREA","SELECT"].includes(e.target.tagName)) return;
+        if (e.key === "+" || e.key === "=") { dc3Zoom = Math.min(2.5, +(dc3Zoom + 0.15).toFixed(2)); dc3ApplyZoom(); }
+        else if (e.key === "-" || e.key === "_") { dc3Zoom = Math.max(0.5, +(dc3Zoom - 0.15).toFixed(2)); dc3ApplyZoom(); }
+        else if (e.key === "0") { dc3Zoom = 1; dc3ApplyZoom(); }
+    });
+
+    // ── v2 · Selector visual de producto ↔ #productSelect y #productIdInput ─
+    const dc3ProductPicker = document.getElementById("dc3ProductPicker");
+    const productSelectEl = document.getElementById("productSelect");
+    const productIdInputEl = document.getElementById("productIdInput");
+    dc3ProductPicker?.addEventListener("click", (e) => {
+        const opt = e.target.closest(".dc3-product-picker__option");
+        if (!opt) return;
+        dc3ProductPicker.querySelectorAll(".dc3-product-picker__option").forEach(o => o.classList.toggle("is-active", o === opt));
+        const pid = opt.dataset.productId || "";
+        if (productSelectEl) productSelectEl.value = pid;
+        if (productIdInputEl) productIdInputEl.value = pid;
+    });
+    // Reflejar hacia atrás si el usuario cambia el select oculto
+    productSelectEl?.addEventListener("change", () => {
+        const pid = productSelectEl.value || "";
+        if (productIdInputEl) productIdInputEl.value = pid;
+        dc3ProductPicker?.querySelectorAll(".dc3-product-picker__option").forEach(o => {
+            o.classList.toggle("is-active", (o.dataset.productId || "") === pid);
+        });
+    });
+
+    // Tab inicial: si ya hay un archivo cargado, arranca en Diseño; si no, en Producto
+    dc3SetTab("{{ selected_design_url|default:'' }}" ? "diseno" : "producto");
 })();
 </script>
 {% endblock %}
