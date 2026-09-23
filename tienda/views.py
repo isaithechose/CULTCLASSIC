@@ -260,6 +260,29 @@ def design_creator(request):
             "files": files,
         })
 
+    # Variantes por producto+color para cambiar el mockup en vivo desde el creador
+    import json as _json, re as _re
+    product_variants_map = {}
+    product_colors_map = {}
+    for producto in customizable_products:
+        pid = str(producto.id)
+        variants_by_color = {}
+        colors_seen = []
+        for variant in producto.variants.filter(activo=True):
+            if not variant.color:
+                continue
+            key = _re.sub(r"[_\-\s]+", "", variant.color.lower())
+            if variant.imagen and key not in variants_by_color:
+                variants_by_color[key] = variant.imagen.url
+            if variant.color not in colors_seen:
+                colors_seen.append(variant.color)
+        if variants_by_color:
+            product_variants_map[pid] = variants_by_color
+        if colors_seen:
+            product_colors_map[pid] = colors_seen
+        elif producto.colores_disponibles:
+            product_colors_map[pid] = [c.strip() for c in producto.colores_disponibles.split(",") if c.strip()]
+
     context = {
         "form": form,
         "selected_design_name": selected_design_name,
@@ -268,6 +291,8 @@ def design_creator(request):
         "selected_product_id": selected_product_id,
         "customizable_products": customizable_products,
         "catalog": catalog,
+        "product_variants_json": _json.dumps(product_variants_map),
+        "product_colors_json":   _json.dumps(product_colors_map),
     }
     return render(request, "tienda/design_creator.html", context)
 

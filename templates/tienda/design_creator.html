@@ -902,7 +902,7 @@
                                 <strong>Color de playera</strong>
                                 <span id="shirtColorLabel">Beige</span>
                             </div>
-                            <div style="display:flex;flex-wrap:wrap;gap:0.55rem;margin-top:0.25rem;">
+                            <div id="dc3ShirtColorSwatches" style="display:flex;flex-wrap:wrap;gap:0.55rem;margin-top:0.25rem;">
                                 <button type="button" class="shirt-color-btn is-active" data-color="#f1ede6" data-label="Crema"   data-mockup="cream"     style="background:#f1ede6;"                   title="Crema"></button>
                                 <button type="button" class="shirt-color-btn"            data-color="#111111" data-label="Negro"   data-mockup="black"     style="background:#111111;"                   title="Negro"></button>
                                 <button type="button" class="shirt-color-btn"            data-color="#f8f8f8" data-label="Blanco"  data-mockup="white"     style="background:#f8f8f8;border:1px solid #ccc;" title="Blanco"></button>
@@ -911,7 +911,10 @@
                                 <button type="button" class="shirt-color-btn"            data-color="#4a5d3a" data-label="Camo"    data-mockup="camo"      style="background:#4a5d3a;"                   title="Camo"></button>
                                 <button type="button" class="shirt-color-btn"            data-color="#6b4f3a" data-label="Mocha"   data-mockup="mocha"     style="background:#6b4f3a;"                   title="Mocha"></button>
                             </div>
+                            <small id="dc3ColorHint" class="design-creator__copy" style="display:none;margin-top:0.5rem;font-size:0.72rem;opacity:0.7;">Sin colores registrados para este modelo.</small>
                         </div>
+                        <script type="application/json" id="dc3ProductVariantsJson">{{ product_variants_json|default:'{}'|safe }}</script>
+                        <script type="application/json" id="dc3ProductColorsJson">{{ product_colors_json|default:'{}'|safe }}</script>
 
 
                         <!-- Opacidad -->
@@ -1805,9 +1808,13 @@
             return;
         }
 
-        const scale = Math.round((obj.scaleX || 1) * 100);
+        // Slider = % del area de impresion (100% = ajustado). Usa fit scale del artwork
+        // para reescribir la percepcion; para otros objetos (formas, texto), fit=1.
+        const fit = obj._dc3FitScale || 1;
+        const scale = Math.max(1, Math.round((obj.scaleX || 1) / fit * 100));
         const rot   = Math.round(obj.angle || 0);
-        scaleRange.value = String(scale); rotateRange.value = String(rot);
+        scaleRange.value = String(Math.min(Number(scaleRange.max), Math.max(Number(scaleRange.min), scale)));
+        rotateRange.value = String(rot);
         scaleValue.textContent = `${scale}%`; rotateValue.textContent = `${rot}°`;
         hudScale.textContent = `${scale}%`; hudRotate.textContent = `${rot}°`;
 
@@ -1849,11 +1856,13 @@
     function fitArtwork() {
         if (!state.artwork) return;
         // El diseño se ajusta dentro del área de impresión con un margen limpio.
-        // Sin tope de escala 1: diseños mas chicos tambien se agrandan para llenar.
+        // Guarda la escala de "fit" para mapear el slider a % del area de impresion
+        // (asi 100% del slider = ajustado al area, no la escala cruda de Fabric).
         const margin = 0.90;
         const maxW = fabricCanvas.getWidth() * margin;
         const maxH = fabricCanvas.getHeight() * margin;
         const s = Math.min(maxW / state.artwork.width, maxH / state.artwork.height);
+        state.artwork._dc3FitScale = s;
         state.artwork.set({ scaleX: s, scaleY: s, angle: 0, flipX: false, flipY: false,
             left: fabricCanvas.getWidth() / 2, top: fabricCanvas.getHeight() / 2,
             originX: "center", originY: "center" });
@@ -2006,7 +2015,11 @@
 
     scaleRange?.addEventListener("input", () => {
         const obj = fabricCanvas.getActiveObject(); if (!obj) return;
-        const s = Number(scaleRange.value) / 100; obj.scaleX = s; obj.scaleY = s;
+        // El valor del slider es % del area de impresion; se multiplica por fit
+        // para obtener la escala Fabric real.
+        const fit = obj._dc3FitScale || 1;
+        const s = (Number(scaleRange.value) / 100) * fit;
+        obj.scaleX = s; obj.scaleY = s;
         if (obj === state.artwork) clampArtworkToArea(); else obj.setCoords();
         fabricCanvas.requestRenderAll(); updateControlsFromObject();
     });
@@ -2258,50 +2271,122 @@
         else if (e.key === "0") { dc3Zoom = 1; dc3ApplyZoom(); }
     });
 
-    // ── v2 · Selector visual de producto ↔ mockup + colores filtrados ──────
+    // ── v2 · Selector visual de producto ↔ mockup + swatches dinamicos ─────
     const dc3ProductPicker = document.getElementById("dc3ProductPicker");
     const productSelectEl  = document.getElementById("productSelect");
     const productIdInputEl = document.getElementById("productIdInput");
     const shirtBgEl        = document.getElementById("shirtBg");
     const shirtColorLabelEl = document.getElementById("shirtColorLabel");
+    const swatchesEl       = document.getElementById("dc3ShirtColorSwatches");
+    const colorHintEl      = document.getElementById("dc3ColorHint");
     const DEFAULT_MOCKUP_URL = `${MOCKUP_BASE}cream_001.webp`;
+
+    // Data cargada del backend
+    let dc3ProductVariants = {}, dc3ProductColors = {};
+    try { dc3ProductVariants = JSON.parse(document.getElementById("dc3ProductVariantsJson")?.textContent || "{}"); } catch (e) {}
+    try { dc3ProductColors   = JSON.parse(document.getElementById("dc3ProductColorsJson")?.textContent   || "{}"); } catch (e) {}
+
+    // Paleta hex para colores comunes (fallback cuando el producto no tiene mockup)
+    const COLOR_HEX = {
+        black:"#111", negro:"#111", white:"#f8f8f8", blanco:"#f8f8f8", offwhite:"#ece7dc",
+        cream:"#f1ede6", crema:"#f1ede6", latte:"#c5a480", mocha:"#6b4f3a", shadow:"#3a3a3a",
+        oatmeal:"#d5c8ac", darkgrey:"#5b5b5b", gris:"#5b5b5b", grey:"#7a7a7a", gray:"#7a7a7a",
+        camo:"#4a5d3a", olive:"#6a7c3d", huntergreen:"#2a4a2a", khaki:"#a99969", navy:"#1a2a4a",
+        darknavy:"#1a2a4a", midnightnavy:"#141d33", slate_blue:"#5c6b82", slateblue:"#5c6b82",
+        deepburgundy:"#5c1e1e", burgundy:"#5c1e1e", guinda:"#7a1a1a", desertbeige:"#c9b48a",
+        desertcamo:"#7d704d", citycamo:"#5a5a4a", concrete:"#a5a29d", peach:"#f4c9a3",
+        royal:"#2a3ea0", pastelpurple:"#c4a4d6", offblack:"#1e1e1e", brown:"#5a3d1e", sand:"#d5c19a",
+        lightwash:"#a9b6c2", darkwash:"#3c4a5c", utilitygreen:"#4a5b3a", chocolate:"#3d2618",
+        redwing:"#8f2a2a", milkyway:"#e5dfd3", tie_dye:"#c489c1", charcoalgrey:"#3f3f3f",
+        skyblue:"#8fbfd8",
+    };
+    function dc3ColorNorm(c) { return (c || "").toLowerCase().replace(/[_\-\s]+/g, ""); }
+    function dc3HexFor(color) {
+        const n = dc3ColorNorm(color);
+        return COLOR_HEX[n] || "#888";
+    }
+
+    function dc3RenderSwatches(pid) {
+        if (!swatchesEl) return;
+        swatchesEl.innerHTML = "";
+        const colors = dc3ProductColors[pid] || [];
+        const variants = dc3ProductVariants[pid] || {};
+        if (!colors.length) {
+            if (colorHintEl) colorHintEl.style.display = "block";
+            return;
+        }
+        if (colorHintEl) colorHintEl.style.display = "none";
+        colors.forEach((color, i) => {
+            const norm = dc3ColorNorm(color);
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "shirt-color-btn" + (i === 0 ? " is-active" : "");
+            btn.title = color;
+            btn.dataset.label = color;
+            btn.dataset.mockup = norm;
+            const hex = dc3HexFor(color);
+            btn.style.background = hex;
+            if (hex === "#f8f8f8" || hex === "#ece7dc" || hex.startsWith("#f")) btn.style.border = "1px solid #ccc";
+            if (variants[norm]) btn.dataset.variantImage = variants[norm];
+            btn.addEventListener("click", () => {
+                if (btn.dataset.variantImage && shirtBgEl) {
+                    shirtBgEl.style.setProperty("--shirt-mockup", `url("${btn.dataset.variantImage}")`);
+                    window.dc3CurrentProductImage = btn.dataset.variantImage;
+                }
+                if (shirtColorLabelEl) shirtColorLabelEl.textContent = color;
+                swatchesEl.querySelectorAll(".shirt-color-btn").forEach(b => b.classList.remove("is-active"));
+                btn.classList.add("is-active");
+            });
+            swatchesEl.appendChild(btn);
+        });
+    }
+
+    function dc3RenderDefaultSwatches() {
+        if (!swatchesEl) return;
+        swatchesEl.innerHTML = "";
+        [
+            ["Crema", "cream", "#f1ede6"],
+            ["Negro", "black", "#111"],
+            ["Blanco", "white", "#f8f8f8"],
+            ["Gris oscuro", "darkgrey", "#5b5b5b"],
+            ["Shadow", "shadow", "#3a3a3a"],
+            ["Camo", "camo", "#4a5d3a"],
+            ["Mocha", "mocha", "#6b4f3a"],
+        ].forEach(([label, mockup, hex], i) => {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "shirt-color-btn" + (i === 0 ? " is-active" : "");
+            btn.dataset.label = label; btn.dataset.mockup = mockup;
+            btn.title = label; btn.style.background = hex;
+            if (hex === "#f8f8f8") btn.style.border = "1px solid #ccc";
+            btn.addEventListener("click", () => {
+                shirtBg.style.setProperty("--shirt-mockup", `url("${MOCKUP_BASE}${mockup}_001.webp")`);
+                if (shirtColorLabelEl) shirtColorLabelEl.textContent = label;
+                swatchesEl.querySelectorAll(".shirt-color-btn").forEach(b => b.classList.remove("is-active"));
+                btn.classList.add("is-active");
+            });
+            swatchesEl.appendChild(btn);
+        });
+        if (colorHintEl) colorHintEl.style.display = "none";
+    }
 
     function dc3ApplyProduct(opt) {
         if (!opt) return;
-        const image     = opt.dataset.image || "";
-        const colorsRaw = (opt.dataset.colors || "").trim();
-        const title     = opt.querySelector(".dc3-product-picker__title")?.textContent?.trim() || "";
+        const image = opt.dataset.image || "";
+        const pid   = opt.dataset.productId || "";
+        const title = opt.querySelector(".dc3-product-picker__title")?.textContent?.trim() || "";
 
-        if (image) {
-            // Mostrar la imagen real del producto como mockup
+        if (image && pid) {
             if (shirtBgEl) shirtBgEl.style.setProperty("--shirt-mockup", `url("${image}")`);
             if (shirtColorLabelEl) shirtColorLabelEl.textContent = title;
             window.dc3CurrentProductImage = image;
+            dc3RenderSwatches(pid);
         } else {
-            // "Solo guardar diseño" → mockup por defecto (playera crema)
             if (shirtBgEl) shirtBgEl.style.setProperty("--shirt-mockup", `url("${DEFAULT_MOCKUP_URL}")`);
             if (shirtColorLabelEl) shirtColorLabelEl.textContent = "Crema";
             window.dc3CurrentProductImage = "";
+            dc3RenderDefaultSwatches();
         }
-
-        // Filtrar botones de color de playera segun colores_disponibles
-        const colors = colorsRaw
-            ? colorsRaw.toLowerCase().split(/[,;]/).map(c => c.trim().replace(/[_\-\s]+/g, "")).filter(Boolean)
-            : null;
-        const shirtBtns = document.querySelectorAll(".shirt-color-btn");
-        let anyVisible = false;
-        shirtBtns.forEach(btn => {
-            const label = (btn.dataset.label || "").toLowerCase().replace(/[_\-\s]+/g, "");
-            const mock  = (btn.dataset.mockup || "").toLowerCase().replace(/[_\-\s]+/g, "");
-            let show = !colors || !colors.length;  // sin filtro = mostrar todos
-            if (!show && colors) {
-                show = colors.some(c => label.includes(c) || c.includes(label) || mock.includes(c) || c.includes(mock));
-            }
-            btn.style.display = show ? "" : "none";
-            if (show) anyVisible = true;
-        });
-        // Si el producto no matchea ningun color de la paleta, mostrar todos (mejor UX que dejar vacio)
-        if (!anyVisible) shirtBtns.forEach(btn => btn.style.display = "");
     }
 
     dc3ProductPicker?.addEventListener("click", (e) => {
