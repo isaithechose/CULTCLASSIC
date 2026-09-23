@@ -1,4 +1,5 @@
 {% extends "tienda/base.html" %}
+{% load humanize %}
 {% load static %}
 
 {% block title %}Cult Clasiccs | Carrito{% endblock %}
@@ -16,6 +17,28 @@
     </div>
 </section>
 {% endblock %}
+
+
+<style>
+    .cart-freeship {
+        margin: 0.9rem 0 1rem;
+        padding: 0.85rem 1rem;
+        border-radius: 12px;
+        background: rgba(21,128,61,0.07);
+        border: 1px solid rgba(21,128,61,0.22);
+    }
+    .cart-freeship.is-complete { background: rgba(21,128,61,0.12); }
+    .cart-freeship__text { margin: 0 0 0.55rem; font-size: 0.9rem; line-height: 1.45; }
+    .cart-freeship.is-complete .cart-freeship__text { margin: 0; }
+    .cart-freeship__bar {
+        height: 7px;
+        border-radius: 999px;
+        background: rgba(0,0,0,0.09);
+        overflow: hidden;
+    }
+    .cart-freeship__bar span { display: block; height: 100%; background: #15803d; border-radius: 999px; transition: width .3s ease; }
+    .cart-freeship__link { display: inline-block; margin-top: 0.55rem; font-size: 0.84rem; color: inherit; text-decoration: underline; }
+</style>
 
 {% block content %}
 <section class="cart-page">
@@ -98,6 +121,20 @@
                         <span>Total</span>
                         <strong>${{ total }}</strong>
                     </div>
+                    {% if falta_envio_gratis > 0 %}
+                    <div class="cart-freeship">
+                        <p class="cart-freeship__text">
+                            Te faltan <strong>${{ falta_envio_gratis|floatformat:2|intcomma }}</strong> para que tu envío sea gratis.
+                        </p>
+                        <div class="cart-freeship__bar"><span style="width: {{ avance_envio_gratis }}%"></span></div>
+                        <a href="{% url 'tienda:lista_productos' %}" class="cart-freeship__link">Seguir viendo productos</a>
+                    </div>
+                    {% else %}
+                    <div class="cart-freeship is-complete">
+                        <p class="cart-freeship__text"><strong>¡Tu envío es gratis!</strong> Tu compra supera ${{ envio_gratis_desde|floatformat:0|intcomma }}.</p>
+                    </div>
+                    {% endif %}
+
                     <p class="cart-summary__text">
                         Al seguir, vas a guardar tu dirección, revisar el envío y después pasar al pago.
                     </p>

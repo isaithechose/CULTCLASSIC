@@ -63,6 +63,10 @@ INSTALLED_APPS = [
 
 SITE_ID = config("SITE_ID", default=4, cast=int)
 
+# Envio gratis desde este monto de compra (subtotal, sin contar el envio).
+FREE_SHIPPING_THRESHOLD = config("FREE_SHIPPING_THRESHOLD", default="1000.00")
+WHATSAPP_NUMBER = config("WHATSAPP_NUMBER", default="526567589153")
+
 
 # =========================
 # AUTH / ALLAUTH
@@ -182,6 +186,7 @@ TEMPLATES = [
                 "tienda.context_processors.meta_pixel",
                 "tienda.context_processors.admin_nav_context",
                 "tienda.context_processors.instagram_feed",
+                "tienda.context_processors.tienda_config",
             ],
         },
     },

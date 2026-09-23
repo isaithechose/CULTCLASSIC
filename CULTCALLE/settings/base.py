@@ -52,6 +52,7 @@ TEMPLATES = [
                 'tienda.context_processors.meta_pixel',
                 'tienda.context_processors.admin_nav_context',
                 'tienda.context_processors.instagram_feed',
+        'tienda.context_processors.tienda_config',
             ],
         },
     },

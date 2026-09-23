@@ -618,6 +618,25 @@ def _has_skydrop_credentials():
     return bool(getattr(settings, "SKYDROP_CLIENT_ID", "")) and bool(getattr(settings, "SKYDROP_CLIENT_SECRET", ""))
 
 
+def umbral_envio_gratis():
+    """Monto de compra desde el que el envio no se cobra."""
+    return Decimal(str(getattr(settings, "FREE_SHIPPING_THRESHOLD", "1000.00")))
+
+
+def _aplicar_envio_gratis(order):
+    """Deja el envio en cero cuando el pedido alcanza el umbral.
+
+    Se conserva la cotizacion de Skydrop (transportista, servicio y rate_id)
+    porque la guia se sigue generando con ella; lo unico que cambia es lo que
+    paga el cliente. El costo lo absorbe el negocio a proposito.
+    """
+    if Decimal(str(order.subtotal_price)) < umbral_envio_gratis():
+        return None
+    order.shipping_quote_amount = Decimal("0.00")
+    order.save(update_fields=["shipping_quote_amount"])
+    return Decimal("0.00")
+
+
 def _fallback_shipping_amount():
     return Decimal(str(getattr(settings, "FALLBACK_SHIPPING_FLAT_RATE", "199.00"))).quantize(
         Decimal("0.01"), rounding=ROUND_HALF_UP
@@ -791,6 +810,18 @@ def shipping_details(request):
                 messages.info(
                     request,
                     f"Dirección guardada. Aplicamos un envío estándar temporal de ${amount:.2f} MXN para continuar con el pago."
+                )
+
+            # La promesa de envio gratis manda sobre cualquier cotizacion.
+            if _aplicar_envio_gratis(order) is not None:
+                amount = Decimal("0.00")
+                shipping_note = (
+                    f"Envío sin costo para el cliente por superar ${umbral_envio_gratis():,.0f} de compra. "
+                    f"La guía se genera igual con {order.skydrop_carrier or 'la paqueteria'}."
+                )
+                messages.success(
+                    request,
+                    f"Tu envío es gratis: tu compra supera ${umbral_envio_gratis():,.0f}."
                 )
 
             order.shipping_updates.create(
@@ -974,9 +1005,18 @@ def carrito_view(request):
         })
         total += subtotal
 
+    # Cuanto le falta al cliente para que el envio deje de cobrarse: mostrarlo
+    # en el carrito es lo que sube el ticket promedio.
+    umbral = umbral_envio_gratis()
+    subtotal_carrito = Decimal(str(total))
+    falta = max(umbral - subtotal_carrito, Decimal("0.00"))
+    avance = 100 if falta <= 0 else int((subtotal_carrito / umbral) * 100)
+
     return render(request, 'tienda/carrito.html', {
         'carrito': carrito_items,
         'total': total,
+        'falta_envio_gratis': falta,
+        'avance_envio_gratis': max(avance, 3),
     })
 
 def eliminar_del_carrito(request, producto_id):

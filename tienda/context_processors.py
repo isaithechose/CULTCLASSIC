@@ -38,3 +38,15 @@ def admin_nav_context(request):
         return _admin_overview_context()
     except Exception:
         return {}
+
+
+def tienda_config(request):
+    """Datos de la tienda que varias plantillas necesitan mostrar."""
+    from decimal import Decimal
+
+    numero = getattr(settings, "WHATSAPP_NUMBER", "")
+    return {
+        "envio_gratis_desde": Decimal(str(getattr(settings, "FREE_SHIPPING_THRESHOLD", "1000.00"))),
+        "whatsapp_numero": numero,
+        "whatsapp_url": f"https://wa.me/{numero}" if numero else "",
+    }

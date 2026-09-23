@@ -1,4 +1,5 @@
 {% extends "tienda/base.html" %}
+{% load humanize %}
 {% load static %}
 
 {% block title %}{{ producto.nombre }} - Cult Clasiccs{% endblock %}
@@ -329,6 +330,27 @@
         pointer-events: none;
     }
     .color-circle.is-agotado { opacity: 0.3; cursor: not-allowed; pointer-events: none; }
+    .detail-trust {
+        list-style: none;
+        margin: 1.4rem 0 0;
+        padding: 1rem 1.1rem;
+        border: 1px solid rgba(0,0,0,0.08);
+        border-radius: 14px;
+        background: rgba(0,0,0,0.02);
+        font-size: 0.9rem;
+        line-height: 1.5;
+    }
+    .detail-trust li { padding: 0.32rem 0 0.32rem 1.4rem; position: relative; }
+    .detail-trust li::before {
+        content: "✓";
+        position: absolute;
+        left: 0;
+        font-weight: 700;
+        color: #15803d;
+    }
+    .detail-trust strong { font-weight: 700; }
+    .detail-trust a { color: inherit; text-decoration: underline; }
+
     .detail-stock-hint {
         margin-top: 0.55rem;
         font-size: 0.86rem;
@@ -1378,6 +1400,18 @@
                           <button id="addToCartBtn" type="submit" name="action" value="add_to_cart" class="btn site-btn site-btn--ghost" disabled>Agregar al carrito</button>
                           <button id="buyNowBtn" type="submit" name="action" value="buy_now" class="btn site-btn site-btn--accent" disabled>Comprar ahora</button>
                       </div>
+
+                      <ul class="detail-trust">
+                          <li>
+                              <strong>Envío gratis</strong> en compras desde ${{ envio_gratis_desde|floatformat:0|intcomma }}.
+                              En compras menores se calcula con tu código postal al pagar.
+                          </li>
+                          <li><strong>Pago seguro</strong> con tarjeta de crédito o débito.</li>
+                          <li><strong>¿Dudas de talla?</strong> Revisa la guía de medidas o
+                              {% if whatsapp_url %}<a href="{{ whatsapp_url }}?text={{ '¡Hola! Tengo una duda sobre '|urlencode }}{{ producto.nombre|urlencode }}" target="_blank" rel="noopener">escríbenos por WhatsApp</a>{% else %}escríbenos{% endif %}.
+                          </li>
+                          <li><a href="{% url 'tienda:devoluciones' %}">Cambios y devoluciones</a> sin complicaciones.</li>
+                      </ul>
                   </div>
 
                   <!-- DISEÑOS -->
