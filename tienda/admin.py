@@ -2824,6 +2824,72 @@ class OrderAdmin(admin.ModelAdmin):
                 }
             )
 
+        # Facetas: categoria / subcategoria / color / talla, con contadores
+        import re as _re, unicodedata as _ud
+        from collections import Counter as _Counter
+        def _facet_slug(s):
+            if not s:
+                return ""
+            s = _ud.normalize("NFKD", str(s)).encode("ascii", "ignore").decode("ascii")
+            return _re.sub(r"[^a-z0-9]+", "-", s.lower()).strip("-")
+
+        for row, variant in zip(catalog_rows[:len(variants)], variants):
+            prod = variant.product
+            row["category_name"]    = prod.categoria.nombre if prod.categoria else ""
+            row["category_slug"]    = _facet_slug(row["category_name"])
+            row["subcategory_name"] = prod.subcategoria.nombre if prod.subcategoria else ""
+            row["subcategory_slug"] = _facet_slug(row["subcategory_name"])
+            row["color_name"]       = variant.color or ""
+            row["color_slug"]       = _facet_slug(variant.color)
+            row["size_name"]        = variant.talla or ""
+            row["size_slug"]        = _facet_slug(variant.talla)
+        for row, product in zip(catalog_rows[len(variants):], general_products):
+            row["category_name"]    = product.categoria.nombre if product.categoria else ""
+            row["category_slug"]    = _facet_slug(row["category_name"])
+            row["subcategory_name"] = product.subcategoria.nombre if product.subcategoria else ""
+            row["subcategory_slug"] = _facet_slug(row["subcategory_name"])
+            row["color_name"]       = ""
+            row["color_slug"]       = ""
+            row["size_name"]        = ""
+            row["size_slug"]        = ""
+
+        # Agrupar por slug (ignorando mayusculas/acentos): BLACK y black son el mismo chip
+        _cats = _Counter(); _cats_names = {}
+        _subs = {}; _subs_names = {}
+        _cols = _Counter(); _cols_names = {}
+        _szs = _Counter(); _szs_names = {}
+        for row in catalog_rows:
+            if row["category_slug"]:
+                _cats[row["category_slug"]] += 1
+                _cats_names.setdefault(row["category_slug"], row["category_name"])
+                if row["subcategory_slug"]:
+                    _subs.setdefault(row["category_slug"], _Counter())
+                    _subs[row["category_slug"]][row["subcategory_slug"]] += 1
+                    _subs_names.setdefault((row["category_slug"], row["subcategory_slug"]), row["subcategory_name"])
+            if row["color_slug"]:
+                _cols[row["color_slug"]] += 1
+                _cols_names.setdefault(row["color_slug"], row["color_name"].title() if row["color_name"] else row["color_slug"])
+            if row["size_slug"]:
+                _szs[row["size_slug"]] += 1
+                _szs_names.setdefault(row["size_slug"], row["size_name"])
+
+        facet_categories = [{"slug": s, "name": _cats_names[s], "count": c} for s, c in _cats.most_common()]
+        facet_subcategories = {
+            cat: [{"slug": s, "name": _subs_names[(cat, s)], "count": c} for s, c in cc.most_common()]
+            for cat, cc in _subs.items()
+        }
+        facet_colors = sorted(
+            [{"slug": s, "name": _cols_names[s], "count": c} for s, c in _cols.items()],
+            key=lambda x: (-x["count"], x["name"])
+        )
+        _SIZE_ORDER = {"xs":1,"s":2,"m":3,"l":4,"xl":5,"2xl":6,"xxl":6,"3xl":7,"xxxl":7,"unica":10,"unitalla":10}
+        def _size_rank(item):
+            return (_SIZE_ORDER.get(item["slug"], 20), item["name"])
+        facet_sizes = sorted(
+            [{"slug": s, "name": _szs_names[s], "count": c} for s, c in _szs.items()],
+            key=_size_rank
+        )
+
         if request.method == "POST":
             header_form = PointOfSaleHeaderForm(request.POST)
             formset = POSLineFormSet(request.POST, prefix="pos")
@@ -2947,6 +3013,7 @@ class OrderAdmin(admin.ModelAdmin):
             row["form"] = form
             rows.append(row)
 
+        import json as _json
         context = dict(
             self.admin_site.each_context(request),
             title="Punto de venta",
@@ -2954,6 +3021,10 @@ class OrderAdmin(admin.ModelAdmin):
             header_form=header_form,
             formset=formset,
             rows=rows,
+            facet_categories=facet_categories,
+            facet_subcategories_json=_json.dumps(facet_subcategories),
+            facet_colors=facet_colors,
+            facet_sizes=facet_sizes,
             opts=self.model._meta,
         )
         return TemplateResponse(request, "admin/tienda/point_of_sale.html", context)

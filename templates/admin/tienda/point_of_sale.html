@@ -95,6 +95,97 @@
     align-items: center;
     margin-bottom: 1rem;
   }
+  /* Filtros por facetas */
+  .pos-facets {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.9rem 1.4rem;
+    margin: 0.4rem 0 1rem;
+    padding: 0.9rem 1rem;
+    border: 1px solid var(--cc-border);
+    border-radius: 0.9rem;
+    background: rgba(255,255,255,0.02);
+  }
+  .pos-facet-group { display: flex; align-items: center; gap: 0.55rem; flex-wrap: wrap; }
+  .pos-facet-group.is-hidden { display: none; }
+  .pos-facet-label {
+    font-size: 0.72rem;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--cc-muted);
+    font-weight: 700;
+    padding-right: 0.15rem;
+  }
+  .pos-facet-chips { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+  .pos-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.34rem 0.72rem;
+    border: 1px solid var(--cc-border-2, rgba(255,255,255,0.15));
+    background: rgba(255,255,255,0.03);
+    color: #d4d4d4;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    line-height: 1.15;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+  }
+  .pos-chip small {
+    font-weight: 500;
+    font-size: 0.68rem;
+    opacity: 0.7;
+  }
+  .pos-chip:hover { background: rgba(74,158,255,0.10); color: #fff; }
+  .pos-chip.is-active {
+    background: var(--cc-blue, #4a9eff);
+    border-color: var(--cc-blue, #4a9eff);
+    color: #fff;
+  }
+  .pos-chip.is-disabled {
+    opacity: 0.4;
+    pointer-events: none;
+  }
+  .pos-chip--swatch { padding-left: 0.42rem; }
+  .pos-swatch {
+    width: 0.85rem;
+    height: 0.85rem;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.35);
+    flex-shrink: 0;
+  }
+  .pos-facets-clear {
+    margin-left: auto;
+    background: transparent;
+    border: 1px dashed rgba(255,255,255,0.22);
+    color: var(--cc-muted);
+    border-radius: 999px;
+    padding: 0.3rem 0.85rem;
+    font-size: 0.74rem;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .pos-facets-clear:hover { color: #fff; border-color: rgba(255,255,255,0.5); }
+  .pos-visible-count {
+    font-size: 0.72rem;
+    color: var(--cc-muted);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 0.25rem 0.55rem;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 999px;
+    background: rgba(255,255,255,0.02);
+  }
+  html.light-mode .pos-facets { background: #f8fafc; border-color: #e5e7eb; }
+  html.light-mode .pos-chip { background: #fff; color: #374151; border-color: #d0d5dd; }
+  html.light-mode .pos-chip:hover { background: #eef4ff; }
+  html.light-mode .pos-facet-label { color: #64748b; }
+  html.light-mode .pos-facets-clear { color: #64748b; border-color: #cbd5e1; }
+
   .pos-search {
     width: 100%;
     min-height: 2.65rem;
@@ -446,7 +537,50 @@
         <input class="pos-search" id="posSearch" type="search" placeholder="Filtrar producto, color, talla o SKU">
         <label class="pos-toggle"><input id="hideOutOfStock" type="checkbox"> Ocultar agotados</label>
         <div class="pos-selected-count"><span id="posSelectedCount">0</span>&nbsp;líneas</div>
+        <div class="pos-visible-count" id="posVisibleCount" title="Filas mostradas / total"></div>
       </div>
+
+      <div class="pos-facets" id="posFacets">
+        {% if facet_categories %}
+        <div class="pos-facet-group" data-facet="category">
+          <span class="pos-facet-label">Categoría</span>
+          <div class="pos-facet-chips">
+            <button type="button" class="pos-chip is-active" data-facet-slug="">Todas</button>
+            {% for cat in facet_categories %}
+            <button type="button" class="pos-chip" data-facet-slug="{{ cat.slug }}">{{ cat.name }} <small>({{ cat.count }})</small></button>
+            {% endfor %}
+          </div>
+        </div>
+        <div class="pos-facet-group is-hidden" data-facet="subcategory">
+          <span class="pos-facet-label">Subcategoría</span>
+          <div class="pos-facet-chips" id="posSubcatChips"></div>
+        </div>
+        {% endif %}
+        {% if facet_colors %}
+        <div class="pos-facet-group" data-facet="color">
+          <span class="pos-facet-label">Color</span>
+          <div class="pos-facet-chips">
+            {% for c in facet_colors %}
+            <button type="button" class="pos-chip pos-chip--swatch" data-facet-slug="{{ c.slug }}" title="{{ c.name }}">
+              <span class="pos-swatch" data-swatch="{{ c.slug }}"></span>{{ c.name }} <small>({{ c.count }})</small>
+            </button>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+        {% if facet_sizes %}
+        <div class="pos-facet-group" data-facet="size">
+          <span class="pos-facet-label">Talla</span>
+          <div class="pos-facet-chips">
+            {% for s in facet_sizes %}
+            <button type="button" class="pos-chip" data-facet-slug="{{ s.slug }}">{{ s.name }} <small>({{ s.count }})</small></button>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+        <button type="button" class="pos-facets-clear" id="posFacetsClear">Limpiar filtros</button>
+      </div>
+      <script type="application/json" id="posSubcategoriesJson">{{ facet_subcategories_json|safe }}</script>
       <table class="pos-table">
         <thead>
           <tr>
@@ -469,6 +603,10 @@
               data-image="{{ row.image_url }}"
               data-stock="{{ row.stock }}"
               data-cost="{{ row.unit_cost|floatformat:2 }}"
+              data-category="{{ row.category_slug|default:'' }}"
+              data-subcategory="{{ row.subcategory_slug|default:'' }}"
+              data-color="{{ row.color_slug|default:'' }}"
+              data-size="{{ row.size_slug|default:'' }}"
             >
               <td class="pos-product">
                 <div class="pos-product-wrap">
@@ -666,21 +804,221 @@
       renderTicket(ticketItems);
     }
 
-    function applySearch() {
-      const query = (searchInput.value || "").trim().toLowerCase();
-      const hideOutOfStock = hideOutOfStockInput.checked;
-      rows.forEach((row) => {
-        const haystack = row.dataset.search || "";
-        const outOfStock = Number(row.dataset.stock || "0") <= 0;
-        row.classList.toggle("is-hidden", Boolean((query && !haystack.includes(query)) || (hideOutOfStock && outOfStock)));
+    // ── Filtros por facetas + búsqueda difusa ─────────────────────────────
+    const facetsRoot        = document.getElementById("posFacets");
+    const subcatChipsEl     = document.getElementById("posSubcatChips");
+    const facetsClearBtn    = document.getElementById("posFacetsClear");
+    const visibleCountEl    = document.getElementById("posVisibleCount");
+    const subcategoriesData = (() => {
+      try { return JSON.parse(document.getElementById("posSubcategoriesJson")?.textContent || "{}"); }
+      catch (e) { return {}; }
+    })();
+
+    const facetState = { category: "", subcategory: "", colors: new Set(), sizes: new Set() };
+
+    // Normalización sin acentos para búsqueda difusa
+    function normalize(str) {
+      return (str || "")
+        .toString()
+        .toLowerCase()
+        .normalize("NFKD")
+        .replace(/[̀-ͯ]/g, "")
+        .replace(/[^a-z0-9\s]+/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+
+    // Cache: cada fila lleva un haystack normalizado + tokens
+    rows.forEach((row) => {
+      const raw = row.dataset.search || "";
+      row.dataset.normSearch = normalize(raw);
+    });
+
+    // Paleta de swatches por slug conocido (fallback #888)
+    const SWATCH_HEX = {
+      negro:"#111", black:"#111", "off-black":"#1e1e1e", offblack:"#1e1e1e",
+      blanco:"#f8f8f8", white:"#f8f8f8", "off-white":"#ece7dc", offwhite:"#ece7dc",
+      gris:"#7a7a7a", grey:"#7a7a7a", gray:"#7a7a7a", "dark-grey":"#4a4a4a", darkgrey:"#4a4a4a",
+      shadow:"#3a3a3a", camo:"#4a5d3a", olive:"#6a7c3d", "hunter-green":"#2a4a2a", khaki:"#a99969",
+      navy:"#1a2a4a", "dark-navy":"#1a2a4a", darknavy:"#1a2a4a", "midnight-navy":"#141d33",
+      "slate-blue":"#5c6b82", slateblue:"#5c6b82", latte:"#c5a480", mocha:"#6b4f3a", crema:"#f1ede6",
+      cream:"#f1ede6", oatmeal:"#d5c8ac", "deep-burgundy":"#5c1e1e", burgundy:"#5c1e1e", guinda:"#7a1a1a",
+      "desert-beige":"#c9b48a", desertbeige:"#c9b48a", concrete:"#a5a29d", peach:"#f4c9a3",
+      royal:"#2a3ea0", "pastel-purple":"#c4a4d6", pastelpurple:"#c4a4d6", brown:"#5a3d1e",
+      "utility-green":"#4a5b3a", utilitygreen:"#4a5b3a", chocolate:"#3d2618", milkyway:"#e5dfd3",
+      "milky-way":"#e5dfd3", "charcoal-grey":"#3f3f3f", charcoalgrey:"#3f3f3f", "sky-blue":"#8fbfd8",
+      skyblue:"#8fbfd8", coral:"#f88070", tan:"#c9a37a", sand:"#d5c19a", "light-wash":"#a9b6c2",
+      lightwash:"#a9b6c2", "dark-wash":"#3c4a5c", darkwash:"#3c4a5c", "claro-azul":"#8fbfd8",
+    };
+    document.querySelectorAll(".pos-swatch[data-swatch]").forEach(el => {
+      el.style.background = SWATCH_HEX[el.dataset.swatch] || "#888";
+      if ((el.style.background || "").includes("#f8f8f8") || (el.style.background || "").includes("#ece7dc")) {
+        el.style.borderColor = "rgba(0,0,0,0.25)";
+      }
+    });
+
+    function rowMatchesFacets(row) {
+      if (facetState.category    && row.dataset.category    !== facetState.category)    return false;
+      if (facetState.subcategory && row.dataset.subcategory !== facetState.subcategory) return false;
+      if (facetState.colors.size && !facetState.colors.has(row.dataset.color || ""))    return false;
+      if (facetState.sizes.size  && !facetState.sizes.has(row.dataset.size  || ""))     return false;
+      return true;
+    }
+    // Levenshtein para tolerar typos (1-2 errores segun largo del token)
+    function levenshtein(a, b) {
+      if (a === b) return 0;
+      const al = a.length, bl = b.length;
+      if (!al) return bl; if (!bl) return al;
+      let prev = new Array(bl + 1), cur = new Array(bl + 1);
+      for (let j = 0; j <= bl; j++) prev[j] = j;
+      for (let i = 1; i <= al; i++) {
+        cur[0] = i;
+        for (let j = 1; j <= bl; j++) {
+          const cost = a.charCodeAt(i - 1) === b.charCodeAt(j - 1) ? 0 : 1;
+          cur[j] = Math.min(cur[j - 1] + 1, prev[j] + 1, prev[j - 1] + cost);
+        }
+        [prev, cur] = [cur, prev];
+      }
+      return prev[bl];
+    }
+    function tokenMatches(token, hay, hayWords) {
+      if (hay.includes(token)) return true;
+      if (token.length < 4) return false;
+      // Tolerancia mas generosa: 1 typo para 4 chars, 2 para 5-7, 3 para >=8
+      const maxDist = token.length >= 8 ? 3 : (token.length >= 5 ? 2 : 1);
+      for (const w of hayWords) {
+        if (Math.abs(w.length - token.length) > maxDist + 1) continue;
+        if (levenshtein(token, w) <= maxDist) return true;
+        // Match parcial: token dentro del inicio de una palabra mas larga
+        if (w.length > token.length && levenshtein(token, w.slice(0, token.length)) <= maxDist) return true;
+      }
+      return false;
+    }
+    function rowMatchesSearch(row, queryTokens) {
+      if (!queryTokens.length) return true;
+      const hay = row.dataset.normSearch || "";
+      if (!row._normWords) row._normWords = hay.split(" ").filter(Boolean);
+      return queryTokens.every(t => tokenMatches(t, hay, row._normWords));
+    }
+
+    function updateFacetCounts() {
+      // Contar cuántas filas quedan visibles al aplicar cada valor candidato
+      // (respetando el resto de los filtros). Chips con count=0 → is-disabled.
+      const q = normalize(searchInput.value);
+      const qTokens = q ? q.split(" ").filter(Boolean) : [];
+      const hideOoS = hideOutOfStockInput.checked;
+      const passesBase = (row, ignore) => {
+        if (hideOoS && Number(row.dataset.stock || "0") <= 0) return false;
+        if (!rowMatchesSearch(row, qTokens)) return false;
+        if (ignore !== "category" && facetState.category && row.dataset.category !== facetState.category) return false;
+        if (ignore !== "subcategory" && facetState.subcategory && row.dataset.subcategory !== facetState.subcategory) return false;
+        if (ignore !== "colors" && facetState.colors.size && !facetState.colors.has(row.dataset.color || "")) return false;
+        if (ignore !== "sizes"  && facetState.sizes.size  && !facetState.sizes.has(row.dataset.size  || ""))  return false;
+        return true;
+      };
+      const groups = facetsRoot?.querySelectorAll(".pos-facet-group") || [];
+      groups.forEach(g => {
+        const facet = g.dataset.facet;
+        const ignoreKey = facet === "size" ? "sizes" : (facet === "color" ? "colors" : facet);
+        g.querySelectorAll(".pos-chip").forEach(chip => {
+          const slug = chip.dataset.facetSlug;
+          if (slug === "") return; // "Todas"
+          let count = 0;
+          for (const row of rows) {
+            if (!passesBase(row, ignoreKey)) continue;
+            const val = row.dataset[facet] || "";
+            if (val === slug) count++;
+          }
+          const smallEl = chip.querySelector("small");
+          if (smallEl) smallEl.textContent = `(${count})`;
+          chip.classList.toggle("is-disabled", count === 0 && !chip.classList.contains("is-active"));
+        });
       });
     }
+
+    function renderSubcategoryChips() {
+      if (!subcatChipsEl) return;
+      const group = facetsRoot?.querySelector('[data-facet="subcategory"]');
+      const list = subcategoriesData[facetState.category] || [];
+      if (!facetState.category || !list.length) {
+        group?.classList.add("is-hidden");
+        subcatChipsEl.innerHTML = "";
+        facetState.subcategory = "";
+        return;
+      }
+      group?.classList.remove("is-hidden");
+      subcatChipsEl.innerHTML = "";
+      const all = document.createElement("button");
+      all.type = "button"; all.className = "pos-chip is-active"; all.dataset.facetSlug = ""; all.textContent = "Todas";
+      subcatChipsEl.appendChild(all);
+      list.forEach(sc => {
+        const b = document.createElement("button");
+        b.type = "button"; b.className = "pos-chip"; b.dataset.facetSlug = sc.slug;
+        b.innerHTML = `${sc.name} <small>(${sc.count})</small>`;
+        subcatChipsEl.appendChild(b);
+      });
+      facetState.subcategory = "";
+    }
+
+    function applySearch() {
+      const q = normalize(searchInput.value);
+      const qTokens = q ? q.split(" ").filter(Boolean) : [];
+      const hideOoS = hideOutOfStockInput.checked;
+      let visible = 0;
+      rows.forEach((row) => {
+        const outOfStock = Number(row.dataset.stock || "0") <= 0;
+        let hide = false;
+        if (hideOoS && outOfStock) hide = true;
+        if (!hide && !rowMatchesSearch(row, qTokens)) hide = true;
+        if (!hide && !rowMatchesFacets(row)) hide = true;
+        row.classList.toggle("is-hidden", hide);
+        if (!hide) visible++;
+      });
+      if (visibleCountEl) visibleCountEl.textContent = `Mostrando ${visible} / ${rows.length}`;
+      updateFacetCounts();
+    }
+
+    facetsRoot?.addEventListener("click", (e) => {
+      const chip = e.target.closest(".pos-chip");
+      if (!chip) return;
+      const group = chip.closest(".pos-facet-group");
+      const facet = group?.dataset.facet;
+      const slug = chip.dataset.facetSlug || "";
+      if (facet === "category") {
+        facetState.category = slug;
+        group.querySelectorAll(".pos-chip").forEach(c => c.classList.toggle("is-active", c === chip));
+        renderSubcategoryChips();
+      } else if (facet === "subcategory") {
+        facetState.subcategory = slug;
+        group.querySelectorAll(".pos-chip").forEach(c => c.classList.toggle("is-active", c === chip));
+      } else if (facet === "color") {
+        if (facetState.colors.has(slug)) facetState.colors.delete(slug);
+        else facetState.colors.add(slug);
+        chip.classList.toggle("is-active");
+      } else if (facet === "size") {
+        if (facetState.sizes.has(slug)) facetState.sizes.delete(slug);
+        else facetState.sizes.add(slug);
+        chip.classList.toggle("is-active");
+      }
+      applySearch();
+    });
+    facetsClearBtn?.addEventListener("click", () => {
+      facetState.category = ""; facetState.subcategory = "";
+      facetState.colors.clear(); facetState.sizes.clear();
+      facetsRoot?.querySelectorAll(".pos-chip").forEach(c => {
+        c.classList.toggle("is-active", c.dataset.facetSlug === "");
+      });
+      renderSubcategoryChips();
+      applySearch();
+    });
 
     function findQuickAddRow(query) {
       const normalized = (query || "").trim().toLowerCase();
       if (!normalized) return null;
+      const normFuzzy = normalize(query);
+      const fuzzyTokens = normFuzzy.split(" ").filter(Boolean);
       return rows.find((row) => (row.dataset.sku || "").toLowerCase() === normalized)
-        || rows.find((row) => (row.dataset.search || "").includes(normalized));
+        || rows.find((row) => rowMatchesSearch(row, fuzzyTokens));
     }
 
     form.querySelectorAll("input, select").forEach((input) => {
@@ -741,6 +1079,7 @@
       });
     }
     recalculateTotal();
+    applySearch();
   })();
 </script>
 {% endblock %}
