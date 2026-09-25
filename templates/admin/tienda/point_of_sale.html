@@ -524,6 +524,191 @@
       justify-content: stretch;
     }
   }
+
+  /* ── Mobile POS (<= 780px) ─────────────────────────────────────────── */
+  @media (max-width: 780px) {
+    .pos-panel { padding: 0.7rem; margin-bottom: 0.6rem; }
+    .pos-panel h2 { font-size: 1rem; margin: 0 0 0.5rem; }
+
+    /* Header 4-campos apilado */
+    .pos-header-grid { grid-template-columns: 1fr; gap: 0.6rem; }
+    .pos-header-grid input,
+    .pos-header-grid select,
+    .pos-header-grid textarea {
+      font-size: 16px;  /* evita zoom auto en iOS */
+      min-height: 2.9rem;
+    }
+
+    /* Toolbar apilada, buscador full-width */
+    .pos-toolbar {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      align-items: stretch;
+      margin-bottom: 0.75rem;
+    }
+    .pos-search { width: 100%; font-size: 16px; padding: 0.65rem 0.8rem; }
+    .pos-toggle { align-self: flex-start; font-size: 0.85rem; }
+    .pos-selected-count, .pos-visible-count { align-self: flex-start; font-size: 0.7rem; }
+
+    /* Filtros: scroll horizontal por grupo */
+    .pos-facets {
+      padding: 0.55rem;
+      gap: 0.55rem 0;
+    }
+    .pos-facet-group {
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      flex-wrap: nowrap;
+      align-items: center;
+      padding-bottom: 0.2rem;
+    }
+    .pos-facet-group::-webkit-scrollbar { display: none; }
+    .pos-facet-label {
+      position: sticky;
+      left: 0;
+      background: linear-gradient(90deg, var(--cc-panel, #141414) 75%, transparent);
+      padding-right: 0.5rem;
+      flex-shrink: 0;
+      z-index: 2;
+    }
+    .pos-facet-chips {
+      flex-wrap: nowrap;
+      min-width: max-content;
+      gap: 0.3rem;
+    }
+    .pos-chip {
+      white-space: nowrap;
+      flex-shrink: 0;
+      min-height: 2.1rem;
+      padding: 0.35rem 0.75rem;
+    }
+    .pos-facets-clear {
+      align-self: flex-end;
+      margin-left: 0;
+      margin-top: 0.25rem;
+    }
+
+    /* Tabla → cards: cada fila se convierte en card apilada */
+    .pos-table,
+    .pos-table thead,
+    .pos-table tbody,
+    .pos-table tr,
+    .pos-table th,
+    .pos-table td { display: block; width: 100%; }
+    .pos-table thead { display: none; }
+    .pos-table tr {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      grid-template-areas:
+        "prod prod"
+        "stk  price"
+        "cost sub"
+        "qty  qty";
+      gap: 0.55rem 0.7rem;
+      border: 1px solid var(--cc-border);
+      border-radius: 12px;
+      background: rgba(255,255,255,0.02);
+      padding: 0.75rem;
+      margin-bottom: 0.65rem;
+    }
+    .pos-table tr.is-selected { background: rgba(45,190,108,0.10); border-color: rgba(45,190,108,0.4); }
+    .pos-table td {
+      border: none !important;
+      padding: 0;
+      text-align: left !important;
+    }
+    /* Labels contextuales encima del valor */
+    .pos-table td::before {
+      content: attr(data-label);
+      display: block;
+      font-size: 0.65rem;
+      color: var(--cc-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-weight: 700;
+      margin-bottom: 0.15rem;
+    }
+    .pos-table td.pos-product::before { display: none; }
+    .pos-table td.pos-product { grid-area: prod; min-width: 0; }
+    .pos-table td.pos-stock-cell { grid-area: stk; width: auto; }
+    .pos-table td[data-label="Precio"] { grid-area: price; }
+    .pos-table td[data-label="Costo"] { grid-area: cost; }
+    .pos-table td[data-label="Subtotal"] { grid-area: sub; }
+    .pos-table td[data-label="Cantidad"] { grid-area: qty; }
+    .pos-product-wrap { align-items: center; gap: 0.7rem; }
+    .pos-image { width: 3.6rem; height: 3.6rem; border-radius: 10px; }
+    .pos-product strong { font-size: 0.95rem; }
+    .pos-product span { font-size: 0.82rem; }
+    .pos-stock-badge { font-size: 1.4rem; padding: 0.2rem 0.55rem; min-width: 2.4rem; }
+    .pos-number input {
+      max-width: 100%;
+      width: 100%;
+      font-size: 16px;
+      min-height: 2.5rem;
+      padding: 0.4rem 0.55rem;
+    }
+
+    /* Botones +/- cantidad — mas grandes para dedo */
+    .pos-qty-control {
+      display: grid;
+      grid-template-columns: 3rem 1fr 3rem;
+      gap: 0.4rem;
+      width: 100%;
+    }
+    .pos-qty-btn {
+      width: 3rem;
+      height: 3rem;
+      font-size: 1.25rem;
+      border-radius: 10px;
+    }
+
+    /* Ticket como panel fijo bottom, colapsable */
+    .pos-ticket {
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      top: auto;
+      max-height: 60vh;
+      overflow-y: auto;
+      border-radius: 14px 14px 0 0;
+      z-index: 30;
+      box-shadow: 0 -8px 24px rgba(0,0,0,0.5);
+      padding: 0.75rem 0.85rem 1rem;
+      margin: 0;
+    }
+    .pos-ticket__header { position: sticky; top: 0; background: var(--cc-panel); padding-top: 0.15rem; margin-bottom: 0.4rem; z-index: 1; }
+    .pos-ticket__header h2 { font-size: 1rem; }
+    .pos-ticket-empty { min-height: 3.5rem; font-size: 0.85rem; }
+    .pos-ticket-items { min-height: 0; }
+    .pos-layout > :first-child { padding-bottom: 6rem; }  /* espacio para el ticket fijo */
+
+    /* Total bar dentro del ticket: 2 cols */
+    .pos-total-bar {
+      grid-template-columns: 1fr 1fr;
+      justify-content: stretch;
+      padding: 0.7rem;
+      gap: 0.5rem 0.8rem;
+    }
+    .pos-summary-item { min-width: 0; }
+    .pos-total { font-size: 1.4rem; }
+    .pos-ticket-submit {
+      grid-column: 1 / -1;
+      width: 100%;
+      padding: 0.85rem;
+      font-size: 1rem;
+      font-weight: 800;
+      min-height: 3rem;
+    }
+
+    /* Header buttons compactos */
+    .pos-actions { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+    .pos-actions .button {
+      padding: 0.5rem 0.85rem;
+      font-size: 0.85rem;
+    }
+  }
 </style>
 {% endblock %}
 
@@ -648,7 +833,7 @@
               data-color="{{ row.color_slug|default:'' }}"
               data-size="{{ row.size_slug|default:'' }}"
             >
-              <td class="pos-product">
+              <td class="pos-product" data-label="Producto">
                 <div class="pos-product-wrap">
                   {% if row.image_url %}
                     <img class="pos-image" src="{{ row.image_url }}" loading="lazy" decoding="async" alt="">
@@ -662,16 +847,16 @@
                   </div>
                 </div>
               </td>
-              <td class="pos-stock-cell">
+              <td class="pos-stock-cell" data-label="Stock">
                 <span class="pos-stock-badge{% if row.stock == 0 %} pos-stock--out{% elif row.stock <= 3 %} pos-stock--low{% else %} pos-stock--ok{% endif %}">{{ row.stock }}</span>
               </td>
-              <td>${{ row.unit_cost|floatformat:2 }}</td>
-              <td class="pos-number">
+              <td data-label="Costo">${{ row.unit_cost|floatformat:2 }}</td>
+              <td class="pos-number" data-label="Precio">
                 {{ row.form.unit_price }}
                 {{ row.form.unit_price.errors }}
               </td>
-              <td class="pos-line-subtotal">$<span data-line-subtotal>0.00</span></td>
-              <td class="pos-number">
+              <td class="pos-line-subtotal" data-label="Subtotal">$<span data-line-subtotal>0.00</span></td>
+              <td class="pos-number" data-label="Cantidad">
                 <div class="pos-qty-control">
                   <button class="pos-qty-btn" type="button" data-qty-step="-1">-</button>
                   {{ row.form.quantity }}
