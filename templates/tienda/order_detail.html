@@ -13,6 +13,7 @@
     <div class="shipping-layout">
       <div class="order-surface">
         <h3 class="mb-4">Productos</h3>
+        <div class="table-responsive">
         <table class="table order-table">
           <thead>
             <tr>
@@ -46,6 +47,7 @@
             {% endfor %}
           </tbody>
         </table>
+        </div>
 
         <div class="shipping-map-card__address mt-3">
           <div><strong>Subtotal productos:</strong> ${{ order.subtotal_price|floatformat:2 }}</div>

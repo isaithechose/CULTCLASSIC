@@ -1,24 +1,45 @@
-<!-- tienda/templates/tienda/lista_productos.html -->
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Productos</title>
-</head>
-<body>
-    <h1>Lista de Productos</h1>
-    <ul>
-        {% for producto in productos %}
-            <li>
-                <h2>{{ producto.nombre }}</h2>
-                <p>{{ producto.descripcion }}</p>
-                <p>Precio: ${{ producto.precio }}</p>
-                <p>Stock: {{ producto.stock }}</p>
-                {% if producto.imagen_principal %}
-                    <img src="{{ producto.imagen_principal.url }}" alt="{{ producto.nombre }}" style="max-width: 150px;">
-                {% endif %}
-            </li>
-        {% endfor %}
-    </ul>
-</body>
-</html>
-tml>
+{% extends "tienda/base.html" %}
+
+{% block title %}Productos | Cult Clasiccs{% endblock %}
+
+{% block content %}
+<section class="py-5">
+  <div class="container px-4 px-lg-5">
+    <div class="mb-4">
+      <p class="page-eyebrow mb-2">Catálogo</p>
+      <h1 class="mb-2">Lista de productos</h1>
+      <p class="text-muted mb-0">Todo lo que tenemos disponible en existencia.</p>
+    </div>
+
+    <div class="product-grid">
+      {% for producto in productos %}
+        <article class="product-tile">
+          <a class="product-tile__media" href="{% url 'tienda:detalle_producto' producto.id %}">
+            {% if producto.imagen %}
+              <img src="{{ producto.imagen.url }}" alt="{{ producto.nombre }}" loading="lazy">
+            {% else %}
+              <div class="product-tile__placeholder"></div>
+            {% endif %}
+          </a>
+          <div class="product-tile__body">
+            <div>
+              <p class="product-tile__meta">Cult Clasiccs</p>
+              <h3 class="product-tile__title">{{ producto.nombre }}</h3>
+              <p class="text-muted mb-0" style="font-size:0.82rem;">Stock: {{ producto.stock }}</p>
+            </div>
+            <div class="product-tile__footer">
+              <span class="product-tile__price">${{ producto.precio }}</span>
+              <a class="product-tile__link" href="{% url 'tienda:detalle_producto' producto.id %}">Seleccionar</a>
+            </div>
+          </div>
+        </article>
+      {% empty %}
+        <div class="product-empty">
+          <p class="product-empty__eyebrow">Sin productos</p>
+          <h3 class="product-empty__title">Aún no hay productos disponibles.</h3>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock %}

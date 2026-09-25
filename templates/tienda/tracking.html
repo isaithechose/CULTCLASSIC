@@ -8,6 +8,7 @@
             <p class="text-muted mb-0">Consulta el estado de envío y entra al detalle de cada orden.</p>
         </div>
         {% if orders %}
+            <div class="table-responsive">
             <table class="table">
                 <thead>
                     <tr>
@@ -38,6 +39,7 @@
                     {% endfor %}
                 </tbody>
             </table>
+            </div>
         {% else %}
             <p>No tienes pedidos aún.</p>
         {% endif %}
