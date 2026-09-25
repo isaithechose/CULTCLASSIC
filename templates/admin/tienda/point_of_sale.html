@@ -95,6 +95,46 @@
     align-items: center;
     margin-bottom: 1rem;
   }
+  /* Stock: numero grande y con color segun disponibilidad */
+  .pos-stock-cell {
+    text-align: center !important;
+    vertical-align: middle;
+    width: 90px;
+  }
+  .pos-stock-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 3rem;
+    padding: 0.28rem 0.7rem;
+    border-radius: 0.8rem;
+    font-size: 1.55rem;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    letter-spacing: -0.01em;
+    border: 1px solid transparent;
+  }
+  .pos-stock--ok {
+    color: #4ade80;
+    background: rgba(45,190,108,0.14);
+    border-color: rgba(45,190,108,0.35);
+  }
+  .pos-stock--low {
+    color: #fbbf24;
+    background: rgba(251,191,36,0.16);
+    border-color: rgba(251,191,36,0.45);
+  }
+  .pos-stock--out {
+    color: #f87171;
+    background: rgba(248,113,113,0.14);
+    border-color: rgba(248,113,113,0.35);
+    text-decoration: line-through;
+  }
+  html.light-mode .pos-stock--ok  { color: #166534; background: #dcfce7; border-color: #86efac; }
+  html.light-mode .pos-stock--low { color: #92400e; background: #fef3c7; border-color: #fcd34d; }
+  html.light-mode .pos-stock--out { color: #991b1b; background: #fee2e2; border-color: #fca5a5; }
+
   /* Filtros por facetas */
   .pos-facets {
     display: flex;
@@ -622,7 +662,9 @@
                   </div>
                 </div>
               </td>
-              <td>{{ row.stock }}</td>
+              <td class="pos-stock-cell">
+                <span class="pos-stock-badge{% if row.stock == 0 %} pos-stock--out{% elif row.stock <= 3 %} pos-stock--low{% else %} pos-stock--ok{% endif %}">{{ row.stock }}</span>
+              </td>
               <td>${{ row.unit_cost|floatformat:2 }}</td>
               <td class="pos-number">
                 {{ row.form.unit_price }}
