@@ -27,7 +27,10 @@ urlpatterns = [
     path('producto/<int:producto_id>/resena/', views.submit_reseña, name='submit_reseña'),
     path('productos/', views.lista_productos, name='lista_productos'),
     path('buscar/', views.buscar_productos, name='buscar'),
-    path('archivo/', views.archivo_view, name='archivo'),
+    # La pagina de archivo se retiro: no tenia productos (no existe la
+    # categoria 'archivo') y estaba en el sitemap, asi que la redireccion
+    # evita romper lo ya indexado y los enlaces viejos.
+    path('archivo/', RedirectView.as_view(pattern_name='tienda:lista_productos', permanent=True)),
     path('google994215bd513f755c.html', views.google_site_verification, name='google_verify'),
     path('mayoreo/', views.mayoreo_view, name='mayoreo'),
     path('faq/', views.faq_view, name='faq'),

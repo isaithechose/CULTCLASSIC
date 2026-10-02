@@ -27,7 +27,6 @@ class StaticViewSitemap(Sitemap):
     def items(self):
         return [
             "tienda:tienda",
-            "tienda:archivo",
             "tienda:catalogo_diseños_propios",
             "tienda:design_creator",
             "tienda:faq",

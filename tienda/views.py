@@ -1063,11 +1063,6 @@ def eliminar_del_carrito(request, producto_id):
     request.session['carrito'] = carrito
     return redirect('tienda:carrito')
 
-def archivo_view(request):
-    productos = Producto.objects.filter(categoria__nombre="archivo")
-    return render(request, 'tienda/archivo.html', {'productos': productos})
-
-
 # ── Mayoreo ──────────────────────────────────────────────────────────────
 # Tiers por volumen. El % de descuento aplica al precio retail del producto.
 MAYOREO_TIERS = [
