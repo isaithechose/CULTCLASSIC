@@ -1135,8 +1135,8 @@ def devoluciones_view(request):
     return render(request, 'tienda/devoluciones.html')
 
 
-def cult_calle_view(request):
-    """Pagina de marca de Cult Calle: la linea completa de prendas.
+def culto_calle_view(request):
+    """Pagina de marca de Culto Calle: la linea completa de prendas.
 
     Separa prendas (Cortes y Bottom) del diseno propio de la marca, que se
     estampa sobre cualquiera de ellas. select_related evita la consulta por
@@ -1157,7 +1157,7 @@ def cult_calle_view(request):
     # La prenda sobre la que se muestra el sello, para el mockup.
     lienzo = prendas.filter(nombre__icontains="heavyweight").first() or prendas.first()
 
-    return render(request, "tienda/cult_calle.html", {
+    return render(request, "tienda/culto_calle.html", {
         "prendas": prendas,
         "marca": marca,
         "lienzo": lienzo,

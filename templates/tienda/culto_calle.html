@@ -1,8 +1,8 @@
 {% extends "tienda/base.html" %}
 
-{% block title %}Cult Calle | La línea completa{% endblock %}
-{% block meta_description %}La línea Cult Calle: {{ total_prendas }} prendas en algodón pesado, cortes oversize y drop shoulder. Envío gratis desde $1,000.{% endblock %}
-{% block og_title %}Cult Calle | La línea completa{% endblock %}
+{% block title %}Culto Calle | La línea completa{% endblock %}
+{% block meta_description %}La línea Culto Calle: {{ total_prendas }} prendas en algodón pesado, cortes oversize y drop shoulder. Envío gratis desde $1,000.{% endblock %}
+{% block og_title %}Culto Calle | La línea completa{% endblock %}
 {% block og_description %}{{ total_prendas }} prendas en algodón pesado, cortes oversize y drop shoulder.{% endblock %}
 {% block og_image %}{{ request.scheme }}://{{ request.get_host }}{% if marca and marca.imagen %}{{ marca.imagen.url }}{% else %}/media/productos/max_overweight_oversized_black_001_VtxXVPM.webp{% endif %}{% endblock %}
 {% block body_class %}brand-page brand-page--calle{% endblock %}
@@ -22,7 +22,7 @@
 </script>
 <style>
     /* ==================================================================
-       Cult Calle. Pagina de marca.
+       Culto Calle. Pagina de marca.
        Hereda los tokens del sitio (hueso, tinta, tan, Teko) porque el
        bloqueo de tema no permite invertir una pagina a mitad del sitio.
        Radio unico: 0 en las piezas, pill solo en lo interactivo.
@@ -337,7 +337,7 @@
             {% if marca and marca.imagen %}
                 <figure class="calle-hero__mark calle-reveal" style="--reveal-delay: 120ms;">
                     <img src="{{ marca.imagen.url }}"
-                         alt="Sello de Cult Calle: un globo terráqueo de líneas con el nombre de la marca arqueado encima"
+                         alt="Sello de Culto Calle: un globo terráqueo de líneas con el nombre de la marca arqueado encima"
                          fetchpriority="high">
                 </figure>
             {% endif %}
@@ -366,7 +366,7 @@
                             <div class="calle-piece__media">
                                 {% if prenda.imagen %}
                                     <img src="{{ prenda.imagen.url }}"
-                                         alt="{{ prenda.nombre }} de Cult Calle en negro"
+                                         alt="{{ prenda.nombre }} de Culto Calle en negro"
                                          loading="lazy">
                                 {% endif %}
                             </div>
@@ -393,14 +393,14 @@
                 <div class="calle-mark__frame calle-reveal">
                     {% if marca and marca.imagen %}
                         <img src="{{ marca.imagen.url }}"
-                             alt="Sello de Cult Calle a tamaño completo"
+                             alt="Sello de Culto Calle a tamaño completo"
                              loading="lazy">
                     {% endif %}
                 </div>
                 {% if lienzo and lienzo.imagen %}
                     <div class="calle-mark__garment calle-reveal" style="--reveal-delay: 120ms;">
                         <img src="{{ lienzo.imagen.url }}"
-                             alt="{{ lienzo.nombre }} de Cult Calle, la base sobre la que se estampa el sello"
+                             alt="{{ lienzo.nombre }} de Culto Calle, la base sobre la que se estampa el sello"
                              loading="lazy">
                     </div>
                 {% endif %}

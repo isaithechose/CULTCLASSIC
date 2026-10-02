@@ -1,4 +1,5 @@
 from django.urls import path, include
+from django.views.generic import RedirectView
 from . import views
 from .views import (
     my_orders,
@@ -31,7 +32,10 @@ urlpatterns = [
     path('mayoreo/', views.mayoreo_view, name='mayoreo'),
     path('faq/', views.faq_view, name='faq'),
     path('devoluciones/', views.devoluciones_view, name='devoluciones'),
-    path('cult-calle/', views.cult_calle_view, name='cult_calle'),
+    path('culto-calle/', views.culto_calle_view, name='culto_calle'),
+    # La pagina nacio en /cult-calle/. Se renombro a Culto Calle el mismo
+    # dia; la redireccion evita romper cualquier enlace ya compartido.
+    path('cult-calle/', RedirectView.as_view(pattern_name='tienda:culto_calle', permanent=True)),
     path('privacidad/', views.privacidad_view, name='privacidad'),
     path('newsletter/signup/', views.newsletter_signup, name='newsletter_signup'),
     path('proceso_compra/', views.proceso_compra, name='proceso_compra'),
