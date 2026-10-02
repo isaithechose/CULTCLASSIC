@@ -31,6 +31,7 @@ urlpatterns = [
     path('mayoreo/', views.mayoreo_view, name='mayoreo'),
     path('faq/', views.faq_view, name='faq'),
     path('devoluciones/', views.devoluciones_view, name='devoluciones'),
+    path('cult-calle/', views.cult_calle_view, name='cult_calle'),
     path('privacidad/', views.privacidad_view, name='privacidad'),
     path('newsletter/signup/', views.newsletter_signup, name='newsletter_signup'),
     path('proceso_compra/', views.proceso_compra, name='proceso_compra'),

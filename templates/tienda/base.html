@@ -96,6 +96,9 @@
                     <a class="nav-link active" aria-current="page" href="{% url 'tienda:tienda' %}">Inicio</a>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link" href="{% url 'tienda:cult_calle' %}">Cult Calle</a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link" href="{% url 'tienda:archivo' %}">Archivo</a>
                 </li>
                 <li class="nav-item dropdown">
@@ -181,6 +184,7 @@
             <div class="site-footer__right">
                 <div class="site-footer__nav">
                     <a href="{% url 'tienda:tienda' %}">Inicio</a>
+                    <a href="{% url 'tienda:cult_calle' %}">Cult Calle</a>
                     <a href="{% url 'tienda:archivo' %}">Archivo</a>
                     <a href="{% url 'tienda:design_creator' %}">Creador</a>
                     <a href="{% url 'tienda:faq' %}">Preguntas frecuentes</a>
