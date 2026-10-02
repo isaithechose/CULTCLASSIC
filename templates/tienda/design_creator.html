@@ -228,10 +228,12 @@
         inset: 0;
         display: grid;
         place-items: center;
-        color: rgba(17,17,17,0.46);
-        font-size: 0.92rem;
+        color: rgba(17,17,17,0.5);
+        font-size: 0.66rem;
+        line-height: 1.25;
+        letter-spacing: 0.04em;
         text-align: center;
-        padding: 1rem;
+        padding: 0.35rem;
     }
 
     /* HUD */
@@ -604,7 +606,7 @@
 
     /* ── v2: layout 3 columnas tipo Printful ────────────────────── */
     .design-creator__layout {
-        grid-template-columns: 88px minmax(0, 1fr) 360px;
+        grid-template-columns: 104px minmax(0, 1fr) 360px;
         gap: 1rem;
         align-items: stretch;
     }
@@ -638,8 +640,8 @@
         border-radius: 0.95rem;
         background: transparent;
         color: rgba(23,21,15,0.78);
-        font-size: 0.62rem;
-        line-height: 1.05;
+        font-size: 0.69rem;
+        line-height: 1.1;
         text-transform: uppercase;
         letter-spacing: 0.08em;
         font-weight: 700;
@@ -815,25 +817,25 @@
             <div class="design-creator__nav-col">
                 <nav class="dc3-nav" id="dc3Nav" aria-label="Herramientas del creador">
                     <button type="button" class="dc3-nav__btn is-active" data-dc-target="producto" title="Producto">
-                        <span class="icon" aria-hidden="true">👕</span>Producto
+                        <i class="icon bi-bag" aria-hidden="true"></i>Producto
                     </button>
                     <button type="button" class="dc3-nav__btn" data-dc-target="diseno" title="Diseño">
-                        <span class="icon" aria-hidden="true">🖼️</span>Diseño
+                        <i class="icon bi-image" aria-hidden="true"></i>Diseño
                     </button>
                     <button type="button" class="dc3-nav__btn" data-dc-target="texto" title="Texto">
-                        <span class="icon" aria-hidden="true">🅰</span>Texto
+                        <i class="icon bi-type" aria-hidden="true"></i>Texto
                     </button>
                     <button type="button" class="dc3-nav__btn" data-dc-target="formas" title="Formas">
-                        <span class="icon" aria-hidden="true">◇</span>Formas
+                        <i class="icon bi-triangle" aria-hidden="true"></i>Formas
                     </button>
                     <button type="button" class="dc3-nav__btn" data-dc-target="efectos" title="Efectos">
-                        <span class="icon" aria-hidden="true">✦</span>Efectos
+                        <i class="icon bi-stars" aria-hidden="true"></i>Efectos
                     </button>
                     <button type="button" class="dc3-nav__btn" data-dc-target="capas" title="Capas">
-                        <span class="icon" aria-hidden="true">☰</span>Capas
+                        <i class="icon bi-layers" aria-hidden="true"></i>Capas
                     </button>
                     <button type="button" class="dc3-nav__btn" data-dc-target="historia" title="Historial">
-                        <span class="icon" aria-hidden="true">⟲</span>Historia
+                        <i class="icon bi-clock-history" aria-hidden="true"></i>Historia
                     </button>
                 </nav>
             </div>
@@ -1193,7 +1195,7 @@
                         <div class="design-canvas__viewport" id="dc3Viewport">
                             <div class="design-canvas__shirt" id="shirtBg"></div>
                             <div class="design-canvas__print-area" id="printArea">
-                                <div class="design-canvas__empty" id="emptyState">Sube un diseño, agrega texto o una forma para empezar.</div>
+                                <div class="design-canvas__empty" id="emptyState">Tu diseño va aquí</div>
                                 <canvas id="designFabricCanvas" class="design-canvas__surface" width="720" height="720"></canvas>
                                 <div id="guideV"       class="dc3-guide dc3-guide--v dc3-guide--center" style="left:50%;"></div>
                                 <div id="guideH"       class="dc3-guide dc3-guide--h dc3-guide--center" style="top:50%;"></div>
