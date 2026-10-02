@@ -236,6 +236,63 @@
         padding: 0.35rem;
     }
 
+    /* Arrastrar y soltar sobre el lienzo, como en los editores de impresion
+       bajo demanda. Antes solo se podia subir desde el input del panel. */
+    .design-canvas.is-dragover {
+        border-color: var(--cc-accent);
+        box-shadow: 0 0 0 3px rgba(122,100,51,0.22);
+    }
+
+    .dc3-drop {
+        position: absolute;
+        inset: 0;
+        z-index: 14;
+        display: none;
+        place-items: center;
+        border-radius: inherit;
+        background: rgba(244,240,232,0.92);
+        backdrop-filter: blur(2px);
+        pointer-events: none;
+    }
+
+    .design-canvas.is-dragover .dc3-drop { display: grid; }
+
+    .dc3-drop__inner {
+        text-align: center;
+        padding: 1.4rem 1.8rem;
+        border: 2px dashed var(--cc-accent);
+        border-radius: 1rem;
+    }
+
+    .dc3-drop__title {
+        margin: 0;
+        font-family: var(--cc-display);
+        font-size: 1.6rem;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+        color: var(--cc-ink);
+    }
+
+    .dc3-drop__sub { margin: 0.2rem 0 0; font-size: 0.78rem; color: var(--cc-muted); }
+
+    /* El estado vacio ahora invita a actuar, no solo rotula */
+    .design-canvas__empty { cursor: pointer; }
+    .design-canvas__empty:hover { color: var(--cc-accent); }
+
+    /* El limite de peso avisaba con alert() del navegador */
+    .dc3-file-error {
+        display: none;
+        margin-top: 0.6rem;
+        padding: 0.6rem 0.8rem;
+        border: 1px solid rgba(176,58,46,0.3);
+        border-radius: 0.6rem;
+        background: rgba(176,58,46,0.08);
+        color: #8c2318;
+        font-size: 0.82rem;
+    }
+
+    .dc3-file-error.is-shown { display: block; }
+
     /* HUD */
     .design-creator__hud {
         display: grid;
@@ -1195,7 +1252,7 @@
                         <div class="design-canvas__viewport" id="dc3Viewport">
                             <div class="design-canvas__shirt" id="shirtBg"></div>
                             <div class="design-canvas__print-area" id="printArea">
-                                <div class="design-canvas__empty" id="emptyState">Tu diseño va aquí</div>
+                                <div class="design-canvas__empty" id="emptyState" role="button" tabindex="0" title="Sube o arrastra tu diseño">Sube o arrastra<br>tu diseño</div>
                                 <canvas id="designFabricCanvas" class="design-canvas__surface" width="720" height="720"></canvas>
                                 <div id="guideV"       class="dc3-guide dc3-guide--v dc3-guide--center" style="left:50%;"></div>
                                 <div id="guideH"       class="dc3-guide dc3-guide--h dc3-guide--center" style="top:50%;"></div>
@@ -1207,6 +1264,12 @@
                                 <div id="guideHObj"    class="dc3-guide dc3-guide--h dc3-guide--obj"></div>
                             </div>
                         </div>
+                        <div class="dc3-drop" id="dc3Drop" aria-hidden="true">
+                            <div class="dc3-drop__inner">
+                                <p class="dc3-drop__title">Suelta tu diseño</p>
+                                <p class="dc3-drop__sub">PNG, JPG o WebP, hasta 15 MB</p>
+                            </div>
+                        </div>
                         <div class="dc3-zoom" role="group" aria-label="Zoom del lienzo">
                             <button type="button" class="dc3-zoom__btn" id="dc3ZoomOut" title="Alejar (−)">−</button>
                             <span class="dc3-zoom__label" id="dc3ZoomLabel">100%</span>
@@ -1214,6 +1277,7 @@
                             <button type="button" class="dc3-zoom__btn" id="dc3ZoomReset" title="Ajustar a la vista (0)" style="font-size:0.85rem;">◉</button>
                         </div>
                     </div>
+                    <div class="dc3-file-error" id="dc3FileError" role="alert" aria-live="polite"></div>
                     <div class="design-creator__hud">
                         <div class="design-creator__stat">
                             <small>Estado</small>
@@ -2149,13 +2213,87 @@
 
     // ── File input ────────────────────────────────────────────────────────────
 
-    fileInput?.addEventListener("change", (e) => {
-        const file = e.target.files?.[0]; if (!file) return;
-        if (file.size > 15 * 1024 * 1024) { alert("El archivo es demasiado grande. El límite es 15 MB."); e.target.value = ""; return; }
+    const fileError = document.getElementById("dc3FileError");
+    const dropHost  = document.getElementById("designCanvas");
+    const TIPOS_OK  = ["image/png", "image/jpeg", "image/webp"];
+    const PESO_MAX  = 15 * 1024 * 1024;
+
+    function mostrarError(mensaje) {
+        if (!fileError) return;
+        fileError.textContent = mensaje;
+        fileError.classList.add("is-shown");
+    }
+
+    function limpiarError() {
+        fileError?.classList.remove("is-shown");
+    }
+
+    // Un solo camino de validacion para el input y para el arrastre.
+    function aceptarArchivo(file) {
+        if (!file) return false;
+        if (!TIPOS_OK.includes(file.type)) {
+            mostrarError("Ese formato no se puede usar. Sube un PNG, JPG o WebP.");
+            return false;
+        }
+        if (file.size > PESO_MAX) {
+            const mb = (file.size / 1048576).toFixed(1);
+            mostrarError("El archivo pesa " + mb + " MB y el límite es 15 MB. Reduce su tamaño e intenta de nuevo.");
+            return false;
+        }
+        limpiarError();
         const reader = new FileReader();
         reader.onload = () => loadArtwork(reader.result);
         reader.readAsDataURL(file);
+        return true;
+    }
+
+    fileInput?.addEventListener("change", (e) => {
+        const file = e.target.files?.[0];
+        if (!aceptarArchivo(file)) { e.target.value = ""; }
     });
+
+    // El estado vacio del lienzo abre el selector de archivos
+    emptyState?.addEventListener("click", () => fileInput?.click());
+    emptyState?.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fileInput?.click(); }
+    });
+
+    // Arrastrar y soltar sobre el lienzo
+    if (dropHost) {
+        let profundidad = 0;   // dragenter/leave se disparan por cada hijo
+
+        ["dragenter", "dragover"].forEach((ev) => {
+            dropHost.addEventListener(ev, (e) => {
+                if (!e.dataTransfer?.types?.includes("Files")) return;
+                e.preventDefault();
+                e.dataTransfer.dropEffect = "copy";
+                if (ev === "dragenter") profundidad++;
+                dropHost.classList.add("is-dragover");
+            });
+        });
+
+        dropHost.addEventListener("dragleave", () => {
+            profundidad = Math.max(0, profundidad - 1);
+            if (profundidad === 0) dropHost.classList.remove("is-dragover");
+        });
+
+        dropHost.addEventListener("drop", (e) => {
+            if (!e.dataTransfer?.types?.includes("Files")) return;
+            e.preventDefault();
+            profundidad = 0;
+            dropHost.classList.remove("is-dragover");
+            aceptarArchivo(e.dataTransfer.files?.[0]);
+        });
+
+        // Sin esto el navegador abre la imagen y se pierde el trabajo
+        ["dragover", "drop"].forEach((ev) =>
+            window.addEventListener(ev, (e) => {
+                if (e.dataTransfer?.types?.includes("Files") && !dropHost.contains(e.target)) {
+                    e.preventDefault();
+                }
+            })
+        );
+    }
 
     productSelect?.addEventListener("change", () => { productIdInput.value = productSelect.value; });
 
@@ -2175,7 +2313,9 @@
 
     form?.addEventListener("submit", (e) => {
         if (fabricCanvas.getObjects().length === 0 || state.submitting) {
-            if (fabricCanvas.getObjects().length === 0) alert("Agrega una imagen, texto o forma antes de guardar.");
+            if (fabricCanvas.getObjects().length === 0) {
+                mostrarError("El lienzo está vacío. Agrega una imagen, texto o forma antes de guardar.");
+            }
             return;
         }
         e.preventDefault();
