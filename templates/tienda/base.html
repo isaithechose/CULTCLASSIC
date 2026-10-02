@@ -73,6 +73,7 @@
     {% endif %}
 </head>
 <body class="{% block body_class %}brand-page{% endblock %}">
+<a class="skip-link" href="#contenido">Saltar al contenido</a>
 {% if meta_pixel_id %}
 <noscript>
     <img height="1" width="1" style="display:none"
@@ -142,7 +143,7 @@
 {% endblock %}
 
 <!-- Bloque de contenido -->
-<main>
+<main id="contenido">
     {% if messages %}
     <section class="site-messages">
         <div class="container px-4 px-lg-5">

@@ -98,7 +98,7 @@
             position: sticky;
             top: 1.25rem;
             align-self: start;
-            max-height: calc(100vh - 2.5rem);
+            max-height: calc(100dvh - 2.5rem);   /* dvh: la barra de Safari en iOS rompe 100vh */
             overflow-y: auto;
             scrollbar-width: thin;
         }
@@ -2091,7 +2091,7 @@ document.addEventListener("DOMContentLoaded", function () {
         </div>
         {% endfor %}
     {% else %}
-        <p style="color:var(--cc-muted);">Todavía no hay reseñas. ¡Sé el primero en dejar una!</p>
+        <p style="color:var(--cc-muted);">Todavía no hay reseñas. ¡Sé el primero en dejar una.</p>
     {% endif %}
 
     {% if user.is_authenticated %}

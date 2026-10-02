@@ -1,0 +1,55 @@
+{% extends "tienda/base.html" %}
+{% load static %}
+
+{% block title %}Esta página no existe — Cult Clasiccs{% endblock %}
+
+{% block hero %}{% endblock %}
+
+{% block content %}
+<section class="container px-4 px-lg-5 py-5">
+    <div class="notfound">
+        <p class="notfound__eyebrow">Error 404</p>
+        <h1 class="notfound__title">Esta página no existe</h1>
+        <p class="notfound__text">
+            El enlace que seguiste está roto o la prenda que buscabas ya no está en el catálogo.
+            Nada se perdió: tu carrito sigue como lo dejaste.
+        </p>
+        <div class="notfound__actions">
+            <a class="btn site-btn site-btn--accent" href="{% url 'tienda:lista_productos' %}">Ver productos</a>
+            <a class="btn site-btn site-btn--ghost" href="{% url 'tienda:tienda' %}">Volver al inicio</a>
+        </div>
+        <p class="notfound__help">
+            ¿Buscabas algo en particular?
+            {% if whatsapp_url %}
+                <a href="{{ whatsapp_url }}?text={{ '¡Hola! No encontré algo en su tienda.'|urlencode }}" target="_blank" rel="noopener">Escríbenos por WhatsApp</a>
+            {% else %}
+                <a href="{% url 'tienda:faq' %}">Revisa las preguntas frecuentes</a>
+            {% endif %}
+            y te decimos si lo tenemos.
+        </p>
+    </div>
+</section>
+
+<style>
+    .notfound { max-width: 34rem; padding: 3.5rem 0 4.5rem; }
+    .notfound__eyebrow {
+        color: var(--cc-accent);
+        font-size: 0.74rem;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        margin-bottom: 0.9rem;
+    }
+    .notfound__title {
+        font-family: var(--cc-display);
+        font-size: clamp(2.8rem, 6vw, 4.6rem);
+        line-height: 0.92;
+        letter-spacing: 0.01em;
+        text-transform: uppercase;
+        margin-bottom: 1.1rem;
+    }
+    .notfound__text { color: var(--cc-muted); line-height: 1.6; margin-bottom: 1.8rem; max-width: 46ch; }
+    .notfound__actions { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1.8rem; }
+    .notfound__help { color: var(--cc-muted); font-size: 0.92rem; }
+    .notfound__help a { color: var(--cc-accent); text-decoration: underline; }
+</style>
+{% endblock %}

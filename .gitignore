@@ -12,6 +12,9 @@ env/
 # Django
 db.sqlite3
 CULTCALLE/db.sqlite3
+# Respaldos de la base: nunca van al repo (pesan ~2 MB cada uno)
+*.sqlite3.bak*
+CULTCALLE/db.sqlite3.bak*
 media/
 CULTCALLE/media/
 staticfiles/

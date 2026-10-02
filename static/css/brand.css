@@ -1773,3 +1773,92 @@ body.brand-page {
     max-width: 100%;
   }
 }
+
+/* ==========================================================================
+   Auditoría de rediseño — correcciones sobre los defaults de Bootstrap
+   Bootstrap mete su azul #0d6efd en 41 lugares (anillos de foco, enlaces,
+   validaciones). Es un segundo acento que compite con el crema de la marca.
+   Aquí se reemplaza por el acento propio sin tocar el CSS compilado.
+   ========================================================================== */
+
+:root {
+  --bs-primary: #d6c3a1;
+  --bs-primary-rgb: 214, 195, 161;
+  --bs-link-color: var(--cc-accent);
+  --bs-link-hover-color: var(--cc-accent-strong);
+  --bs-link-color-rgb: 214, 195, 161;
+  --bs-focus-ring-color: rgba(214, 195, 161, 0.35);
+}
+
+/* Anillo de foco: visible para teclado, pero en el color de la marca */
+.brand-page .form-control:focus,
+.brand-page .form-select:focus,
+.brand-page .btn:focus-visible,
+.brand-page .form-check-input:focus {
+  border-color: var(--cc-accent);
+  box-shadow: 0 0 0 0.2rem rgba(214, 195, 161, 0.28);
+  outline: none;
+}
+
+.brand-page .form-check-input:checked {
+  background-color: var(--cc-accent);
+  border-color: var(--cc-accent);
+}
+
+.brand-page a:focus-visible,
+.brand-page button:focus-visible {
+  outline: 2px solid var(--cc-accent);
+  outline-offset: 2px;
+}
+
+/* Sombras teñidas: sobre fondo casi negro, una sombra negra no se ve.
+   Se tiñen con el tono del fondo para que den profundidad real. */
+.brand-page .card,
+.brand-page .dropdown-menu,
+.brand-page .modal-content {
+  box-shadow: 0 18px 50px rgba(8, 8, 10, 0.55), 0 1px 0 rgba(245, 241, 234, 0.04) inset;
+}
+
+/* Precios y cantidades con cifras de ancho fijo: dejan de bailar entre filas */
+.product-tile__price,
+.detail-price,
+.cart-meta-block__value,
+.cart-summary__row strong,
+.detail-stock-hint,
+.price,
+[data-precio] {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+/* Títulos sin palabras huérfanas en la última línea */
+.brand-page h1,
+.brand-page h2,
+.brand-page h3,
+.section-heading__title,
+.detail-title {
+  text-wrap: balance;
+}
+
+.brand-page p,
+.product-tile__description {
+  text-wrap: pretty;
+}
+
+/* Salto al contenido: requisito de accesibilidad para quien navega con teclado */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 2000;
+  padding: 0.75rem 1.1rem;
+  background: var(--cc-accent);
+  color: #121212;
+  font-weight: 700;
+  border-radius: 0 0 0.6rem 0;
+}
+
+.skip-link:focus {
+  left: 0;
+  color: #121212;
+}
