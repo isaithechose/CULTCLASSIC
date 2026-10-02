@@ -126,6 +126,9 @@
         transition: transform 0.3s ease;
         cursor: zoom-in;
         width: 100%;
+        /* Reserva el espacio antes de que cargue: sin esto la ficha
+           completa saltaba al aparecer la foto. */
+        aspect-ratio: 4 / 5;
         max-height: 820px;
         object-fit: contain;
         object-position: center center;
@@ -2102,7 +2105,7 @@ document.addEventListener("DOMContentLoaded", function () {
             <div class="mb-3">
                 <label style="color:var(--cc-muted);font-size:.85rem;text-transform:uppercase;letter-spacing:.1em;">Calificación</label>
                 <select name="calificacion" class="form-select mt-1" style="background:#ffffff;color:var(--cc-ink);border:1px solid var(--cc-line);" required>
-                    <option value="">Selecciona...</option>
+                    <option value="">Selecciona…</option>
                     {% for i in "12345" %}
                     <option value="{{ forloop.counter }}">{{ forloop.counter }} estrella{% if forloop.counter > 1 %}s{% endif %}</option>
                     {% endfor %}

@@ -31,6 +31,7 @@
     <!-- Favicon -->
     <link rel="icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}" />
 
+    <meta name="theme-color" content="#f4f0e8">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Teko:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -335,6 +336,7 @@
 .cc-newsletter__backdrop {
     position: absolute; inset: 0;
     background: rgba(23,21,15,0.55); backdrop-filter: blur(6px);
+    overscroll-behavior: contain;
 }
 .cc-newsletter__card {
     position: relative;
@@ -386,6 +388,7 @@
 }
 .cc-newsletter__input:focus {
     outline: none; border-color: var(--cc-ink, #17150f);
+    box-shadow: 0 0 0 3px rgba(122,100,51,0.22);
 }
 .cc-newsletter__btn {
     padding: 0.85rem 1rem;
@@ -470,7 +473,7 @@
         errEl.hidden = true;
         var fd = new FormData(form);
         var btn = form.querySelector('button[type="submit"]');
-        btn.disabled = true; btn.textContent = 'Enviando...';
+        btn.disabled = true; btn.textContent = 'Enviando…';
         fetch("{% url 'tienda:newsletter_signup' %}", {
             method: 'POST',
             body: fd,

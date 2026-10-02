@@ -1957,3 +1957,57 @@ body.brand-page {
     justify-content: flex-start;
   }
 }
+
+/* ==================================================================
+   Web Interface Guidelines (vercel-labs). Revision del 2026-10-02.
+   ================================================================== */
+
+/* El tema es claro: hay que decirlo para que los controles nativos
+   (select, scrollbar) no se pinten en oscuro en Android y Windows. */
+:root {
+  color-scheme: light;
+}
+
+/* El navbar es sticky: sin esto, las anclas internas (#drop, las seis
+   del FAQ, #contenido del salto de teclado) aterrizan tapadas. */
+:target,
+[id] {
+  scroll-margin-top: 5.5rem;
+}
+
+/* Quita el retardo de 300ms al tocar y el destello azul de Android */
+.brand-page button,
+.brand-page a,
+.brand-page [role="button"],
+.brand-page input,
+.brand-page select,
+.brand-page label {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: rgba(23, 21, 15, 0.08);
+}
+
+/* Reserva el espacio de la miniatura del carrito: sin alto definido la
+   fila saltaba al cargar la imagen. */
+.cart-item__image-wrap {
+  aspect-ratio: 4 / 5;
+}
+
+/* Quien activa "reducir movimiento" en su sistema no deberia recibir
+   desplazamientos ni escalados. Se conservan los cambios de color. */
+@media (prefers-reduced-motion: reduce) {
+  .brand-page *,
+  .brand-page *::before,
+  .brand-page *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .site-btn:hover,
+  .product-tile:hover,
+  .hero-editorial__panel--media:hover img,
+  .wa-float:hover {
+    transform: none !important;
+  }
+}
