@@ -20,7 +20,18 @@
                 </div>
             </div>
             <div class="hero-editorial__visual">
-                <div class="hero-editorial__panel hero-editorial__panel--tall"></div>
+                {% with destacado=productos|slice:"2:3"|first %}
+                    {% if destacado and destacado.imagen %}
+                        <a class="hero-editorial__panel hero-editorial__panel--tall hero-editorial__panel--media"
+                           href="{% url 'tienda:detalle_producto' destacado.id %}"
+                           aria-label="Ver {{ destacado.nombre }}">
+                            <img src="{{ destacado.imagen.url }}" alt="{{ destacado.nombre }}" loading="eager">
+                            <span class="hero-editorial__panel-tag">{{ destacado.nombre }}</span>
+                        </a>
+                    {% else %}
+                        <div class="hero-editorial__panel hero-editorial__panel--tall"></div>
+                    {% endif %}
+                {% endwith %}
                 <div class="hero-editorial__stack">
                     {% for producto in productos|slice:":2" %}
                         <a class="hero-editorial__product" href="{% url 'tienda:detalle_producto' producto.id %}" aria-label="Ver {{ producto.nombre }}">
