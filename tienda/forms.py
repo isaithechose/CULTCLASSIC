@@ -37,13 +37,28 @@ class ShippingAddressForm(forms.ModelForm):
         model = ShippingAddress
         fields = ['phone', 'address_line1', 'address_line2', 'city', 'state', 'postal_code', 'country']
         widgets = {
-            "phone": forms.TextInput(attrs={"placeholder": "Teléfono de contacto", "autocomplete": "tel"}),
-            "address_line1": forms.TextInput(attrs={"placeholder": "Calle y número", "autocomplete": "address-line1"}),
-            "address_line2": forms.TextInput(attrs={"placeholder": "Interior, referencia o colonia", "autocomplete": "address-line2"}),
-            "city": forms.TextInput(attrs={"placeholder": "Ciudad", "autocomplete": "address-level2"}),
-            "state": forms.TextInput(attrs={"placeholder": "Estado", "autocomplete": "address-level1"}),
-            "postal_code": forms.TextInput(attrs={"placeholder": "Código postal", "autocomplete": "postal-code"}),
-            "country": forms.TextInput(attrs={"placeholder": "País", "autocomplete": "country-name"}),
+            "phone": forms.TextInput(attrs={
+                "placeholder": "656 123 4567", "autocomplete": "tel",
+                "type": "tel", "spellcheck": "false",
+            }),
+            "address_line1": forms.TextInput(attrs={
+                "placeholder": "Av. Tecnológico 1234", "autocomplete": "address-line1",
+            }),
+            "address_line2": forms.TextInput(attrs={
+                "placeholder": "Int. 4, Col. Centro", "autocomplete": "address-line2",
+            }),
+            "city": forms.TextInput(attrs={
+                "placeholder": "Ciudad Juárez", "autocomplete": "address-level2",
+            }),
+            "state": forms.TextInput(attrs={
+                "placeholder": "Chihuahua", "autocomplete": "address-level1",
+            }),
+            "postal_code": forms.TextInput(attrs={
+                "placeholder": "32000", "autocomplete": "postal-code", "spellcheck": "false",
+            }),
+            "country": forms.TextInput(attrs={
+                "placeholder": "México", "autocomplete": "country-name",
+            }),
         }
 
     def __init__(self, *args, **kwargs):
@@ -56,13 +71,13 @@ class ShippingAddressForm(forms.ModelForm):
         self.fields["country"].initial = "México"
 
     def clean_postal_code(self):
-        value = self.cleaned_data.get("postal_code", "").strip()
+        value = (self.cleaned_data.get("postal_code") or "").strip()
         if not re.fullmatch(r"\d{5}", value):
             raise ValidationError("El código postal debe tener exactamente 5 dígitos.")
         return value
 
     def clean_phone(self):
-        value = self.cleaned_data.get("phone", "").strip()
+        value = (self.cleaned_data.get("phone") or "").strip()
         digits = re.sub(r"[\s\-\(\)\+]", "", value)
         if digits and not re.fullmatch(r"\d{10,15}", digits):
             raise ValidationError("Ingresa un número de teléfono válido (10 a 15 dígitos).")

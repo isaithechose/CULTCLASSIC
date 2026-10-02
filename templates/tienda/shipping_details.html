@@ -239,6 +239,37 @@
         });
 
         updateMap();
+
+        // --- Foco en el primer campo con error -------------------------------
+        // El formulario es de servidor: los errores llegan tras recargar, asi
+        // que el cliente podia quedarse arriba sin ver cual campo fallo.
+        const primerError = document.querySelector(".shipping-form__error");
+        if (primerError) {
+            const grupo = primerError.closest(".shipping-form__group");
+            const campo = grupo && grupo.querySelector("input, select, textarea");
+            if (campo) {
+                campo.setAttribute("aria-invalid", "true");
+                campo.focus({ preventScroll: true });
+                campo.scrollIntoView({ block: "center", behavior: "smooth" });
+            }
+        }
+
+        // --- Aviso al salir con la direccion a medias -------------------------
+        const formulario = document.querySelector(".shipping-form");
+        if (formulario) {
+            let sucio = false;
+            let enviando = false;
+
+            formulario.addEventListener("input", () => { sucio = true; });
+            formulario.addEventListener("submit", () => { enviando = true; });
+
+            window.addEventListener("beforeunload", (evento) => {
+                if (sucio && !enviando) {
+                    evento.preventDefault();
+                    evento.returnValue = "";
+                }
+            });
+        }
     })();
 </script>
 {% endblock %}
