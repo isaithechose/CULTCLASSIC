@@ -1,7 +1,7 @@
 {% extends "tienda/base.html" %}
 
 {% block title %}Culto Calle | La línea completa{% endblock %}
-{% block meta_description %}La línea Culto Calle: {{ total_prendas }} prendas en algodón pesado, cortes oversize y drop shoulder. Envío gratis desde $1,000.{% endblock %}
+{% block meta_description %}La línea Culto Calle: {{ total_prendas }} piezas entre playeras, pantalones y accesorios. Envío gratis desde $1,000.{% endblock %}
 {% block og_title %}Culto Calle | La línea completa{% endblock %}
 {% block og_description %}{{ total_prendas }} prendas en algodón pesado, cortes oversize y drop shoulder.{% endblock %}
 {% block og_image %}{{ request.scheme }}://{{ request.get_host }}{% if marca and marca.imagen %}{{ marca.imagen.url }}{% else %}/media/productos/max_overweight_oversized_black_001_VtxXVPM.webp{% endif %}{% endblock %}
@@ -326,7 +326,7 @@
                 <p class="calle-hero__eyebrow">Est. 2024</p>
                 <h1 class="calle-hero__title">Pesado, ancho, negro.</h1>
                 <p class="calle-hero__text">
-                    {{ total_prendas }} prendas en algodón pesado, con cortes oversize y drop shoulder, para ponerse todos los días.
+                    Playeras, pantalones y accesorios en algodón pesado, con cortes anchos y drops limitados.
                 </p>
                 <div class="calle-hero__actions">
                     <a class="btn site-btn site-btn--accent" href="#linea">Ver la línea</a>

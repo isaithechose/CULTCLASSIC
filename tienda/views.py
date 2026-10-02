@@ -890,7 +890,13 @@ def shipping_details(request):
     return render(request, 'tienda/shipping_details.html', context)
 
 def tienda_view(request):
-    productos = Producto.objects.filter(categoria__nombre__iexact="cortes")  # o "Cortes"
+    # Sin foto la rejilla dibuja un recuadro vacio, asi que no se muestran
+    # hasta que tengan imagen. Aparecen solos al subirla.
+    productos = (
+        Producto.objects
+        .filter(categoria__nombre__in=["Cortes", "Accesorios"])
+        .exclude(imagen="")
+    )
     carrito = request.session.get('carrito', {})
     carrito_items_count = sum(item['cantidad'] for item in carrito.values())
 
@@ -1145,7 +1151,8 @@ def culto_calle_view(request):
     prendas = (
         Producto.objects
         .select_related("categoria")
-        .filter(categoria__nombre__in=["Cortes", "Bottom"])
+        .filter(categoria__nombre__in=["Cortes", "Bottom", "Accesorios"])
+        .exclude(imagen="")
         .order_by("id")
     )
     marca = (
