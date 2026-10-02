@@ -1917,13 +1917,17 @@ body.brand-page {
 }
 
 /* El hero ocupaba una pantalla completa: ningun producto alcanzaba a
-   verse sin hacer scroll. Lo bajamos para que asome la primera fila. */
-.hero-editorial__layout {
-  min-height: min(82svh, 760px);
-}
+   verse sin hacer scroll. Lo bajamos para que asome la primera fila.
+   Solo en escritorio: abajo de 1200px el hero ya colapsa a una columna
+   con min-height auto, y esta regla llegaba despues en la cascada. */
+@media (min-width: 1200px) {
+  .hero-editorial__layout {
+    min-height: min(82svh, 760px);
+  }
 
-.hero-editorial__visual {
-  min-height: 560px;
+  .hero-editorial__visual {
+    min-height: 560px;
+  }
 }
 
 /* El pie tenia los enlaces como texto corrido: .site-footer__nav no
