@@ -34,10 +34,14 @@
                     {% for producto in hero_secundarios %}
                         <a class="hero-editorial__product" href="{% url 'tienda:detalle_producto' producto.id %}" aria-label="Ver {{ producto.nombre }}">
                             {% if producto.imagen %}
-                                <img src="{{ producto.imagen.url }}" alt="{{ producto.nombre }}">
+                                <img src="{{ producto.imagen.url }}" alt="{{ producto.nombre }}" loading="lazy">
                             {% else %}
                                 <div class="hero-editorial__placeholder"></div>
                             {% endif %}
+                            <div class="hero-editorial__product-caption">
+                                <span class="hero-editorial__product-name">{{ producto.nombre }}</span>
+                                <span class="hero-editorial__product-price">${{ producto.precio|floatformat:0 }}</span>
+                            </div>
                         </a>
                     {% empty %}
                         <div class="hero-editorial__product"><div class="hero-editorial__placeholder"></div></div>
