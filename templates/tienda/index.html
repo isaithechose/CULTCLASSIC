@@ -20,20 +20,18 @@
                 </div>
             </div>
             <div class="hero-editorial__visual">
-                {% with destacado=productos|slice:"2:3"|first %}
-                    {% if destacado and destacado.imagen %}
-                        <a class="hero-editorial__panel hero-editorial__panel--tall hero-editorial__panel--media"
-                           href="{% url 'tienda:detalle_producto' destacado.id %}"
-                           aria-label="Ver {{ destacado.nombre }}">
-                            <img src="{{ destacado.imagen.url }}" alt="{{ destacado.nombre }}" loading="eager">
-                            <span class="hero-editorial__panel-tag">{{ destacado.nombre }}</span>
-                        </a>
-                    {% else %}
-                        <div class="hero-editorial__panel hero-editorial__panel--tall"></div>
-                    {% endif %}
-                {% endwith %}
+                {% if hero_destacado and hero_destacado.imagen %}
+                    <a class="hero-editorial__panel hero-editorial__panel--tall hero-editorial__panel--media"
+                       href="{% url 'tienda:detalle_producto' hero_destacado.id %}"
+                       aria-label="Ver {{ hero_destacado.nombre }}">
+                        <img src="{{ hero_destacado.imagen.url }}" alt="{{ hero_destacado.nombre }}" loading="eager">
+                        <span class="hero-editorial__panel-tag">{{ hero_destacado.nombre }}</span>
+                    </a>
+                {% else %}
+                    <div class="hero-editorial__panel hero-editorial__panel--tall"></div>
+                {% endif %}
                 <div class="hero-editorial__stack">
-                    {% for producto in productos|slice:":2" %}
+                    {% for producto in hero_secundarios %}
                         <a class="hero-editorial__product" href="{% url 'tienda:detalle_producto' producto.id %}" aria-label="Ver {{ producto.nombre }}">
                             {% if producto.imagen %}
                                 <img src="{{ producto.imagen.url }}" alt="{{ producto.nombre }}">

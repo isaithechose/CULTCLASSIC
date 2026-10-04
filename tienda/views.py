@@ -892,16 +892,22 @@ def shipping_details(request):
 def tienda_view(request):
     # Sin foto la rejilla dibuja un recuadro vacio, asi que no se muestran
     # hasta que tengan imagen. Aparecen solos al subirla.
-    productos = (
+    productos_qs = (
         Producto.objects
         .filter(categoria__nombre__in=["Cortes", "Accesorios"])
         .exclude(imagen="")
     )
+    # Oversize es el producto principal del hero. El resto se usa para los
+    # paneles secundarios del stack.
+    hero_destacado = productos_qs.filter(nombre__iexact="Oversize").first()
+    hero_secundarios = productos_qs.exclude(id=hero_destacado.id)[:2] if hero_destacado else productos_qs[:2]
     carrito = request.session.get('carrito', {})
     carrito_items_count = sum(item['cantidad'] for item in carrito.values())
 
     return render(request, 'tienda/index.html', {
-        'productos': productos,
+        'productos': productos_qs,
+        'hero_destacado': hero_destacado,
+        'hero_secundarios': hero_secundarios,
         'carrito_items_count': carrito_items_count,
     })
 
