@@ -251,34 +251,43 @@
     }
 
     .detail-kicker {
-        display: grid;
-        grid-template-columns: auto 1fr;
-        align-items: flex-start;
-        gap: 1.2rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.9rem;
         margin-bottom: 1.45rem;
     }
 
-    .detail-kicker__weight {
-        font-family: "Teko", sans-serif;
-        font-size: clamp(3.6rem, 7vw, 5rem);
-        line-height: 0.78;
-        color: var(--cc-accent);
-    }
-
-    .detail-kicker__stack {
+    /* Specs chicos como chips arriba del H1 — antes el "7.5 OZ" se leía
+       como parte del nombre, ahora es metadata chica y neutral. */
+    .detail-kicker__specs {
         display: flex;
-        flex-direction: column;
-        gap: 0.3rem;
-        min-width: 0;
+        flex-wrap: wrap;
+        gap: 0.4rem;
     }
 
-    .detail-kicker__line {
-        font-family: "Teko", sans-serif;
-        font-size: clamp(1.6rem, 2.4vw, 2.2rem);
-        line-height: 0.9;
-        letter-spacing: 0.14em;
+    .detail-chip {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.3rem 0.75rem;
+        border: 1px solid rgba(0, 0, 0, 0.12);
+        border-radius: 999px;
+        font-size: 0.72rem;
+        font-weight: 600;
+        letter-spacing: 0.08em;
         text-transform: uppercase;
         color: var(--cc-ink);
+        background: transparent;
+        line-height: 1;
+    }
+
+    .detail-chip--weight {
+        background: var(--cc-accent);
+        border-color: var(--cc-accent);
+        color: var(--cc-on-accent);
+    }
+
+    html:not(.light-mode) .detail-chip {
+        border-color: rgba(255, 255, 255, 0.18);
     }
 
     .product-breadcrumb {
@@ -512,8 +521,16 @@
 
     .detail-order-actions .site-btn:disabled {
         cursor: not-allowed;
-        opacity: 0.48;
+        opacity: 0.65;                       /* antes 0.48 — era ilegible contra fondo claro */
         transform: none;
+        pointer-events: none;
+        background: transparent !important;
+        color: var(--cc-ink) !important;
+        border: 1px dashed rgba(0, 0, 0, 0.25) !important;
+        font-weight: 600;
+    }
+    html:not(.light-mode) .detail-order-actions .site-btn:disabled {
+        border-color: rgba(255, 255, 255, 0.3) !important;
     }
 
     .detail-order-actions {
@@ -1213,20 +1230,21 @@
             <div class="detail-content-pane">
                 <div class="detail-kicker">
                     {% if producto.slug_imagen %}
-                    <div class="detail-kicker__weight">
-                        {% if producto.slug_imagen == "max_overweight_oversized" or producto.slug_imagen == "dropshoulder" %}
-                            7.5<br>OZ
-                        {% else %}
-                            9.0<br>OZ
+                    <div class="detail-kicker__specs">
+                        <span class="detail-chip detail-chip--weight">
+                            {% if producto.slug_imagen == "max_overweight_oversized" or producto.slug_imagen == "dropshoulder" %}
+                                7.5 oz
+                            {% else %}
+                                9.0 oz
+                            {% endif %}
+                        </span>
+                        {% if producto.slug_imagen and producto.slug_imagen != "max_overweight_oversized" %}
+                            <span class="detail-chip">Garment Dye</span>
                         {% endif %}
+                        <span class="detail-chip">Heavyweight</span>
                     </div>
                     {% endif %}
-                    <div class="detail-kicker__stack">
-                        {% if producto.slug_imagen and producto.slug_imagen != "max_overweight_oversized" %}
-                            <div class="detail-kicker__line">Garment Dye</div>
-                        {% endif %}
-                        <h1 class="detail-title">{{ producto.nombre }}</h1>
-                    </div>
+                    <h1 class="detail-title">{{ producto.nombre }}</h1>
                 </div>
 
                 <p class="detail-price-main">$ <span id="precio-total">{{ producto.precio }}</span></p>
@@ -1407,8 +1425,12 @@
                       <p class="detail-validation-note" id="detailValidationNote">Selecciona color y talla para activar la compra.</p>
 
                       <div class="detail-order-actions">
-                          <button id="addToCartBtn" type="submit" name="action" value="add_to_cart" class="btn site-btn site-btn--ghost" disabled>Agregar al carrito</button>
-                          <button id="buyNowBtn" type="submit" name="action" value="buy_now" class="btn site-btn site-btn--accent" disabled>Comprar ahora</button>
+                          <button id="addToCartBtn" type="submit" name="action" value="add_to_cart" class="btn site-btn site-btn--ghost" disabled
+                                  data-label-enabled="Agregar al carrito"
+                                  data-label-disabled="Elige color y talla">Elige color y talla</button>
+                          <button id="buyNowBtn" type="submit" name="action" value="buy_now" class="btn site-btn site-btn--accent" disabled
+                                  data-label-enabled="Comprar ahora"
+                                  data-label-disabled="Elige color y talla">Elige color y talla</button>
                       </div>
 
                       <ul class="detail-trust">
@@ -1761,6 +1783,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
     addToCartBtn.disabled = !puedeComprar;
     buyNowBtn.disabled = !puedeComprar;
+    // Cambia el label del botón según el estado — más claro que un "disabled" apagado
+    for (const btn of [addToCartBtn, buyNowBtn]) {
+      const label = puedeComprar ? btn.dataset.labelEnabled : btn.dataset.labelDisabled;
+      if (label) btn.textContent = label;
+    }
     validationNote.textContent = puedeComprar
       ? "Listo: puedes agregar esta configuración al carrito."
       : "Selecciona color y talla para activar la compra.";
