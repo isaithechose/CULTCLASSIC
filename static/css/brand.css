@@ -183,22 +183,22 @@ body.brand-page {
 .hero-editorial__layout {
   display: grid;
   grid-template-columns: minmax(0, 0.95fr) minmax(320px, 0.85fr);
-  align-items: center;
+  align-items: start;              /* ancla el copy arriba, no al centro vertical del visual */
   gap: clamp(1.5rem, 3vw, 3.5rem);
   min-height: calc(100svh - 110px);
-  padding: 0 clamp(1rem, 2.5vw, 2rem);
+  padding: clamp(2.5rem, 6vw, 5rem) clamp(1rem, 2.5vw, 2rem) 0;
 }
 
 .hero-editorial__copy {
   max-width: 42rem;
-  padding: 2rem 0;
+  padding: 0 0 2rem;
   position: relative;
   z-index: 2;
 }
 
 .hero-editorial__title {
-  font-size: clamp(4rem, 8vw, 7.2rem);
-  line-height: 0.84;
+  font-size: clamp(3.4rem, 6.5vw, 6rem);  /* bajada: antes 7.2rem, el H1 ocupaba 3 líneas y empujaba el CTA fuera del fold */
+  line-height: 0.9;
   letter-spacing: 0.012em;
   margin-bottom: 1rem;
   text-wrap: balance;
@@ -1739,13 +1739,7 @@ body.brand-page {
   }
 }
 
-/* Floating WhatsApp: separar cuando hay dos botones */
-@media (max-width: 576px) {
-  .wa-float + .cc-whatsapp,
-  .cc-whatsapp + .wa-float {
-    bottom: 78px !important;
-  }
-}
+/* .wa-float ya no se renderiza (duplicaba .cc-whatsapp); regla retirada. */
 
 /* Tablas Bootstrap (.table) siempre con scroll horizontal en mobile
    por si algún template olvidó envolver en .table-responsive */
