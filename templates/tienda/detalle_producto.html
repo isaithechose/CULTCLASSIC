@@ -1835,13 +1835,23 @@ document.addEventListener("DOMContentLoaded", function () {
   // ── Existencias por combinacion ──────────────────────────────────────
   // El cliente ve que hay disponible ANTES de elegir, en vez de toparse con
   // el "sin stock" hasta el carrito.
-  const STOCK_VARIANTE = {{ stock_por_variante|safe }};
-  const STOCK_COLOR = {{ stock_por_color|safe }};
+  const STOCK_VARIANTE_RAW = {{ stock_por_variante|safe }};
+  const STOCK_COLOR_RAW = {{ stock_por_color|safe }};
+  // Normalizar las keys a lowercase: el admin registra colores en MAYÚS
+  // (BLACK, OFFWHITE) pero los botones de la UI usan data-color en minús
+  // (black, offwhite). Sin esto el lookup fallaba y nunca marcaba agotado.
+  const STOCK_VARIANTE = Object.fromEntries(
+    Object.entries(STOCK_VARIANTE_RAW).map(([k, v]) => [k.toLowerCase(), v])
+  );
+  const STOCK_COLOR = Object.fromEntries(
+    Object.entries(STOCK_COLOR_RAW).map(([k, v]) => [k.toLowerCase(), v])
+  );
   const stockHint = document.getElementById('stockHint');
 
   function stockDe(color, talla) {
     if (!color || !talla) return null;
-    const valor = STOCK_VARIANTE[color + '|' + talla];
+    const key = (color + '|' + talla).toLowerCase();
+    const valor = STOCK_VARIANTE[key];
     return valor === undefined ? null : valor;
   }
 
@@ -1858,9 +1868,9 @@ document.addEventListener("DOMContentLoaded", function () {
   function pintarDisponibilidad() {
     const color = colorSeleccionado();
 
-    // colores sin una sola pieza
+    // colores sin una sola pieza (lookup case-insensitive)
     document.querySelectorAll('.color-circle').forEach(circulo => {
-      const total = STOCK_COLOR[circulo.dataset.color];
+      const total = STOCK_COLOR[(circulo.dataset.color || '').toLowerCase()];
       circulo.classList.toggle('is-agotado', total !== undefined && total <= 0);
     });
 
