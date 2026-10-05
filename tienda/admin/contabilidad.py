@@ -1,5 +1,6 @@
 """Admin contable: catalogo de cuentas, polizas, cierres, cuentas de dinero y bancos."""
 
+from django.conf import settings
 from django.contrib import admin
 from django.contrib import messages
 from django import forms
@@ -305,6 +306,11 @@ class JournalEntryAdmin(admin.ModelAdmin):
                 "cierre-mensual/",
                 self.admin_site.admin_view(self.month_close_view),
                 name="tienda_journalentry_month_close",
+            ),
+            path(
+                "contabilidad-electronica/",
+                self.admin_site.admin_view(self.sat_xml_view),
+                name="tienda_journalentry_sat_xml",
             ),
             path(
                 "pago-tarjeta/",
@@ -1346,6 +1352,78 @@ class JournalEntryAdmin(admin.ModelAdmin):
             **statement,
         )
         return TemplateResponse(request, "admin/tienda/month_close.html", context)
+
+    def sat_xml_view(self, request):
+        """Catalogo de cuentas y balanza de comprobacion en XML para el SAT."""
+        from .. import contabilidad_electronica as ce
+
+        hoy = timezone.localdate()
+        # Por defecto el mes anterior: es el que toca enviar.
+        anterior = hoy.replace(day=1) - timedelta(days=1)
+        anio, mes = _coerce_month(request.GET.get("month") or anterior.strftime("%Y-%m"), hoy)
+        rfc = (request.GET.get("rfc") or settings.SAT_RFC or "").strip().upper()
+        tipo_envio = "C" if request.GET.get("tipo") == "C" else "N"
+        fecha_mod = None
+        if request.GET.get("fecha_mod"):
+            try:
+                fecha_mod = date.fromisoformat(request.GET["fecha_mod"])
+            except ValueError:
+                fecha_mod = None
+
+        descargar = request.GET.get("descargar")
+        if descargar in ("catalogo", "balanza"):
+            try:
+                if descargar == "catalogo":
+                    contenido = ce.catalogo_xml(rfc=rfc, anio=anio, mes=mes)
+                    tipo = "CT"
+                else:
+                    contenido = ce.balanza_xml(
+                        rfc=rfc, anio=anio, mes=mes, tipo_envio=tipo_envio, fecha_mod=fecha_mod
+                    )
+                    tipo = "B" + tipo_envio
+            except ce.ContabilidadElectronicaError as exc:
+                self.message_user(request, str(exc), level=messages.ERROR)
+                params = request.GET.copy()
+                params.pop("descargar", None)
+                return HttpResponseRedirect(f"{request.path}?{params.urlencode()}")
+            nombre = ce.nombre_archivo(rfc=rfc, anio=anio, mes=mes, tipo=tipo)
+            response = HttpResponse(ce.empaquetar(nombre, contenido), content_type="application/zip")
+            response["Content-Disposition"] = f'attachment; filename="{nombre}.zip"'
+            return response
+
+        cuentas = ce.cuentas_del_catalogo()
+        filas = ce.balanza(anio=anio, mes=mes)
+        hojas = [f for f in filas if f["es_hoja"]]
+        total_debe = sum((f["debe"] for f in hojas), Decimal("0.00"))
+        total_haber = sum((f["haber"] for f in hojas), Decimal("0.00"))
+        try:
+            ce.validar_rfc(rfc)
+            rfc_valido = True
+        except ce.ContabilidadElectronicaError:
+            rfc_valido = False
+        month_start = date(anio, mes, 1)
+        context = dict(
+            self.admin_site.each_context(request),
+            title="Contabilidad electrónica SAT",
+            opts=self.model._meta,
+            rfc=rfc,
+            rfc_valido=rfc_valido,
+            tipo_envio=tipo_envio,
+            fecha_mod=fecha_mod,
+            current_month_value=month_start.strftime("%Y-%m"),
+            month_label=month_start.strftime("%B %Y").capitalize(),
+            previous_month=(month_start - timedelta(days=1)).strftime("%Y-%m"),
+            next_month=(month_start + timedelta(days=32)).strftime("%Y-%m"),
+            cuentas_total=len(cuentas),
+            faltantes=ce.cuentas_sin_codigo_sat(cuentas),
+            filas=filas,
+            total_debe=total_debe,
+            total_haber=total_haber,
+            cuadra=total_debe == total_haber,
+            nombre_catalogo=ce.nombre_archivo(rfc=rfc or "RFC", anio=anio, mes=mes, tipo="CT"),
+            nombre_balanza=ce.nombre_archivo(rfc=rfc or "RFC", anio=anio, mes=mes, tipo="B" + tipo_envio),
+        )
+        return TemplateResponse(request, "admin/tienda/sat_xml.html", context)
 
     def card_payment_view(self, request):
         """Registrar un abono a la tarjeta para que la deuda baje en los libros."""

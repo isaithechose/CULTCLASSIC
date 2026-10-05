@@ -986,3 +986,145 @@ class SatGroupingCodeTests(TestCase):
             "field_name": "sat_code", "term": "caja",
         })
         self.assertContains(busqueda, "101.01")
+
+
+class SatXmlTests(TestCase):
+    """Catalogo y balanza XML de la contabilidad electronica 1.3."""
+
+    RFC = "CCA250101AB1"
+    NS_CT = "{http://www.sat.gob.mx/esquemas/ContabilidadE/1_3/CatalogoCuentas}"
+    NS_BN = "{http://www.sat.gob.mx/esquemas/ContabilidadE/1_3/BalanzaComprobacion}"
+
+    def _poliza(self, fecha, cargo, abono, importe):
+        from tienda.admin.comun import _account, _create_balanced_journal_entry
+
+        _create_balanced_journal_entry(
+            date_value=fecha, entry_type="diary", source="manual", concept="Prueba",
+            lines=[
+                {"account": AccountingAccount.objects.filter(code=cargo).first() or _account(cargo),
+                 "debit": Decimal(importe)},
+                {"account": AccountingAccount.objects.filter(code=abono).first() or _account(abono),
+                 "credit": Decimal(importe)},
+            ],
+        )
+
+    def _ctas(self, xml, ns):
+        from xml.etree import ElementTree as ET
+
+        raiz = ET.fromstring(xml)
+        return raiz, {c.get("NumCta"): c.attrib for c in raiz.findall(f"{ns}Ctas")}
+
+    def test_naturaleza_sale_del_codigo_agrupador(self):
+        from tienda.contabilidad_electronica import naturaleza
+
+        casos = {
+            "101.01": "D", "171.01": "A", "201.01": "A", "301.01": "A",
+            "401.39": "A", "402.05": "D", "501.01": "D", "503.01": "A",
+            "601.84": "D", "701.01": "D", "702.01": "A", "899.01": "D", "899.02": "A",
+        }
+        for codigo, esperada in casos.items():
+            self.assertEqual(naturaleza(codigo), esperada, codigo)
+
+    def test_rfc_valido_e_invalido(self):
+        from tienda.contabilidad_electronica import ContabilidadElectronicaError, validar_rfc
+
+        self.assertEqual(validar_rfc(" cca250101ab1 "), "CCA250101AB1")  # persona moral
+        self.assertEqual(validar_rfc("GOMI900515H23"), "GOMI900515H23")  # persona fisica
+        for malo in ("", "ABC", "CCA25010AB1", "CCA250101AB1X"):
+            with self.assertRaises(ContabilidadElectronicaError):
+                validar_rfc(malo)
+
+    def test_catalogo_lleva_codigo_naturaleza_y_jerarquia(self):
+        from tienda.contabilidad_electronica import catalogo_xml
+
+        caja = AccountingAccount.objects.get(code="1000")
+        AccountingAccount.objects.create(
+            code="1000-01", name="Caja tienda", account_type="asset", parent=caja, sat_code_id="101.01"
+        )
+        raiz, ctas = self._ctas(catalogo_xml(rfc=self.RFC, anio=2026, mes=2), self.NS_CT)
+
+        self.assertEqual(raiz.tag, f"{self.NS_CT}Catalogo")
+        self.assertEqual((raiz.get("Version"), raiz.get("RFC"), raiz.get("Mes"), raiz.get("Anio")),
+                         ("1.3", self.RFC, "02", "2026"))
+        self.assertEqual(ctas["4000"]["CodAgrup"], "401.39")
+        self.assertEqual(ctas["4000"]["Natur"], "A")
+        self.assertEqual(ctas["4010"]["Natur"], "D")  # descuentos: contra ingreso
+        self.assertEqual(ctas["1000"]["Nivel"], "1")
+        self.assertNotIn("SubCtaDe", ctas["1000"])
+        self.assertEqual((ctas["1000-01"]["SubCtaDe"], ctas["1000-01"]["Nivel"]), ("1000", "2"))
+
+    def test_no_genera_si_falta_un_codigo_sat(self):
+        from tienda.contabilidad_electronica import ContabilidadElectronicaError, catalogo_xml
+
+        AccountingAccount.objects.create(code="9999", name="Sin ligar", account_type="expense")
+        with self.assertRaisesMessage(ContabilidadElectronicaError, "9999 Sin ligar"):
+            catalogo_xml(rfc=self.RFC, anio=2026, mes=2)
+
+    def test_balanza_arrastra_saldos_del_mes_anterior(self):
+        from tienda.contabilidad_electronica import balanza_xml
+
+        self._poliza(date(2026, 1, 15), "1000", "4000", "1000.00")  # enero: venta
+        self._poliza(date(2026, 2, 10), "1000", "4000", "500.00")   # febrero: venta
+        self._poliza(date(2026, 2, 20), "6000", "1000", "200.00")   # febrero: gasto
+        self._poliza(date(2026, 3, 1), "1000", "4000", "999.00")    # marzo: no cuenta
+
+        raiz, ctas = self._ctas(balanza_xml(rfc=self.RFC, anio=2026, mes=2), self.NS_BN)
+        self.assertEqual(raiz.get("TipoEnvio"), "N")
+        self.assertEqual(
+            {k: ctas["1000"][k] for k in ("SaldoIni", "Debe", "Haber", "SaldoFin")},
+            {"SaldoIni": "1000.00", "Debe": "500.00", "Haber": "200.00", "SaldoFin": "1300.00"},
+        )
+        # Ventas es acreedora: su saldo crece con los abonos
+        self.assertEqual(
+            {k: ctas["4000"][k] for k in ("SaldoIni", "Debe", "Haber", "SaldoFin")},
+            {"SaldoIni": "1000.00", "Debe": "0.00", "Haber": "500.00", "SaldoFin": "1500.00"},
+        )
+        self.assertEqual(ctas["6000"]["SaldoFin"], "200.00")
+
+    def test_cuenta_padre_suma_sus_subcuentas(self):
+        from tienda.contabilidad_electronica import balanza
+
+        bancos = AccountingAccount.objects.get(code="1010")
+        AccountingAccount.objects.create(
+            code="1010-01", name="BBVA", account_type="asset", parent=bancos, sat_code_id="102.01"
+        )
+        self._poliza(date(2026, 2, 5), "1010-01", "4000", "300.00")
+        filas = {f["cuenta"].code: f for f in balanza(anio=2026, mes=2)}
+        self.assertEqual(filas["1010"]["saldo_fin"], Decimal("300.00"))
+        self.assertFalse(filas["1010"]["es_hoja"])
+
+    def test_complementaria_pide_fecha_de_modificacion(self):
+        from tienda.contabilidad_electronica import ContabilidadElectronicaError, balanza_xml
+
+        with self.assertRaises(ContabilidadElectronicaError):
+            balanza_xml(rfc=self.RFC, anio=2026, mes=2, tipo_envio="C")
+        raiz, _ = self._ctas(
+            balanza_xml(rfc=self.RFC, anio=2026, mes=2, tipo_envio="C", fecha_mod=date(2026, 3, 20)),
+            self.NS_BN,
+        )
+        self.assertEqual((raiz.get("TipoEnvio"), raiz.get("FechaModBal")), ("C", "2026-03-20"))
+
+    def test_pantalla_y_descarga_en_zip_con_nombre_del_sat(self):
+        import io
+        import zipfile
+
+        user = User.objects.create_superuser(username="sat-xml", email="x@example.com", password="x")
+        self.client.force_login(user)
+        url = reverse("admin:tienda_journalentry_sat_xml")
+
+        pagina = self.client.get(url, {"month": "2026-02", "rfc": self.RFC})
+        self.assertContains(pagina, f"{self.RFC}202602CT.zip")
+
+        respuesta = self.client.get(url, {"month": "2026-02", "rfc": self.RFC, "descargar": "balanza"})
+        self.assertEqual(respuesta["Content-Type"], "application/zip")
+        self.assertIn(f"{self.RFC}202602BN.zip", respuesta["Content-Disposition"])
+        with zipfile.ZipFile(io.BytesIO(respuesta.content)) as zf:
+            self.assertEqual(zf.namelist(), [f"{self.RFC}202602BN.xml"])
+
+    def test_descarga_con_error_regresa_a_la_pantalla_con_aviso(self):
+        user = User.objects.create_superuser(username="sat-err", email="e@example.com", password="x")
+        self.client.force_login(user)
+        url = reverse("admin:tienda_journalentry_sat_xml")
+
+        respuesta = self.client.get(url, {"month": "2026-02", "rfc": "MALO", "descargar": "catalogo"}, follow=True)
+        self.assertContains(respuesta, "no tiene un formato válido")

@@ -1,0 +1,176 @@
+{% extends "admin/base_site.html" %}
+{% load humanize %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+  .sx-wrap { max-width: 1100px; }
+  .sx-header {
+    background: var(--cc-panel) !important; border: 1px solid var(--cc-border) !important;
+    border-radius: 14px; padding: 1.3rem 1.5rem; margin-bottom: 1rem;
+    display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap;
+  }
+  .sx-header h1 { margin: 0 0 .25rem; font-size: 1.25rem; }
+  .sx-header p { margin: 0; color: var(--cc-muted); font-size: .9rem; max-width: 560px; }
+  .sx-nav { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
+  .sx-nav strong { color: #fff !important; min-width: 9rem; text-align: center; }
+
+  .sx-panel {
+    background: var(--cc-panel) !important; border: 1px solid var(--cc-border) !important;
+    border-radius: 14px; margin-bottom: 1rem; overflow: hidden;
+  }
+  .sx-panel-head { padding: .9rem 1.2rem; border-bottom: 1px solid var(--cc-border); font-weight: 700; color: #fff !important; }
+
+  .sx-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 1rem; padding: 1.1rem 1.2rem; align-items: end; }
+  .sx-form label { display: block; font-size: .7rem; text-transform: uppercase; letter-spacing: .08em; color: var(--cc-muted) !important; font-weight: 700; margin-bottom: .35rem; }
+  .sx-form input, .sx-form select { width: 100%; box-sizing: border-box; }
+  .sx-hint { font-size: .8rem; color: var(--cc-muted) !important; margin-top: .3rem; }
+  .sx-hint.is-bad { color: var(--cc-red) !important; }
+
+  .sx-item { display: grid; grid-template-columns: 28px 1fr auto; gap: 1rem; padding: .9rem 1.2rem; align-items: center; }
+  .sx-item + .sx-item { border-top: 1px solid var(--cc-border); }
+  .sx-check { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: .8rem; font-weight: 800; }
+  .sx-check--ok { background: rgba(45,190,108,.16); color: var(--cc-green); }
+  .sx-check--danger { background: rgba(224,80,80,.16); color: var(--cc-red); }
+  .sx-titulo { font-weight: 700; color: #fff !important; font-size: .92rem; }
+  .sx-detalle { color: var(--cc-muted) !important; font-size: .85rem; margin-top: .18rem; line-height: 1.45; }
+  .sx-archivo { font-family: ui-monospace, monospace; font-size: .8rem; color: var(--cc-muted) !important; }
+
+  .sx-table-wrap { overflow-x: auto; }
+  .sx-table { width: 100%; border-collapse: collapse; font-size: .86rem; }
+  .sx-table th, .sx-table td { padding: .55rem .9rem; border-top: 1px solid var(--cc-border); text-align: left; white-space: nowrap; }
+  .sx-table th { font-size: .7rem; text-transform: uppercase; letter-spacing: .06em; color: var(--cc-muted) !important; }
+  .sx-table td.num, .sx-table th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .sx-table tr.is-cero td { color: var(--cc-muted) !important; }
+  .sx-table tfoot td { font-weight: 800; }
+  .sx-pill { display: inline-block; padding: .05rem .45rem; border-radius: 999px; font-size: .72rem; font-weight: 700; background: rgba(255,255,255,.07); }
+
+  html.light-mode .sx-header, html.light-mode .sx-panel { background: #fff !important; border-color: #e5e7eb !important; }
+  html.light-mode .sx-titulo, html.light-mode .sx-panel-head, html.light-mode .sx-nav strong { color: #111827 !important; }
+  html.light-mode .sx-pill { background: #f1f5f9; }
+
+  @media (max-width: 900px) { .sx-header { flex-direction: column; } .sx-item { grid-template-columns: 28px 1fr; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="sx-wrap">
+
+  <div class="sx-header">
+    <div>
+      <h1>Contabilidad electrónica SAT</h1>
+      <p>Catálogo de cuentas y balanza de comprobación en XML (versión 1.3) para subirlos al buzón tributario. Cada archivo se descarga ya comprimido en .zip, como lo pide el SAT.</p>
+    </div>
+    <div class="sx-nav">
+      <a class="button" href="?month={{ previous_month }}&rfc={{ rfc|urlencode }}">←</a>
+      <strong>{{ month_label }}</strong>
+      <a class="button" href="?month={{ next_month }}&rfc={{ rfc|urlencode }}">→</a>
+    </div>
+  </div>
+
+  <form method="get" class="sx-panel">
+    <div class="sx-panel-head">Datos del envío</div>
+    <div class="sx-form">
+      <input type="hidden" name="month" value="{{ current_month_value }}">
+      <div>
+        <label for="sx-rfc">RFC</label>
+        <input id="sx-rfc" type="text" name="rfc" value="{{ rfc }}" maxlength="13" autocomplete="off" spellcheck="false" placeholder="XAXX010101000">
+        {% if rfc and not rfc_valido %}<div class="sx-hint is-bad">Formato de RFC no válido.</div>
+        {% elif not rfc %}<div class="sx-hint">Configura SAT_RFC en el servidor para no capturarlo cada vez.</div>{% endif %}
+      </div>
+      <div>
+        <label for="sx-tipo">Tipo de balanza</label>
+        <select id="sx-tipo" name="tipo">
+          <option value="N" {% if tipo_envio == "N" %}selected{% endif %}>Normal</option>
+          <option value="C" {% if tipo_envio == "C" %}selected{% endif %}>Complementaria</option>
+        </select>
+      </div>
+      <div>
+        <label for="sx-fecha">Fecha de modificación</label>
+        <input id="sx-fecha" type="date" name="fecha_mod" value="{{ fecha_mod|date:'Y-m-d' }}">
+        <div class="sx-hint">Solo para la complementaria.</div>
+      </div>
+      <div><button type="submit" class="button">Actualizar</button></div>
+    </div>
+  </form>
+
+  <div class="sx-panel">
+    <div class="sx-item">
+      <span class="sx-check {% if faltantes %}sx-check--danger{% else %}sx-check--ok{% endif %}">{% if faltantes %}!{% else %}✓{% endif %}</span>
+      <div>
+        <div class="sx-titulo">
+          {% if faltantes %}{{ faltantes|length }} cuenta{{ faltantes|pluralize }} sin código agrupador SAT
+          {% else %}Las {{ cuentas_total }} cuentas tienen código agrupador SAT{% endif %}
+        </div>
+        <div class="sx-detalle">
+          {% if faltantes %}{% for c in faltantes %}{{ c.code }} {{ c.name }}{% if not forloop.last %}, {% endif %}{% endfor %}. Asígnales código antes de descargar.
+          {% else %}El catálogo se puede generar.{% endif %}
+        </div>
+      </div>
+      {% if faltantes %}<a class="button" href="{% url 'admin:tienda_accountingaccount_changelist' %}?sat=no">Asignar códigos</a>{% endif %}
+    </div>
+    <div class="sx-item">
+      <span class="sx-check {% if cuadra %}sx-check--ok{% else %}sx-check--danger{% endif %}">{% if cuadra %}✓{% else %}!{% endif %}</span>
+      <div>
+        <div class="sx-titulo">{% if cuadra %}Cargos y abonos del mes cuadran{% else %}Cargos y abonos del mes no cuadran{% endif %}</div>
+        <div class="sx-detalle">Cargos ${{ total_debe|floatformat:2|intcomma }} · Abonos ${{ total_haber|floatformat:2|intcomma }}</div>
+      </div>
+      {% if not cuadra %}<a class="button" href="{% url 'admin:tienda_journalentry_month_close' %}?month={{ current_month_value }}">Revisar cierre</a>{% endif %}
+    </div>
+    <div class="sx-item">
+      <span class="sx-check sx-check--ok">1</span>
+      <div>
+        <div class="sx-titulo">Catálogo de cuentas</div>
+        <div class="sx-archivo">{{ nombre_catalogo }}.zip</div>
+      </div>
+      <a class="button default" href="?month={{ current_month_value }}&rfc={{ rfc|urlencode }}&descargar=catalogo">Descargar catálogo</a>
+    </div>
+    <div class="sx-item">
+      <span class="sx-check sx-check--ok">2</span>
+      <div>
+        <div class="sx-titulo">Balanza de comprobación {% if tipo_envio == "C" %}complementaria{% else %}normal{% endif %}</div>
+        <div class="sx-archivo">{{ nombre_balanza }}.zip</div>
+      </div>
+      <a class="button default" href="?month={{ current_month_value }}&rfc={{ rfc|urlencode }}&tipo={{ tipo_envio }}&fecha_mod={{ fecha_mod|date:'Y-m-d' }}&descargar=balanza">Descargar balanza</a>
+    </div>
+  </div>
+
+  <div class="sx-panel">
+    <div class="sx-panel-head">Vista previa de la balanza · {{ month_label }}</div>
+    <div class="sx-table-wrap">
+      <table class="sx-table">
+        <thead>
+          <tr>
+            <th>Cuenta</th><th>Código SAT</th><th>Nat.</th>
+            <th class="num">Saldo inicial</th><th class="num">Debe</th><th class="num">Haber</th><th class="num">Saldo final</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for f in filas %}
+          <tr class="{% if not f.saldo_ini and not f.debe and not f.haber %}is-cero{% endif %}">
+            <td>{{ f.cuenta.code }} {{ f.cuenta.name }}</td>
+            <td>{{ f.cuenta.sat_code_id|default:"—" }}</td>
+            <td><span class="sx-pill">{{ f.naturaleza }}</span></td>
+            <td class="num">{{ f.saldo_ini|floatformat:2|intcomma }}</td>
+            <td class="num">{{ f.debe|floatformat:2|intcomma }}</td>
+            <td class="num">{{ f.haber|floatformat:2|intcomma }}</td>
+            <td class="num">{{ f.saldo_fin|floatformat:2|intcomma }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="7">No hay cuentas contables.</td></tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="4">Totales del mes</td>
+            <td class="num">{{ total_debe|floatformat:2|intcomma }}</td>
+            <td class="num">{{ total_haber|floatformat:2|intcomma }}</td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
