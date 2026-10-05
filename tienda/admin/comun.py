@@ -5,6 +5,7 @@ from django.db.models import Case, DecimalField, ExpressionWrapper, F, Sum, Valu
 from django.urls import reverse
 import calendar
 from datetime import date, timedelta
+from ..sat import CODIGO_SAT_POR_CUENTA
 from ..models import (
     BusinessPayment,
     AccountingAccount,
@@ -74,7 +75,7 @@ def _account(code):
     name, account_type = DEFAULT_ACCOUNTING_ACCOUNTS[code]
     account, _ = AccountingAccount.objects.get_or_create(
         code=code,
-        defaults={"name": name, "account_type": account_type},
+        defaults={"name": name, "account_type": account_type, "sat_code_id": CODIGO_SAT_POR_CUENTA.get(code)},
     )
     return account
 

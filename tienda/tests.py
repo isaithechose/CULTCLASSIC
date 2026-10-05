@@ -915,3 +915,74 @@ class FinalizePaidOrderTests(TestCase):
         self.assertFalse(segunda)
         producto.refresh_from_db()
         self.assertEqual(producto.stock, 3)
+
+
+# ---------------------------------------------------------------------------
+# Codigo agrupador del SAT
+# ---------------------------------------------------------------------------
+
+
+class SatGroupingCodeTests(TestCase):
+    """El catalogo del SAT se carga completo y las cuentas quedan ligadas."""
+
+    def test_catalogo_completo_cargado_por_la_migracion(self):
+        from tienda.models import SatGroupingCode
+
+        self.assertEqual(SatGroupingCode.objects.count(), 1067)
+        self.assertEqual(SatGroupingCode.objects.get(code="101.01").name, "Caja y efectivo")
+        # el PDF trae 402.02 sin nivel; se deduce del codigo
+        self.assertEqual(SatGroupingCode.objects.get(code="402.02").level, 2)
+
+    def test_cada_subcuenta_tiene_su_cuenta_padre(self):
+        from tienda.models import SatGroupingCode
+
+        codigos = set(SatGroupingCode.objects.values_list("code", flat=True))
+        huerfanos = [c for c in codigos if c.split(".")[0] not in codigos]
+        self.assertEqual(huerfanos, [])
+
+    def test_el_mapeo_solo_usa_codigos_que_existen(self):
+        from tienda.models import SatGroupingCode
+        from tienda.sat import CODIGO_SAT_POR_CUENTA
+
+        existentes = set(SatGroupingCode.objects.values_list("code", flat=True))
+        self.assertEqual(set(CODIGO_SAT_POR_CUENTA.values()) - existentes, set())
+
+    def test_cuenta_creada_por_el_sistema_nace_ligada(self):
+        from tienda.accounting import cuenta
+        from tienda.admin.comun import _account
+
+        self.assertEqual(_account("4000").sat_code_id, "401.39")
+        self.assertEqual(cuenta("6200").sat_code_id, "602.74")
+
+    def test_la_migracion_liga_sin_pisar_lo_asignado_a_mano(self):
+        import importlib
+        from django.apps import apps
+
+        caja, _ = AccountingAccount.objects.update_or_create(
+            code="1000", defaults={"name": "Caja", "account_type": "asset", "sat_code": None}
+        )
+        bancos, _ = AccountingAccount.objects.update_or_create(
+            code="1010", defaults={"name": "Bancos", "account_type": "asset", "sat_code_id": "102.02"}
+        )
+        migracion = importlib.import_module("tienda.migrations.0042_cargar_sat_codigo_agrupador")
+        migracion.cargar(apps, None)
+
+        caja.refresh_from_db()
+        bancos.refresh_from_db()
+        self.assertEqual(caja.sat_code_id, "101.01")
+        self.assertEqual(bancos.sat_code_id, "102.02")
+
+    def test_pantallas_del_admin(self):
+        user = User.objects.create_superuser(username="sat", email="sat@example.com", password="x")
+        self.client.force_login(user)
+        AccountingAccount.objects.create(code="9999", name="Sin ligar", account_type="expense")
+
+        sin_codigo = self.client.get(reverse("admin:tienda_accountingaccount_changelist") + "?sat=no")
+        self.assertContains(sin_codigo, "Sin ligar")
+        catalogo = self.client.get(reverse("admin:tienda_satgroupingcode_changelist") + "?q=fronteriza")
+        self.assertContains(catalogo, "401.39")
+        busqueda = self.client.get(reverse("admin:autocomplete"), {
+            "app_label": "tienda", "model_name": "accountingaccount",
+            "field_name": "sat_code", "term": "caja",
+        })
+        self.assertContains(busqueda, "101.01")

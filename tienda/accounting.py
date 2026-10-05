@@ -15,6 +15,7 @@ from decimal import Decimal
 from django.db import transaction
 
 from .models import AccountingAccount, JournalEntry, JournalEntryLine
+from .sat import CODIGO_SAT_POR_CUENTA
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +41,8 @@ def _money(value):
 def cuenta(code):
     nombre, tipo = CUENTAS.get(code, (code, "asset"))
     objeto, creada = AccountingAccount.objects.get_or_create(
-        code=code, defaults={"name": nombre, "account_type": tipo}
+        code=code,
+        defaults={"name": nombre, "account_type": tipo, "sat_code_id": CODIGO_SAT_POR_CUENTA.get(code)},
     )
     if creada:
         logger.info("Cuenta contable %s (%s) creada automaticamente", code, nombre)

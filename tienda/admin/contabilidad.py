@@ -23,6 +23,7 @@ from ..models import (
     ProductVariant,
     InventoryMovement,
     Expense,
+    SatGroupingCode,
 )
 from decimal import Decimal, InvalidOperation
 from django.utils import timezone
@@ -38,17 +39,54 @@ from .comun import (
 )
 
 
+@admin.register(SatGroupingCode)
+class SatGroupingCodeAdmin(admin.ModelAdmin):
+    """Catalogo oficial: se consulta y se liga a las cuentas, no se edita."""
+
+    list_display = ("code", "name", "level", "accounts_count")
+    list_filter = ("level",)
+    search_fields = ("code", "name")
+
+    @admin.display(description="Cuentas ligadas")
+    def accounts_count(self, obj):
+        return obj.accounts.count() or ""
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+class SatCodeAssignedFilter(admin.SimpleListFilter):
+    title = "código SAT"
+    parameter_name = "sat"
+
+    def lookups(self, request, model_admin):
+        return (("si", "Asignado"), ("no", "Sin asignar"))
+
+    def queryset(self, request, queryset):
+        if self.value() == "si":
+            return queryset.filter(sat_code__isnull=False)
+        if self.value() == "no":
+            return queryset.filter(sat_code__isnull=True)
+        return queryset
+
+
 @admin.register(AccountingAccount)
 class AccountingAccountAdmin(admin.ModelAdmin):
-    list_select_related = ("parent",)
-    list_display = ("code", "name", "account_type", "parent", "is_active", "ledger_link")
-    list_filter = ("account_type", "is_active")
-    search_fields = ("code", "name")
+    list_select_related = ("parent", "sat_code")
+    list_display = ("code", "name", "account_type", "sat_code", "parent", "is_active", "ledger_link")
+    list_filter = ("account_type", "is_active", SatCodeAssignedFilter)
+    search_fields = ("code", "name", "sat_code__code", "sat_code__name")
     list_editable = ("is_active",)
-    autocomplete_fields = ("parent",)
+    autocomplete_fields = ("parent", "sat_code")
     fieldsets = (
         ("Cuenta", {
-            "fields": ("code", "name", "account_type", "parent", "is_active")
+            "fields": ("code", "name", "account_type", "sat_code", "parent", "is_active")
         }),
         ("Detalle", {
             "fields": ("description",)
