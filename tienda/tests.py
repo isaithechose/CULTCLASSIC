@@ -708,3 +708,210 @@ class RecurringExpenseTests(TestCase):
         self.assertEqual(respuesta.status_code, 200)
         listado = self.client.get(reverse("admin:tienda_expense_changelist"))
         self.assertContains(listado, "Gastos recurrentes")
+
+
+# ---------------------------------------------------------------------------
+# Dinero: polizas de venta, punto de venta y cierre del checkout
+# ---------------------------------------------------------------------------
+
+def hora_local(anio, mes, dia, hora):
+    """Fecha y hora en la zona del negocio (America/Mexico_City)."""
+    from datetime import datetime
+    from django.utils import timezone as tz
+
+    return tz.make_aware(datetime(anio, mes, dia, hora, 0))
+
+
+class SaleJournalEntryTests(TestCase):
+    """La poliza de una venta cuadra, no se duplica y cae en el dia local."""
+
+    def setUp(self):
+        self.producto = make_producto(precio=500)
+
+    def _venta(self, *, descuento="0.00", envio=None, creada=None):
+        order = Order.objects.create(
+            status="Completed",
+            sales_channel="pos",
+            payment_method="cash",
+            discount_amount=Decimal(descuento),
+            shipping_quote_amount=Decimal(envio) if envio else None,
+        )
+        OrderItem.objects.create(
+            order=order, product=self.producto, quantity=2,
+            price=Decimal("500.00"), unit_cost=Decimal("100.00"),
+        )
+        if creada:
+            Order.objects.filter(pk=order.pk).update(created_at=creada)
+            order.refresh_from_db()
+        lineas = [{"product": self.producto, "quantity": 2, "unit_cost": Decimal("100.00")}]
+        return order, lineas
+
+    def _por_cuenta(self, entry):
+        totales = {}
+        for linea in entry.lines.select_related("account"):
+            debe, haber = totales.get(linea.account.code, (Decimal("0"), Decimal("0")))
+            totales[linea.account.code] = (debe + linea.debit, haber + linea.credit)
+        return totales
+
+    def test_poliza_cuadra_con_descuento_y_envio(self):
+        from tienda.admin.comun import _post_order_journal_entry
+
+        order, lineas = self._venta(descuento="50.00", envio="99.00")
+        entry = _post_order_journal_entry(order, lineas)
+
+        self.assertEqual(order.total_price, Decimal("1049.00"))
+        self.assertEqual(self._por_cuenta(entry), {
+            "1000": (Decimal("1049.00"), Decimal("0.00")),  # caja cobra el total
+            "4000": (Decimal("0.00"), Decimal("1000.00")),  # venta de producto
+            "4010": (Decimal("50.00"), Decimal("0.00")),    # descuento
+            "4020": (Decimal("0.00"), Decimal("99.00")),    # envio cobrado
+            "5000": (Decimal("200.00"), Decimal("0.00")),   # costo congelado x2
+            "1100": (Decimal("0.00"), Decimal("200.00")),   # sale del inventario
+        })
+
+    def test_poliza_no_se_duplica(self):
+        from tienda.admin.comun import _post_order_journal_entry
+
+        order, lineas = self._venta()
+        self.assertIsNotNone(_post_order_journal_entry(order, lineas))
+        self.assertIsNone(_post_order_journal_entry(order, lineas))
+        self.assertEqual(JournalEntry.objects.filter(order=order).count(), 1)
+
+    def test_venta_de_noche_cae_en_el_dia_local(self):
+        """21:00 del 31 de enero en CDMX ya es 1 de febrero en UTC."""
+        from tienda.admin.comun import _post_order_journal_entry
+
+        order, lineas = self._venta(creada=hora_local(2026, 1, 31, 21))
+        entry = _post_order_journal_entry(order, lineas)
+        self.assertEqual(entry.date, date(2026, 1, 31))
+
+    def test_calendario_pone_la_venta_de_noche_en_su_dia(self):
+        from tienda.admin.comun import _build_business_calendar_context
+
+        self._venta(creada=hora_local(2026, 1, 31, 21))
+        contexto = _build_business_calendar_context(2026, 1)
+        dias = {d["date"]: d for semana in contexto["calendar_weeks"] for d in semana}
+        ventas = [e for e in dias[date(2026, 1, 31)]["events"] if e["label"] == "Ventas"]
+        self.assertEqual(len(ventas), 1)
+        self.assertEqual(ventas[0]["total"], Decimal("1000.00"))
+
+    def test_poliza_que_no_cuadra_no_se_guarda(self):
+        from tienda.admin.comun import _account, _create_balanced_journal_entry
+
+        with self.assertRaises(ValueError):
+            _create_balanced_journal_entry(
+                date_value=date(2026, 1, 1), entry_type="diary", source="manual",
+                concept="Descuadrada",
+                lines=[
+                    {"account": _account("1000"), "debit": Decimal("100.00")},
+                    {"account": _account("4000"), "credit": Decimal("99.99")},
+                ],
+            )
+        self.assertFalse(JournalEntry.objects.exists())
+
+    def test_poliza_en_cero_no_se_guarda(self):
+        from tienda.admin.comun import _account, _create_balanced_journal_entry
+
+        with self.assertRaises(ValueError):
+            _create_balanced_journal_entry(
+                date_value=date(2026, 1, 1), entry_type="diary", source="manual",
+                concept="Vacia",
+                lines=[
+                    {"account": _account("1000"), "debit": Decimal("0")},
+                    {"account": _account("4000"), "credit": Decimal("0")},
+                ],
+            )
+        self.assertFalse(JournalEntry.objects.exists())
+
+
+class PointOfSaleTests(TestCase):
+    """Venta desde el POS: stock, costo congelado, fecha y que nada quede a medias."""
+
+    def setUp(self):
+        self.user = User.objects.create_superuser(
+            username="cajero", email="cajero@example.com", password="clave-secreta"
+        )
+        self.client = Client()
+        self.client.force_login(self.user)
+        self.producto = make_producto(precio=500, stock=5)
+        self.producto.costo = Decimal("100.00")
+        self.producto.save(update_fields=["costo"])
+        self.producto.variants.all().delete()  # vender del stock general
+        self.url = reverse("admin:tienda_order_point_of_sale")
+
+    def _vender(self, cantidad, **cabecera):
+        datos = {
+            "payment_method": "cash",
+            "discount_amount": "0",
+            "internal_note": "",
+            "sale_date": "",
+            "pos-TOTAL_FORMS": "1",
+            "pos-INITIAL_FORMS": "1",
+            "pos-MIN_NUM_FORMS": "0",
+            "pos-MAX_NUM_FORMS": "1000",
+            "pos-0-item_key": f"p:{self.producto.id}",
+            "pos-0-quantity": str(cantidad),
+            "pos-0-unit_price": "500.00",
+        }
+        datos.update(cabecera)
+        return self.client.post(self.url, datos)
+
+    def test_venta_descuenta_stock_congela_costo_y_genera_poliza(self):
+        respuesta = self._vender(2)
+        self.assertEqual(respuesta.status_code, 302)
+
+        order = Order.objects.get(sales_channel="pos")
+        self.producto.refresh_from_db()
+        self.assertEqual(self.producto.stock, 3)
+        self.assertEqual(order.items.get().unit_cost, Decimal("100.00"))
+        self.assertEqual(order.total_price, Decimal("1000.00"))
+        self.assertTrue(JournalEntry.objects.filter(order=order, source="pos").exists())
+
+    def test_fecha_atrasada_capturada_de_noche_respeta_el_dia(self):
+        """Capturar a las 20:00 (ya es el dia siguiente en UTC) una venta de ayer."""
+        from unittest import mock
+        from django.utils import timezone as tz
+
+        from datetime import timezone as dt_timezone
+
+        ahora = hora_local(2026, 3, 10, 20).astimezone(dt_timezone.utc)  # Django da UTC
+        with mock.patch.object(tz, "now", return_value=ahora):
+            self._vender(1, sale_date="2026-03-09")
+
+        order = Order.objects.get(sales_channel="pos")
+        self.assertEqual(tz.localdate(order.created_at), date(2026, 3, 9))
+        self.assertEqual(JournalEntry.objects.get(order=order).date, date(2026, 3, 9))
+
+    def test_no_vende_mas_de_lo_que_hay(self):
+        self._vender(6)
+        self.assertFalse(Order.objects.exists())
+        self.producto.refresh_from_db()
+        self.assertEqual(self.producto.stock, 5)
+
+    def test_si_la_poliza_falla_no_queda_venta_a_medias(self):
+        # Un descuento mayor a la venta descuadra la poliza: todo se revierte.
+        self._vender(1, discount_amount="900.00")
+        self.assertFalse(Order.objects.exists())
+        self.assertFalse(OrderItem.objects.exists())
+        self.producto.refresh_from_db()
+        self.assertEqual(self.producto.stock, 5)
+
+
+class FinalizePaidOrderTests(TestCase):
+    """El retorno de Stripe y el webhook no descuentan el stock dos veces."""
+
+    def test_finalizar_dos_veces_descuenta_una_sola(self):
+        from tienda.views import _finalize_paid_order
+
+        producto = make_producto(stock=5)
+        producto.variants.all().delete()
+        order = Order.objects.create(status="Pending")
+        OrderItem.objects.create(order=order, product=producto, quantity=2, price=Decimal("500.00"))
+
+        _, primera = _finalize_paid_order(order.id, created_by=None, note="pago")
+        _, segunda = _finalize_paid_order(order.id, created_by=None, note="webhook")
+
+        self.assertTrue(primera)
+        self.assertFalse(segunda)
+        producto.refresh_from_db()
+        self.assertEqual(producto.stock, 3)

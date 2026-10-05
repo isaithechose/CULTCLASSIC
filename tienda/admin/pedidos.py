@@ -655,8 +655,8 @@ class OrderAdmin(admin.ModelAdmin):
                             )
                             sale_date = header_form.cleaned_data.get("sale_date")
                             if sale_date and sale_date != timezone.localdate():
-                                now = timezone.now()
-                                backdated = now.replace(
+                                # El dia se elige en hora local; now() viene en UTC.
+                                backdated = timezone.localtime().replace(
                                     year=sale_date.year,
                                     month=sale_date.month,
                                     day=sale_date.day,

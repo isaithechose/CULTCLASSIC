@@ -152,7 +152,7 @@ def _post_order_journal_entry(order, lines, created_by=None):
         )
 
     return _create_balanced_journal_entry(
-        date_value=order.created_at.date() if order.created_at else timezone.localdate(),
+        date_value=timezone.localdate(order.created_at) if order.created_at else timezone.localdate(),
         entry_type="income",
         source="pos",
         concept=f"Venta pedido #{order.id}",
@@ -776,7 +776,7 @@ def _build_business_calendar_context(year, month):
 
     sales_by_day = {}
     for order in orders:
-        day = order.created_at.date()
+        day = timezone.localdate(order.created_at)
         bucket = sales_by_day.setdefault(day, {"count": 0, "total": Decimal("0.00")})
         bucket["count"] += 1
         bucket["total"] += order.total_price

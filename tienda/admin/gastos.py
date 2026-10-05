@@ -487,7 +487,7 @@ class ExpenseAdmin(admin.ModelAdmin):
         previous_month = (month_start - timedelta(days=1)).strftime("%Y-%m")
         next_month = (month_end + timedelta(days=1)).strftime("%Y-%m")
         completed_orders = list(Order.objects.filter(status="Completed").prefetch_related("items__product"))
-        month_orders = [order for order in completed_orders if month_start <= order.created_at.date() <= month_end]
+        month_orders = [order for order in completed_orders if month_start <= timezone.localdate(order.created_at) <= month_end]
 
         product_sales = sum(order.subtotal_price for order in month_orders)
         shipping_income = sum(order.shipping_total for order in month_orders)
