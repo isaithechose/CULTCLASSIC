@@ -18,7 +18,6 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.utils.text import slugify
 from django.views.decorators.csrf import csrf_exempt
-from tienda.utils.importador_diseños import importar_diseños_desde_carpeta, importar_diseños_propios
 import os
 
 from .forms import (
@@ -26,7 +25,6 @@ from .forms import (
     RastreoPedidoForm,
     ReseñaForm,
     ShippingAddressForm,
-    SeleccionarTallaColorForm,
     UserProfileForm,
 )
 from .models import (
@@ -148,35 +146,6 @@ def _save_custom_design(user, design_name, uploaded_file=None, edited_image_data
         return fs.save(final_name, uploaded_file)
 
     raise ValueError("Necesitamos una imagen para guardar el diseño.")
-
-@login_required
-def subir_diseño_personalizado(request):
-    if request.method != 'POST':
-        return redirect(request.META.get('HTTP_REFERER', 'tienda:detalle_producto'))
-
-    design_name = request.POST.get("name", "").strip() or request.POST.get("nombre", "").strip() or "diseno"
-    edited_image = request.POST.get("edited_image", "").strip()
-    imagen = request.FILES.get('imagen') or request.FILES.get("image")
-    redirect_to = request.POST.get("redirect_to", "").strip()
-    product_id = request.POST.get("product_id", "").strip()
-    try:
-        saved_name = _save_custom_design(
-            request.user,
-            design_name,
-            uploaded_file=imagen,
-            edited_image_data=edited_image,
-        )
-    except Exception as exc:
-        messages.error(request, f"No pudimos guardar tu diseño: {exc}")
-        return redirect(redirect_to or request.META.get('HTTP_REFERER', 'tienda:detalle_producto'))
-
-    messages.success(request, "Tu diseño quedó guardado y listo para usar.")
-    if product_id:
-        return redirect(f"{reverse('tienda:detalle_producto_by_id', args=[product_id])}?diseño={saved_name}")
-    if redirect_to:
-        return redirect(redirect_to)
-    return redirect(f"{reverse('tienda:design_creator')}?file={saved_name}")
-
 
 @login_required
 def design_creator(request):
@@ -945,17 +914,6 @@ def tienda_view(request):
         'carrito_items_count': carrito_items_count,
     })
 
-
-import os
-
-def extraer_precio_desde_nombre(nombre_archivo):
-    import re
-    nombre_archivo = nombre_archivo.split('/')[-1]
-    coincidencia = re.search(r'_(\d+)\.png$', nombre_archivo)
-    if coincidencia:
-        return int(coincidencia.group(1))
-    return 0
-
 def agregar_al_carrito(request, producto_id):
     producto = get_object_or_404(Producto, id=producto_id)
 
@@ -1318,7 +1276,6 @@ def robots_txt(request):
         "Disallow: /order/",
         "Disallow: /perfil/",
         "Disallow: /webhooks/",
-        "Disallow: /subir_diseno_personalizado/",
         "Disallow: /creador-diseno/eliminar/",
         "",
         f"Sitemap: {scheme}://{host}/sitemap.xml",
@@ -1366,11 +1323,6 @@ def lista_productos(request):
     paginator = Paginator(qs, 24)
     page = paginator.get_page(request.GET.get('page'))
     return render(request, 'tienda/lista_productos.html', {'productos': page, 'paginator': paginator})
-
-def filtrar_productos(request, categoria_id):
-    productos = Producto.objects.filter(categoria__id=categoria_id)
-    return render(request, 'tienda/filtrar_productos.html', {'productos': productos})
-
 
 def buscar_productos(request):
     q = request.GET.get('q', '').strip()

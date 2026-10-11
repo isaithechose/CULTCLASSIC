@@ -23,7 +23,6 @@ from ..models import (
     ProductVariant,
     SizeChart,
     InventoryMovement,
-    ExpenseCategory,
     Subcategoria,
     record_inventory_movement,
 )
@@ -1115,7 +1114,6 @@ class ProductoAdmin(admin.ModelAdmin):
         return TemplateResponse(request, "admin/tienda/sales_summary.html", context)
 
     def design_catalog_view(self, request):
-        import shutil
         from django.utils.text import slugify
 
         CATALOG_DIR = os.path.join(settings.MEDIA_ROOT, "diseños_nuevos")
@@ -1716,13 +1714,6 @@ class InventoryMovementAdmin(admin.ModelAdmin):
         obj.stock_before = created.stock_before
         obj.stock_after = created.stock_after
         obj.created_at = created.created_at
-
-    def _purchase_expense_category(self):
-        category, _ = ExpenseCategory.objects.get_or_create(
-            nombre="Compras inventario",
-            defaults={"descripcion": "Compra de mercancía para inventario."},
-        )
-        return category
 
     def receive_purchase_view(self, request, variant_id=None):
         variants = list(

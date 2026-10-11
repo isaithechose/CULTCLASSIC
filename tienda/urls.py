@@ -1,4 +1,4 @@
-from django.urls import path, include
+from django.urls import path
 from django.views.generic import RedirectView
 from . import views
 from .views import (
@@ -62,7 +62,6 @@ urlpatterns = [
     path('webhooks/stripe/', views.stripe_webhook, name='stripe_webhook'),
     path('diseños/', views.catalogo_diseños, name='catalogo_diseños'),
     path('diseños-propios/', views.catalogo_diseños_propios, name='catalogo_diseños_propios'),
-    path('subir_diseno_personalizado/', views.subir_diseño_personalizado, name='subir_diseño_personalizado'),
     path('creador-diseno/', views.design_creator, name='design_creator'),
     path('creador-diseno/eliminar/<str:filename>/', views.delete_design, name='delete_design'),
 ]
