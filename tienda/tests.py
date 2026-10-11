@@ -1128,3 +1128,116 @@ class SatXmlTests(TestCase):
 
         respuesta = self.client.get(url, {"month": "2026-02", "rfc": "MALO", "descargar": "catalogo"}, follow=True)
         self.assertContains(respuesta, "no tiene un formato válido")
+
+
+# ---------------------------------------------------------------------------
+# Compra sin cuenta (invitado)
+# ---------------------------------------------------------------------------
+
+
+@override_settings(
+    SKYDROP_CLIENT_ID="",
+    SKYDROP_CLIENT_SECRET="",
+    STRIPE_SECRET_KEY="sk_test_dummy",
+    EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+)
+class GuestCheckoutTests(TestCase):
+    """Se puede comprar sin iniciar sesion, solo con correo de contacto."""
+
+    DIRECCION = {
+        "phone": "6561234567",
+        "address_line1": "Av. Tecnologico 1234",
+        "address_line2": "",
+        "city": "Ciudad Juarez",
+        "state": "Chihuahua",
+        "postal_code": "32000",
+        "country": "Mexico",
+    }
+
+    def setUp(self):
+        self.client = Client()
+        self.producto = make_producto(precio=500, stock=5)
+        session = self.client.session
+        session["carrito"] = {
+            f"{self.producto.id}-M-negro--": {
+                "nombre": self.producto.nombre,
+                "precio": "500.00",
+                "cantidad": 1,
+                "talla": "M",
+                "color": "negro",
+                "diseño_pecho": "",
+                "diseño_espalda": "",
+            }
+        }
+        session.save()
+
+    def _llegar_a_envio(self, **contacto):
+        response = self.client.get(reverse("tienda:checkout"))
+        self.assertRedirects(response, reverse("tienda:shipping_details"), fetch_redirect_response=False)
+        datos = {**self.DIRECCION, **contacto}
+        return self.client.post(reverse("tienda:shipping_details"), datos)
+
+    def test_invitado_crea_pedido_sin_cliente(self):
+        self._llegar_a_envio(contact_email="Invitado@Example.com", contact_name="Ana Lopez")
+        order = Order.objects.get()
+        self.assertIsNone(order.customer)
+        self.assertEqual(order.contact_email, "invitado@example.com")
+        self.assertEqual(order.contact_name, "Ana Lopez")
+        self.assertEqual(order.shipping_address.postal_code, "32000")
+        self.assertTrue(order.shipping_quote_amount)
+
+    def test_invitado_debe_dar_correo(self):
+        response = self._llegar_a_envio(contact_name="Ana Lopez")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("contact_email", response.context["form"].errors)
+        self.assertFalse(Order.objects.get().contact_email)
+
+    def test_usuario_con_sesion_no_ve_campos_de_contacto(self):
+        self.client.force_login(make_user())
+        self.client.get(reverse("tienda:checkout"))
+        response = self.client.get(reverse("tienda:shipping_details"))
+        self.assertNotIn("contact_email", response.context["form"].fields)
+
+    def test_usuario_con_sesion_no_toma_el_pedido_de_un_invitado(self):
+        self._llegar_a_envio(contact_email="invitado@example.com", contact_name="Ana Lopez")
+        self.client.force_login(make_user())
+        response = self.client.get(reverse("tienda:shipping_details"))
+        self.assertEqual(response.status_code, 404)
+
+    def test_pago_de_invitado_completa_pedido_y_manda_correo(self):
+        from unittest import mock
+
+        self._llegar_a_envio(contact_email="invitado@example.com", contact_name="Ana Lopez")
+        order = Order.objects.get()
+
+        sesion_stripe = mock.Mock(id="cs_test_1", url="https://checkout.stripe.test/cs_test_1")
+        with mock.patch("tienda.views.stripe.checkout.Session.create", return_value=sesion_stripe) as crear:
+            response = self.client.get(reverse("tienda:stripe_checkout"))
+        self.assertEqual(response["Location"], "https://checkout.stripe.test/cs_test_1")
+        self.assertEqual(crear.call_args.kwargs["customer_email"], "invitado@example.com")
+
+        pagada = mock.Mock(payment_status="paid")
+        mail.outbox.clear()
+        with mock.patch("tienda.views.stripe.checkout.Session.retrieve", return_value=pagada):
+            response = self.client.get(reverse("tienda:payment_success") + "?session_id=cs_test_1")
+        self.assertRedirects(response, reverse("tienda:payment_success_done"), fetch_redirect_response=False)
+
+        order.refresh_from_db()
+        self.assertEqual(order.status, "Completed")
+        self.producto.refresh_from_db()
+        self.assertEqual(self.producto.stock, 4)
+        confirmacion = [m for m in mail.outbox if "confirmado" in m.subject]
+        self.assertEqual(len(confirmacion), 1)
+        self.assertEqual(confirmacion[0].to, ["invitado@example.com"])
+        self.assertIn("Ana Lopez", confirmacion[0].body)
+
+        response = self.client.get(reverse("tienda:payment_success_done"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "invitado@example.com")
+
+    def test_guia_de_skydrop_usa_contacto_del_invitado(self):
+        from tienda.skydrop import _recipient_email, _recipient_name
+
+        order = Order.objects.create(contact_email="invitado@example.com", contact_name="Ana López")
+        self.assertEqual(_recipient_name(order), "Ana Lopez")
+        self.assertEqual(_recipient_email(order), "invitado@example.com")

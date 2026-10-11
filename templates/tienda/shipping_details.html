@@ -58,6 +58,24 @@
                     {% csrf_token %}
 
                     <div class="shipping-form__grid">
+                        {% if is_guest %}
+                        <div class="shipping-form__group shipping-form__group--full">
+                            <label for="{{ form.contact_email.id_for_label }}">Correo de contacto</label>
+                            {{ form.contact_email }}
+                            {% for error in form.contact_email.errors %}
+                                <div class="shipping-form__error">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="shipping-form__group shipping-form__group--full">
+                            <label for="{{ form.contact_name.id_for_label }}">Nombre de quien recibe</label>
+                            {{ form.contact_name }}
+                            {% for error in form.contact_name.errors %}
+                                <div class="shipping-form__error">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+
                         <div class="shipping-form__group shipping-form__group--full">
                             <label for="{{ form.phone.id_for_label }}">Teléfono</label>
                             {{ form.phone }}
@@ -116,7 +134,10 @@
                     </div>
 
                     <div class="shipping-form__footer">
-                        <p class="shipping-form__hint">Guardamos esta dirección dentro de tu pedido y calculamos el envío antes de cobrar.</p>
+                        <p class="shipping-form__hint">
+                            Guardamos esta dirección dentro de tu pedido y calculamos el envío antes de cobrar.
+                            {% if is_guest %}Compras sin cuenta: te mandamos la confirmación y el rastreo a tu correo. ¿Ya tienes cuenta? <a href="{% url 'account_login' %}?next={{ request.path|urlencode }}">Inicia sesión</a>.{% endif %}
+                        </p>
                         <button type="submit" class="btn site-btn site-btn--accent shipping-form__submit">
                             Guardar y cotizar envío
                         </button>

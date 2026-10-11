@@ -224,6 +224,7 @@ class OrderAdmin(admin.ModelAdmin):
     list_display = (
         "id",
         "customer",
+        "contact_email",
         "sales_channel_badge",
         "payment_method",
         "status_badge",
@@ -234,7 +235,7 @@ class OrderAdmin(admin.ModelAdmin):
         "created_at",
     )
     list_filter = ("status", "shipping_status", "sales_channel", "payment_method", "created_at")
-    search_fields = ("id", "customer__username", "customer__email", "tracking_number")
+    search_fields = ("id", "customer__username", "customer__email", "contact_email", "contact_name", "tracking_number")
     readonly_fields = (
         "created_at",
         "total_amount",
@@ -256,6 +257,8 @@ class OrderAdmin(admin.ModelAdmin):
         ("Pedido", {
             "fields": (
                 "customer",
+                "contact_email",
+                "contact_name",
                 "cashier",
                 "sales_channel",
                 "payment_method",

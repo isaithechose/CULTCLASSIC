@@ -70,17 +70,21 @@ def _origin_payload() -> dict:
 
 
 def _recipient_name(order) -> str:
+    candidate = _clean_value(getattr(order, "contact_name", ""))
     customer = order.customer
-    if not customer:
-        return "Cliente Cult Classics"
-    full_name = f"{customer.first_name} {customer.last_name}".strip()
-    candidate = full_name or customer.username or customer.email or "Cliente Cult Classics"
+    if not candidate and customer:
+        full_name = f"{customer.first_name} {customer.last_name}".strip()
+        candidate = full_name or customer.username or customer.email
     return _clean_person_name(candidate) or "Cliente Cult Classics"
 
 
 def _recipient_email(order) -> str:
     customer = order.customer
-    return _clean_value(getattr(customer, "email", "")) or _clean_value(getattr(settings, "SKYDROP_DEFAULT_EMAIL", ""))
+    return (
+        _clean_value(getattr(order, "contact_email", ""))
+        or _clean_value(getattr(customer, "email", ""))
+        or _clean_value(getattr(settings, "SKYDROP_DEFAULT_EMAIL", ""))
+    )
 
 
 def _recipient_phone(order) -> str:

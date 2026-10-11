@@ -61,8 +61,23 @@ class ShippingAddressForm(forms.ModelForm):
             }),
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, require_contact=False, **kwargs):
         super().__init__(*args, **kwargs)
+        # Sin sesion no hay cuenta de donde sacar correo y nombre: se piden aqui.
+        if require_contact:
+            self.fields["contact_email"] = forms.EmailField(
+                label="Correo de contacto",
+                widget=forms.EmailInput(attrs={
+                    "placeholder": "tu@correo.com", "autocomplete": "email", "spellcheck": "false",
+                }),
+                error_messages={"required": "Necesitamos tu correo para mandarte la confirmación."},
+            )
+            self.fields["contact_name"] = forms.CharField(
+                label="Nombre de quien recibe",
+                max_length=120,
+                widget=forms.TextInput(attrs={"placeholder": "Nombre y apellido", "autocomplete": "name"}),
+                error_messages={"required": "La paquetería necesita un nombre para la guía."},
+            )
         for name, field in self.fields.items():
             existing_classes = field.widget.attrs.get("class", "")
             field.widget.attrs["class"] = f"{existing_classes} {self.base_input_class}".strip()
@@ -82,6 +97,16 @@ class ShippingAddressForm(forms.ModelForm):
         if digits and not re.fullmatch(r"\d{10,15}", digits):
             raise ValidationError("Ingresa un número de teléfono válido (10 a 15 dígitos).")
         return value
+
+    def clean_contact_email(self):
+        return (self.cleaned_data.get("contact_email") or "").strip().lower()
+
+    def clean_contact_name(self):
+        return (self.cleaned_data.get("contact_name") or "").strip()
+
+    def address_data(self):
+        """Solo los campos de ShippingAddress, sin los de contacto."""
+        return {name: self.cleaned_data[name] for name in self._meta.fields}
 
 
 class ReseñaForm(forms.ModelForm):

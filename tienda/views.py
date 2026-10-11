@@ -605,10 +605,26 @@ def _cart_stock_issues(carrito):
     return issues
 
 
-def _get_checkout_order(request):
-    if not getattr(request, "user", None) or not request.user.is_authenticated:
-        return None
+def _checkout_owner_filter(request):
+    """Filtro para que cada quien solo vea su pedido del checkout.
 
+    Con sesion iniciada el pedido debe ser del usuario. Sin sesion se compra
+    como invitado: el pedido no tiene customer y solo se llega a el por el
+    order_id guardado en la sesion del navegador, nunca por un id en la URL.
+    """
+    if request.user.is_authenticated:
+        return {"customer": request.user}
+    return {"customer__isnull": True}
+
+
+def _session_order_or_404(request, session_key="order_id"):
+    order_id = request.session.get(session_key)
+    if not order_id:
+        return None
+    return get_object_or_404(Order, id=order_id, **_checkout_owner_filter(request))
+
+
+def _get_checkout_order(request):
     carrito = request.session.get("carrito", {})
     if not carrito:
         return None
@@ -621,15 +637,15 @@ def _get_checkout_order(request):
     if order_id:
         existing_order = Order.objects.filter(
             id=order_id,
-            customer=request.user,
             status="Pending",
+            **_checkout_owner_filter(request),
         ).first()
         if existing_order:
             if not _cart_matches_order(existing_order, carrito):
                 _build_order_from_cart(existing_order, carrito, reset_checkout_state=True)
             return existing_order
 
-    order = Order.objects.create(customer=request.user)
+    order = Order.objects.create(customer=request.user if request.user.is_authenticated else None)
     _build_order_from_cart(order, carrito)
     request.session["order_id"] = order.id
     return order
@@ -752,7 +768,6 @@ def profile_view(request):
     return render(request, "tienda/profile.html", context)
 
 
-@login_required
 def checkout(request):
     carrito = request.session.get("carrito", {})
     stock_issues = _cart_stock_issues(carrito)
@@ -782,21 +797,23 @@ def checkout(request):
     return redirect("tienda:shipping_details")
 
 
-@login_required
 def shipping_details(request):
-    order_id = request.session.get('order_id')
-    if order_id:
-        order = get_object_or_404(Order, id=order_id, customer=request.user)
-    else:
+    order = _session_order_or_404(request)
+    if order is None:
         messages.error(request, "Tu sesión de compra expiró. Vuelve al carrito para continuar.")
         return redirect('tienda:carrito')
 
+    is_guest = not request.user.is_authenticated
     if request.method == 'POST':
-        form = ShippingAddressForm(request.POST)
+        form = ShippingAddressForm(request.POST, require_contact=is_guest)
         if form.is_valid():
+            if is_guest:
+                order.contact_email = form.cleaned_data["contact_email"]
+                order.contact_name = form.cleaned_data["contact_name"]
+                order.save(update_fields=["contact_email", "contact_name"])
             ShippingAddress.objects.update_or_create(
                 order=order,
-                defaults=form.cleaned_data,
+                defaults=form.address_data(),
             )
             if _has_skydrop_credentials():
                 try:
@@ -878,12 +895,17 @@ def shipping_details(request):
                 "postal_code": shipping_address.postal_code,
                 "country": shipping_address.country,
             }
-        form = ShippingAddressForm(initial=initial)
+        if is_guest:
+            initial.update({"contact_email": order.contact_email, "contact_name": order.contact_name})
+        form = ShippingAddressForm(initial=initial, require_contact=is_guest)
 
     can_continue_to_payment = hasattr(order, "shipping_address") and bool(order.shipping_quote_amount)
+    if is_guest and not order.contact_email:
+        can_continue_to_payment = False
     context = {
         'form': form,
         'order': order,
+        'is_guest': is_guest,
         'has_skydrop_credentials': _has_skydrop_credentials(),
         'can_continue_to_payment': can_continue_to_payment,
     }
@@ -1240,7 +1262,6 @@ def buscar_productos(request):
     return render(request, 'tienda/buscar.html', {'productos': page, 'q': q})
 
 
-@login_required
 def stripe_checkout(request):
     # Configura la API key de Stripe con la clave secreta desde settings
     stripe.api_key = settings.STRIPE_SECRET_KEY
@@ -1275,6 +1296,10 @@ def stripe_checkout(request):
         return redirect("tienda:shipping_details")
     if _has_skydrop_credentials() and not order.shipping_quote_amount:
         messages.error(request, "Primero necesitamos cotizar tu envío antes de enviarte a Stripe.")
+        return redirect("tienda:shipping_details")
+    contact_email = order.get_contact_email()
+    if not contact_email:
+        messages.error(request, "Necesitamos tu correo de contacto antes de pasar al pago.")
         return redirect("tienda:shipping_details")
 
     # Prepara los items para Stripe (Stripe requiere montos en centavos)
@@ -1313,6 +1338,7 @@ def stripe_checkout(request):
             line_items=line_items,
             mode='payment',
             metadata={"order_id": str(order.id)},
+            customer_email=contact_email,
             allow_promotion_codes=True,  # permite aplicar cupón BIENVENIDA10
             # Genera URLs absolutas para éxito y cancelación
             success_url=request.build_absolute_uri(reverse('tienda:payment_success')) + "?session_id={CHECKOUT_SESSION_ID}",
@@ -1371,7 +1397,6 @@ def _finalize_paid_order(order_id, *, created_by, note):
     return order, True
 
 
-@login_required
 def payment_success(request):
     session_id = request.GET.get("session_id")
     order_id = request.session.get("order_id")
@@ -1395,9 +1420,11 @@ def payment_success(request):
 
     if checkout_session.payment_status != "paid":
         messages.error(request, "Tu pago todavía no aparece como completado.")
-        return redirect("tienda:order_detail", order_id=order_id)
+        if request.user.is_authenticated:
+            return redirect("tienda:order_detail", order_id=order_id)
+        return redirect("tienda:shipping_details")
 
-    order = get_object_or_404(Order, id=order_id, customer=request.user)
+    order = _session_order_or_404(request)
     if order.stripe_session_id and order.stripe_session_id != session_id:
         messages.error(request, "La sesión de pago no coincide con este pedido.")
         return redirect("tienda:carrito")
@@ -1422,7 +1449,7 @@ def payment_success(request):
         try:
             order, newly_completed = _finalize_paid_order(
                 order.id,
-                created_by=request.user,
+                created_by=request.user if request.user.is_authenticated else None,
                 note=f"Descuento automático al completar el pedido #{order.id}.",
             )
         except ValueError:
@@ -1433,13 +1460,13 @@ def payment_success(request):
             )
             return redirect("tienda:carrito")
 
-        if newly_completed and order.customer and order.customer.email:
+        if newly_completed and order.get_contact_email():
             try:
                 from django.template.loader import render_to_string
                 subject = f"Pedido #{order.id} confirmado — Cult Clasiccs"
                 html_message = render_to_string('tienda/email/order_confirmation.html', {'order': order})
                 plain_message = (
-                    f"Hola {order.customer.get_full_name() or order.customer.username},\n\n"
+                    f"Hola {order.get_contact_name() or 'cliente'},\n\n"
                     f"Tu pedido #{order.id} ha sido confirmado.\n"
                     f"Subtotal: ${order.subtotal_price:.2f} MXN\n"
                     f"Envío: ${order.shipping_total:.2f} MXN\n"
@@ -1447,7 +1474,7 @@ def payment_success(request):
                     "¡Gracias por comprar en Cult Clasiccs!"
                 )
                 send_mail(subject, plain_message, settings.DEFAULT_FROM_EMAIL,
-                          [order.customer.email], html_message=html_message, fail_silently=True)
+                          [order.get_contact_email()], html_message=html_message, fail_silently=True)
             except Exception:
                 logger.exception("No se pudo enviar el email de confirmacion del pedido %s", order.id)
 
@@ -1475,14 +1502,13 @@ def payment_cancel(request):
     return render(request, 'tienda/payment_cancel.html')
 
 
-@login_required
 def payment_success_done(request):
-    order_id = request.session.get("last_completed_order_id")
-    if not order_id:
+    order = _session_order_or_404(request, "last_completed_order_id")
+    if order is None:
         messages.warning(request, "No encontramos una compra reciente para mostrarte.")
-        return redirect("tienda:my_orders")
-
-    order = get_object_or_404(Order, id=order_id, customer=request.user)
+        if request.user.is_authenticated:
+            return redirect("tienda:my_orders")
+        return redirect("tienda:tienda")
     return render(
         request,
         "tienda/payment_success.html",

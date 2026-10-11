@@ -40,32 +40,32 @@ def send_shipping_notification(sender, instance, created, update_fields=None, **
         return
     if instance.shipping_status != "Shipped" or not instance.tracking_number:
         return
-    if not instance.customer or not instance.customer.email:
+    if not instance.get_contact_email():
         return
 
     from django.template.loader import render_to_string
     subject = f"Tu pedido #{instance.id} ya va en camino — Cult Clasiccs"
     html_message = render_to_string('tienda/email/shipping_notification.html', {'order': instance})
     plain_message = (
-        f"Hola {instance.customer.get_full_name() or instance.customer.username},\n\n"
+        f"Hola {instance.get_contact_name() or 'cliente'},\n\n"
         f"Tu pedido #{instance.id} fue enviado.\n"
         f"Número de seguimiento: {instance.tracking_number}\n\n"
         "Gracias por tu compra en Cult Clasiccs."
     )
     send_mail(subject, plain_message, settings.DEFAULT_FROM_EMAIL,
-              [instance.customer.email], html_message=html_message)
+              [instance.get_contact_email()], html_message=html_message)
 
 
 @receiver(post_save, sender=ShippingUpdate)
 def notify_shipping_update(sender, instance, created, **kwargs):
     if not created:
         return
-    if not instance.order.customer or not instance.order.customer.email:
+    if not instance.order.get_contact_email():
         return
 
     subject = f"Actualización en el envío de tu pedido #{instance.order.id}"
     message = instance.status_message
-    send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [instance.order.customer.email])
+    send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [instance.order.get_contact_email()])
 
 
 # ── Invalidación del resumen del admin ──────────────────────────────────────
