@@ -24,4 +24,20 @@ urlpatterns = [
 # Para servir archivos estáticos y/o multimedia en modo DEBUG
 if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    if getattr(settings, "MEDIA_PLACEHOLDER", False):
+        # En local faltan casi todas las imagenes de produccion: si el archivo
+        # no existe, se sirve un placeholder en vez de un 404.
+        from django.contrib.staticfiles import finders
+        from django.http import FileResponse, Http404
+        from django.urls import re_path
+        from django.views.static import serve
+
+        def media_or_placeholder(request, path):
+            try:
+                return serve(request, path, document_root=settings.MEDIA_ROOT)
+            except Http404:
+                return FileResponse(open(finders.find("images/placeholder.svg"), "rb"), content_type="image/svg+xml")
+
+        urlpatterns += [re_path(rf"^{settings.MEDIA_URL.lstrip('/')}(?P<path>.*)$", media_or_placeholder)]
+    else:
+        urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

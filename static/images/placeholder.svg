@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="1000" viewBox="0 0 800 1000">
+  <rect width="800" height="1000" fill="#e9e6e1"/>
+  <g fill="none" stroke="#b9b3aa" stroke-width="14" stroke-linejoin="round">
+    <path d="M300 330 L360 300 Q400 330 440 300 L500 330 L560 400 L515 435 L500 420 L500 680 L300 680 L300 420 L285 435 L240 400 Z"/>
+  </g>
+  <text x="400" y="770" text-anchor="middle" font-family="system-ui, sans-serif" font-size="34" fill="#8c857b">Imagen no disponible en local</text>
+</svg>
