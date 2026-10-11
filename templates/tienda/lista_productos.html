@@ -1,6 +1,8 @@
 {% extends "tienda/base.html" %}
 
-{% block title %}Productos | Cult Clasiccs{% endblock %}
+{% block title %}Catálogo Shaka Wear México · Playeras heavyweight y oversize | Cult Classics{% endblock %}
+{% block meta_description %}Todo el catálogo Shaka Wear disponible en Cult Classics México: oversize, heavyweight 7.5 oz, garment dye, long sleeve y más. Compra en línea con envío a todo México.{% endblock %}
+{% block og_title %}Catálogo Shaka Wear México · Cult Classics{% endblock %}
 
 {% block content %}
 <section class="py-5">
@@ -14,9 +16,9 @@
     <div class="product-grid">
       {% for producto in productos %}
         <article class="product-tile">
-          <a class="product-tile__media" href="{% url 'tienda:detalle_producto' producto.id %}">
+          <a class="product-tile__media" href="{{ producto.get_absolute_url }}">
             {% if producto.imagen %}
-              <img src="{{ producto.imagen.url }}" alt="{{ producto.nombre }}" loading="lazy">
+              <img src="{{ producto.imagen.url }}" alt="{{ producto.nombre }} Shaka Wear – Cult Classics México" loading="lazy" width="600" height="750" decoding="async">
             {% else %}
               <div class="product-tile__placeholder"></div>
             {% endif %}
@@ -29,7 +31,7 @@
             </div>
             <div class="product-tile__footer">
               <span class="product-tile__price">${{ producto.precio }}</span>
-              <a class="product-tile__link" href="{% url 'tienda:detalle_producto' producto.id %}">Seleccionar</a>
+              <a class="product-tile__link" href="{{ producto.get_absolute_url }}">Seleccionar</a>
             </div>
           </div>
         </article>

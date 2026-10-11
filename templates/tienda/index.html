@@ -1,7 +1,12 @@
 {% extends "tienda/base.html" %}
 
-{% block title %}Cult Clasiccs | Inicio{% endblock %}
+{% block title %}Cult Classics | Distribuidor Shaka Wear México · Culto Calle streetwear{% endblock %}
+{% block meta_description %}Compra blanks Shaka Wear en México: playeras heavyweight 7.5 oz, garment dye y oversize. Cult Classics es distribuidor directo y hogar de Culto Calle, nuestra marca propia de streetwear. Envío a todo el país.{% endblock %}
+{% block og_title %}Cult Classics | Distribuidor Shaka Wear México · Culto Calle{% endblock %}
+{% block og_description %}Blanks Shaka Wear heavyweight 7.5 oz y drops de Culto Calle con envío a todo México.{% endblock %}
 {% block body_class %}brand-page brand-page--home{% endblock %}
+
+{% block lcp_preload %}{% if hero_destacado and hero_destacado.imagen %}<link rel="preload" as="image" href="{{ hero_destacado.imagen.url }}" fetchpriority="high">{% endif %}{% endblock %}
 
 {% block hero %}
 <section class="hero-editorial">
@@ -22,9 +27,9 @@
             <div class="hero-editorial__visual">
                 {% if hero_destacado and hero_destacado.imagen %}
                     <a class="hero-editorial__panel hero-editorial__panel--tall hero-editorial__panel--media"
-                       href="{% url 'tienda:detalle_producto' hero_destacado.id %}"
+                       href="{{ hero_destacado.get_absolute_url }}"
                        aria-label="Ver {{ hero_destacado.nombre }}">
-                        <img src="{{ hero_destacado.imagen.url }}" alt="{{ hero_destacado.nombre }}" loading="eager">
+                        <img src="{{ hero_destacado.imagen.url }}" alt="{{ hero_destacado.nombre }} Shaka Wear – Cult Classics México" loading="eager" fetchpriority="high" width="800" height="1000" decoding="async">
                         <span class="hero-editorial__panel-tag">{{ hero_destacado.nombre }}</span>
                     </a>
                 {% else %}
@@ -32,16 +37,13 @@
                 {% endif %}
                 <div class="hero-editorial__stack">
                     {% for producto in hero_secundarios %}
-                        <a class="hero-editorial__product" href="{% url 'tienda:detalle_producto' producto.id %}" aria-label="Ver {{ producto.nombre }}">
+                        <a class="hero-editorial__product hero-editorial__product--media" href="{{ producto.get_absolute_url }}" aria-label="Ver {{ producto.nombre }}">
                             {% if producto.imagen %}
-                                <img src="{{ producto.imagen.url }}" alt="{{ producto.nombre }}" loading="lazy">
+                                <img src="{{ producto.imagen.url }}" alt="{{ producto.nombre }} Shaka Wear – Cult Classics México" loading="lazy" width="600" height="750" decoding="async">
                             {% else %}
                                 <div class="hero-editorial__placeholder"></div>
                             {% endif %}
-                            <div class="hero-editorial__product-caption">
-                                <span class="hero-editorial__product-name">{{ producto.nombre }}</span>
-                                <span class="hero-editorial__product-price">${{ producto.precio|floatformat:0 }}</span>
-                            </div>
+                            <span class="hero-editorial__panel-tag">{{ producto.nombre }}</span>
                         </a>
                     {% empty %}
                         <div class="hero-editorial__product"><div class="hero-editorial__placeholder"></div></div>
@@ -91,9 +93,9 @@
         <div class="product-grid">
             {% for producto in productos|slice:":6" %}
                 <article class="product-tile">
-                    <a class="product-tile__media" href="{% url 'tienda:detalle_producto' producto.id %}">
+                    <a class="product-tile__media" href="{{ producto.get_absolute_url }}">
                         {% if producto.imagen %}
-                            <img src="{{ producto.imagen.url }}" alt="{{ producto.nombre }}">
+                            <img src="{{ producto.imagen.url }}" alt="{{ producto.nombre }} Shaka Wear – Cult Classics México" loading="lazy" width="600" height="750" decoding="async">
                         {% else %}
                             <div class="product-tile__placeholder"></div>
                         {% endif %}
@@ -104,7 +106,7 @@
                         </div>
                         <div class="product-tile__footer">
                             <span class="product-tile__price">${{ producto.precio }}</span>
-                            <a class="product-tile__link" href="{% url 'tienda:detalle_producto' producto.id %}" aria-label="Ver {{ producto.nombre }}">Ver producto →</a>
+                            <a class="product-tile__link" href="{{ producto.get_absolute_url }}" aria-label="Ver {{ producto.nombre }}">Ver producto →</a>
                         </div>
                     </div>
                 </article>

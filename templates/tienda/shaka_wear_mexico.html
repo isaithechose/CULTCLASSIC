@@ -1,0 +1,372 @@
+{% extends "tienda/base.html" %}
+{% load static %}
+
+{% block title %}Shaka Wear México | Distribuidor oficial de blanks 7.5 oz · Cult Classics{% endblock %}
+{% block meta_description %}Compra playeras Shaka Wear en México directo de Cult Classics: heavyweight 7.5 oz, max heavyweight 9.9 oz, garment dye, drop shoulder, long sleeve y oversize. Envío a todo el país.{% endblock %}
+{% block meta_keywords %}shaka wear méxico, playeras shaka wear, shaka wear 7.5 oz, shaka wear heavyweight, shaka wear garment dye, shaka wear oversize, blanks premium méxico, playeras pesadas méxico, distribuidor shaka wear{% endblock %}
+{% block og_title %}Shaka Wear México · Cult Classics{% endblock %}
+{% block og_description %}Playeras Shaka Wear heavyweight 7.5 oz, garment dye y oversize disponibles en México. Envío a todo el país.{% endblock %}
+
+{% block hero %}
+<section class="page-hero page-hero--compact">
+    <div class="container px-4 px-lg-5">
+        <nav class="product-breadcrumb" aria-label="Ruta de navegación" style="margin-bottom:.8rem;">
+            <a href="{% url 'tienda:tienda' %}">Inicio</a>
+            <span aria-hidden="true">/</span>
+            <span class="is-current">Shaka Wear México</span>
+        </nav>
+        <div class="page-hero__inner">
+            <p class="page-eyebrow">Shaka Wear México</p>
+            <h1 class="page-hero__title">Playeras Shaka Wear en México.</h1>
+            <p class="page-hero__copy">
+                Blanks premium: heavyweight 7.5 oz, garment dye, max heavyweight 9.9 oz, drop shoulder, long sleeve y oversize. Compra en línea con envío a todo el país.
+            </p>
+            <div class="page-hero__actions" style="margin-top:1rem; display:flex; gap:.6rem; flex-wrap:wrap;">
+                <a class="btn site-btn site-btn--accent" href="{% url 'tienda:lista_productos' %}">Ver catálogo</a>
+                <a class="btn site-btn site-btn--ghost" href="#cortes">Ver cortes</a>
+            </div>
+        </div>
+    </div>
+</section>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {"@type": "ListItem", "position": 1, "name": "Inicio", "item": "{{ request.scheme }}://{{ request.get_host }}{% url 'tienda:tienda' %}"},
+    {"@type": "ListItem", "position": 2, "name": "Shaka Wear México"}
+  ]
+}
+</script>
+{% endblock %}
+
+{% block content %}
+<style>
+    .sw-page { padding: 0 0 5rem; }
+    .sw-panel {
+        border: 1px solid var(--cc-line);
+        border-radius: 1.8rem;
+        background:
+            radial-gradient(circle at top right, rgba(122,100,51,0.08), transparent 40%),
+            linear-gradient(180deg, rgba(23,21,15,0.05), rgba(23,21,15,0.01));
+        box-shadow: var(--cc-shadow);
+        padding: 1.8rem;
+        margin-bottom: 1.6rem;
+    }
+    .sw-eyebrow {
+        color: var(--cc-accent);
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        font-size: 0.76rem;
+        margin: 0 0 0.7rem;
+    }
+    .sw-h2 {
+        margin: 0 0 0.75rem;
+        font-family: var(--cc-display);
+        font-size: clamp(1.5rem, 2.4vw, 2.1rem);
+        line-height: 1.05;
+        text-transform: uppercase;
+    }
+    .sw-copy {
+        color: var(--cc-ink);
+        line-height: 1.65;
+        font-size: 0.98rem;
+        max-width: 70ch;
+    }
+    .sw-copy + .sw-copy { margin-top: 0.8rem; }
+
+    .sw-cuts {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 1rem;
+        margin-top: 1.1rem;
+    }
+    .sw-cut {
+        padding: 1.1rem 1.1rem 1.2rem;
+        border-radius: 1.1rem;
+        border: 1px solid rgba(122,100,51,0.18);
+        background: rgba(23,21,15,0.035);
+    }
+    .sw-cut__ref {
+        font-family: var(--cc-mono, "DM Mono", monospace);
+        font-size: 0.72rem;
+        letter-spacing: 0.1em;
+        color: var(--cc-accent);
+        margin: 0 0 0.3rem;
+    }
+    .sw-cut__name {
+        margin: 0 0 0.5rem;
+        font-weight: 700;
+        font-size: 1.05rem;
+        color: var(--cc-ink);
+    }
+    .sw-cut__specs {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        display: grid;
+        gap: 0.3rem;
+        font-size: 0.86rem;
+        color: var(--cc-muted);
+    }
+    .sw-cut__specs span { color: var(--cc-ink); font-weight: 600; }
+
+    .sw-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 0.9rem;
+        margin-top: 1.1rem;
+    }
+    .sw-tile {
+        display: grid;
+        gap: 0.5rem;
+        padding: 0.7rem;
+        border: 1px solid var(--cc-line);
+        border-radius: 1rem;
+        background: rgba(23,21,15,0.03);
+        text-decoration: none;
+        color: inherit;
+        transition: transform .18s, border-color .18s;
+    }
+    .sw-tile:hover { transform: translateY(-2px); border-color: rgba(122,100,51,0.45); color: inherit; }
+    .sw-tile__thumb {
+        aspect-ratio: 1/1;
+        border-radius: 0.8rem;
+        overflow: hidden;
+        background: rgba(23,21,15,0.06);
+    }
+    .sw-tile__thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .sw-tile__name { font-weight: 600; font-size: 0.9rem; line-height: 1.2; }
+    .sw-tile__price { font-size: 0.82rem; color: var(--cc-accent); font-weight: 700; }
+
+    .sw-reasons {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+        gap: 0.9rem;
+        margin-top: 1rem;
+    }
+    .sw-reason {
+        padding: 1rem 1.1rem;
+        border-radius: 1rem;
+        background: rgba(23,21,15,0.04);
+        border: 1px solid rgba(122,100,51,0.1);
+    }
+    .sw-reason strong {
+        display: block;
+        color: var(--cc-accent);
+        font-size: 0.74rem;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        margin-bottom: 0.35rem;
+    }
+    .sw-reason p { margin: 0; color: var(--cc-ink); font-size: 0.92rem; line-height: 1.55; }
+
+    .sw-faq details {
+        border-bottom: 1px solid var(--cc-line);
+        padding: 0.9rem 0.2rem;
+    }
+    .sw-faq details:last-of-type { border-bottom: 0; }
+    .sw-faq summary {
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 0.98rem;
+        list-style: none;
+        color: var(--cc-ink);
+    }
+    .sw-faq summary::-webkit-details-marker { display: none; }
+    .sw-faq summary::after {
+        content: "+"; float: right;
+        font-weight: 400;
+        color: var(--cc-accent);
+        transition: transform .2s;
+    }
+    .sw-faq details[open] summary::after { content: "–"; }
+    .sw-faq p {
+        margin: 0.6rem 0 0;
+        color: var(--cc-muted);
+        line-height: 1.6;
+        font-size: 0.93rem;
+    }
+</style>
+
+<section class="sw-page">
+    <div class="container px-4 px-lg-5">
+
+        <!-- Qué es Shaka Wear -->
+        <div class="sw-panel">
+            <p class="sw-eyebrow">La marca</p>
+            <h2 class="sw-h2">¿Qué es Shaka Wear?</h2>
+            <p class="sw-copy">
+                Shaka Wear es una marca estadounidense de blanks premium reconocida por sus playeras pesadas, cortes oversize y acabados garment dye. Su línea <strong>Heavyweight 7.5 oz</strong> es la referencia internacional cuando se habla de playeras streetwear con buen caer, hombros marcados y tela que aguanta estampados DTF, serigrafía y bordado sin perder forma.
+            </p>
+            <p class="sw-copy">
+                En <strong>Cult Classics</strong> traemos la línea completa a México para que no tengas que importar pieza por pieza desde Estados Unidos: compras en línea, recibes en 2 a 6 días hábiles en todo el país, y tienes garantía mexicana sobre la pieza.
+            </p>
+        </div>
+
+        <!-- Cortes disponibles -->
+        <div class="sw-panel" id="cortes">
+            <p class="sw-eyebrow">Catálogo de cortes</p>
+            <h2 class="sw-h2">Cortes Shaka Wear disponibles</h2>
+            <p class="sw-copy">
+                Estos son los cortes que manejamos de forma recurrente. Las fichas de cada producto incluyen la tabla de tallas, colores y stock exacto al momento de compra.
+            </p>
+            <div class="sw-cuts">
+                <article class="sw-cut">
+                    <p class="sw-cut__ref">SHGD · GARMENT DYE</p>
+                    <h3 class="sw-cut__name">7.5 oz Garment Dye</h3>
+                    <ul class="sw-cut__specs">
+                        <li>Gramaje: <span>7.5 oz / 254 gsm</span></li>
+                        <li>Caída: <span>Regular / Boxy</span></li>
+                        <li>Tela: <span>100% algodón</span></li>
+                        <li>Teñido: <span>Garment dye (color envejecido)</span></li>
+                    </ul>
+                </article>
+                <article class="sw-cut">
+                    <p class="sw-cut__ref">SHGDL · LONG SLEEVE</p>
+                    <h3 class="sw-cut__name">Garment Dye Long Sleeve</h3>
+                    <ul class="sw-cut__specs">
+                        <li>Gramaje: <span>7.5 oz / 254 gsm</span></li>
+                        <li>Mangas: <span>Largas con puño</span></li>
+                        <li>Caída: <span>Regular / Boxy</span></li>
+                        <li>Teñido: <span>Garment dye</span></li>
+                    </ul>
+                </article>
+                <article class="sw-cut">
+                    <p class="sw-cut__ref">SHMHSS · MAX HEAVYWEIGHT</p>
+                    <h3 class="sw-cut__name">Max Heavyweight 9.9 oz</h3>
+                    <ul class="sw-cut__specs">
+                        <li>Gramaje: <span>9.9 oz / 335 gsm</span></li>
+                        <li>Caída: <span>Oversize con cuerpo</span></li>
+                        <li>Tela: <span>100% algodón</span></li>
+                        <li>Ideal para: <span>Estampado DTF grande</span></li>
+                    </ul>
+                </article>
+                <article class="sw-cut">
+                    <p class="sw-cut__ref">SHDR · DROP SHOULDER</p>
+                    <h3 class="sw-cut__name">Drop Shoulder</h3>
+                    <ul class="sw-cut__specs">
+                        <li>Gramaje: <span>7.5 oz / 254 gsm</span></li>
+                        <li>Hombros: <span>Caídos, estilo streetwear</span></li>
+                        <li>Caída: <span>Boxy / Oversize</span></li>
+                        <li>Tela: <span>100% algodón</span></li>
+                    </ul>
+                </article>
+                <article class="sw-cut">
+                    <p class="sw-cut__ref">SHHSS · HEAVYWEIGHT</p>
+                    <h3 class="sw-cut__name">Heavyweight 7.5 oz</h3>
+                    <ul class="sw-cut__specs">
+                        <li>Gramaje: <span>7.5 oz / 254 gsm</span></li>
+                        <li>Caída: <span>Regular con cuerpo</span></li>
+                        <li>Tela: <span>100% algodón</span></li>
+                        <li>Ideal para: <span>Base de playera clásica</span></li>
+                    </ul>
+                </article>
+                <article class="sw-cut">
+                    <p class="sw-cut__ref">OVERSIZE</p>
+                    <h3 class="sw-cut__name">Oversize 7.5 oz</h3>
+                    <ul class="sw-cut__specs">
+                        <li>Gramaje: <span>7.5 oz / 254 gsm</span></li>
+                        <li>Caída: <span>Oversize marcado</span></li>
+                        <li>Tela: <span>100% algodón</span></li>
+                        <li>Ideal para: <span>Streetwear, drop propio</span></li>
+                    </ul>
+                </article>
+            </div>
+        </div>
+
+        <!-- Productos destacados -->
+        {% if productos_destacados %}
+        <div class="sw-panel">
+            <p class="sw-eyebrow">En stock</p>
+            <h2 class="sw-h2">Comprar Shaka Wear en línea</h2>
+            <p class="sw-copy">Piezas disponibles en bodega listas para enviar hoy mismo.</p>
+            <div class="sw-grid">
+                {% for p in productos_destacados %}
+                <a class="sw-tile" href="{{ p.get_absolute_url }}">
+                    <div class="sw-tile__thumb">
+                        {% if p.imagen %}<img src="{{ p.imagen.url }}" alt="{{ p.nombre }} Shaka Wear" loading="lazy">{% endif %}
+                    </div>
+                    <div class="sw-tile__name">{{ p.nombre }}</div>
+                    <div class="sw-tile__price">${{ p.precio|floatformat:0 }} MXN</div>
+                </a>
+                {% endfor %}
+            </div>
+            <div style="margin-top:1.2rem;">
+                <a class="btn site-btn site-btn--ghost" href="{% url 'tienda:lista_productos' %}">Ver catálogo completo →</a>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Por qué comprar aquí -->
+        <div class="sw-panel">
+            <p class="sw-eyebrow">Ventajas</p>
+            <h2 class="sw-h2">Por qué comprar Shaka Wear con Cult Classics</h2>
+            <div class="sw-reasons">
+                <div class="sw-reason">
+                    <strong>Stock en México</strong>
+                    <p>Bodega propia en México. No esperas semanas de importación ni pagas aduanas.</p>
+                </div>
+                <div class="sw-reason">
+                    <strong>Envío a todo el país</strong>
+                    <p>2 a 6 días hábiles vía Skydrop. Rastreo en tiempo real desde tu cuenta.</p>
+                </div>
+                <div class="sw-reason">
+                    <strong>Precio en pesos</strong>
+                    <p>Precio final en MXN, sin sorpresas por tipo de cambio ni cargos ocultos.</p>
+                </div>
+                <div class="sw-reason">
+                    <strong>Cambios garantizados</strong>
+                    <p>Cambios en 15 días por talla o color. Devoluciones gratis si llega algo defectuoso.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- FAQ -->
+        <div class="sw-panel sw-faq">
+            <p class="sw-eyebrow">Preguntas frecuentes</p>
+            <h2 class="sw-h2">Dudas sobre Shaka Wear en México</h2>
+
+            <details>
+                <summary>¿Cult Classics vende Shaka Wear original?</summary>
+                <p>Sí. Importamos directo del fabricante en Estados Unidos y vendemos las piezas en México tal cual vienen de fábrica, con sus etiquetas y acabados originales.</p>
+            </details>
+            <details>
+                <summary>¿Qué diferencia hay entre 7.5 oz y Max Heavyweight 9.9 oz?</summary>
+                <p>La 7.5 oz es el estándar heavyweight: tela con cuerpo pero cómoda para uso diario. La 9.9 oz Max Heavyweight es considerablemente más gruesa, con caída más marcada y mejor base para estampados grandes de DTF o serigrafía.</p>
+            </details>
+            <details>
+                <summary>¿Qué significa "garment dye"?</summary>
+                <p>Garment dye es un proceso de teñido donde la prenda ya cosida se tiñe por completo, no solo la tela. Resulta en un color con pequeñas variaciones naturales, acabado envejecido y una suavidad particular que no se consigue tiñendo tela plana.</p>
+            </details>
+            <details>
+                <summary>¿Hacen envíos a toda la República?</summary>
+                <p>Sí. Enviamos a todos los estados vía Skydrop. El tiempo de entrega va de 2 a 6 días hábiles dependiendo del destino.</p>
+            </details>
+            <details>
+                <summary>¿Puedo estampar sobre las playeras Shaka Wear que compro aquí?</summary>
+                <p>Totalmente. Son blanks pensadas para eso. DTF, serigrafía y bordado funcionan muy bien sobre todos los cortes que manejamos.</p>
+            </details>
+            <details>
+                <summary>¿Qué tallas manejan?</summary>
+                <p>De S a 3XL en la mayoría de cortes, aunque la disponibilidad por talla y color depende del stock al momento de compra. Cada ficha de producto muestra lo que hay disponible.</p>
+            </details>
+        </div>
+
+        <!-- JSON-LD FAQ para rich results -->
+        <script type="application/ld+json">
+        {
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          "mainEntity": [
+            {"@type":"Question","name":"¿Cult Classics vende Shaka Wear original?","acceptedAnswer":{"@type":"Answer","text":"Sí. Importamos directo del fabricante en Estados Unidos y vendemos las piezas en México tal cual vienen de fábrica."}},
+            {"@type":"Question","name":"¿Qué diferencia hay entre 7.5 oz y Max Heavyweight 9.9 oz?","acceptedAnswer":{"@type":"Answer","text":"La 7.5 oz es el estándar heavyweight. La 9.9 oz Max Heavyweight es más gruesa, con caída más marcada y mejor base para estampados grandes."}},
+            {"@type":"Question","name":"¿Qué significa garment dye?","acceptedAnswer":{"@type":"Answer","text":"Es un proceso donde la prenda ya cosida se tiñe completa, dando un color con variaciones naturales y acabado envejecido."}},
+            {"@type":"Question","name":"¿Hacen envíos a toda la República?","acceptedAnswer":{"@type":"Answer","text":"Sí. Enviamos a todos los estados vía Skydrop en 2 a 6 días hábiles."}}
+          ]
+        }
+        </script>
+
+    </div>
+</section>
+{% endblock %}
