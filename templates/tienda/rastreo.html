@@ -1,0 +1,63 @@
+{% extends "tienda/base.html" %}
+
+{% block title %}Cult Clasiccs | Rastrear pedido{% endblock %}
+
+{% block hero %}
+<section class="page-hero page-hero--compact">
+    <div class="container px-4 px-lg-5">
+        <div class="page-hero__inner">
+            <p class="page-eyebrow">Tracking</p>
+            <h1 class="page-hero__title">Rastrea tu pedido.</h1>
+            <p class="page-hero__copy">
+                Escribe tu número de pedido y el correo con el que compraste. No necesitas cuenta.
+            </p>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block content %}
+<section class="shipping-page">
+    <div class="container px-4 px-lg-5">
+        <div class="shipping-panel shipping-panel--form" style="max-width: 560px; margin: 0 auto;">
+            <div class="shipping-panel__header">
+                <p class="shipping-panel__eyebrow">Tu compra</p>
+                <h2 class="shipping-panel__title">Datos del pedido</h2>
+                <p class="shipping-panel__copy">
+                    El número de pedido viene en el correo de confirmación que te mandamos al pagar.
+                </p>
+            </div>
+
+            <form method="post" class="shipping-form">
+                {% csrf_token %}
+                {% for error in form.non_field_errors %}
+                    <div class="shipping-form__error mb-3">{{ error }}</div>
+                {% endfor %}
+
+                <div class="shipping-form__grid">
+                    <div class="shipping-form__group shipping-form__group--full">
+                        <label for="{{ form.order_id.id_for_label }}">{{ form.order_id.label }}</label>
+                        {{ form.order_id }}
+                        {% for error in form.order_id.errors %}
+                            <div class="shipping-form__error">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="shipping-form__group shipping-form__group--full">
+                        <label for="{{ form.email.id_for_label }}">{{ form.email.label }}</label>
+                        {{ form.email }}
+                        {% for error in form.email.errors %}
+                            <div class="shipping-form__error">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <button type="submit" class="btn site-btn site-btn--accent shipping-form__submit mt-3">Ver estado del pedido</button>
+                {% if user.is_authenticated %}
+                <p class="shipping-panel__copy mt-3 mb-0">También puedes ver todos tus pedidos en <a href="{% url 'tienda:tracking' %}">tu seguimiento</a>.</p>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+</section>
+{% endblock %}

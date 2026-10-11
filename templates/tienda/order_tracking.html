@@ -19,7 +19,7 @@
                         <p class="shipping-quote-state__copy">Tu pedido ya tiene seguimiento. Si hubo cambios recientes, aparecerán en el historial.</p>
                     {% else %}
                         <span class="shipping-quote-state__badge">Esperando tracking</span>
-                        <p class="shipping-quote-state__copy">Todavía no hay número de seguimiento. Puedes volver después o sincronizar manualmente.</p>
+                        <p class="shipping-quote-state__copy">Todavía no hay número de seguimiento. {% if rastreo_publico %}Te avisaremos por correo cuando tu pedido vaya en camino.{% else %}Puedes volver después o sincronizar manualmente.{% endif %}</p>
                     {% endif %}
                 </div>
 
@@ -39,7 +39,9 @@
                     {% if order.skydrop_tracking_url %}
                         <a href="{{ order.skydrop_tracking_url }}" target="_blank" rel="noopener" class="btn site-btn site-btn--ghost">Abrir tracking</a>
                     {% endif %}
+                    {% if not rastreo_publico %}
                     <a href="{% url 'tienda:sync_skydrop_order' order.id %}" class="btn site-btn site-btn--accent">Sincronizar ahora</a>
+                    {% endif %}
                 </div>
             </div>
 
@@ -66,8 +68,13 @@
                     </div>
 
                     <div class="d-grid gap-2 px-2 pb-2">
+                        {% if rastreo_publico %}
+                        <a href="{% url 'tienda:rastreo' %}" class="btn site-btn site-btn--ghost shipping-form__submit">Rastrear otro pedido</a>
+                        <a href="{% url 'tienda:tienda' %}" class="btn site-btn site-btn--ghost shipping-form__submit">Seguir comprando</a>
+                        {% else %}
                         <a href="{% url 'tienda:order_detail' order.id %}" class="btn site-btn site-btn--ghost shipping-form__submit">Volver al detalle</a>
                         <a href="{% url 'tienda:my_orders' %}" class="btn site-btn site-btn--ghost shipping-form__submit">Mis pedidos</a>
+                        {% endif %}
                     </div>
                 </div>
             </aside>

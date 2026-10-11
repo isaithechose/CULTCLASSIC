@@ -23,6 +23,7 @@ import os
 
 from .forms import (
     CustomDesignUploadForm,
+    RastreoPedidoForm,
     ReseñaForm,
     ShippingAddressForm,
     SeleccionarTallaColorForm,
@@ -1590,6 +1591,7 @@ def payment_success(request):
                     f"Subtotal: ${order.subtotal_price:.2f} MXN\n"
                     f"Envío: ${order.shipping_total:.2f} MXN\n"
                     f"Total: ${order.total_price:.2f} MXN\n\n"
+                    f"Rastrea tu pedido en {order.get_rastreo_url()} con el número #{order.id} y este correo.\n\n"
                     "¡Gracias por comprar en Cult Clasiccs!"
                 )
                 send_mail(subject, plain_message, settings.DEFAULT_FROM_EMAIL,
@@ -1650,6 +1652,67 @@ def order_tracking(request, order_id):
 def tracking_view(request):
     orders = _customer_visible_orders(request.user)
     return render(request, 'tienda/tracking.html', {'orders': orders})
+
+
+RASTREO_SESSION_KEY = "rastreo_pedidos"
+RASTREO_MAX_INTENTOS = 10
+RASTREO_VENTANA_SEGUNDOS = 15 * 60
+
+
+def _rastreo_cache_key(request):
+    from .meta_capi import _client_ip
+
+    return f"rastreo:fallos:{_client_ip(request)}"
+
+
+def _buscar_pedido_para_rastreo(order_id, email):
+    """Pedido pagado cuyo correo de contacto (o el de la cuenta) coincide."""
+    order = Order.objects.filter(id=order_id, status="Completed").select_related("customer").first()
+    if order and (order.get_contact_email() or "").strip().lower() == email:
+        return order
+    return None
+
+
+def rastreo_pedido(request):
+    """Rastreo sin cuenta: se pide el numero de pedido y el correo de la compra.
+
+    Los dos datos juntos funcionan como llave; el numero solo no basta porque
+    es consecutivo. Los intentos fallidos se limitan por IP para que no se
+    puedan probar correos al azar.
+    """
+    from django.core.cache import cache
+
+    form = RastreoPedidoForm(request.POST or None)
+    if request.method == "POST":
+        cache_key = _rastreo_cache_key(request)
+        if cache.get(cache_key, 0) >= RASTREO_MAX_INTENTOS:
+            form.add_error(None, "Demasiados intentos. Espera unos minutos e inténtalo de nuevo.")
+        elif form.is_valid():
+            order = _buscar_pedido_para_rastreo(form.cleaned_data["order_id"], form.cleaned_data["email"])
+            if order:
+                permitidos = request.session.get(RASTREO_SESSION_KEY, [])
+                if order.id not in permitidos:
+                    request.session[RASTREO_SESSION_KEY] = (permitidos + [order.id])[-10:]
+                return redirect("tienda:rastreo_detalle", order_id=order.id)
+            cache.add(cache_key, 0, RASTREO_VENTANA_SEGUNDOS)
+            try:
+                cache.incr(cache_key)
+            except ValueError:
+                cache.set(cache_key, 1, RASTREO_VENTANA_SEGUNDOS)
+            form.add_error(None, "No encontramos un pedido pagado con ese número y correo.")
+    return render(request, "tienda/rastreo.html", {"form": form})
+
+
+def rastreo_detalle(request, order_id):
+    if order_id not in request.session.get(RASTREO_SESSION_KEY, []):
+        return redirect("tienda:rastreo")
+    order = get_object_or_404(Order, id=order_id, status="Completed")
+    updates = order.shipping_updates.all().order_by("-updated_at")
+    return render(request, "tienda/order_tracking.html", {
+        "order": order,
+        "updates": updates,
+        "rastreo_publico": True,
+    })
 
 
 @csrf_exempt
