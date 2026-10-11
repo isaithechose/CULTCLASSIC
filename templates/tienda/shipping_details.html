@@ -176,8 +176,25 @@
                         {% if order.skydrop_carrier or order.skydrop_service %}
                             <div><strong>Servicio:</strong> {{ order.skydrop_carrier|default:"Skydrop" }}{% if order.skydrop_service %} / {{ order.skydrop_service }}{% endif %}</div>
                         {% endif %}
+                        {% if order.promo_code %}
+                            <div><strong>Descuento ({{ order.promo_code.code }}):</strong> -${{ order.discount_amount|floatformat:2 }} MXN</div>
+                        {% endif %}
                         <div><strong>Total final:</strong> ${{ order.total_price|floatformat:2 }} MXN</div>
                     </div>
+
+                    <form method="post" action="{% url 'tienda:aplicar_cupon' %}" class="shipping-form mt-3">
+                        {% csrf_token %}
+                        {% if order.promo_code %}
+                            <p class="shipping-form__hint mb-2">Cupón aplicado: <strong>{{ order.promo_code.code }}</strong>{% if order.promo_code.description %} · {{ order.promo_code.description }}{% endif %}</p>
+                            <button type="submit" name="quitar" value="1" class="btn site-btn site-btn--ghost shipping-form__submit">Quitar cupón</button>
+                        {% else %}
+                            <label for="id_codigo_cupon">¿Tienes un código de descuento?</label>
+                            <div class="d-flex gap-2">
+                                <input type="text" name="codigo" id="id_codigo_cupon" class="shipping-form__control" placeholder="Código" maxlength="50" autocomplete="off">
+                                <button type="submit" class="btn site-btn site-btn--ghost">Aplicar</button>
+                            </div>
+                        {% endif %}
+                    </form>
 
                     {% if order.skydrop_last_error %}
                         <div class="shipping-form__error">{{ order.skydrop_last_error }}</div>

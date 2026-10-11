@@ -56,6 +56,7 @@ urlpatterns = [
     path('order/<int:order_id>/tracking/', views.order_tracking, name='order_tracking'),
     path('order/<int:order_id>/sync-skydrop/', views.sync_skydrop_order, name='sync_skydrop_order'),
     path('tracking/', views.tracking_view, name='tracking'),
+    path('cupon/', views.aplicar_cupon, name='aplicar_cupon'),
     path('rastreo/', views.rastreo_pedido, name='rastreo'),
     path('rastreo/<int:order_id>/', views.rastreo_detalle, name='rastreo_detalle'),
     path('webhooks/skydrop/', views.skydrop_webhook, name='skydrop_webhook'),

@@ -52,6 +52,7 @@
         <div class="shipping-map-card__address mt-3">
           <div><strong>Subtotal productos:</strong> ${{ order.subtotal_price|floatformat:2 }}</div>
           <div><strong>Envío:</strong> ${{ order.shipping_total|floatformat:2 }}</div>
+          {% if order.discount_amount %}<div><strong>Descuento{% if order.promo_code %} ({{ order.promo_code.code }}){% endif %}:</strong> -${{ order.discount_amount|floatformat:2 }}</div>{% endif %}
           <div><strong>Total final:</strong> ${{ order.total_price|floatformat:2 }}</div>
         </div>
       </div>

@@ -57,6 +57,7 @@
                     <div><strong>Estado de envío:</strong> {{ order.shipping_status }}</div>
                     <div><strong>Productos:</strong> ${{ order.subtotal_price|floatformat:2 }} MXN</div>
                     <div><strong>Envío:</strong> ${{ order.shipping_total|floatformat:2 }} MXN</div>
+                    {% if order.discount_amount %}<div><strong>Descuento{% if order.promo_code %} ({{ order.promo_code.code }}){% endif %}:</strong> -${{ order.discount_amount|floatformat:2 }} MXN</div>{% endif %}
                     <div><strong>Total final:</strong> ${{ order.total_price|floatformat:2 }} MXN</div>
                 </div>
 
