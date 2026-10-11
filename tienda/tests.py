@@ -1356,3 +1356,31 @@ class RastreoInvitadoTests(TestCase):
             self._buscar(self.order.id, "otro@example.com")
         response = self._buscar(self.order.id, "invitado@example.com")
         self.assertContains(response, "Demasiados intentos")
+
+
+class SkydropOrigenTests(TestCase):
+    """La direccion de origen de Skydrop debe traer colonia."""
+
+    ORIGEN = dict(
+        SKYDROP_ORIGIN_NAME="Cult Classics",
+        SKYDROP_ORIGIN_PHONE="6561234567",
+        SKYDROP_ORIGIN_STREET1="Calle 123",
+        SKYDROP_ORIGIN_POSTAL_CODE="32448",
+        SKYDROP_ORIGIN_STATE="Chihuahua",
+        SKYDROP_ORIGIN_CITY="Ciudad Juarez",
+        SKYDROP_ORIGIN_NEIGHBORHOOD="Valle Verde",
+        SKYDROP_ORIGIN_COUNTRY_CODE="MX",
+    )
+
+    def test_origen_completo_pasa(self):
+        from tienda.skydrop import _validate_origin
+
+        with override_settings(**self.ORIGEN):
+            self.assertEqual(_validate_origin()["area_level3"], "Valle Verde")
+
+    def test_origen_sin_colonia_falla_antes_de_llamar_a_skydrop(self):
+        from tienda.skydrop import SkydropError, _validate_origin
+
+        with override_settings(**{**self.ORIGEN, "SKYDROP_ORIGIN_NEIGHBORHOOD": ""}):
+            with self.assertRaisesMessage(SkydropError, "colonia"):
+                _validate_origin()
