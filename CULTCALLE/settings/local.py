@@ -48,6 +48,8 @@ SKYDROP_ORIGIN_COUNTRY_CODE = config('SKYDROP_ORIGIN_COUNTRY_CODE', default='MX'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR.parent / 'media'
 STATIC_ROOT = BASE_DIR.parent / 'staticfiles'
+# Imagenes de /media/ que no existan en local se sirven como placeholder.
+MEDIA_PLACEHOLDER = config('MEDIA_PLACEHOLDER', default=True, cast=bool)
 
 # --- Email (consola en local) ---
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'

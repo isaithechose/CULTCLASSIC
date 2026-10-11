@@ -72,6 +72,9 @@ class Order(models.Model):
     ]
 
     customer = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
+    # Compras sin cuenta: el pedido guarda a quien avisarle y a nombre de quien va la guia.
+    contact_email = models.EmailField(blank=True, default="")
+    contact_name = models.CharField(max_length=120, blank=True, default="")
     created_at = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=20, choices=[
         ('Pending', 'Pending'), ('Completed', 'Completed'), ('Canceled', 'Canceled')
@@ -112,8 +115,20 @@ class Order(models.Model):
         total = self.subtotal_price + self.shipping_total - (self.discount_amount or Decimal("0.00"))
         return max(total, Decimal("0.00"))
 
+    def get_contact_email(self):
+        if self.contact_email:
+            return self.contact_email
+        return getattr(self.customer, "email", "") or ""
+
+    def get_contact_name(self):
+        if self.contact_name:
+            return self.contact_name
+        if self.customer:
+            return self.customer.get_full_name() or self.customer.username
+        return ""
+
     def __str__(self):
-        return f"Orden {self.id} de {self.customer}"
+        return f"Orden {self.id} de {self.customer or self.contact_email or 'invitado'}"
 
 
 class ProductVariant(models.Model):

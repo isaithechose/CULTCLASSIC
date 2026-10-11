@@ -10,8 +10,6 @@ from .views import (
     payment_cancel,
     shipping_details,
 )
-from django.conf import settings
-from django.conf.urls.static import static
 
 
 
@@ -62,5 +60,3 @@ urlpatterns = [
     path('creador-diseno/', views.design_creator, name='design_creator'),
     path('creador-diseno/eliminar/<str:filename>/', views.delete_design, name='delete_design'),
 ]
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

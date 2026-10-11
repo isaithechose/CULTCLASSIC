@@ -102,9 +102,14 @@
                     {% endif %}
 
                     <div class="d-grid gap-2 px-2 pb-2">
+                        {% if user.is_authenticated %}
                         <a href="{% url 'tienda:order_detail' order.id %}" class="btn site-btn site-btn--accent shipping-form__submit">Ver detalle del pedido</a>
                         <a href="{% url 'tienda:order_tracking' order.id %}" class="btn site-btn site-btn--ghost shipping-form__submit">Seguir pedido</a>
                         <a href="{% url 'tienda:my_orders' %}" class="btn site-btn site-btn--ghost shipping-form__submit">Ir a mis pedidos</a>
+                        {% else %}
+                        <p class="shipping-quote-state__copy">Te mandamos la confirmación a <strong>{{ order.contact_email }}</strong>. Ahí mismo te avisaremos cuando tu pedido vaya en camino, con su número de rastreo.</p>
+                        <a href="{% url 'tienda:tienda' %}" class="btn site-btn site-btn--accent shipping-form__submit">Seguir comprando</a>
+                        {% endif %}
                     </div>
                 </div>
             </aside>

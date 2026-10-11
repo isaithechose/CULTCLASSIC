@@ -25,7 +25,7 @@
             <p style="margin:0 0 24px;color:#999;font-size:15px;">Pedido <strong style="color:#d6c3a1;">#{{ order.id }}</strong></p>
 
             <p style="margin:0 0 24px;color:#ccc;font-size:15px;line-height:1.6;">
-              Hola {{ order.customer.get_full_name|default:order.customer.username }},<br>
+              Hola {{ order.get_contact_name|default:"cliente" }},<br>
               tu pedido acaba de salir de nuestras manos. Aquí está tu número de seguimiento:
             </p>
 
