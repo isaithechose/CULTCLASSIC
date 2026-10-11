@@ -43,8 +43,54 @@
     <link rel="stylesheet" href="{% static 'css/styles.css' %}?v=20261004c">
     <link rel="stylesheet" href="{% static 'css/brand.css' %}?v=20261004c">
 
-    {% if meta_pixel_id %}
+    {% if meta_pixel_id or ga4_measurement_id %}
         {{ meta_pixel_events|json_script:"meta-pixel-events-data" }}
+    {% endif %}
+
+    {% if ga4_measurement_id %}
+        <!-- Google Analytics 4 -->
+        <script async src="https://www.googletagmanager.com/gtag/js?id={{ ga4_measurement_id }}"></script>
+        <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', '{{ ga4_measurement_id }}');
+
+            // Reenvía a GA4 los mismos eventos de e-commerce que se mandan a Meta.
+            (function () {
+                const node = document.getElementById('meta-pixel-events-data');
+                if (!node) return;
+                const ga4Names = {
+                    ViewContent: 'view_item',
+                    AddToCart: 'add_to_cart',
+                    InitiateCheckout: 'begin_checkout',
+                    AddPaymentInfo: 'add_payment_info',
+                    Purchase: 'purchase'
+                };
+                try {
+                    JSON.parse(node.textContent).forEach((eventItem) => {
+                        const gaName = eventItem && ga4Names[eventItem.name];
+                        if (!gaName) return;
+                        const p = eventItem.payload || {};
+                        const ids = p.content_ids || [];
+                        const params = {
+                            currency: p.currency || 'MXN',
+                            value: p.value || 0,
+                            items: ids.map((id) => ({ item_id: id, item_name: p.content_name || id }))
+                        };
+                        if (gaName === 'purchase') {
+                            params.transaction_id = eventItem.event_id || String(Date.now());
+                        }
+                        gtag('event', gaName, params);
+                    });
+                } catch (error) {
+                    console.warn('GA4 events could not be parsed.', error);
+                }
+            })();
+        </script>
+    {% endif %}
+
+    {% if meta_pixel_id %}
         <script>
             !function(f,b,e,v,n,t,s)
             {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
@@ -63,7 +109,8 @@
                     const metaPixelEvents = JSON.parse(metaPixelEventsNode.textContent);
                     metaPixelEvents.forEach((eventItem) => {
                         if (eventItem && eventItem.name) {
-                            fbq('track', eventItem.name, eventItem.payload || {});
+                            const options = eventItem.event_id ? { eventID: eventItem.event_id } : {};
+                            fbq('track', eventItem.name, eventItem.payload || {}, options);
                         }
                     });
                 } catch (error) {
