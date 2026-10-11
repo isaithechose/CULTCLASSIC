@@ -30,6 +30,23 @@ class CustomDesignUploadForm(forms.Form):
     )
     edited_image = forms.CharField(widget=forms.HiddenInput(), required=False)
 
+class RastreoPedidoForm(forms.Form):
+    """Rastreo publico: numero de pedido + correo con el que se compro."""
+
+    order_id = forms.IntegerField(
+        min_value=1,
+        label="Número de pedido",
+        widget=forms.NumberInput(attrs={"class": "shipping-form__control", "placeholder": "Ej. 2585"}),
+    )
+    email = forms.EmailField(
+        label="Correo de la compra",
+        widget=forms.EmailInput(attrs={"class": "shipping-form__control", "placeholder": "tu@correo.com"}),
+    )
+
+    def clean_email(self):
+        return self.cleaned_data["email"].strip().lower()
+
+
 class ShippingAddressForm(forms.ModelForm):
     base_input_class = "shipping-form__control"
 

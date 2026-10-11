@@ -147,6 +147,12 @@ class Order(models.Model):
             return self.customer.get_full_name() or self.customer.username
         return ""
 
+    def get_rastreo_url(self):
+        """URL absoluta del rastreo publico, para los correos."""
+        from django.urls import reverse
+
+        return f"{settings.SITE_URL.rstrip('/')}{reverse('tienda:rastreo')}"
+
     def __str__(self):
         return f"Orden {self.id} de {self.customer or self.contact_email or 'invitado'}"
 

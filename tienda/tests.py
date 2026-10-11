@@ -1298,3 +1298,61 @@ class SkydropErroresDeRedTests(TestCase):
         with mock.patch("tienda.skydrop.requests.request", return_value=respuesta):
             with self.assertRaises(SkydropError):
                 _request("GET", "/api/v1/quotations/1", token="t")
+
+
+class RastreoInvitadoTests(TestCase):
+    """Rastreo publico con numero de pedido + correo de la compra."""
+
+    def setUp(self):
+        from django.core.cache import cache
+
+        cache.clear()
+        self.client = Client()
+        self.order = Order.objects.create(
+            contact_email="invitado@example.com",
+            contact_name="Ana Lopez",
+            status="Completed",
+            tracking_number="GUIA123",
+        )
+
+    def _buscar(self, order_id, email):
+        return self.client.post(reverse("tienda:rastreo"), {"order_id": order_id, "email": email})
+
+    def test_formulario_es_publico(self):
+        response = self.client.get(reverse("tienda:rastreo"))
+        self.assertEqual(response.status_code, 200)
+
+    def test_numero_y_correo_correctos_muestran_el_pedido(self):
+        response = self._buscar(self.order.id, " Invitado@Example.com ")
+        self.assertRedirects(response, reverse("tienda:rastreo_detalle", args=[self.order.id]))
+        detalle = self.client.get(reverse("tienda:rastreo_detalle", args=[self.order.id]))
+        self.assertContains(detalle, "GUIA123")
+        self.assertNotContains(detalle, "Sincronizar ahora")
+
+    def test_correo_equivocado_no_muestra_nada(self):
+        response = self._buscar(self.order.id, "otro@example.com")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "No encontramos un pedido")
+        self.assertNotContains(response, "GUIA123")
+
+    def test_detalle_sin_validar_regresa_al_formulario(self):
+        response = self.client.get(reverse("tienda:rastreo_detalle", args=[self.order.id]))
+        self.assertRedirects(response, reverse("tienda:rastreo"))
+
+    def test_pedido_sin_pagar_no_se_rastrea(self):
+        self.order.status = "Pending"
+        self.order.save()
+        response = self._buscar(self.order.id, "invitado@example.com")
+        self.assertContains(response, "No encontramos un pedido")
+
+    def test_pedido_de_cuenta_se_rastrea_con_el_correo_de_la_cuenta(self):
+        user = make_user()
+        order = Order.objects.create(customer=user, status="Completed")
+        response = self._buscar(order.id, user.email)
+        self.assertRedirects(response, reverse("tienda:rastreo_detalle", args=[order.id]))
+
+    def test_demasiados_intentos_se_bloquean(self):
+        for _ in range(10):
+            self._buscar(self.order.id, "otro@example.com")
+        response = self._buscar(self.order.id, "invitado@example.com")
+        self.assertContains(response, "Demasiados intentos")

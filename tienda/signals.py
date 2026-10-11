@@ -49,7 +49,8 @@ def send_shipping_notification(sender, instance, created, update_fields=None, **
     plain_message = (
         f"Hola {instance.get_contact_name() or 'cliente'},\n\n"
         f"Tu pedido #{instance.id} fue enviado.\n"
-        f"Número de seguimiento: {instance.tracking_number}\n\n"
+        f"Número de seguimiento: {instance.tracking_number}\n"
+        f"Estado del pedido: {instance.get_rastreo_url()}\n\n"
         "Gracias por tu compra en Cult Clasiccs."
     )
     send_mail(subject, plain_message, settings.DEFAULT_FROM_EMAIL,
