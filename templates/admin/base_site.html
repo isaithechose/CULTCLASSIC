@@ -10,43 +10,48 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
 <style>
   :root {
-    --cc-bg: #111;
-    --cc-sidebar: #0a0a0a;
-    --cc-panel: #141414;
-    --cc-panel-2: #181818;
-    --cc-topbar: #0d0d0d;
-    --cc-border: #1e1e1e;
-    --cc-border-2: #2a2a2a;
-    --cc-text: #e8e8e8;
-    --cc-muted: #888;
-    --cc-faint: #3a3a3a;
-    --cc-blue: #4a9eff;
-    --cc-green: #2dbe6c;
-    --cc-yellow: #f0a500;
-    --cc-red: #e05050;
+    --cc-bg: #f4f5f7;
+    --cc-sidebar: #ffffff;
+    --cc-panel: #ffffff;
+    --cc-panel-2: #f8f9fb;
+    --cc-topbar: #ffffff;
+    --cc-border: #e5e7eb;
+    --cc-border-2: #d6d9df;
+    --cc-text: #1f2937;
+    --cc-muted: #6b7280;
+    --cc-faint: #9ca3af;
+    --cc-blue: #2563eb;
+    --cc-green: #059669;
+    --cc-yellow: #b45309;
+    --cc-red: #dc2626;
+    --cc-hover: #f3f4f6;
+    --cc-row-bg: #fafbfc;
+    --cc-head-bg: #f8fafc;
+    --cc-head-fg: #4b5563;
+    --cc-strong: #111827;
     --font-family-primary: "Outfit", Arial, sans-serif;
     --font-family-monospace: "DM Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
   }
 
   html[data-theme="light"], :root {
-    --primary: #fff;
-    --secondary: #141414;
-    --accent: #4a9eff;
+    --primary: #ffffff;
+    --secondary: #1f2937;
+    --accent: #2563eb;
     --body-bg: var(--cc-bg);
     --body-fg: var(--cc-text);
     --body-quiet-color: var(--cc-muted);
-    --body-loud-color: #fff;
+    --body-loud-color: #111827;
     --header-bg: var(--cc-sidebar);
     --breadcrumbs-bg: var(--cc-topbar);
-    --link-fg: #6a9fd8;
-    --link-hover-color: #9ec4f5;
+    --link-fg: #2563eb;
+    --link-hover-color: #1d4ed8;
     --hairline-color: var(--cc-border);
     --border-color: var(--cc-border);
-    --darkened-bg: #0f0f0f;
-    --selected-bg: #171717;
-    --selected-row: #181818;
-    --button-bg: #fff;
-    --button-fg: #000;
+    --darkened-bg: #f8fafc;
+    --selected-bg: #eef2ff;
+    --selected-row: #eef2ff;
+    --button-bg: #111827;
+    --button-fg: #ffffff;
   }
 
   body {
@@ -122,7 +127,7 @@
   .cc-brand-icon {
     width: 30px;
     height: 30px;
-    background: #fff;
+    background: #111827;
     border-radius: 6px;
     display: flex;
     align-items: center;
@@ -130,14 +135,14 @@
     font-family: var(--font-family-monospace);
     font-size: 14px;
     font-weight: 700;
-    color: #000;
+    color: #ffffff;
     letter-spacing: -0.5px;
   }
-  .cc-brand-text { font-size: 13px; font-weight: 600; color: #fff; letter-spacing: 0.3px; }
+  .cc-brand-text { font-size: 13px; font-weight: 600; color: var(--cc-strong); letter-spacing: 0.3px; }
   .cc-brand-sub {
     font-family: var(--font-family-monospace);
     font-size: 10px;
-    color: #555;
+    color: var(--cc-faint);
     letter-spacing: 0.5px;
     text-transform: uppercase;
   }
@@ -151,7 +156,7 @@
     font-weight: 600;
     letter-spacing: 1.1px;
     text-transform: uppercase;
-    color: #545454;
+    color: var(--cc-faint);
   }
   .cc-nav-item {
     display: flex;
@@ -160,17 +165,17 @@
     padding: 6px 10px 6px 14px;
     margin: 1px 6px;
     border-radius: 8px;
-    color: var(--cc-muted) !important;
+    color: #4b5563 !important;
     text-decoration: none !important;
     font-size: 13.5px;
     line-height: 1.45;
     position: relative;
     transition: background 0.12s, color 0.12s;
   }
-  .cc-nav-item:hover { background: #1a1a1a; color: #ccc !important; }
+  .cc-nav-item:hover { background: var(--cc-hover); color: var(--cc-strong) !important; }
   .cc-nav-item.active {
-    background: rgba(74,158,255,0.12);
-    color: #fff !important;
+    background: rgba(37,99,235,0.10);
+    color: var(--cc-strong) !important;
     border-radius: 8px;
   }
   .cc-nav-item.active::before {
@@ -194,14 +199,14 @@
     line-height: 1.6;
     white-space: nowrap;
   }
-  .cc-badge-warn { background: #2a1f00; color: var(--cc-yellow); }
-  .cc-badge-danger { background: #2a0000; color: var(--cc-red); }
-  .cc-badge-ok { background: #001a0d; color: var(--cc-green); }
-  .cc-badge-info { background: #00142a; color: var(--cc-blue); }
+  .cc-badge-warn { background: #fef3c7; color: #92400e; }
+  .cc-badge-danger { background: #fee2e2; color: #b91c1c; }
+  .cc-badge-ok { background: #d1fae5; color: #065f46; }
+  .cc-badge-info { background: #dbeafe; color: #1d4ed8; }
 
   .cc-sidebar-user {
     margin-top: auto;
-    border-top: 1px solid #1a1a1a;
+    border-top: 1px solid var(--cc-border);
     padding: 12px 16px;
     display: flex;
     align-items: center;
@@ -211,9 +216,9 @@
     width: 28px;
     height: 28px;
     border-radius: 50%;
-    background: #222;
-    border: 1px solid #333;
-    color: #888;
+    background: #e5e7eb;
+    border: 1px solid #d1d5db;
+    color: #4b5563;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -223,19 +228,19 @@
     text-transform: uppercase;
     flex-shrink: 0;
   }
-  .cc-user-name { flex: 1; min-width: 0; font-size: 12px; color: #666; }
+  .cc-user-name { flex: 1; min-width: 0; font-size: 12px; color: var(--cc-muted); }
   .cc-user-name strong {
     display: block;
     max-width: 120px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    color: #bbb;
+    color: var(--cc-strong);
     font-size: 13px;
     font-weight: 500;
   }
-  .cc-logout { color: #3a3a3a !important; text-decoration: none !important; font-size: 15px; }
-  .cc-logout:hover { color: #888 !important; }
+  .cc-logout { color: var(--cc-faint) !important; text-decoration: none !important; font-size: 15px; }
+  .cc-logout:hover { color: var(--cc-strong) !important; }
 
   .cc-topbar {
     height: 52px;
@@ -253,7 +258,7 @@
   .cc-topbar-title {
     font-size: 15px;
     font-weight: 600;
-    color: #fff;
+    color: var(--cc-strong);
     flex: 1;
     min-width: 0;
     overflow: hidden;
@@ -272,17 +277,17 @@
     gap: 5px;
     padding: 4px 10px;
     border-radius: 999px;
-    background: rgba(240,165,0,.12);
-    color: var(--cc-yellow);
+    background: #fef3c7;
+    color: #92400e;
     font-family: var(--font-family-monospace);
     font-size: 11px;
     font-weight: 600;
     white-space: nowrap;
     text-decoration: none !important;
-    border: 1px solid rgba(240,165,0,.2);
+    border: 1px solid #fde68a;
     transition: background .12s;
   }
-  .cc-topbar-pending:hover { background: rgba(240,165,0,.2) !important; color: var(--cc-yellow) !important; }
+  .cc-topbar-pending:hover { background: #fde68a !important; color: #92400e !important; }
   .cc-topbar-pending-dot {
     width: 6px; height: 6px;
     border-radius: 50%;
@@ -295,7 +300,7 @@
   }
   .cc-theme-toggle {
     background: transparent;
-    border: 1px solid var(--cc-border-2);
+    border: 1px solid var(--cc-border);
     border-radius: 6px;
     color: var(--cc-muted);
     width: 30px; height: 30px;
@@ -305,10 +310,10 @@
     transition: background .12s, color .12s;
     flex-shrink: 0;
   }
-  .cc-theme-toggle:hover { background: #1a1a1a; color: #fff; }
+  .cc-theme-toggle:hover { background: var(--cc-hover); color: var(--cc-strong); }
   .cc-topbar-action {
-    background: var(--cc-blue) !important;
-    color: #fff !important;
+    background: #111827 !important;
+    color: #ffffff !important;
     border: 0 !important;
     border-radius: 6px;
     font-size: 12px;
@@ -319,7 +324,7 @@
     white-space: nowrap;
     transition: opacity .12s;
   }
-  .cc-topbar-action:hover { opacity: .85; color: #fff !important; }
+  .cc-topbar-action:hover { opacity: .88; color: #ffffff !important; }
 
   /* ── sidebar search ── */
   .cc-search-wrap {
@@ -328,62 +333,36 @@
   .cc-search {
     width: 100%;
     box-sizing: border-box;
-    background: #141414;
-    border: 1px solid var(--cc-border-2);
+    background: #ffffff;
+    border: 1px solid var(--cc-border);
     border-radius: 8px;
-    color: #ccc;
+    color: var(--cc-strong);
     font-family: var(--font-family-primary);
     font-size: 12.5px;
     padding: 6px 10px 6px 30px;
     outline: none;
     transition: border-color .15s;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23555' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: 9px center;
   }
-  .cc-search::placeholder { color: #444; }
+  .cc-search::placeholder { color: var(--cc-faint); }
   .cc-search:focus { border-color: var(--cc-blue); }
 
-  /* ── light mode ── */
-  html.light-mode #content-start,
-  html.light-mode #content,
-  html.light-mode #main { background: #f1f3f5 !important; }
-  html.light-mode #content { color: #111827 !important; }
-  html.light-mode #content [class*="-card"],
-  html.light-mode #content [class*="-panel"],
-  html.light-mode #content [class*="-tile"] {
-    background: #fff !important;
-    border-color: #e5e7eb !important;
-    box-shadow: 0 2px 8px rgba(0,0,0,.06) !important;
-  }
-  html.light-mode #content [class*="-table"] th,
-  html.light-mode #content [class*="-table"] td {
-    border-color: #e5e7eb !important;
-    color: #374151 !important;
-  }
-  html.light-mode #content [class*="-table"] thead th { background: #f8fafc !important; color: #6b7280 !important; }
-  html.light-mode #content [class*="-label"] { color: #6b7280 !important; }
-  html.light-mode #content [class*="-value"],
-  html.light-mode #content [class*="-name"],
-  html.light-mode #content strong { color: #111827 !important; }
-  html.light-mode #content [class*="-muted"],
-  html.light-mode #content [class*="-sub"],
-  html.light-mode #content [class*="-empty"] { color: #9ca3af !important; }
-  html.light-mode #content [class*="-item"] { background: #f8fafc !important; }
-  html.light-mode #content [class*="-item"]:hover { background: #f0f2f5 !important; }
-  html.light-mode h1,html.light-mode h2,html.light-mode h3 { color: #111827 !important; }
-  html.light-mode .mx-table thead th { background: #f8fafc !important; }
-  html.light-mode .mx-card,html.light-mode .mx-header,html.light-mode .mx-footer { background: #fff !important; border-color: #e5e7eb !important; }
-  html.light-mode .inventory-card,html.light-mode .inventory-panel,html.light-mode .inventory-chart-panel,html.light-mode #chart-detail { background: #fff !important; border-color: #e5e7eb !important; }
+  /* ── dark mode (opcional, se activa con .dark-mode) ── */
+  html.dark-mode { color-scheme: dark; }
+  html.dark-mode #content-start,
+  html.dark-mode #content,
+  html.dark-mode #main { background: #111 !important; }
+  html.dark-mode #content { color: #e8e8e8 !important; }
 
-  /* ── guides / notes siempre dark-friendly ── */
+  /* ── guides / notes ── */
   #content [class*="-guide"],
   #content [class*="-note-box"] {
-    background: #161616 !important;
-    border-color: var(--cc-border-2) !important;
-    color: var(--cc-muted) !important;
+    background: #f0f9ff !important;
+    border-color: #bae6fd !important;
+    color: #0c4a6e !important;
   }
-  html.light-mode #content [class*="-guide"] { background: #f0f9ff !important; border-color: #bae6fd !important; color: #374151 !important; }
 
   /* ── dashboard card border-radius ── */
   #content [class*="-card"]:not(.cc-summary-card):not(.cc-quick-card):not(.cc-alert-row),
@@ -397,18 +376,18 @@
   }
   .messagelist li {
     border-radius: 6px !important;
-    border: 1px solid var(--cc-border-2) !important;
+    border: 1px solid var(--cc-border) !important;
     background: var(--cc-panel) !important;
-    color: #aaa !important;
+    color: var(--cc-text) !important;
     font-size: 13px !important;
   }
-  .messagelist li.success { background: #001a0d !important; color: var(--cc-green) !important; border-color: #003020 !important; }
-  .messagelist li.warning { background: #2a1f00 !important; color: var(--cc-yellow) !important; border-color: #3a2a00 !important; }
-  .messagelist li.error { background: #2a0000 !important; color: var(--cc-red) !important; border-color: #3a0000 !important; }
+  .messagelist li.success { background: #d1fae5 !important; color: #065f46 !important; border-color: #a7f3d0 !important; }
+  .messagelist li.warning { background: #fef3c7 !important; color: #92400e !important; border-color: #fde68a !important; }
+  .messagelist li.error { background: #fee2e2 !important; color: #b91c1c !important; border-color: #fecaca !important; }
 
-  h1, h2, h3, caption { color: #fff !important; }
-  a { color: #6a9fd8; }
-  a:hover { color: #9ec4f5; }
+  h1, h2, h3, caption { color: var(--cc-strong) !important; }
+  a { color: var(--link-fg); }
+  a:hover { color: var(--link-hover-color); }
   .module, .inline-group {
     background: var(--cc-panel) !important;
     border: 1px solid var(--cc-border) !important;
@@ -416,9 +395,9 @@
     overflow: hidden;
   }
   .module h2, .module caption, .inline-group h2 {
-    background: #0f0f0f !important;
+    background: var(--cc-head-bg) !important;
     border-bottom: 1px solid var(--cc-border) !important;
-    color: #aaa !important;
+    color: var(--cc-head-fg) !important;
     font-family: var(--font-family-monospace) !important;
     font-size: 10px !important;
     font-weight: 600 !important;
@@ -429,10 +408,10 @@
   table { background: transparent !important; }
   th, td {
     border-color: var(--cc-border) !important;
-    color: #aaa !important;
+    color: var(--cc-text) !important;
   }
-  thead th, tfoot td { background: #0f0f0f !important; color: #aaa !important; }
-  tbody tr:hover td, tbody tr:hover th { background: #181818 !important; }
+  thead th, tfoot td { background: var(--cc-head-bg) !important; color: var(--cc-head-fg) !important; }
+  tbody tr:hover td, tbody tr:hover th { background: var(--cc-hover) !important; }
   .row1, .row2 { background: transparent !important; }
   .object-tools a,
   .button,
@@ -445,17 +424,24 @@
   }
   input[type="text"], input[type="password"], input[type="email"], input[type="number"], input[type="url"],
   input[type="tel"], select, textarea, .vTextField {
-    background: #1a1a1a !important;
-    border: 1px solid var(--cc-border-2) !important;
-    color: #ddd !important;
+    background: #ffffff !important;
+    border: 1px solid var(--cc-border) !important;
+    color: var(--cc-strong) !important;
     border-radius: 6px !important;
   }
-  .submit-row, .form-row, fieldset, .aligned label, .help, p, li { color: #aaa; }
+  input[type="text"]:focus, input[type="password"]:focus, input[type="email"]:focus,
+  input[type="number"]:focus, input[type="url"]:focus, input[type="tel"]:focus,
+  select:focus, textarea:focus, .vTextField:focus {
+    border-color: var(--cc-blue) !important;
+    outline: none !important;
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.15) !important;
+  }
+  .submit-row, .form-row, fieldset, .aligned label, .help, p, li { color: var(--cc-text); }
   #changelist-filter {
     background: var(--cc-panel) !important;
     border-left: 1px solid var(--cc-border) !important;
   }
-  #changelist-filter h2 { background: #0f0f0f !important; color: #aaa !important; }
+  #changelist-filter h2 { background: var(--cc-head-bg) !important; color: var(--cc-head-fg) !important; }
   #footer { display: none; }
 
   /* ───────────────── DASHBOARDS — overrides al tema oscuro ───────────────── */
@@ -468,7 +454,7 @@
     background: var(--cc-panel) !important;
     border: 1px solid var(--cc-border) !important;
     border-radius: 10px !important;
-    box-shadow: none !important;
+    box-shadow: 0 1px 2px rgba(17,24,39,0.04) !important;
     color: var(--cc-text) !important;
   }
   #content [class*="-card"] strong,
@@ -477,7 +463,7 @@
   #content [class*="-tile"] strong,
   #content [class*="-value"]:not(.cc-summary-value),
   #content [class*="__value"] {
-    color: #fff !important;
+    color: var(--cc-strong) !important;
   }
   #content [class*="-label"]:not(.cc-summary-label):not(.cc-quick-label),
   #content [class*="__label"],
@@ -485,14 +471,14 @@
   #content [class*="-meta"]:not(.site-footer__meta) {
     color: var(--cc-muted) !important;
   }
-  /* Items de listas internas (background gris claro → gris oscuro) */
+  /* Items de listas internas */
   #content [class*="-item"]:not(.cc-quick-card):not(.cc-alert-row):not(.cc-nav-item),
   #content [class*="-row"]:not(.cc-alert-row):not(.cc-nav-item) {
     background: transparent !important;
     color: var(--cc-text) !important;
   }
   #content [class*="-item"]:hover,
-  #content [class*="-row"]:hover { background: #181818 !important; }
+  #content [class*="-row"]:hover { background: var(--cc-hover) !important; }
   /* Tablas dentro de dashboards */
   #content [class*="-table"],
   #content [class*="dashboard"] table {
@@ -509,8 +495,8 @@
   }
   #content [class*="-table"] thead th,
   #content [class*="dashboard"] thead th {
-    background: #0f0f0f !important;
-    color: #aaa !important;
+    background: var(--cc-head-bg) !important;
+    color: var(--cc-head-fg) !important;
     font-size: 11px;
     letter-spacing: 0.06em;
     text-transform: uppercase;
@@ -530,21 +516,21 @@
   #content [class*="dashboard"] a.button,
   #content [class*="-actions"] .button,
   #content [class*="-actions"] a.button {
-    background: #1a1a1a !important;
-    color: #ddd !important;
-    border: 1px solid var(--cc-border-2) !important;
+    background: #ffffff !important;
+    color: var(--cc-strong) !important;
+    border: 1px solid var(--cc-border) !important;
     padding: 6px 12px !important;
     border-radius: 6px !important;
     text-decoration: none !important;
   }
   #content [class*="dashboard"] .button:hover,
-  #content [class*="-actions"] .button:hover { background: #222 !important; color: #fff !important; }
+  #content [class*="-actions"] .button:hover { background: var(--cc-hover) !important; color: var(--cc-strong) !important; }
   /* Headers de sección dentro de dashboards */
   #content [class*="dashboard"] h2,
   #content [class*="dashboard"] h3,
   #content [class*="-title"]:not(.site-footer__brand),
   #content [class*="-heading"] {
-    color: #fff !important;
+    color: var(--cc-strong) !important;
   }
   /* Texto secundario / placeholders en formularios de dashboard */
   #content [class*="dashboard"] p,
@@ -759,7 +745,7 @@
   {% endif %}{% endfor %}
   <span class="cc-topbar-meta" id="cc-clock"></span>
   <button class="cc-theme-toggle" id="cc-theme-btn" title="Cambiar tema" aria-label="Cambiar tema">
-    <i class="ti ti-sun" id="cc-theme-icon"></i>
+    <i class="ti ti-moon" id="cc-theme-icon"></i>
   </button>
   <a class="cc-topbar-action" href="{% url 'admin:tienda_order_point_of_sale' %}">+ Nuevo pedido</a>
 </div>
@@ -780,22 +766,22 @@
   }
   tick(); setInterval(tick, 30000);
 
-  /* ── Theme toggle ── */
+  /* ── Theme toggle (claro por defecto, dark opcional) ── */
   var themeBtn  = document.getElementById("cc-theme-btn");
   var themeIcon = document.getElementById("cc-theme-icon");
-  function applyTheme(light) {
-    document.documentElement.classList.toggle("light-mode", light);
+  function applyTheme(dark) {
+    document.documentElement.classList.toggle("dark-mode", dark);
     if (themeIcon) {
-      themeIcon.className = light ? "ti ti-moon" : "ti ti-sun";
+      themeIcon.className = dark ? "ti ti-sun" : "ti ti-moon";
     }
-    if (themeBtn) themeBtn.title = light ? "Modo oscuro" : "Modo claro";
+    if (themeBtn) themeBtn.title = dark ? "Modo claro" : "Modo oscuro";
   }
-  applyTheme(localStorage.getItem("cc-theme") === "light");
+  applyTheme(localStorage.getItem("cc-theme") === "dark");
   if (themeBtn) {
     themeBtn.addEventListener("click", function() {
-      var isLight = !document.documentElement.classList.contains("light-mode");
-      localStorage.setItem("cc-theme", isLight ? "light" : "dark");
-      applyTheme(isLight);
+      var isDark = !document.documentElement.classList.contains("dark-mode");
+      localStorage.setItem("cc-theme", isDark ? "dark" : "light");
+      applyTheme(isDark);
     });
   }
 

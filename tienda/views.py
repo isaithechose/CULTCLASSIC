@@ -171,7 +171,7 @@ def subir_diseño_personalizado(request):
 
     messages.success(request, "Tu diseño quedó guardado y listo para usar.")
     if product_id:
-        return redirect(f"{reverse('tienda:detalle_producto', args=[product_id])}?diseño={saved_name}")
+        return redirect(f"{reverse('tienda:detalle_producto_by_id', args=[product_id])}?diseño={saved_name}")
     if redirect_to:
         return redirect(redirect_to)
     return redirect(f"{reverse('tienda:design_creator')}?file={saved_name}")
@@ -212,7 +212,7 @@ def design_creator(request):
             else:
                 messages.success(request, "Tu diseño quedó guardado y listo para usar.")
                 if selected_product_id and Producto.objects.filter(id=selected_product_id, disponible=True).exists():
-                    return redirect(f"{reverse('tienda:detalle_producto', args=[selected_product_id])}?diseño={saved_name}")
+                    return redirect(f"{reverse('tienda:detalle_producto_by_id', args=[selected_product_id])}?diseño={saved_name}")
                 return redirect(f"{reverse('tienda:design_creator')}?file={saved_name}")
         else:
             messages.error(request, "Revisa el nombre o la imagen e inténtalo de nuevo.")
@@ -313,8 +313,19 @@ def delete_design(request, filename):
     return redirect('tienda:design_creator')
 
 
-def detalle_producto(request, producto_id):
+def detalle_producto_by_id(request, producto_id):
+    """URL antigua /producto/<id>/: 301 permanente al slug canonico.
+    Google ya tiene indexados estos ids, no podemos romperlos."""
+    from django.shortcuts import redirect
     producto = get_object_or_404(Producto, id=producto_id)
+    return redirect("tienda:detalle_producto", slug=producto.slug, permanent=True)
+
+
+def detalle_producto(request, slug=None, producto_id=None):
+    if slug:
+        producto = get_object_or_404(Producto, slug=slug)
+    else:
+        producto = get_object_or_404(Producto, id=producto_id)
 
     variantes_activas = list(producto.variants.filter(activo=True))
     if variantes_activas:
@@ -445,13 +456,13 @@ def detalle_producto(request, producto_id):
 @login_required
 def submit_reseña(request, producto_id):
     if request.method != 'POST':
-        return redirect('tienda:detalle_producto', producto_id=producto_id)
+        return redirect('tienda:detalle_producto_by_id', producto_id=producto_id)
     producto = get_object_or_404(Producto, id=producto_id)
 
     from .models import Reseña as ReseñaModel
     if ReseñaModel.objects.filter(usuario=request.user, producto=producto).exists():
         messages.error(request, "Ya dejaste una reseña para este producto.")
-        return redirect('tienda:detalle_producto', producto_id=producto_id)
+        return redirect('tienda:detalle_producto_by_id', producto_id=producto_id)
 
     compra_verificada = Order.objects.filter(
         customer=request.user,
@@ -460,7 +471,7 @@ def submit_reseña(request, producto_id):
     ).exists()
     if not compra_verificada:
         messages.error(request, "Solo puedes reseñar productos que hayas comprado.")
-        return redirect('tienda:detalle_producto', producto_id=producto_id)
+        return redirect('tienda:detalle_producto_by_id', producto_id=producto_id)
 
     form = ReseñaForm(request.POST)
     if form.is_valid():
@@ -471,7 +482,7 @@ def submit_reseña(request, producto_id):
         messages.success(request, "¡Tu reseña fue publicada!")
     else:
         messages.error(request, "Revisa los campos de tu reseña e inténtalo de nuevo.")
-    return redirect('tienda:detalle_producto', producto_id=producto_id)
+    return redirect('tienda:detalle_producto_by_id', producto_id=producto_id)
 
 
 def _build_order_from_cart(order, carrito, reset_checkout_state=True):
@@ -937,16 +948,16 @@ def agregar_al_carrito(request, producto_id):
 
         if not talla or not color:
             messages.error(request, "Selecciona una talla y un color antes de continuar.")
-            return redirect('tienda:detalle_producto', producto_id=producto.id)
+            return redirect('tienda:detalle_producto_by_id', producto_id=producto.id)
 
         variant = find_variant_for_selection(producto, talla=talla, color=color)
         available_stock = available_stock_for_selection(producto, talla=talla, color=color)
         if producto.uses_variant_inventory() and not variant:
             messages.error(request, "Esa combinación de talla y color todavía no está configurada en inventario.")
-            return redirect('tienda:detalle_producto', producto_id=producto.id)
+            return redirect('tienda:detalle_producto_by_id', producto_id=producto.id)
         if available_stock <= 0:
             messages.error(request, "Esa combinación ya no tiene stock disponible.")
-            return redirect('tienda:detalle_producto', producto_id=producto.id)
+            return redirect('tienda:detalle_producto_by_id', producto_id=producto.id)
 
         carrito = request.session.get('carrito', {})
         item_key = f"{producto_id}-{talla}-{color}-{diseño_pecho}-{diseño_espalda}"
@@ -965,7 +976,7 @@ def agregar_al_carrito(request, producto_id):
                     request,
                     f"Solo quedan {available_stock} piezas disponibles para {producto.nombre} en {color} / {talla}."
                 )
-                return redirect('tienda:detalle_producto', producto_id=producto.id)
+                return redirect('tienda:detalle_producto_by_id', producto_id=producto.id)
             carrito[item_key]['cantidad'] += 1
         else:
             carrito[item_key] = {
@@ -1001,7 +1012,7 @@ def agregar_al_carrito(request, producto_id):
         messages.success(request, f"{producto.nombre} se agrego a tu carrito.")
         return redirect('tienda:carrito')
 
-    return redirect('tienda:detalle_producto', producto_id=producto.id)
+    return redirect('tienda:detalle_producto_by_id', producto_id=producto.id)
 
 def carrito_view(request):
     carrito = request.session.get('carrito', {})
@@ -1138,6 +1149,87 @@ def faq_view(request):
     return render(request, 'tienda/faq.html')
 
 
+def shaka_wear_mexico_view(request):
+    """Landing SEO: distribuidor Shaka Wear en Mexico."""
+    productos_destacados = (
+        Producto.objects
+        .filter(variants__sku__startswith="SHK-", variants__activo=True, disponible=True)
+        .exclude(imagen="")
+        .distinct()[:8]
+    )
+    return render(request, "tienda/shaka_wear_mexico.html", {
+        "productos_destacados": productos_destacados,
+    })
+
+
+def nosotros_view(request):
+    """Pagina 'Quienes somos': Cult Classics, Culto Calle, Shaka Wear."""
+    return render(request, "tienda/nosotros.html")
+
+
+# Textos SEO por categoria. Si una categoria no esta aqui usamos defaults.
+CATEGORIA_SEO = {
+    "cortes": {
+        "h1": "Playeras Shaka Wear en México",
+        "lead": "Todos los cortes Shaka Wear disponibles: heavyweight 7.5 oz, garment dye, max heavyweight, drop shoulder, long sleeve y oversize.",
+        "title": "Playeras Shaka Wear México · Catálogo completo | Cult Classics",
+        "description": "Catálogo de playeras Shaka Wear en México: heavyweight 7.5 oz, garment dye, oversize y max heavyweight. Envío a todo el país desde Cult Classics.",
+    },
+    "accesorios": {
+        "h1": "Accesorios streetwear en México",
+        "lead": "Gorras, gorros y accesorios de Cult Classics y Culto Calle. Streetwear mexicano, envío a todo el país.",
+        "title": "Accesorios streetwear México · Gorras y gorros | Cult Classics",
+        "description": "Gorras, gorros y accesorios streetwear hechos en México por Cult Classics. Envío a todo el país.",
+    },
+    "disenos": {
+        "h1": "Diseños propios Culto Calle",
+        "lead": "Prendas estampadas con diseños originales de Culto Calle sobre blanks Shaka Wear heavyweight.",
+        "title": "Diseños Culto Calle · Streetwear mexicano | Cult Classics",
+        "description": "Catálogo de diseños propios de Culto Calle estampados sobre blanks Shaka Wear. Streetwear mexicano con envío a todo el país.",
+    },
+    "bottom": {
+        "h1": "Pantalones y bottoms streetwear",
+        "lead": "Pantalones y bottoms de Cult Classics y Culto Calle.",
+        "title": "Pantalones streetwear México | Cult Classics",
+        "description": "Pantalones y bottoms streetwear en México. Cult Classics con envío a todo el país.",
+    },
+}
+
+
+def categoria_view(request, slug):
+    """URL amigable /categoria/<slug>/. Resuelve el slug contra el nombre
+    de la categoria usando slugify, para no requerir campo DB nuevo."""
+    from django.utils.text import slugify
+    from django.http import Http404
+
+    target = slug.strip().lower()
+    categoria = next(
+        (c for c in Categoria.objects.all() if slugify(c.nombre) == target),
+        None,
+    )
+    if not categoria:
+        raise Http404("Categoria no encontrada")
+
+    productos = (
+        Producto.objects
+        .filter(categoria=categoria, disponible=True)
+        .exclude(imagen="")
+        .order_by("-fecha_actualizacion")
+    )
+    seo = CATEGORIA_SEO.get(target, {
+        "h1": categoria.nombre,
+        "lead": f"Productos de la categoría {categoria.nombre} en Cult Classics México.",
+        "title": f"{categoria.nombre} | Cult Classics México",
+        "description": f"{categoria.nombre} disponibles en Cult Classics México. Envío a todo el país.",
+    })
+    return render(request, "tienda/categoria.html", {
+        "categoria": categoria,
+        "productos": productos,
+        "seo": seo,
+        "slug": target,
+    })
+
+
 def devoluciones_view(request):
     return render(request, 'tienda/devoluciones.html')
 
@@ -1183,6 +1275,36 @@ def google_site_verification(request):
 
 def privacidad_view(request):
     return render(request, 'tienda/privacidad.html')
+
+
+def robots_txt(request):
+    """robots.txt dinamico: deja todo indexable salvo rutas privadas y
+    apunta al sitemap. Las rutas de carrito/checkout/accounts no deben
+    aparecer en Google: son estado del usuario, no catalogo."""
+    scheme = "https" if request.is_secure() else "http"
+    host = request.get_host()
+    body = "\n".join([
+        "User-agent: *",
+        "Allow: /",
+        "Disallow: /admin/",
+        "Disallow: /accounts/",
+        "Disallow: /carrito/",
+        "Disallow: /checkout/",
+        "Disallow: /proceso_compra/",
+        "Disallow: /payment_success/",
+        "Disallow: /payment_cancel/",
+        "Disallow: /stripe_checkout/",
+        "Disallow: /my-orders/",
+        "Disallow: /order/",
+        "Disallow: /perfil/",
+        "Disallow: /webhooks/",
+        "Disallow: /subir_diseno_personalizado/",
+        "Disallow: /creador-diseno/eliminar/",
+        "",
+        f"Sitemap: {scheme}://{host}/sitemap.xml",
+        "",
+    ])
+    return HttpResponse(body, content_type="text/plain")
 
 
 def newsletter_signup(request):

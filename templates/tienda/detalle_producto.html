@@ -2,11 +2,11 @@
 {% load humanize %}
 {% load static %}
 
-{% block title %}{{ producto.nombre }} - Cult Clasiccs{% endblock %}
-{% block meta_description %}{{ producto.descripcion|truncatewords:20 }}{% endblock %}
+{% block title %}{{ producto.nombre }} Shaka Wear | Cult Classics México · ${{ producto.precio|floatformat:0 }}{% endblock %}
+{% block meta_description %}{{ producto.nombre }} de Shaka Wear disponible en Cult Classics México. {{ producto.descripcion|truncatewords:22 }} Envío a todo México.{% endblock %}
 {% block og_type %}product{% endblock %}
-{% block og_title %}{{ producto.nombre }} — Cult Clasiccs{% endblock %}
-{% block og_description %}{{ producto.descripcion|truncatewords:20 }}{% endblock %}
+{% block og_title %}{{ producto.nombre }} Shaka Wear — Cult Classics{% endblock %}
+{% block og_description %}{{ producto.descripcion|truncatewords:22 }} ${{ producto.precio|floatformat:0 }} MXN · Envío a todo México.{% endblock %}
 {% block og_image %}{% if producto.imagen %}{{ request.scheme }}://{{ request.get_host }}{{ producto.imagen.url }}{% endif %}{% endblock %}
 
 {% block extra_head %}
@@ -17,15 +17,37 @@
   "name": "{{ producto.nombre|escapejs }}",
   "description": "{{ producto.descripcion|truncatewords:40|escapejs }}",
   {% if producto.imagen %}"image": ["{{ request.scheme }}://{{ request.get_host }}{{ producto.imagen.url }}"],{% endif %}
-  "sku": "{{ producto.id }}",
-  "brand": { "@type": "Brand", "name": "Cult Clasiccs" },
+  "sku": "CC-{{ producto.id }}",
+  "mpn": "CC-{{ producto.id }}",
+  "brand": { "@type": "Brand", "name": "Shaka Wear" },
+  "manufacturer": { "@type": "Organization", "name": "Shaka Wear" },
   "offers": {
     "@type": "Offer",
     "url": "{{ request.scheme }}://{{ request.get_host }}{{ request.path }}",
     "priceCurrency": "MXN",
     "price": "{{ producto.precio }}",
     "availability": "{% if producto.stock > 0 %}https://schema.org/InStock{% else %}https://schema.org/OutOfStock{% endif %}",
-    "itemCondition": "https://schema.org/NewCondition"
+    "itemCondition": "https://schema.org/NewCondition",
+    "seller": { "@type": "Organization", "name": "Cult Classics", "url": "https://cultclassics.shop/" },
+    "areaServed": "MX",
+    "hasMerchantReturnPolicy": {
+      "@type": "MerchantReturnPolicy",
+      "applicableCountry": "MX",
+      "returnPolicyCategory": "https://schema.org/MerchantReturnFiniteReturnWindow",
+      "merchantReturnDays": 15,
+      "returnMethod": "https://schema.org/ReturnByMail",
+      "returnFees": "https://schema.org/FreeReturn"
+    },
+    "shippingDetails": {
+      "@type": "OfferShippingDetails",
+      "shippingDestination": { "@type": "DefinedRegion", "addressCountry": "MX" },
+      "shippingRate": { "@type": "MonetaryAmount", "currency": "MXN", "value": "0" },
+      "deliveryTime": {
+        "@type": "ShippingDeliveryTime",
+        "handlingTime": { "@type": "QuantitativeValue", "minValue": 1, "maxValue": 2, "unitCode": "DAY" },
+        "transitTime":  { "@type": "QuantitativeValue", "minValue": 2, "maxValue": 6, "unitCode": "DAY" }
+      }
+    }
   }{% if reseñas %},
   "aggregateRating": {
     "@type": "AggregateRating",
@@ -1168,7 +1190,7 @@
             <div class="product-gallery position-relative">
                 <div class="position-relative">
                 {% if producto.imagen %}
-                    <img id="imagen-principal" src="{{ producto.imagen.url }}" class="img-fluid mb-3" alt="{{ producto.nombre }}" loading="eager" decoding="async" fetchpriority="high">
+                    <img id="imagen-principal" src="{{ producto.imagen.url }}" class="img-fluid mb-3" alt="{{ producto.nombre }} Shaka Wear – Cult Classics México" loading="eager" decoding="async" fetchpriority="high">
                 {% else %}
                     <img id="imagen-principal" src="https://via.placeholder.com/450x300?text=Sin+imagen" class="img-fluid mb-3" alt="Sin imagen" loading="eager" decoding="async">
                 {% endif %}
@@ -1196,7 +1218,7 @@
                              class="miniatura is-active"
                              loading="lazy"
                              decoding="async"
-                             alt="{{ producto.nombre }}">
+                             alt="{{ producto.nombre }} Shaka Wear – Cult Classics México">
                     {% endif %}
                     {% for gi in gallery_images %}
                         <img src="{{ gi.image.url }}"
@@ -1219,7 +1241,7 @@
                          class="miniatura is-active"
                          loading="lazy"
                          decoding="async"
-                         alt="{{ producto.nombre }}">
+                         alt="{{ producto.nombre }} Shaka Wear – Cult Classics México">
                 {% endif %}
             </div>
         </div>

@@ -39,7 +39,7 @@ class CarritoTests(TestCase):
             'talla': '',
             'color': '',
         })
-        self.assertRedirects(response, reverse('tienda:detalle_producto', args=[self.producto.id]))
+        self.assertRedirects(response, reverse('tienda:detalle_producto_by_id', args=[self.producto.id]))
         self.assertNotIn('carrito', self.client.session)
 
     def test_agregar_al_carrito_no_descuenta_stock(self):

@@ -1,7 +1,9 @@
 {% extends "tienda/base.html" %}
 
-{% block title %}Culto Calle | La línea completa{% endblock %}
-{% block meta_description %}La línea Culto Calle: {{ total_prendas }} piezas entre playeras, pantalones y accesorios. Envío gratis desde $1,000.{% endblock %}
+{% block title %}Culto Calle | Marca propia de streetwear mexicano · Cult Classics{% endblock %}
+{% block meta_description %}Culto Calle es nuestra marca propia de streetwear mexicano estampada sobre blanks Shaka Wear heavyweight. {{ total_prendas }} piezas entre playeras, pantalones y accesorios. Envío gratis desde $1,000.{% endblock %}
+{% block og_title %}Culto Calle · Streetwear mexicano sobre Shaka Wear{% endblock %}
+{% block og_description %}Marca propia de Cult Classics: streetwear mexicano sobre blanks Shaka Wear heavyweight.{% endblock %}
 {% block og_title %}Culto Calle | La línea completa{% endblock %}
 {% block og_description %}{{ total_prendas }} prendas en algodón pesado, cortes oversize y drop shoulder.{% endblock %}
 {% block og_image %}{{ request.scheme }}://{{ request.get_host }}{% if marca and marca.imagen %}{{ marca.imagen.url }}{% else %}/media/productos/max_overweight_oversized_black_001_VtxXVPM.webp{% endif %}{% endblock %}
@@ -321,6 +323,21 @@
 {% block hero %}
 <section class="calle">
     <div class="container px-4 px-lg-5">
+        <nav class="product-breadcrumb" aria-label="Ruta de navegación" style="margin-bottom:.8rem;">
+            <a href="{% url 'tienda:tienda' %}">Inicio</a>
+            <span aria-hidden="true">/</span>
+            <span class="is-current">Culto Calle</span>
+        </nav>
+        <script type="application/ld+json">
+        {
+          "@context": "https://schema.org",
+          "@type": "BreadcrumbList",
+          "itemListElement": [
+            {"@type": "ListItem", "position": 1, "name": "Inicio", "item": "{{ request.scheme }}://{{ request.get_host }}{% url 'tienda:tienda' %}"},
+            {"@type": "ListItem", "position": 2, "name": "Culto Calle"}
+          ]
+        }
+        </script>
         <div class="calle-hero">
             <div class="calle-hero__copy calle-reveal">
                 <p class="calle-hero__eyebrow">Est. 2024</p>
@@ -362,7 +379,7 @@
                     {% for prenda in prendas %}
                         <a class="calle-piece calle-reveal"
                            style="--reveal-delay: {% widthratio forloop.counter0 1 55 %}ms;"
-                           href="{% url 'tienda:detalle_producto' prenda.id %}">
+                           href="{{ prenda.get_absolute_url }}">
                             <div class="calle-piece__media">
                                 {% if prenda.imagen %}
                                     <img src="{{ prenda.imagen.url }}"
