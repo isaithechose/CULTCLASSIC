@@ -1,6 +1,5 @@
 Django==4.2.16
 django-allauth==65.2.0
-mercadopago==2.2.3
 Pillow==11.0.0
 PyJWT==2.10.1
 python-decouple==3.8

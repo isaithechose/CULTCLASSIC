@@ -502,14 +502,6 @@ def _adjust_local_stock_for_ml_item(ml_item_id, quantity_delta, note):
         logger.exception("Failed to adjust local stock for ML item %s: %s", ml_item_id, exc)
 
 
-def _decrement_local_stock_for_ml_item(ml_item_id, quantity):
-    """Atajo retrocompatible: descuenta `quantity` unidades."""
-    _adjust_local_stock_for_ml_item(
-        ml_item_id, -int(quantity),
-        f"Venta en Mercado Libre (item {ml_item_id})",
-    )
-
-
 def _extract_costs(order_payload):
     """Extrae fees y costos de payments[] del payload de orden.
     Si el payload aún no trae billing real, aplica fallback configurable
