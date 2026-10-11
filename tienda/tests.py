@@ -1185,6 +1185,11 @@ class GuestCheckoutTests(TestCase):
         self.assertEqual(order.shipping_address.postal_code, "32000")
         self.assertTrue(order.shipping_quote_amount)
 
+    def test_comprar_ahora_sin_sesion_va_al_checkout(self):
+        url = reverse("tienda:agregar_al_carrito", args=[self.producto.id])
+        response = self.client.post(url, {"talla": "M", "color": "negro", "action": "buy_now"})
+        self.assertRedirects(response, reverse("tienda:checkout"), fetch_redirect_response=False)
+
     def test_invitado_debe_dar_correo(self):
         response = self._llegar_a_envio(contact_name="Ana Lopez")
         self.assertEqual(response.status_code, 200)

@@ -1025,11 +1025,8 @@ def agregar_al_carrito(request, producto_id):
             persist=True,
         )
         if action == 'buy_now':
-            if request.user.is_authenticated:
-                return redirect('tienda:checkout')
-            login_url = reverse('account_login')
-            checkout_url = reverse('tienda:checkout')
-            return redirect(f'{login_url}?next={checkout_url}')
+            # El checkout acepta invitados: piden correo de contacto en el envio.
+            return redirect('tienda:checkout')
 
         messages.success(request, f"{producto.nombre} se agrego a tu carrito.")
         return redirect('tienda:carrito')
