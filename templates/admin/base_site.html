@@ -673,6 +673,9 @@
     <a class="cc-nav-item {% if 'trial-balance' in request.path %}active{% endif %}" href="{% url 'admin:tienda_journalentry_trial_balance' %}">
       <i class="ti ti-list-numbers cc-nav-icon" aria-hidden="true"></i><span class="cc-nav-label">Balanza</span>
     </a>
+    <a class="cc-nav-item {% if 'contabilidad-electronica' in request.path %}active{% endif %}" href="{% url 'admin:tienda_journalentry_sat_xml' %}">
+      <i class="ti ti-file-code cc-nav-icon" aria-hidden="true"></i><span class="cc-nav-label">XML SAT</span>
+    </a>
   </div>
 
   <div class="cc-sidebar-section">

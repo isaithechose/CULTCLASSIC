@@ -1,0 +1,1068 @@
+codigo,nombre,nivel
+101,Caja,1
+101.01,Caja y efectivo,2
+102,Bancos,1
+102.01,Bancos nacionales,2
+102.02,Bancos extranjeros,2
+103,Inversiones,1
+103.01,Inversiones temporales,2
+103.02,Inversiones en fideicomisos,2
+103.03,Otras inversiones,2
+104,Otros instrumentos financieros,1
+104.01,Otros instrumentos financieros,2
+105,Clientes,1
+105.01,Clientes nacionales,2
+105.02,Clientes extranjeros,2
+105.03,Clientes nacionales parte relacionada,2
+105.04,Clientes extranjeros parte relacionada,2
+106,Cuentas y documentos por cobrar a corto plazo,1
+106.01,Cuentas y documentos por cobrar a corto plazo nacional,2
+106.02,Cuentas y documentos por cobrar a corto plazo extranjero,2
+106.03,Cuentas y documentos por cobrar a corto plazo nacional parte relacionada,2
+106.04,Cuentas y documentos por cobrar a corto plazo extranjero parte relacionada,2
+106.05,Intereses por cobrar a corto plazo nacional,2
+106.06,Intereses por cobrar a corto plazo extranjero,2
+106.07,Intereses por cobrar a corto plazo nacional parte relacionada,2
+106.08,Intereses por cobrar a corto plazo extranjero parte relacionada,2
+106.09,Otras cuentas y documentos por cobrar a corto plazo,2
+106.10,Otras cuentas y documentos por cobrar a corto plazo parte relacionada,2
+107,Deudores diversos,1
+107.01,Funcionarios y empleados,2
+107.02,Socios y accionistas,2
+107.03,Partes relacionadas nacionales,2
+107.04,Partes relacionadas extranjeros,2
+107.05,Otros deudores diversos,2
+108,Estimación de cuentas incobrables,1
+108.01,Estimación de cuentas incobrables nacional,2
+108.02,Estimación de cuentas incobrables extranjero,2
+108.03,Estimación de cuentas incobrables nacional parte relacionada,2
+108.04,Estimación de cuentas incobrables extranjero parte relacionada,2
+109,Pagos anticipados,1
+109.01,Seguros y fianzas pagados por anticipado nacional,2
+109.02,Seguros y fianzas pagados por anticipado extranjero,2
+109.03,Seguros y fianzas pagados por anticipado nacional parte relacionada,2
+109.04,Seguros y fianzas pagados por anticipado extranjero parte relacionada,2
+109.05,Rentas pagados por anticipado nacional,2
+109.06,Rentas pagados por anticipado extranjero,2
+109.07,Rentas pagados por anticipado nacional parte relacionada,2
+109.08,Rentas pagados por anticipado extranjero parte relacionada,2
+109.09,Intereses pagados por anticipado nacional,2
+109.10,Intereses pagados por anticipado extranjero,2
+109.11,Intereses pagados por anticipado nacional parte relacionada,2
+109.12,Intereses pagados por anticipado extranjero parte relacionada,2
+109.13,Factoraje financiero pagados por anticipado nacional,2
+109.14,Factoraje financiero pagados por anticipado extranjero,2
+109.15,Factoraje financiero pagados por anticipado nacional parte relacionada,2
+109.16,Factoraje financiero pagados por anticipado extranjero parte relacionada,2
+109.17,Arrendamiento financiero pagados por anticipado nacional,2
+109.18,Arrendamiento financiero pagados por anticipado extranjero,2
+109.19,Arrendamiento financiero pagados por anticipado nacional parte relacionada,2
+109.20,Arrendamiento financiero pagados por anticipado extranjero parte relacionada,2
+109.21,Pérdida por deterioro de pagos anticipados,2
+109.22,Derechos fiduciarios,2
+109.23,Otros pagos anticipados,2
+110,Subsidio al empleo por aplicar,1
+110.01,Subsidio al empleo por aplicar,2
+111,Crédito al diésel por acreditar,1
+111.01,Crédito al diésel por acreditar,2
+112,Otros estímulos,1
+112.01,Otros estímulos,2
+113,Impuestos a favor,1
+113.01,IVA a favor,2
+113.02,ISR a favor,2
+113.03,IETU a favor,2
+113.04,IDE a favor,2
+113.05,IA a favor,2
+113.06,Subsidio al empleo,2
+113.07,Pago de lo indebido,2
+113.08,Otros impuestos a favor,2
+114,Pagos provisionales,1
+114.01,Pagos provisionales de ISR,2
+115,Inventario,1
+115.01,Inventario,2
+115.02,Materia prima y materiales,2
+115.03,Producción en proceso,2
+115.04,Productos terminados,2
+115.05,Mercancías en tránsito,2
+115.06,Mercancías en poder de terceros,2
+115.07,Otros,2
+116,Estimación de inventarios obsoletos y de lento movimiento,1
+116.01,Estimación de inventarios obsoletos y de lento movimiento,2
+117,Obras en proceso de inmuebles,1
+117.01,Obras en proceso de inmuebles,2
+118,Impuestos acreditables pagados,1
+118.01,IVA acreditable pagado,2
+118.02,IVA acreditable de importación pagado,2
+118.03,IEPS acreditable pagado,2
+118.04,IEPS pagado en importación,2
+119,Impuestos acreditables por pagar,1
+119.01,IVA pendiente de pago,2
+119.02,IVA de importación pendiente de pago,2
+119.03,IEPS pendiente de pago,2
+119.04,IEPS pendiente de pago en importación,2
+120,Anticipo a proveedores,1
+120.01,Anticipo a proveedores nacional,2
+120.02,Anticipo a proveedores extranjero,2
+120.03,Anticipo a proveedores nacional parte relacionada,2
+120.04,Anticipo a proveedores extranjero parte relacionada,2
+121,Otros activos a corto plazo,1
+121.01,Otros activos a corto plazo,2
+151,Terrenos,1
+151.01,Terrenos,2
+152,Edificios,1
+152.01,Edificios,2
+153,Maquinaria y equipo,1
+153.01,Maquinaria y equipo,2
+154,"Automóviles, autobuses, camiones de carga, tractocamiones, montacargas y remolques",1
+154.01,"Automóviles, autobuses, camiones de carga, tractocamiones, montacargas y remolques",2
+155,Mobiliario y equipo de oficina,1
+155.01,Mobiliario y equipo de oficina,2
+156,Equipo de cómputo,1
+156.01,Equipo de cómputo,2
+157,Equipo de comunicación,1
+157.01,Equipo de comunicación,2
+158,"Activos biológicos, vegetales y semovientes",1
+158.01,"Activos biológicos, vegetales y semovientes",2
+159,Obras en proceso de activos fijos,1
+159.01,Obras en proceso de activos fijos,2
+160,Otros activos fijos,1
+160.01,Otros activos fijos,2
+161,Ferrocarriles,1
+161.01,Ferrocarriles,2
+162,Embarcaciones,1
+162.01,Embarcaciones,2
+163,Aviones,1
+163.01,Aviones,2
+164,"Troqueles, moldes, matrices y herramental",1
+164.01,"Troqueles, moldes, matrices y herramental",2
+165,Equipo de comunicaciones telefónicas,1
+165.01,Equipo de comunicaciones telefónicas,2
+166,Equipo de comunicación satelital,1
+166.01,Equipo de comunicación satelital,2
+167,Equipo de adaptaciones para personas con capacidades diferentes,1
+167.01,Equipo de adaptaciones para personas con capacidades diferentes,2
+168,Maquinaria y equipo de generación de energía de fuentes renovables o de sistemas de cogeneración de electricidad eficiente,1
+168.01,Maquinaria y equipo de generación de energía de fuentes renovables o de sistemas de cogeneración de electricidad eficiente,2
+169,Otra maquinaria y equipo,1
+169.01,Otra maquinaria y equipo,2
+170,Adaptaciones y mejoras,1
+170.01,Adaptaciones y mejoras,2
+171,Depreciación acumulada de activos fijos,1
+171.01,Depreciación acumulada de edificios,2
+171.02,Depreciación acumulada de maquinaria y equipo,2
+171.03,"Depreciación acumulada de automóviles, autobuses, camiones de carga, tractocamiones, montacargas y remolques",2
+171.04,Depreciación acumulada de mobiliario y equipo de oficina,2
+171.05,Depreciación acumulada de equipo de cómputo,2
+171.06,Depreciación acumulada de equipo de comunicación,2
+171.07,"Depreciación acumulada de activos biológicos, vegetales y semovientes",2
+171.08,Depreciación acumulada de otros activos fijos,2
+171.09,Depreciación acumulada de ferrocarriles,2
+171.10,Depreciación acumulada de embarcaciones,2
+171.11,Depreciación acumulada de aviones,2
+171.12,"Depreciación acumulada de troqueles, moldes, matrices y herramental",2
+171.13,Depreciación acumulada de equipo de comunicaciones telefónicas,2
+171.14,Depreciación acumulada de equipo de comunicación satelital,2
+171.15,Depreciación acumulada de equipo de adaptaciones para personas con capacidades diferentes,2
+171.16,Depreciación acumulada de maquinaria y equipo de generación de energía de fuentes renovables o de sistemas de cogeneración de electricidad eficiente,2
+171.17,Depreciación acumulada de adaptaciones y mejoras,2
+171.18,Depreciación acumulada de otra maquinaria y equipo,2
+172,Pérdida por deterioro acumulado de activos fijos,1
+172.01,Pérdida por deterioro acumulado de edificios,2
+172.02,Pérdida por deterioro acumulado de maquinaria y equipo,2
+172.03,"Pérdida por deterioro acumulado de automóviles, autobuses, camiones de carga, tractocamiones, montacargas y remolques",2
+172.04,Pérdida por deterioro acumulado de mobiliario y equipo de oficina,2
+172.05,Pérdida por deterioro acumulado de equipo de cómputo,2
+172.06,Pérdida por deterioro acumulado de equipo de comunicación,2
+172.07,"Pérdida por deterioro acumulado de activos biológicos, vegetales y semovientes",2
+172.08,Pérdida por deterioro acumulado de otros activos fijos,2
+172.09,Pérdida por deterioro acumulado de ferrocarriles,2
+172.10,Pérdida por deterioro acumulado de embarcaciones,2
+172.11,Pérdida por deterioro acumulado de aviones,2
+172.12,"Pérdida por deterioro acumulado de troqueles, moldes, matrices y herramental",2
+172.13,Pérdida por deterioro acumulado de equipo de comunicaciones telefónicas,2
+172.14,Pérdida por deterioro acumulado de equipo de comunicación satelital,2
+172.15,Pérdida por deterioro acumulado de equipo de adaptaciones para personas con capacidades diferentes,2
+172.16,Pérdida por deterioro acumulado de maquinaria y equipo de generación de energía de fuentes renovables o de sistemas de cogeneración de electricidad eficiente,2
+172.17,Pérdida por deterioro acumulado de adaptaciones y mejoras,2
+172.18,Pérdida por deterioro acumulado de otra maquinaria y equipo,2
+173,Gastos diferidos,1
+173.01,Gastos diferidos,2
+174,Gastos pre operativos,1
+174.01,Gastos pre operativos,2
+175,"Regalías, asistencia técnica y otros gastos diferidos",1
+175.01,"Regalías, asistencia técnica y otros gastos diferidos",2
+176,Activos intangibles,1
+176.01,Activos intangibles,2
+177,Gastos de organización,1
+177.01,Gastos de organización,2
+178,Investigación y desarrollo de mercado,1
+178.01,Investigación y desarrollo de mercado,2
+179,Marcas y patentes,1
+179.01,Marcas y patentes,2
+180,Crédito mercantil,1
+180.01,Crédito mercantil,2
+181,Gastos de instalación,1
+181.01,Gastos de instalación,2
+182,Otros activos diferidos,1
+182.01,Otros activos diferidos,2
+183,Amortización acumulada de activos diferidos,1
+183.01,Amortización acumulada de gastos diferidos,2
+183.02,Amortización acumulada de gastos pre operativos,2
+183.03,"Amortización acumulada de regalías, asistencia técnica y otros gastos diferidos",2
+183.04,Amortización acumulada de activos intangibles,2
+183.05,Amortización acumulada de gastos de organización,2
+183.06,Amortización acumulada de investigación y desarrollo de mercado,2
+183.07,Amortización acumulada de marcas y patentes,2
+183.08,Amortización acumulada de crédito mercantil,2
+183.09,Amortización acumulada de gastos de instalación,2
+183.10,Amortización acumulada de otros activos diferidos,2
+184,Depósitos en garantía,1
+184.01,Depósitos de fianzas,2
+184.02,Depósitos de arrendamiento de bienes inmuebles,2
+184.03,Otros depósitos en garantía,2
+185,Impuestos diferidos,1
+185.01,Impuestos diferidos ISR,2
+186,Cuentas y documentos por cobrar a largo plazo,1
+186.01,Cuentas y documentos por cobrar a largo plazo nacional,2
+186.02,Cuentas y documentos por cobrar a largo plazo extranjero,2
+186.03,Cuentas y documentos por cobrar a largo plazo nacional parte relacionada,2
+186.04,Cuentas y documentos por cobrar a largo plazo extranjero parte relacionada,2
+186.05,Intereses por cobrar a largo plazo nacional,2
+186.06,Intereses por cobrar a largo plazo extranjero,2
+186.07,Intereses por cobrar a largo plazo nacional parte relacionada,2
+186.08,Intereses por cobrar a largo plazo extranjero parte relacionada,2
+186.09,Otras cuentas y documentos por cobrar a largo plazo,2
+186.10,Otras cuentas y documentos por cobrar a largo plazo parte relacionada,2
+187,Participación de los trabajadores en las utilidades diferidas,1
+187.01,Participación de los trabajadores en las utilidades diferidas,2
+188,Inversiones permanentes en acciones,1
+188.01,Inversiones a largo plazo en subsidiarias,2
+188.02,Inversiones a largo plazo en asociadas,2
+188.03,Otras inversiones permanentes en acciones,2
+189,Estimación por deterioro de inversiones permanentes en acciones,1
+189.01,Estimación por deterioro de inversiones permanentes en acciones,2
+190,Otros instrumentos financieros,1
+190.01,Otros instrumentos financieros,2
+191,Otros activos a largo plazo,1
+191.01,Otros activos a largo plazo,2
+201,Proveedores,1
+201.01,Proveedores nacionales,2
+201.02,Proveedores extranjeros,2
+201.03,Proveedores nacionales parte relacionada,2
+201.04,Proveedores extranjeros parte relacionada,2
+202,Cuentas por pagar a corto plazo,1
+202.01,Documentos por pagar bancario y financiero nacional,2
+202.02,Documentos por pagar bancario y financiero extranjero,2
+202.03,Documentos y cuentas por pagar a corto plazo nacional,2
+202.04,Documentos y cuentas por pagar a corto plazo extranjero,2
+202.05,Documentos y cuentas por pagar a corto plazo nacional parte relacionada,2
+202.06,Documentos y cuentas por pagar a corto plazo extranjero parte relacionada,2
+202.07,Intereses por pagar a corto plazo nacional,2
+202.08,Intereses por pagar a corto plazo extranjero,2
+202.09,Intereses por pagar a corto plazo nacional parte relacionada,2
+202.10,Intereses por pagar a corto plazo extranjero parte relacionada,2
+202.11,Dividendo por pagar nacional,2
+202.12,Dividendo por pagar extranjero,2
+203,Cobros anticipados a corto plazo,1
+203.01,Rentas cobradas por anticipado a corto plazo nacional,2
+203.02,Rentas cobradas por anticipado a corto plazo extranjero,2
+203.03,Rentas cobradas por anticipado a corto plazo nacional parte relacionada,2
+203.04,Rentas cobradas por anticipado a corto plazo extranjero parte relacionada,2
+203.05,Intereses cobrados por anticipado a corto plazo nacional,2
+203.06,Intereses cobrados por anticipado a corto plazo extranjero,2
+203.07,Intereses cobrados por anticipado a corto plazo nacional parte relacionada,2
+203.08,Intereses cobrados por anticipado a corto plazo extranjero parte relacionada,2
+203.09,Factoraje financiero cobrados por anticipado a corto plazo nacional,2
+203.10,Factoraje financiero cobrados por anticipado a corto plazo extranjero,2
+203.11,Factoraje financiero cobrados por anticipado a corto plazo nacional parte relacionada,2
+203.12,Factoraje financiero cobrados por anticipado a corto plazo extranjero parte relacionada,2
+203.13,Arrendamiento financiero cobrados por anticipado a corto plazo nacional,2
+203.14,Arrendamiento financiero cobrados por anticipado a corto plazo extranjero,2
+203.15,Arrendamiento financiero cobrados por anticipado a corto plazo nacional parte relacionada,2
+203.16,Arrendamiento financiero cobrados por anticipado a corto plazo extranjero parte relacionada,2
+203.17,Derechos fiduciarios,2
+203.18,Otros cobros anticipados,2
+204,Instrumentos financieros a corto plazo,1
+204.01,Instrumentos financieros a corto plazo,2
+205,Acreedores diversos a corto plazo,1
+205.01,"Socios, accionistas o representante legal",2
+205.02,Acreedores diversos a corto plazo nacional,2
+205.03,Acreedores diversos a corto plazo extranjero,2
+205.04,Acreedores diversos a corto plazo nacional parte relacionada,2
+205.05,Acreedores diversos a corto plazo extranjero parte relacionada,2
+205.06,Otros acreedores diversos a corto plazo,2
+206,Anticipo de cliente,1
+206.01,Anticipo de cliente nacional,2
+206.02,Anticipo de cliente extranjero,2
+206.03,Anticipo de cliente nacional parte relacionada,2
+206.04,Anticipo de cliente extranjero parte relacionada,2
+206.05,Otros anticipos de clientes,2
+207,Impuestos trasladados,1
+207.01,IVA trasladado,2
+207.02,IEPS trasladado,2
+208,Impuestos trasladados cobrados,1
+208.01,IVA trasladado cobrado,2
+208.02,IEPS trasladado cobrado,2
+209,Impuestos trasladados no cobrados,1
+209.01,IVA trasladado no cobrado,2
+209.02,IEPS trasladado no cobrado,2
+210,Provisión de sueldos y salarios por pagar,1
+210.01,Provisión de sueldos y salarios por pagar,2
+210.02,Provisión de vacaciones por pagar,2
+210.03,Provisión de aguinaldo por pagar,2
+210.04,Provisión de fondo de ahorro por pagar,2
+210.05,Provisión de asimilados a salarios por pagar,2
+210.06,Provisión de anticipos o remanentes por distribuir,2
+210.07,Provisión de otros sueldos y salarios por pagar,2
+211,Provisión de contribuciones de seguridad social por pagar,1
+211.01,Provisión de IMSS patronal por pagar,2
+211.02,Provisión de SAR por pagar,2
+211.03,Provisión de INFONAVIT por pagar,2
+212,Provisión de impuesto estatal sobre nómina por pagar,1
+212.01,Provisión de impuesto estatal sobre nómina por pagar,2
+213,Impuestos y derechos por pagar,1
+213.01,IVA por pagar,2
+213.02,IEPS por pagar,2
+213.03,ISR por pagar,2
+213.04,Impuesto estatal sobre nómina por pagar,2
+213.05,Impuesto estatal y municipal por pagar,2
+213.06,Derechos por pagar,2
+213.07,Otros impuestos por pagar,2
+214,Dividendos por pagar,1
+214.01,Dividendos por pagar,2
+215,PTU por pagar,1
+215.01,PTU por pagar,2
+215.02,PTU por pagar de ejercicios anteriores,2
+215.03,Provisión de PTU por pagar,2
+216,Impuestos retenidos,1
+216.01,Impuestos retenidos de ISR por sueldos y salarios,2
+216.02,Impuestos retenidos de ISR por asimilados a salarios,2
+216.03,Impuestos retenidos de ISR por arrendamiento,2
+216.04,Impuestos retenidos de ISR por servicios profesionales,2
+216.05,Impuestos retenidos de ISR por dividendos,2
+216.06,Impuestos retenidos de ISR por intereses,2
+216.07,Impuestos retenidos de ISR por pagos al extranjero,2
+216.08,Impuestos retenidos de ISR por venta de acciones,2
+216.09,Impuestos retenidos de ISR por venta de partes sociales,2
+216.10,Impuestos retenidos de IVA,2
+216.11,Retenciones de IMSS a los trabajadores,2
+216.12,Otras impuestos retenidos,2
+217,Pagos realizados por cuenta de terceros,1
+217.01,Pagos realizados por cuenta de terceros,2
+218,Otros pasivos a corto plazo,1
+218.01,Otros pasivos a corto plazo,2
+251,Acreedores diversos a largo plazo,1
+251.01,"Socios, accionistas o representante legal",2
+251.02,Acreedores diversos a largo plazo nacional,2
+251.03,Acreedores diversos a largo plazo extranjero,2
+251.04,Acreedores diversos a largo plazo nacional parte relacionada,2
+251.05,Acreedores diversos a largo plazo extranjero parte relacionada,2
+251.06,Otros acreedores diversos a largo plazo,2
+252,Cuentas por pagar a largo plazo,1
+252.01,Documentos bancarios y financieros por pagar a largo plazo nacional,2
+252.02,Documentos bancarios y financieros por pagar a largo plazo extranjero,2
+252.03,Documentos y cuentas por pagar a largo plazo nacional,2
+252.04,Documentos y cuentas por pagar a largo plazo extranjero,2
+252.05,Documentos y cuentas por pagar a largo plazo nacional parte relacionada,2
+252.06,Documentos y cuentas por pagar a largo plazo extranjero parte relacionada,2
+252.07,Hipotecas por pagar a largo plazo nacional,2
+252.08,Hipotecas por pagar a largo plazo extranjero,2
+252.09,Hipotecas por pagar a largo plazo nacional parte relacionada,2
+252.10,Hipotecas por pagar a largo plazo extranjero parte relacionada,2
+252.11,Intereses por pagar a largo plazo nacional,2
+252.12,Intereses por pagar a largo plazo extranjero,2
+252.13,Intereses por pagar a largo plazo nacional parte relacionada,2
+252.14,Intereses por pagar a largo plazo extranjero parte relacionada,2
+252.15,Dividendos por pagar nacionales,2
+252.16,Dividendos por pagar extranjeros,2
+252.17,Otras cuentas y documentos por pagar a largo plazo,2
+253,Cobros anticipados a largo plazo,1
+253.01,Rentas cobradas por anticipado a largo plazo nacional,2
+253.02,Rentas cobradas por anticipado a largo plazo extranjero,2
+253.03,Rentas cobradas por anticipado a largo plazo nacional parte relacionada,2
+253.04,Rentas cobradas por anticipado a largo plazo extranjero parte relacionada,2
+253.05,Intereses cobrados por anticipado a largo plazo nacional,2
+253.06,Intereses cobrados por anticipado a largo plazo extranjero,2
+253.07,Intereses cobrados por anticipado a largo plazo nacional parte relacionada,2
+253.08,Intereses cobrados por anticipado a largo plazo extranjero parte relacionada,2
+253.09,Factoraje financiero cobrados por anticipado a largo plazo nacional,2
+253.10,Factoraje financiero cobrados por anticipado a largo plazo extranjero,2
+253.11,Factoraje financiero cobrados por anticipado a largo plazo nacional parte relacionada,2
+253.12,Factoraje financiero cobrados por anticipado a largo plazo extranjero parte relacionada,2
+253.13,Arrendamiento financiero cobrados por anticipado a largo plazo nacional,2
+253.14,Arrendamiento financiero cobrados por anticipado a largo plazo extranjero,2
+253.15,Arrendamiento financiero cobrados por anticipado a largo plazo nacional parte relacionada,2
+253.16,Arrendamiento financiero cobrados por anticipado a largo plazo extranjero parte relacionada,2
+253.17,Derechos fiduciarios,2
+253.18,Otros cobros anticipados,2
+254,Instrumentos financieros a largo plazo,1
+254.01,Instrumentos financieros a largo plazo,2
+255,Pasivos por beneficios a los empleados a largo plazo,1
+255.01,Pasivos por beneficios a los empleados a largo plazo,2
+256,Otros pasivos a largo plazo,1
+256.01,Otros pasivos a largo plazo,2
+257,Participación de los trabajadores en las utilidades diferida,1
+257.01,Participación de los trabajadores en las utilidades diferida,2
+258,Obligaciones contraídas de fideicomisos,1
+258.01,Obligaciones contraídas de fideicomisos,2
+259,Impuestos diferidos,1
+259.01,ISR diferido,2
+259.02,ISR por dividendo diferido,2
+259.03,Otros impuestos diferidos,2
+260,Pasivos diferidos,1
+260.01,Pasivos diferidos,2
+301,Capital social,1
+301.01,Capital fijo,2
+301.02,Capital variable,2
+301.03,Aportaciones para futuros aumentos de capital,2
+301.04,Prima en suscripción de acciones,2
+301.05,Prima en suscripción de partes sociales,2
+302,Patrimonio,1
+302.01,Patrimonio,2
+302.02,Aportación patrimonial,2
+302.03,Déficit o remanente del ejercicio,2
+303,Reserva legal,1
+303.01,Reserva legal,2
+304,Resultado de ejercicios anteriores,1
+304.01,Utilidad de ejercicios anteriores,2
+304.02,Pérdida de ejercicios anteriores,2
+304.03,Resultado integral de ejercicios anteriores,2
+304.04,Déficit o remanente de ejercicio anteriores,2
+305,Resultado del ejercicio,1
+305.01,Utilidad del ejercicio,2
+305.02,Pérdida del ejercicio,2
+305.03,Resultado integral,2
+306,Otras cuentas de capital,1
+306.01,Otras cuentas de capital,2
+401,Ingresos,1
+401.01,Ventas y/o servicios gravados a la tasa general,2
+401.02,Ventas y/o servicios gravados a la tasa general de contado,2
+401.03,Ventas y/o servicios gravados a la tasa general a crédito,2
+401.04,Ventas y/o servicios gravados al 0%,2
+401.05,Ventas y/o servicios gravados al 0% de contado,2
+401.06,Ventas y/o servicios gravados al 0% a crédito,2
+401.07,Ventas y/o servicios exentos,2
+401.08,Ventas y/o servicios exentos de contado,2
+401.09,Ventas y/o servicios exentos a crédito,2
+401.10,Ventas y/o servicios gravados a la tasa general nacionales partes relacionadas,2
+401.11,Ventas y/o servicios gravados a la tasa general extranjeros partes relacionadas,2
+401.12,Ventas y/o servicios gravados al 0% nacionales partes relacionadas,2
+401.13,Ventas y/o servicios gravados al 0% extranjeros partes relacionadas,2
+401.14,Ventas y/o servicios exentos nacionales partes relacionadas,2
+401.15,Ventas y/o servicios exentos extranjeros partes relacionadas,2
+401.16,Ingresos por servicios administrativos,2
+401.17,Ingresos por servicios administrativos nacionales partes relacionadas,2
+401.18,Ingresos por servicios administrativos extranjeros partes relacionadas,2
+401.19,Ingresos por servicios profesionales,2
+401.20,Ingresos por servicios profesionales nacionales partes relacionadas,2
+401.21,Ingresos por servicios profesionales extranjeros partes relacionadas,2
+401.22,Ingresos por arrendamiento,2
+401.23,Ingresos por arrendamiento nacionales partes relacionadas,2
+401.24,Ingresos por arrendamiento extranjeros partes relacionadas,2
+401.25,Ingresos por exportación,2
+401.26,Ingresos por comisiones,2
+401.27,Ingresos por maquila,2
+401.28,Ingresos por coordinados,2
+401.29,Ingresos por regalías,2
+401.30,Ingresos por asistencia técnica,2
+401.31,Ingresos por donativos,2
+401.32,Ingresos por intereses (actividad propia),2
+401.33,Ingresos de copropiedad,2
+401.34,Ingresos por fideicomisos,2
+401.35,Ingresos por factoraje financiero,2
+401.36,Ingresos por arrendamiento financiero,2
+401.37,Ingresos de extranjeros con establecimiento en el país,2
+401.38,Otros ingresos propios,2
+401.39,Ventas y/o servicios gravados realizados en zona fronteriza norte,2
+401.40,Ventas y/o servicios gravados realizados en zona fronteriza norte de contado,2
+401.41,Ventas y/o servicios gravados realizados en zona fronteriza norte a crédito,2
+402,"Devoluciones, descuentos o bonificaciones sobre ingresos",1
+402.01,"Devoluciones, descuentos o bonificaciones sobre ventas y/o servicios a la tasa general",2
+402.02,"Devoluciones, descuentos o bonificaciones sobre ventas y/o servicios al 0%",2
+402.03,"Devoluciones, descuentos o bonificaciones sobre ventas y/o servicios exentos",2
+402.04,"Devoluciones, descuentos o bonificaciones de otros ingresos",2
+402.05,"Devoluciones, descuentos o bonificaciones sobre ventas y/o servicios en zona fronteriza norte",2
+403,Otros ingresos,1
+403.01,Otros Ingresos,2
+403.02,Otros ingresos nacionales parte relacionada,2
+403.03,Otros ingresos extranjeros parte relacionada,2
+403.04,Ingresos por operaciones discontinuas,2
+403.05,Ingresos por condonación de adeudo,2
+501,Costo de venta y/o servicio,1
+501.01,Costo de venta,2
+501.02,Costo de servicios (Mano de obra),2
+501.03,Materia prima directa utilizada para la producción,2
+501.04,Materia prima consumida en el proceso productivo,2
+501.05,Mano de obra directa consumida,2
+501.06,Mano de obra directa,2
+501.07,Cargos indirectos de producción,2
+501.08,Otros conceptos de costo,2
+502,Compras,1
+502.01,Compras nacionales,2
+502.02,Compras nacionales parte relacionada,2
+502.03,Compras de Importación,2
+502.04,Compras de Importación partes relacionadas,2
+503,"Devoluciones, descuentos o bonificaciones sobre compras",1
+503.01,"Devoluciones, descuentos o bonificaciones sobre compras",2
+504,Otras cuentas de costos,1
+504.01,Gastos indirectos de fabricación,2
+504.02,Gastos indirectos de fabricación de partes relacionadas nacionales,2
+504.03,Gastos indirectos de fabricación de partes relacionadas extranjeras,2
+504.04,Otras cuentas de costos incurridos,2
+504.05,Otras cuentas de costos incurridos con partes relacionadas nacionales,2
+504.06,Otras cuentas de costos incurridos con partes relacionadas extranjeras,2
+504.07,Depreciación de edificios,2
+504.08,Depreciación de maquinaria y equipo,2
+504.09,"Depreciación de automóviles, autobuses, camiones de carga, tractocamiones, montacargas y remolques",2
+504.10,Depreciación de mobiliario y equipo de oficina,2
+504.11,Depreciación de equipo de cómputo,2
+504.12,Depreciación de equipo de comunicación,2
+504.13,"Depreciación de activos biológicos, vegetales y semovientes",2
+504.14,Depreciación de otros activos fijos,2
+504.15,Depreciación de ferrocarriles,2
+504.16,Depreciación de embarcaciones,2
+504.17,Depreciación de aviones,2
+504.18,"Depreciación de troqueles, moldes, matrices y herramental",2
+504.19,Depreciación de equipo de comunicaciones telefónicas,2
+504.20,Depreciación de equipo de comunicación satelital,2
+504.21,Depreciación de equipo de adaptaciones para personas con capacidades diferentes,2
+504.22,Depreciación de maquinaria y equipo de generación de energía de fuentes renovables o de sistemas de cogeneración de electricidad eficiente,2
+504.23,Depreciación de adaptaciones y mejoras,2
+504.24,Depreciación de otra maquinaria y equipo,2
+504.25,Otras cuentas de costos,2
+505,Costo de activo fijo,1
+505.01,Costo por venta de activo fijo,2
+505.02,Costo por baja de activo fijo,2
+601,Gastos generales,1
+601.01,Sueldos y salarios,2
+601.02,Compensaciones,2
+601.03,Tiempos extras,2
+601.04,Premios de asistencia,2
+601.05,Premios de puntualidad,2
+601.06,Vacaciones,2
+601.07,Prima vacacional,2
+601.08,Prima dominical,2
+601.09,Días festivos,2
+601.10,Gratificaciones,2
+601.11,Primas de antigüedad,2
+601.12,Aguinaldo,2
+601.13,Indemnizaciones,2
+601.14,Destajo,2
+601.15,Despensa,2
+601.16,Transporte,2
+601.17,Servicio médico,2
+601.18,Ayuda en gastos funerarios,2
+601.19,Fondo de ahorro,2
+601.20,Cuotas sindicales,2
+601.21,PTU,2
+601.22,Estímulo al personal,2
+601.23,Previsión social,2
+601.24,Aportaciones para el plan de jubilación,2
+601.25,Otras prestaciones al personal,2
+601.26,Cuotas al IMSS,2
+601.27,Aportaciones al INFONAVIT,2
+601.28,Aportaciones al SAR,2
+601.29,Impuesto estatal sobre nóminas,2
+601.30,Otras aportaciones,2
+601.31,Asimilados a salarios,2
+601.32,Servicios administrativos,2
+601.33,Servicios administrativos partes relacionadas,2
+601.34,Honorarios a personas físicas residentes nacionales,2
+601.35,Honorarios a personas físicas residentes nacionales partes relacionadas,2
+601.36,Honorarios a personas físicas residentes del extranjero,2
+601.37,Honorarios a personas físicas residentes del extranjero partes relacionadas,2
+601.38,Honorarios a personas morales residentes nacionales,2
+601.39,Honorarios a personas morales residentes nacionales partes relacionadas,2
+601.40,Honorarios a personas morales residentes del extranjero,2
+601.41,Honorarios a personas morales residentes del extranjero partes relacionadas,2
+601.42,Honorarios aduanales personas físicas,2
+601.43,Honorarios aduanales personas morales,2
+601.44,Honorarios al consejo de administración,2
+601.45,Arrendamiento a personas físicas residentes nacionales,2
+601.46,Arrendamiento a personas morales residentes nacionales,2
+601.47,Arrendamiento a residentes del extranjero,2
+601.48,Combustibles y lubricantes,2
+601.49,Viáticos y gastos de viaje,2
+601.50,"Teléfono, internet",2
+601.51,Agua,2
+601.52,Energía eléctrica,2
+601.53,Vigilancia y seguridad,2
+601.54,Limpieza,2
+601.55,Papelería y artículos de oficina,2
+601.56,Mantenimiento y conservación,2
+601.57,Seguros y fianzas,2
+601.58,Otros impuestos y derechos,2
+601.59,Recargos fiscales,2
+601.60,Cuotas y suscripciones,2
+601.61,Propaganda y publicidad,2
+601.62,Capacitación al personal,2
+601.63,Donativos y ayudas,2
+601.64,Asistencia técnica,2
+601.65,Regalías sujetas a otros porcentajes,2
+601.66,Regalías sujetas al 5%,2
+601.67,Regalías sujetas al 10%,2
+601.68,Regalías sujetas al 15%,2
+601.69,Regalías sujetas al 25%,2
+601.70,Regalías sujetas al 30%,2
+601.71,Regalías sin retención,2
+601.72,Fletes y acarreos,2
+601.73,Gastos de importación,2
+601.74,Comisiones sobre ventas,2
+601.75,Comisiones por tarjetas de crédito,2
+601.76,Patentes y marcas,2
+601.77,Uniformes,2
+601.78,Prediales,2
+601.79,Gastos generales de urbanización,2
+601.80,Gastos generales de construcción,2
+601.81,Fletes del extranjero,2
+601.82,Recolección de bienes del sector agropecuario y/o ganadero,2
+601.83,Gastos no deducibles (sin requisitos fiscales),2
+601.84,Otros gastos generales,2
+602,Gastos de venta,1
+602.01,Sueldos y salarios,2
+602.02,Compensaciones,2
+602.03,Tiempos extras,2
+602.04,Premios de asistencia,2
+602.05,Premios de puntualidad,2
+602.06,Vacaciones,2
+602.07,Prima vacacional,2
+602.08,Prima dominical,2
+602.09,Días festivos,2
+602.10,Gratificaciones,2
+602.11,Primas de antigüedad,2
+602.12,Aguinaldo,2
+602.13,Indemnizaciones,2
+602.14,Destajo,2
+602.15,Despensa,2
+602.16,Transporte,2
+602.17,Servicio médico,2
+602.18,Ayuda en gastos funerarios,2
+602.19,Fondo de ahorro,2
+602.20,Cuotas sindicales,2
+602.21,PTU,2
+602.22,Estímulo al personal,2
+602.23,Previsión social,2
+602.24,Aportaciones para el plan de jubilación,2
+602.25,Otras prestaciones al personal,2
+602.26,Cuotas al IMSS,2
+602.27,Aportaciones al INFONAVIT,2
+602.28,Aportaciones al SAR,2
+602.29,Impuesto estatal sobre nóminas,2
+602.30,Otras aportaciones,2
+602.31,Asimilados a salarios,2
+602.32,Servicios administrativos,2
+602.33,Servicios administrativos partes relacionadas,2
+602.34,Honorarios a personas físicas residentes nacionales,2
+602.35,Honorarios a personas físicas residentes nacionales partes relacionadas,2
+602.36,Honorarios a personas físicas residentes del extranjero,2
+602.37,Honorarios a personas físicas residentes del extranjero partes relacionadas,2
+602.38,Honorarios a personas morales residentes nacionales,2
+602.39,Honorarios a personas morales residentes nacionales partes relacionadas,2
+602.40,Honorarios a personas morales residentes del extranjero,2
+602.41,Honorarios a personas morales residentes del extranjero partes relacionadas,2
+602.42,Honorarios aduanales personas físicas,2
+602.43,Honorarios aduanales personas morales,2
+602.44,Honorarios al consejo de administración,2
+602.45,Arrendamiento a personas físicas residentes nacionales,2
+602.46,Arrendamiento a personas morales residentes nacionales,2
+602.47,Arrendamiento a residentes del extranjero,2
+602.48,Combustibles y lubricantes,2
+602.49,Viáticos y gastos de viaje,2
+602.50,"Teléfono, internet",2
+602.51,Agua,2
+602.52,Energía eléctrica,2
+602.53,Vigilancia y seguridad,2
+602.54,Limpieza,2
+602.55,Papelería y artículos de oficina,2
+602.56,Mantenimiento y conservación,2
+602.57,Seguros y fianzas,2
+602.58,Otros impuestos y derechos,2
+602.59,Recargos fiscales,2
+602.60,Cuotas y suscripciones,2
+602.61,Propaganda y publicidad,2
+602.62,Capacitación al personal,2
+602.63,Donativos y ayudas,2
+602.64,Asistencia técnica,2
+602.65,Regalías sujetas a otros porcentajes,2
+602.66,Regalías sujetas al 5%,2
+602.67,Regalías sujetas al 10%,2
+602.68,Regalías sujetas al 15%,2
+602.69,Regalías sujetas al 25%,2
+602.70,Regalías sujetas al 30%,2
+602.71,Regalías sin retención,2
+602.72,Fletes y acarreos,2
+602.73,Gastos de importación,2
+602.74,Comisiones sobre ventas,2
+602.75,Comisiones por tarjetas de crédito,2
+602.76,Patentes y marcas,2
+602.77,Uniformes,2
+602.78,Prediales,2
+602.79,Gastos de venta de urbanización,2
+602.80,Gastos de venta de construcción,2
+602.81,Fletes del extranjero,2
+602.82,Recolección de bienes del sector agropecuario y/o ganadero,2
+602.83,Gastos no deducibles (sin requisitos fiscales),2
+602.84,Otros gastos de venta,2
+603,Gastos de administración,1
+603.01,Sueldos y salarios,2
+603.02,Compensaciones,2
+603.03,Tiempos extras,2
+603.04,Premios de asistencia,2
+603.05,Premios de puntualidad,2
+603.06,Vacaciones,2
+603.07,Prima vacacional,2
+603.08,Prima dominical,2
+603.09,Días festivos,2
+603.10,Gratificaciones,2
+603.11,Primas de antigüedad,2
+603.12,Aguinaldo,2
+603.13,Indemnizaciones,2
+603.14,Destajo,2
+603.15,Despensa,2
+603.16,Transporte,2
+603.17,Servicio médico,2
+603.18,Ayuda en gastos funerarios,2
+603.19,Fondo de ahorro,2
+603.20,Cuotas sindicales,2
+603.21,PTU,2
+603.22,Estímulo al personal,2
+603.23,Previsión social,2
+603.24,Aportaciones para el plan de jubilación,2
+603.25,Otras prestaciones al personal,2
+603.26,Cuotas al IMSS,2
+603.27,Aportaciones al INFONAVIT,2
+603.28,Aportaciones al SAR,2
+603.29,Impuesto estatal sobre nóminas,2
+603.30,Otras aportaciones,2
+603.31,Asimilados a salarios,2
+603.32,Servicios administrativos,2
+603.33,Servicios administrativos partes relacionadas,2
+603.34,Honorarios a personas físicas residentes nacionales,2
+603.35,Honorarios a personas físicas residentes nacionales partes relacionadas,2
+603.36,Honorarios a personas físicas residentes del extranjero,2
+603.37,Honorarios a personas físicas residentes del extranjero partes relacionadas,2
+603.38,Honorarios a personas morales residentes nacionales,2
+603.39,Honorarios a personas morales residentes nacionales partes relacionadas,2
+603.40,Honorarios a personas morales residentes del extranjero,2
+603.41,Honorarios a personas morales residentes del extranjero partes relacionadas,2
+603.42,Honorarios aduanales personas físicas,2
+603.43,Honorarios aduanales personas morales,2
+603.44,Honorarios al consejo de administración,2
+603.45,Arrendamiento a personas físicas residentes nacionales,2
+603.46,Arrendamiento a personas morales residentes nacionales,2
+603.47,Arrendamiento a residentes del extranjero,2
+603.48,Combustibles y lubricantes,2
+603.49,Viáticos y gastos de viaje,2
+603.50,"Teléfono, internet",2
+603.51,Agua,2
+603.52,Energía eléctrica,2
+603.53,Vigilancia y seguridad,2
+603.54,Limpieza,2
+603.55,Papelería y artículos de oficina,2
+603.56,Mantenimiento y conservación,2
+603.57,Seguros y fianzas,2
+603.58,Otros impuestos y derechos,2
+603.59,Recargos fiscales,2
+603.60,Cuotas y suscripciones,2
+603.61,Propaganda y publicidad,2
+603.62,Capacitación al personal,2
+603.63,Donativos y ayudas,2
+603.64,Asistencia técnica,2
+603.65,Regalías sujetas a otros porcentajes,2
+603.66,Regalías sujetas al 5%,2
+603.67,Regalías sujetas al 10%,2
+603.68,Regalías sujetas al 15%,2
+603.69,Regalías sujetas al 25%,2
+603.70,Regalías sujetas al 30%,2
+603.71,Regalías sin retención,2
+603.72,Fletes y acarreos,2
+603.73,Gastos de importación,2
+603.74,Patentes y marcas,2
+603.75,Uniformes,2
+603.76,Prediales,2
+603.77,Gastos de administración de urbanización,2
+603.78,Gastos de administración de construcción,2
+603.79,Fletes del extranjero,2
+603.80,Recolección de bienes del sector agropecuario y/o ganadero,2
+603.81,Gastos no deducibles (sin requisitos fiscales),2
+603.82,Otros gastos de administración,2
+604,Gastos de fabricación,1
+604.01,Sueldos y salarios,2
+604.02,Compensaciones,2
+604.03,Tiempos extras,2
+604.04,Premios de asistencia,2
+604.05,Premios de puntualidad,2
+604.06,Vacaciones,2
+604.07,Prima vacacional,2
+604.08,Prima dominical,2
+604.09,Días festivos,2
+604.10,Gratificaciones,2
+604.11,Primas de antigüedad,2
+604.12,Aguinaldo,2
+604.13,Indemnizaciones,2
+604.14,Destajo,2
+604.15,Despensa,2
+604.16,Transporte,2
+604.17,Servicio médico,2
+604.18,Ayuda en gastos funerarios,2
+604.19,Fondo de ahorro,2
+604.20,Cuotas sindicales,2
+604.21,PTU,2
+604.22,Estímulo al personal,2
+604.23,Previsión social,2
+604.24,Aportaciones para el plan de jubilación,2
+604.25,Otras prestaciones al personal,2
+604.26,Cuotas al IMSS,2
+604.27,Aportaciones al INFONAVIT,2
+604.28,Aportaciones al SAR,2
+604.29,Impuesto estatal sobre nóminas,2
+604.30,Otras aportaciones,2
+604.31,Asimilados a salarios,2
+604.32,Servicios administrativos,2
+604.33,Servicios administrativos partes relacionadas,2
+604.34,Honorarios a personas físicas residentes nacionales,2
+604.35,Honorarios a personas físicas residentes nacionales partes relacionadas,2
+604.36,Honorarios a personas físicas residentes del extranjero,2
+604.37,Honorarios a personas físicas residentes del extranjero partes relacionadas,2
+604.38,Honorarios a personas morales residentes nacionales,2
+604.39,Honorarios a personas morales residentes nacionales partes relacionadas,2
+604.40,Honorarios a personas morales residentes del extranjero,2
+604.41,Honorarios a personas morales residentes del extranjero partes relacionadas,2
+604.42,Honorarios aduanales personas físicas,2
+604.43,Honorarios aduanales personas morales,2
+604.44,Honorarios al consejo de administración,2
+604.45,Arrendamiento a personas físicas residentes nacionales,2
+604.46,Arrendamiento a personas morales residentes nacionales,2
+604.47,Arrendamiento a residentes del extranjero,2
+604.48,Combustibles y lubricantes,2
+604.49,Viáticos y gastos de viaje,2
+604.50,"Teléfono, internet",2
+604.51,Agua,2
+604.52,Energía eléctrica,2
+604.53,Vigilancia y seguridad,2
+604.54,Limpieza,2
+604.55,Papelería y artículos de oficina,2
+604.56,Mantenimiento y conservación,2
+604.57,Seguros y fianzas,2
+604.58,Otros impuestos y derechos,2
+604.59,Recargos fiscales,2
+604.60,Cuotas y suscripciones,2
+604.61,Propaganda y publicidad,2
+604.62,Capacitación al personal,2
+604.63,Donativos y ayudas,2
+604.64,Asistencia técnica,2
+604.65,Regalías sujetas a otros porcentajes,2
+604.66,Regalías sujetas al 5%,2
+604.67,Regalías sujetas al 10%,2
+604.68,Regalías sujetas al 15%,2
+604.69,Regalías sujetas al 25%,2
+604.70,Regalías sujetas al 30%,2
+604.71,Regalías sin retención,2
+604.72,Fletes y acarreos,2
+604.73,Gastos de importación,2
+604.74,Patentes y marcas,2
+604.75,Uniformes,2
+604.76,Prediales,2
+604.77,Gastos de fabricación de urbanización,2
+604.78,Gastos de fabricación de construcción,2
+604.79,Fletes del extranjero,2
+604.80,Recolección de bienes del sector agropecuario y/o ganadero,2
+604.81,Gastos no deducibles (sin requisitos fiscales),2
+604.82,Otros gastos de fabricación,2
+605,Mano de obra directa,1
+605.01,Mano de obra,2
+605.02,Sueldos y Salarios,2
+605.03,Compensaciones,2
+605.04,Tiempos extras,2
+605.05,Premios de asistencia,2
+605.06,Premios de puntualidad,2
+605.07,Vacaciones,2
+605.08,Prima vacacional,2
+605.09,Prima dominical,2
+605.10,Días festivos,2
+605.11,Gratificaciones,2
+605.12,Primas de antigüedad,2
+605.13,Aguinaldo,2
+605.14,Indemnizaciones,2
+605.15,Destajo,2
+605.16,Despensa,2
+605.17,Transporte,2
+605.18,Servicio médico,2
+605.19,Ayuda en gastos funerarios,2
+605.20,Fondo de ahorro,2
+605.21,Cuotas sindicales,2
+605.22,PTU,2
+605.23,Estímulo al personal,2
+605.24,Previsión social,2
+605.25,Aportaciones para el plan de jubilación,2
+605.26,Otras prestaciones al personal,2
+605.27,Asimilados a salarios,2
+605.28,Cuotas al IMSS,2
+605.29,Aportaciones al INFONAVIT,2
+605.30,Aportaciones al SAR,2
+605.31,Otros costos de mano de obra directa,2
+606,Facilidades administrativas fiscales,1
+606.01,Facilidades administrativas fiscales,2
+607,Participación de los trabajadores en las utilidades,1
+607.01,Participación de los trabajadores en las utilidades,2
+608,Participación en resultados de subsidiarias,1
+608.01,Participación en resultados de subsidiarias,2
+609,Participación en resultados de asociadas,1
+609.01,Participación en resultados de asociadas,2
+610,Participación de los trabajadores en las utilidades diferida,1
+610.01,Participación de los trabajadores en las utilidades diferida,2
+611,Impuesto Sobre la renta,1
+611.01,Impuesto Sobre la renta,2
+611.02,Impuesto Sobre la renta por remanente distribuible,2
+612,Gastos no deducibles para CUFIN,1
+612.01,Gastos no deducibles para CUFIN,2
+613,Depreciación contable,1
+613.01,Depreciación de edificios,2
+613.02,Depreciación de maquinaria y equipo,2
+613.03,"Depreciación de automóviles, autobuses, camiones de carga, tractocamiones, montacargas y remolques",2
+613.04,Depreciación de mobiliario y equipo de oficina,2
+613.05,Depreciación de equipo de cómputo,2
+613.06,Depreciación de equipo de comunicación,2
+613.07,"Depreciación de activos biológicos, vegetales y semovientes",2
+613.08,Depreciación de otros activos fijos,2
+613.09,Depreciación de ferrocarriles,2
+613.10,Depreciación de embarcaciones,2
+613.11,Depreciación de aviones,2
+613.12,"Depreciación de troqueles, moldes, matrices y herramental",2
+613.13,Depreciación de equipo de comunicaciones telefónicas,2
+613.14,Depreciación de equipo de comunicación satelital,2
+613.15,Depreciación de equipo de adaptaciones para personas con capacidades diferentes,2
+613.16,Depreciación de maquinaria y equipo de generación de energía de fuentes renovables o de sistemas de cogeneración de electricidad eficiente,2
+613.17,Depreciación de adaptaciones y mejoras,2
+613.18,Depreciación de otra maquinaria y equipo,2
+614,Amortización contable,1
+614.01,Amortización de gastos diferidos,2
+614.02,Amortización de gastos pre operativos,2
+614.03,"Amortización de regalías, asistencia técnica y otros gastos diferidos",2
+614.04,Amortización de activos intangibles,2
+614.05,Amortización de gastos de organización,2
+614.06,Amortización de investigación y desarrollo de mercado,2
+614.07,Amortización de marcas y patentes,2
+614.08,Amortización de crédito mercantil,2
+614.09,Amortización de gastos de instalación,2
+614.10,Amortización de otros activos diferidos,2
+701,Gastos financieros,1
+701.01,Pérdida cambiaria,2
+701.02,Pérdida cambiaria nacional parte relacionada,2
+701.03,Pérdida cambiaria extranjero parte relacionada,2
+701.04,Intereses a cargo bancario nacional,2
+701.05,Intereses a cargo bancario extranjero,2
+701.06,Intereses a cargo de personas físicas nacional,2
+701.07,Intereses a cargo de personas físicas extranjero,2
+701.08,Intereses a cargo de personas morales nacional,2
+701.09,Intereses a cargo de personas morales extranjero,2
+701.10,Comisiones bancarias,2
+701.11,Otros gastos financieros,2
+702,Productos financieros,1
+702.01,Utilidad cambiaria,2
+702.02,Utilidad cambiaria nacional parte relacionada,2
+702.03,Utilidad cambiaria extranjero parte relacionada,2
+702.04,Intereses a favor bancarios nacional,2
+702.05,Intereses a favor bancarios extranjero,2
+702.06,Intereses a favor de personas físicas nacional,2
+702.07,Intereses a favor de personas físicas extranjero,2
+702.08,Intereses a favor de personas morales nacional,2
+702.09,Intereses a favor de personas morales extranjero,2
+702.10,Otros productos financieros,2
+703,Otros gastos,1
+703.01,Pérdida en venta y/o baja de terrenos,2
+703.02,Pérdida en venta y/o baja de edificios,2
+703.03,Pérdida en venta y/o baja de maquinaria y equipo,2
+703.04,"Pérdida en venta y/o baja de automóviles, autobuses, camiones de carga, tractocamiones, montacargas y remolques",2
+703.05,Pérdida en venta y/o baja de mobiliario y equipo de oficina,2
+703.06,Pérdida en venta y/o baja de equipo de cómputo,2
+703.07,Pérdida en venta y/o baja de equipo de comunicación,2
+703.08,"Pérdida en venta y/o baja de activos biológicos, vegetales y semovientes",2
+703.09,Pérdida en venta y/o baja de otros activos fijos,2
+703.10,Pérdida en venta y/o baja de ferrocarriles,2
+703.11,Pérdida en venta y/o baja de embarcaciones,2
+703.12,Pérdida en venta y/o baja de aviones,2
+703.13,"Pérdida en venta y/o baja de troqueles, moldes, matrices y herramental",2
+703.14,Pérdida en venta y/o baja de equipo de comunicaciones telefónicas,2
+703.15,Pérdida en venta y/o baja de equipo de comunicación satelital,2
+703.16,Pérdida en venta y/o baja de equipo de adaptaciones para personas con capacidades diferentes,2
+703.17,Pérdida en venta y/o baja de maquinaria y equipo de generación de energía de fuentes renovables o de sistemas de cogeneración de electricidad eficiente,2
+703.18,Pérdida en venta y/o baja de otra maquinaria y equipo,2
+703.19,Pérdida por enajenación de acciones,2
+703.20,Pérdida por enajenación de partes sociales,2
+703.21,Otros gastos,2
+704,Otros productos,1
+704.01,Ganancia en venta y/o baja de terrenos,2
+704.02,Ganancia en venta y/o baja de edificios,2
+704.03,Ganancia en venta y/o baja de maquinaria y equipo,2
+704.04,"Ganancia en venta y/o baja de automóviles, autobuses, camiones de carga, tractocamiones, montacargas y remolques",2
+704.05,Ganancia en venta y/o baja de mobiliario y equipo de oficina,2
+704.06,Ganancia en venta y/o baja de equipo de cómputo,2
+704.07,Ganancia en venta y/o baja de equipo de comunicación,2
+704.08,"Ganancia en venta y/o baja de activos biológicos, vegetales y semovientes",2
+704.09,Ganancia en venta y/o baja de otros activos fijos,2
+704.10,Ganancia en venta y/o baja de ferrocarriles,2
+704.11,Ganancia en venta y/o baja de embarcaciones,2
+704.12,Ganancia en venta y/o baja de aviones,2
+704.13,"Ganancia en venta y/o baja de troqueles, moldes, matrices y herramental",2
+704.14,Ganancia en venta y/o baja de equipo de comunicaciones telefónicas,2
+704.15,Ganancia en venta y/o baja de equipo de comunicación satelital,2
+704.16,Ganancia en venta y/o baja de equipo de adaptaciones para personas con capacidades diferentes,2
+704.17,Ganancia en venta de maquinaria y equipo de generación de energía de fuentes renovables o de sistemas de cogeneración de electricidad eficiente,2
+704.18,Ganancia en venta y/o baja de otra maquinaria y equipo,2
+704.19,Ganancia por enajenación de acciones,2
+704.20,Ganancia por enajenación de partes sociales,2
+704.21,Ingresos por estímulos fiscales,2
+704.22,Ingresos por condonación de adeudo,2
+704.23,Otros productos,2
+801,UFIN del ejercicio,1
+801.01,UFIN,2
+801.02,Contra cuenta UFIN,2
+802,CUFIN del ejercicio,1
+802.01,CUFIN,2
+802.02,Contra cuenta CUFIN,2
+803,CUFIN de ejercicios anteriores,1
+803.01,CUFIN de ejercicios anteriores,2
+803.02,Contra cuenta CUFIN de ejercicios anteriores,2
+804,CUFINRE del ejercicio,1
+804.01,CUFINRE,2
+804.02,Contra cuenta CUFINRE,2
+805,CUFINRE de ejercicios anteriores,1
+805.01,CUFINRE de ejercicios anteriores,2
+805.02,Contra cuenta CUFINRE de ejercicios anteriores,2
+806,CUCA del ejercicio,1
+806.01,CUCA,2
+806.02,Contra cuenta CUCA,2
+807,CUCA de ejercicios anteriores,1
+807.01,CUCA de ejercicios anteriores,2
+807.02,Contra cuenta CUCA de ejercicios anteriores,2
+808,Ajuste anual por inflación acumulable,1
+808.01,Ajuste anual por inflación acumulable,2
+808.02,Acumulación del ajuste anual inflacionario,2
+809,Ajuste anual por inflación deducible,1
+809.01,Ajuste anual por inflación deducible,2
+809.02,Deducción del ajuste anual inflacionario,2
+810,Deducción de inversión,1
+810.01,Deducción de inversión,2
+810.02,Contra cuenta deducción de inversiones,2
+811,Utilidad o pérdida fiscal en venta y/o baja de activo fijo,1
+811.01,Utilidad o pérdida fiscal en venta y/o baja de activo fijo,2
+811.02,Contra cuenta utilidad o pérdida fiscal en venta y/o baja de activo fijo,2
+812,Utilidad o pérdida fiscal en venta acciones o partes sociales,1
+812.01,Utilidad o pérdida fiscal en venta acciones o partes sociales,2
+812.02,Contra cuenta utilidad o pérdida fiscal en venta acciones o partes sociales,2
+813,Pérdidas fiscales pendientes de amortizar actualizadas de ejercicios anteriores,1
+813.01,Pérdidas fiscales pendientes de amortizar actualizadas de ejercicios anteriores,2
+813.02,Actualización de pérdidas fiscales pendientes de amortizar de ejercicios anteriores,2
+814,Mercancías recibidas en consignación,1
+814.01,Mercancías recibidas en consignación,2
+814.02,Consignación de mercancías recibidas,2
+815,Crédito fiscal de IVA e IEPS por la importación de mercancías para empresas certificadas,1
+815.01,Crédito fiscal de IVA e IEPS por la importación de mercancías,2
+815.02,Importación de mercancías con aplicación de crédito fiscal de IVA e IEPS,2
+816,Crédito fiscal de IVA e IEPS por la importación de activos fijos para empresas certificadas,1
+816.01,Crédito fiscal de IVA e IEPS por la importación de activo fijo,2
+816.02,Importación de activo fijo con aplicación de crédito fiscal de IVA e IEPS,2
+899,Otras cuentas de orden,1
+899.01,Otras cuentas de orden,2
+899.02,Contra cuenta otras cuentas de orden,2

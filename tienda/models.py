@@ -377,6 +377,22 @@ class CreditCardStatement(models.Model):
         return f"{self.tarjeta} - {self.periodo} - ${self.saldo_corte}"
 
 
+class SatGroupingCode(models.Model):
+    """Codigo agrupador de cuentas del SAT (Anexo 24 RMF), para contabilidad electronica."""
+
+    code = models.CharField(max_length=10, unique=True)
+    name = models.CharField(max_length=200)
+    level = models.PositiveSmallIntegerField()
+
+    class Meta:
+        ordering = ["code"]
+        verbose_name = "Código agrupador SAT"
+        verbose_name_plural = "Códigos agrupadores SAT"
+
+    def __str__(self):
+        return f"{self.code} {self.name}"
+
+
 class AccountingAccount(models.Model):
     ACCOUNT_TYPE_CHOICES = [
         ("asset", "Activo"),
@@ -391,6 +407,15 @@ class AccountingAccount(models.Model):
     name = models.CharField(max_length=120)
     account_type = models.CharField(max_length=20, choices=ACCOUNT_TYPE_CHOICES)
     parent = models.ForeignKey("self", on_delete=models.SET_NULL, null=True, blank=True, related_name="children")
+    sat_code = models.ForeignKey(
+        SatGroupingCode,
+        to_field="code",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="accounts",
+        verbose_name="Código agrupador SAT",
+    )
     is_active = models.BooleanField(default=True)
     description = models.TextField(blank=True, null=True)
 

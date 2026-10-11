@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import time
 import unicodedata
 from decimal import Decimal
 
@@ -161,8 +162,8 @@ def _token() -> str:
     return access_token
 
 
-def _request(method: str, path: str, payload: dict | None = None) -> dict:
-    token = _token()
+def _request(method: str, path: str, payload: dict | None = None, token: str | None = None) -> dict:
+    token = token or _token()
     response = requests.request(
         method=method,
         url=f"{_api_base_url()}{path}",
@@ -259,6 +260,39 @@ def _extract_rates(payload: dict) -> list[dict]:
     return sorted(candidates, key=lambda rate: rate["amount"])
 
 
+def _quotation_id(payload: dict):
+    data = payload.get("data")
+    if isinstance(data, dict):
+        return data.get("id")
+    return payload.get("id")
+
+
+def _quotation_completed(payload: dict) -> bool:
+    data = payload.get("data")
+    attributes = data.get("attributes", {}) if isinstance(data, dict) else {}
+    completed = payload.get("is_completed")
+    if completed is None and isinstance(attributes, dict):
+        completed = attributes.get("is_completed")
+    # Si la API no reporta el flag, no hay nada que esperar.
+    return completed is not False
+
+
+def _wait_for_quotation(payload: dict, token: str) -> dict:
+    """Skydropx cotiza de forma asincrona: el POST regresa con is_completed=False
+    y las tarifas en "pending" (sin total). Consultamos la cotizacion hasta que
+    termine o se agote el tiempo, y regresamos lo ultimo que haya."""
+    quotation_id = _quotation_id(payload)
+    if not quotation_id:
+        return payload
+    timeout = float(getattr(settings, "SKYDROP_QUOTE_TIMEOUT", 15))
+    interval = float(getattr(settings, "SKYDROP_QUOTE_POLL_INTERVAL", 1.0))
+    deadline = time.monotonic() + timeout
+    while not _quotation_completed(payload) and time.monotonic() < deadline:
+        time.sleep(interval)
+        payload = _request("GET", f"/api/v1/quotations/{quotation_id}", token=token)
+    return payload
+
+
 def quote_order(order) -> dict:
     if not is_skydrop_enabled():
         raise SkydropError("Faltan credenciales de Skydrop en settings.")
@@ -268,6 +302,7 @@ def quote_order(order) -> dict:
     origin_payload = _validate_origin()
     destination_payload = _destination_payload(order)
 
+    token = _token()
     response = _request(
         "POST",
         "/api/v1/quotations",
@@ -279,7 +314,9 @@ def quote_order(order) -> dict:
                 "parcel": _parcel_payload(order),
             }
         },
+        token=token,
     )
+    response = _wait_for_quotation(response, token)
     rates = _extract_rates(response)
     if not rates:
         summary = []
@@ -300,7 +337,7 @@ def quote_order(order) -> dict:
 
     best_rate = rates[0]
     return {
-        "quotation_id": response.get("data", {}).get("id") if isinstance(response.get("data"), dict) else response.get("id"),
+        "quotation_id": _quotation_id(response),
         "best_rate": best_rate,
         "rates": rates,
         "payload": response,

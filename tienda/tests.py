@@ -708,3 +708,423 @@ class RecurringExpenseTests(TestCase):
         self.assertEqual(respuesta.status_code, 200)
         listado = self.client.get(reverse("admin:tienda_expense_changelist"))
         self.assertContains(listado, "Gastos recurrentes")
+
+
+# ---------------------------------------------------------------------------
+# Dinero: polizas de venta, punto de venta y cierre del checkout
+# ---------------------------------------------------------------------------
+
+def hora_local(anio, mes, dia, hora):
+    """Fecha y hora en la zona del negocio (America/Mexico_City)."""
+    from datetime import datetime
+    from django.utils import timezone as tz
+
+    return tz.make_aware(datetime(anio, mes, dia, hora, 0))
+
+
+class SaleJournalEntryTests(TestCase):
+    """La poliza de una venta cuadra, no se duplica y cae en el dia local."""
+
+    def setUp(self):
+        self.producto = make_producto(precio=500)
+
+    def _venta(self, *, descuento="0.00", envio=None, creada=None):
+        order = Order.objects.create(
+            status="Completed",
+            sales_channel="pos",
+            payment_method="cash",
+            discount_amount=Decimal(descuento),
+            shipping_quote_amount=Decimal(envio) if envio else None,
+        )
+        OrderItem.objects.create(
+            order=order, product=self.producto, quantity=2,
+            price=Decimal("500.00"), unit_cost=Decimal("100.00"),
+        )
+        if creada:
+            Order.objects.filter(pk=order.pk).update(created_at=creada)
+            order.refresh_from_db()
+        lineas = [{"product": self.producto, "quantity": 2, "unit_cost": Decimal("100.00")}]
+        return order, lineas
+
+    def _por_cuenta(self, entry):
+        totales = {}
+        for linea in entry.lines.select_related("account"):
+            debe, haber = totales.get(linea.account.code, (Decimal("0"), Decimal("0")))
+            totales[linea.account.code] = (debe + linea.debit, haber + linea.credit)
+        return totales
+
+    def test_poliza_cuadra_con_descuento_y_envio(self):
+        from tienda.admin.comun import _post_order_journal_entry
+
+        order, lineas = self._venta(descuento="50.00", envio="99.00")
+        entry = _post_order_journal_entry(order, lineas)
+
+        self.assertEqual(order.total_price, Decimal("1049.00"))
+        self.assertEqual(self._por_cuenta(entry), {
+            "1000": (Decimal("1049.00"), Decimal("0.00")),  # caja cobra el total
+            "4000": (Decimal("0.00"), Decimal("1000.00")),  # venta de producto
+            "4010": (Decimal("50.00"), Decimal("0.00")),    # descuento
+            "4020": (Decimal("0.00"), Decimal("99.00")),    # envio cobrado
+            "5000": (Decimal("200.00"), Decimal("0.00")),   # costo congelado x2
+            "1100": (Decimal("0.00"), Decimal("200.00")),   # sale del inventario
+        })
+
+    def test_poliza_no_se_duplica(self):
+        from tienda.admin.comun import _post_order_journal_entry
+
+        order, lineas = self._venta()
+        self.assertIsNotNone(_post_order_journal_entry(order, lineas))
+        self.assertIsNone(_post_order_journal_entry(order, lineas))
+        self.assertEqual(JournalEntry.objects.filter(order=order).count(), 1)
+
+    def test_venta_de_noche_cae_en_el_dia_local(self):
+        """21:00 del 31 de enero en CDMX ya es 1 de febrero en UTC."""
+        from tienda.admin.comun import _post_order_journal_entry
+
+        order, lineas = self._venta(creada=hora_local(2026, 1, 31, 21))
+        entry = _post_order_journal_entry(order, lineas)
+        self.assertEqual(entry.date, date(2026, 1, 31))
+
+    def test_calendario_pone_la_venta_de_noche_en_su_dia(self):
+        from tienda.admin.comun import _build_business_calendar_context
+
+        self._venta(creada=hora_local(2026, 1, 31, 21))
+        contexto = _build_business_calendar_context(2026, 1)
+        dias = {d["date"]: d for semana in contexto["calendar_weeks"] for d in semana}
+        ventas = [e for e in dias[date(2026, 1, 31)]["events"] if e["label"] == "Ventas"]
+        self.assertEqual(len(ventas), 1)
+        self.assertEqual(ventas[0]["total"], Decimal("1000.00"))
+
+    def test_poliza_que_no_cuadra_no_se_guarda(self):
+        from tienda.admin.comun import _account, _create_balanced_journal_entry
+
+        with self.assertRaises(ValueError):
+            _create_balanced_journal_entry(
+                date_value=date(2026, 1, 1), entry_type="diary", source="manual",
+                concept="Descuadrada",
+                lines=[
+                    {"account": _account("1000"), "debit": Decimal("100.00")},
+                    {"account": _account("4000"), "credit": Decimal("99.99")},
+                ],
+            )
+        self.assertFalse(JournalEntry.objects.exists())
+
+    def test_poliza_en_cero_no_se_guarda(self):
+        from tienda.admin.comun import _account, _create_balanced_journal_entry
+
+        with self.assertRaises(ValueError):
+            _create_balanced_journal_entry(
+                date_value=date(2026, 1, 1), entry_type="diary", source="manual",
+                concept="Vacia",
+                lines=[
+                    {"account": _account("1000"), "debit": Decimal("0")},
+                    {"account": _account("4000"), "credit": Decimal("0")},
+                ],
+            )
+        self.assertFalse(JournalEntry.objects.exists())
+
+
+class PointOfSaleTests(TestCase):
+    """Venta desde el POS: stock, costo congelado, fecha y que nada quede a medias."""
+
+    def setUp(self):
+        self.user = User.objects.create_superuser(
+            username="cajero", email="cajero@example.com", password="clave-secreta"
+        )
+        self.client = Client()
+        self.client.force_login(self.user)
+        self.producto = make_producto(precio=500, stock=5)
+        self.producto.costo = Decimal("100.00")
+        self.producto.save(update_fields=["costo"])
+        self.producto.variants.all().delete()  # vender del stock general
+        self.url = reverse("admin:tienda_order_point_of_sale")
+
+    def _vender(self, cantidad, **cabecera):
+        datos = {
+            "payment_method": "cash",
+            "discount_amount": "0",
+            "internal_note": "",
+            "sale_date": "",
+            "pos-TOTAL_FORMS": "1",
+            "pos-INITIAL_FORMS": "1",
+            "pos-MIN_NUM_FORMS": "0",
+            "pos-MAX_NUM_FORMS": "1000",
+            "pos-0-item_key": f"p:{self.producto.id}",
+            "pos-0-quantity": str(cantidad),
+            "pos-0-unit_price": "500.00",
+        }
+        datos.update(cabecera)
+        return self.client.post(self.url, datos)
+
+    def test_venta_descuenta_stock_congela_costo_y_genera_poliza(self):
+        respuesta = self._vender(2)
+        self.assertEqual(respuesta.status_code, 302)
+
+        order = Order.objects.get(sales_channel="pos")
+        self.producto.refresh_from_db()
+        self.assertEqual(self.producto.stock, 3)
+        self.assertEqual(order.items.get().unit_cost, Decimal("100.00"))
+        self.assertEqual(order.total_price, Decimal("1000.00"))
+        self.assertTrue(JournalEntry.objects.filter(order=order, source="pos").exists())
+
+    def test_fecha_atrasada_capturada_de_noche_respeta_el_dia(self):
+        """Capturar a las 20:00 (ya es el dia siguiente en UTC) una venta de ayer."""
+        from unittest import mock
+        from django.utils import timezone as tz
+
+        from datetime import timezone as dt_timezone
+
+        ahora = hora_local(2026, 3, 10, 20).astimezone(dt_timezone.utc)  # Django da UTC
+        with mock.patch.object(tz, "now", return_value=ahora):
+            self._vender(1, sale_date="2026-03-09")
+
+        order = Order.objects.get(sales_channel="pos")
+        self.assertEqual(tz.localdate(order.created_at), date(2026, 3, 9))
+        self.assertEqual(JournalEntry.objects.get(order=order).date, date(2026, 3, 9))
+
+    def test_no_vende_mas_de_lo_que_hay(self):
+        self._vender(6)
+        self.assertFalse(Order.objects.exists())
+        self.producto.refresh_from_db()
+        self.assertEqual(self.producto.stock, 5)
+
+    def test_si_la_poliza_falla_no_queda_venta_a_medias(self):
+        # Un descuento mayor a la venta descuadra la poliza: todo se revierte.
+        self._vender(1, discount_amount="900.00")
+        self.assertFalse(Order.objects.exists())
+        self.assertFalse(OrderItem.objects.exists())
+        self.producto.refresh_from_db()
+        self.assertEqual(self.producto.stock, 5)
+
+
+class FinalizePaidOrderTests(TestCase):
+    """El retorno de Stripe y el webhook no descuentan el stock dos veces."""
+
+    def test_finalizar_dos_veces_descuenta_una_sola(self):
+        from tienda.views import _finalize_paid_order
+
+        producto = make_producto(stock=5)
+        producto.variants.all().delete()
+        order = Order.objects.create(status="Pending")
+        OrderItem.objects.create(order=order, product=producto, quantity=2, price=Decimal("500.00"))
+
+        _, primera = _finalize_paid_order(order.id, created_by=None, note="pago")
+        _, segunda = _finalize_paid_order(order.id, created_by=None, note="webhook")
+
+        self.assertTrue(primera)
+        self.assertFalse(segunda)
+        producto.refresh_from_db()
+        self.assertEqual(producto.stock, 3)
+
+
+# ---------------------------------------------------------------------------
+# Codigo agrupador del SAT
+# ---------------------------------------------------------------------------
+
+
+class SatGroupingCodeTests(TestCase):
+    """El catalogo del SAT se carga completo y las cuentas quedan ligadas."""
+
+    def test_catalogo_completo_cargado_por_la_migracion(self):
+        from tienda.models import SatGroupingCode
+
+        self.assertEqual(SatGroupingCode.objects.count(), 1067)
+        self.assertEqual(SatGroupingCode.objects.get(code="101.01").name, "Caja y efectivo")
+        # el PDF trae 402.02 sin nivel; se deduce del codigo
+        self.assertEqual(SatGroupingCode.objects.get(code="402.02").level, 2)
+
+    def test_cada_subcuenta_tiene_su_cuenta_padre(self):
+        from tienda.models import SatGroupingCode
+
+        codigos = set(SatGroupingCode.objects.values_list("code", flat=True))
+        huerfanos = [c for c in codigos if c.split(".")[0] not in codigos]
+        self.assertEqual(huerfanos, [])
+
+    def test_el_mapeo_solo_usa_codigos_que_existen(self):
+        from tienda.models import SatGroupingCode
+        from tienda.sat import CODIGO_SAT_POR_CUENTA
+
+        existentes = set(SatGroupingCode.objects.values_list("code", flat=True))
+        self.assertEqual(set(CODIGO_SAT_POR_CUENTA.values()) - existentes, set())
+
+    def test_cuenta_creada_por_el_sistema_nace_ligada(self):
+        from tienda.accounting import cuenta
+        from tienda.admin.comun import _account
+
+        self.assertEqual(_account("4000").sat_code_id, "401.39")
+        self.assertEqual(cuenta("6200").sat_code_id, "602.74")
+
+    def test_la_migracion_liga_sin_pisar_lo_asignado_a_mano(self):
+        import importlib
+        from django.apps import apps
+
+        caja, _ = AccountingAccount.objects.update_or_create(
+            code="1000", defaults={"name": "Caja", "account_type": "asset", "sat_code": None}
+        )
+        bancos, _ = AccountingAccount.objects.update_or_create(
+            code="1010", defaults={"name": "Bancos", "account_type": "asset", "sat_code_id": "102.02"}
+        )
+        migracion = importlib.import_module("tienda.migrations.0042_cargar_sat_codigo_agrupador")
+        migracion.cargar(apps, None)
+
+        caja.refresh_from_db()
+        bancos.refresh_from_db()
+        self.assertEqual(caja.sat_code_id, "101.01")
+        self.assertEqual(bancos.sat_code_id, "102.02")
+
+    def test_pantallas_del_admin(self):
+        user = User.objects.create_superuser(username="sat", email="sat@example.com", password="x")
+        self.client.force_login(user)
+        AccountingAccount.objects.create(code="9999", name="Sin ligar", account_type="expense")
+
+        sin_codigo = self.client.get(reverse("admin:tienda_accountingaccount_changelist") + "?sat=no")
+        self.assertContains(sin_codigo, "Sin ligar")
+        catalogo = self.client.get(reverse("admin:tienda_satgroupingcode_changelist") + "?q=fronteriza")
+        self.assertContains(catalogo, "401.39")
+        busqueda = self.client.get(reverse("admin:autocomplete"), {
+            "app_label": "tienda", "model_name": "accountingaccount",
+            "field_name": "sat_code", "term": "caja",
+        })
+        self.assertContains(busqueda, "101.01")
+
+
+class SatXmlTests(TestCase):
+    """Catalogo y balanza XML de la contabilidad electronica 1.3."""
+
+    RFC = "CCA250101AB1"
+    NS_CT = "{http://www.sat.gob.mx/esquemas/ContabilidadE/1_3/CatalogoCuentas}"
+    NS_BN = "{http://www.sat.gob.mx/esquemas/ContabilidadE/1_3/BalanzaComprobacion}"
+
+    def _poliza(self, fecha, cargo, abono, importe):
+        from tienda.admin.comun import _account, _create_balanced_journal_entry
+
+        _create_balanced_journal_entry(
+            date_value=fecha, entry_type="diary", source="manual", concept="Prueba",
+            lines=[
+                {"account": AccountingAccount.objects.filter(code=cargo).first() or _account(cargo),
+                 "debit": Decimal(importe)},
+                {"account": AccountingAccount.objects.filter(code=abono).first() or _account(abono),
+                 "credit": Decimal(importe)},
+            ],
+        )
+
+    def _ctas(self, xml, ns):
+        from xml.etree import ElementTree as ET
+
+        raiz = ET.fromstring(xml)
+        return raiz, {c.get("NumCta"): c.attrib for c in raiz.findall(f"{ns}Ctas")}
+
+    def test_naturaleza_sale_del_codigo_agrupador(self):
+        from tienda.contabilidad_electronica import naturaleza
+
+        casos = {
+            "101.01": "D", "171.01": "A", "201.01": "A", "301.01": "A",
+            "401.39": "A", "402.05": "D", "501.01": "D", "503.01": "A",
+            "601.84": "D", "701.01": "D", "702.01": "A", "899.01": "D", "899.02": "A",
+        }
+        for codigo, esperada in casos.items():
+            self.assertEqual(naturaleza(codigo), esperada, codigo)
+
+    def test_rfc_valido_e_invalido(self):
+        from tienda.contabilidad_electronica import ContabilidadElectronicaError, validar_rfc
+
+        self.assertEqual(validar_rfc(" cca250101ab1 "), "CCA250101AB1")  # persona moral
+        self.assertEqual(validar_rfc("GOMI900515H23"), "GOMI900515H23")  # persona fisica
+        for malo in ("", "ABC", "CCA25010AB1", "CCA250101AB1X"):
+            with self.assertRaises(ContabilidadElectronicaError):
+                validar_rfc(malo)
+
+    def test_catalogo_lleva_codigo_naturaleza_y_jerarquia(self):
+        from tienda.contabilidad_electronica import catalogo_xml
+
+        caja = AccountingAccount.objects.get(code="1000")
+        AccountingAccount.objects.create(
+            code="1000-01", name="Caja tienda", account_type="asset", parent=caja, sat_code_id="101.01"
+        )
+        raiz, ctas = self._ctas(catalogo_xml(rfc=self.RFC, anio=2026, mes=2), self.NS_CT)
+
+        self.assertEqual(raiz.tag, f"{self.NS_CT}Catalogo")
+        self.assertEqual((raiz.get("Version"), raiz.get("RFC"), raiz.get("Mes"), raiz.get("Anio")),
+                         ("1.3", self.RFC, "02", "2026"))
+        self.assertEqual(ctas["4000"]["CodAgrup"], "401.39")
+        self.assertEqual(ctas["4000"]["Natur"], "A")
+        self.assertEqual(ctas["4010"]["Natur"], "D")  # descuentos: contra ingreso
+        self.assertEqual(ctas["1000"]["Nivel"], "1")
+        self.assertNotIn("SubCtaDe", ctas["1000"])
+        self.assertEqual((ctas["1000-01"]["SubCtaDe"], ctas["1000-01"]["Nivel"]), ("1000", "2"))
+
+    def test_no_genera_si_falta_un_codigo_sat(self):
+        from tienda.contabilidad_electronica import ContabilidadElectronicaError, catalogo_xml
+
+        AccountingAccount.objects.create(code="9999", name="Sin ligar", account_type="expense")
+        with self.assertRaisesMessage(ContabilidadElectronicaError, "9999 Sin ligar"):
+            catalogo_xml(rfc=self.RFC, anio=2026, mes=2)
+
+    def test_balanza_arrastra_saldos_del_mes_anterior(self):
+        from tienda.contabilidad_electronica import balanza_xml
+
+        self._poliza(date(2026, 1, 15), "1000", "4000", "1000.00")  # enero: venta
+        self._poliza(date(2026, 2, 10), "1000", "4000", "500.00")   # febrero: venta
+        self._poliza(date(2026, 2, 20), "6000", "1000", "200.00")   # febrero: gasto
+        self._poliza(date(2026, 3, 1), "1000", "4000", "999.00")    # marzo: no cuenta
+
+        raiz, ctas = self._ctas(balanza_xml(rfc=self.RFC, anio=2026, mes=2), self.NS_BN)
+        self.assertEqual(raiz.get("TipoEnvio"), "N")
+        self.assertEqual(
+            {k: ctas["1000"][k] for k in ("SaldoIni", "Debe", "Haber", "SaldoFin")},
+            {"SaldoIni": "1000.00", "Debe": "500.00", "Haber": "200.00", "SaldoFin": "1300.00"},
+        )
+        # Ventas es acreedora: su saldo crece con los abonos
+        self.assertEqual(
+            {k: ctas["4000"][k] for k in ("SaldoIni", "Debe", "Haber", "SaldoFin")},
+            {"SaldoIni": "1000.00", "Debe": "0.00", "Haber": "500.00", "SaldoFin": "1500.00"},
+        )
+        self.assertEqual(ctas["6000"]["SaldoFin"], "200.00")
+
+    def test_cuenta_padre_suma_sus_subcuentas(self):
+        from tienda.contabilidad_electronica import balanza
+
+        bancos = AccountingAccount.objects.get(code="1010")
+        AccountingAccount.objects.create(
+            code="1010-01", name="BBVA", account_type="asset", parent=bancos, sat_code_id="102.01"
+        )
+        self._poliza(date(2026, 2, 5), "1010-01", "4000", "300.00")
+        filas = {f["cuenta"].code: f for f in balanza(anio=2026, mes=2)}
+        self.assertEqual(filas["1010"]["saldo_fin"], Decimal("300.00"))
+        self.assertFalse(filas["1010"]["es_hoja"])
+
+    def test_complementaria_pide_fecha_de_modificacion(self):
+        from tienda.contabilidad_electronica import ContabilidadElectronicaError, balanza_xml
+
+        with self.assertRaises(ContabilidadElectronicaError):
+            balanza_xml(rfc=self.RFC, anio=2026, mes=2, tipo_envio="C")
+        raiz, _ = self._ctas(
+            balanza_xml(rfc=self.RFC, anio=2026, mes=2, tipo_envio="C", fecha_mod=date(2026, 3, 20)),
+            self.NS_BN,
+        )
+        self.assertEqual((raiz.get("TipoEnvio"), raiz.get("FechaModBal")), ("C", "2026-03-20"))
+
+    def test_pantalla_y_descarga_en_zip_con_nombre_del_sat(self):
+        import io
+        import zipfile
+
+        user = User.objects.create_superuser(username="sat-xml", email="x@example.com", password="x")
+        self.client.force_login(user)
+        url = reverse("admin:tienda_journalentry_sat_xml")
+
+        pagina = self.client.get(url, {"month": "2026-02", "rfc": self.RFC})
+        self.assertContains(pagina, f"{self.RFC}202602CT.zip")
+
+        respuesta = self.client.get(url, {"month": "2026-02", "rfc": self.RFC, "descargar": "balanza"})
+        self.assertEqual(respuesta["Content-Type"], "application/zip")
+        self.assertIn(f"{self.RFC}202602BN.zip", respuesta["Content-Disposition"])
+        with zipfile.ZipFile(io.BytesIO(respuesta.content)) as zf:
+            self.assertEqual(zf.namelist(), [f"{self.RFC}202602BN.xml"])
+
+    def test_descarga_con_error_regresa_a_la_pantalla_con_aviso(self):
+        user = User.objects.create_superuser(username="sat-err", email="e@example.com", password="x")
+        self.client.force_login(user)
+        url = reverse("admin:tienda_journalentry_sat_xml")
+
+        respuesta = self.client.get(url, {"month": "2026-02", "rfc": "MALO", "descargar": "catalogo"}, follow=True)
+        self.assertContains(respuesta, "no tiene un formato válido")

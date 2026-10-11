@@ -60,6 +60,9 @@ TEMPLATES = [
 
 SITE_ID = config('SITE_ID', default=4, cast=int)
 
+# RFC del negocio para la contabilidad electronica del SAT (catalogo y balanza XML).
+SAT_RFC = config('SAT_RFC', default='')
+
 # ── Instagram (Behold.so widget) ───────────────────────────────────────────
 # Conecta @cultclasiccs en https://behold.so/ y pega aquí el feed ID:
 #   BEHOLD_FEED_ID=xxxxxxxxxxxxxxxxxxxx
