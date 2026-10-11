@@ -13,6 +13,7 @@ from django.core.files.storage import FileSystemStorage
 from django.core.mail import send_mail
 from django.core.paginator import Paginator
 from django.db import transaction
+from django.db.models import F
 from django.http import JsonResponse, HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
@@ -33,6 +34,7 @@ from .models import (
     OrderItem,
     Producto,
     ProductVariant,
+    PromoCode,
     ShippingAddress,
     available_stock_for_selection,
     find_variant_for_selection,
@@ -659,6 +661,43 @@ def _aplicar_envio_gratis(order):
     return Decimal("0.00")
 
 
+def _recalcular_cupon(order):
+    """Recalcula el descuento del cupon (PromoCode del admin) del pedido.
+
+    Se llama cada vez que puede cambiar el subtotal o el envio: el descuento
+    se guarda como monto en el pedido, asi que hay que rehacerlo. Si el
+    cupon dejo de valer (expiro, se agoto, ya no llega a la compra minima)
+    se quita y se devuelve el motivo para avisarle al cliente.
+    """
+    promo = order.promo_code
+    motivo = None
+    descuento = Decimal("0.00")
+    if promo is not None:
+        subtotal = Decimal(str(order.subtotal_price))
+        valido, motivo = promo.is_valid(subtotal)
+        if not valido:
+            order.promo_code = None
+        elif promo.discount_type == "free_shipping":
+            descuento = Decimal(str(order.shipping_total))
+        else:
+            descuento = promo.compute_discount(subtotal)
+    if order.promo_code_id != getattr(promo, "id", None) or order.discount_amount != descuento:
+        order.discount_amount = descuento
+        order.save(update_fields=["promo_code", "discount_amount"])
+    return motivo
+
+
+def _descuento_de_stripe(checkout_session):
+    """Descuento que Stripe aplico en su pagina (p. ej. BIENVENIDA10), en pesos."""
+    try:
+        centavos = (checkout_session.get("total_details") or {}).get("amount_discount") or 0
+    except AttributeError:
+        return Decimal("0.00")
+    if not isinstance(centavos, int):
+        return Decimal("0.00")
+    return (Decimal(centavos) / 100).quantize(Decimal("0.01"))
+
+
 def _fallback_shipping_amount():
     return Decimal(str(getattr(settings, "FALLBACK_SHIPPING_FLAT_RATE", "150.00"))).quantize(
         Decimal("0.01"), rounding=ROUND_HALF_UP
@@ -880,6 +919,10 @@ def shipping_details(request):
             initial.update({"contact_email": order.contact_email, "contact_name": order.contact_name})
         form = ShippingAddressForm(initial=initial, require_contact=is_guest)
 
+    motivo = _recalcular_cupon(order)
+    if motivo:
+        messages.warning(request, f"Quitamos tu cupón: {motivo}.")
+
     can_continue_to_payment = hasattr(order, "shipping_address") and bool(order.shipping_quote_amount)
     if is_guest and not order.contact_email:
         can_continue_to_payment = False
@@ -891,6 +934,50 @@ def shipping_details(request):
         'can_continue_to_payment': can_continue_to_payment,
     }
     return render(request, 'tienda/shipping_details.html', context)
+
+
+def aplicar_cupon(request):
+    """Aplica un codigo de descuento creado en el admin (PromoCode) al pedido."""
+    if request.method != "POST":
+        return redirect("tienda:shipping_details")
+    order = _session_order_or_404(request)
+    if order is None or order.status != "Pending":
+        return redirect("tienda:carrito")
+
+    codigo = (request.POST.get("codigo") or "").strip()
+    if request.POST.get("quitar"):
+        order.promo_code = None
+        _recalcular_cupon(order)
+        messages.info(request, "Quitamos el cupón.")
+        return redirect("tienda:shipping_details")
+    if not codigo:
+        messages.error(request, "Escribe un código de descuento.")
+        return redirect("tienda:shipping_details")
+
+    promo = PromoCode.objects.filter(code__iexact=codigo).first()
+    if promo is None:
+        bienvenida = getattr(settings, "WELCOME_COUPON_CODE", "BIENVENIDA10")
+        if codigo.upper() == bienvenida.upper():
+            messages.info(
+                request,
+                f"El código {bienvenida} se aplica en la página de pago, en \"Agregar código promocional\".",
+            )
+        else:
+            messages.error(request, "Ese código de descuento no existe.")
+        return redirect("tienda:shipping_details")
+
+    valido, motivo = promo.is_valid(Decimal(str(order.subtotal_price)))
+    if not valido:
+        messages.error(request, f"No pudimos aplicar {promo.code}: {motivo}.")
+        return redirect("tienda:shipping_details")
+
+    order.promo_code = promo
+    _recalcular_cupon(order)
+    if order.discount_amount:
+        messages.success(request, f"Cupón {promo.code} aplicado: -${order.discount_amount:.2f} MXN.")
+    else:
+        messages.info(request, f"Cupón {promo.code} aplicado. El descuento se verá al calcular el envío.")
+    return redirect("tienda:shipping_details")
 
 def tienda_view(request):
     # Sin foto la rejilla dibuja un recuadro vacio, asi que no se muestran
@@ -1373,6 +1460,10 @@ def stripe_checkout(request):
     if not contact_email:
         messages.error(request, "Necesitamos tu correo de contacto antes de pasar al pago.")
         return redirect("tienda:shipping_details")
+    motivo = _recalcular_cupon(order)
+    if motivo:
+        messages.warning(request, f"Quitamos tu cupón: {motivo}. Revisa el total antes de pagar.")
+        return redirect("tienda:shipping_details")
 
     # Prepara los items para Stripe (Stripe requiere montos en centavos)
     line_items = []
@@ -1405,17 +1496,31 @@ def stripe_checkout(request):
 
     # Crea la sesión de Checkout de Stripe
     try:
+        # Stripe no deja combinar un descuento ya aplicado con la caja de
+        # codigos promocionales: con cupon del admin se manda el descuento
+        # como cupon de un solo uso; sin el, queda la caja (BIENVENIDA10).
+        if order.discount_amount:
+            stripe_coupon = stripe.Coupon.create(
+                amount_off=int((order.discount_amount * 100).quantize(Decimal("1"), rounding=ROUND_HALF_UP)),
+                currency="mxn",
+                duration="once",
+                max_redemptions=1,
+                name=f"Cupón {order.promo_code.code}" if order.promo_code else "Descuento",
+            )
+            descuento_kwargs = {"discounts": [{"coupon": stripe_coupon.id}]}
+        else:
+            descuento_kwargs = {"allow_promotion_codes": True}
         session = stripe.checkout.Session.create(
             payment_method_types=['card'],
             line_items=line_items,
             mode='payment',
             metadata={"order_id": str(order.id)},
             customer_email=contact_email,
-            allow_promotion_codes=True,  # permite aplicar cupón BIENVENIDA10
             # Genera URLs absolutas para éxito y cancelación
             success_url=request.build_absolute_uri(reverse('tienda:payment_success')) + "?session_id={CHECKOUT_SESSION_ID}",
             cancel_url=request.build_absolute_uri(reverse('tienda:payment_cancel')),
             locale='es',  # Opcional: para mostrar el checkout en español
+            **descuento_kwargs,
         )
     except stripe.error.StripeError as exc:
         logger.exception("Stripe checkout session creation failed for order %s", order.id)
@@ -1433,7 +1538,7 @@ def stripe_checkout(request):
     # Redirige al usuario a la URL de Stripe para procesar el pago
     return redirect(session.url, code=303)
 
-def _finalize_paid_order(order_id, *, created_by, note):
+def _finalize_paid_order(order_id, *, created_by, note, stripe_discount=None):
     """Marca una orden pagada como Completed descontando inventario de forma
     idempotente y bajo bloqueo de fila.
 
@@ -1464,8 +1569,16 @@ def _finalize_paid_order(order_id, *, created_by, note):
                 },
             )
 
+        # El uso del cupon se cuenta solo cuando el pago se confirma, una vez.
+        if order.promo_code_id:
+            PromoCode.objects.filter(pk=order.promo_code_id).update(uses_count=F("uses_count") + 1)
+        elif stripe_discount and not order.discount_amount:
+            # Codigo aplicado en la pagina de Stripe (BIENVENIDA10): se registra
+            # para que el total del pedido cuadre con lo cobrado.
+            order.discount_amount = stripe_discount
+
         order.status = "Completed"
-        order.save(update_fields=["status"])
+        order.save(update_fields=["status", "discount_amount"])
     return order, True
 
 
@@ -1523,6 +1636,7 @@ def payment_success(request):
                 order.id,
                 created_by=request.user if request.user.is_authenticated else None,
                 note=f"Descuento automático al completar el pedido #{order.id}.",
+                stripe_discount=_descuento_de_stripe(checkout_session),
             )
         except ValueError:
             logger.exception("Stock insuficiente al finalizar el pedido %s tras el pago", order.id)
@@ -1542,7 +1656,8 @@ def payment_success(request):
                     f"Tu pedido #{order.id} ha sido confirmado.\n"
                     f"Subtotal: ${order.subtotal_price:.2f} MXN\n"
                     f"Envío: ${order.shipping_total:.2f} MXN\n"
-                    f"Total: ${order.total_price:.2f} MXN\n\n"
+                    + (f"Descuento: -${order.discount_amount:.2f} MXN\n" if order.discount_amount else "")
+                    + f"Total: ${order.total_price:.2f} MXN\n\n"
                     f"Rastrea tu pedido en {order.get_rastreo_url()} con el número #{order.id} y este correo.\n\n"
                     "¡Gracias por comprar en Cult Clasiccs!"
                 )
@@ -1706,6 +1821,7 @@ def stripe_webhook(request):
                 order.id,
                 created_by=None,
                 note=f"Descuento vía Stripe webhook para pedido #{order.id}.",
+                stripe_discount=_descuento_de_stripe(session),
             )
         except ValueError:
             logger.exception("Stripe webhook: stock insuficiente al completar pedido #%s", order.id)

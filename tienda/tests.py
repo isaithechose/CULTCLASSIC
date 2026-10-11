@@ -1384,3 +1384,127 @@ class SkydropOrigenTests(TestCase):
         with override_settings(**{**self.ORIGEN, "SKYDROP_ORIGIN_NEIGHBORHOOD": ""}):
             with self.assertRaisesMessage(SkydropError, "colonia"):
                 _validate_origin()
+
+
+@override_settings(
+    SKYDROP_CLIENT_ID="",
+    SKYDROP_CLIENT_SECRET="",
+    STRIPE_SECRET_KEY="sk_test_dummy",
+    FALLBACK_SHIPPING_FLAT_RATE="150.00",
+    FREE_SHIPPING_THRESHOLD="100000.00",
+    EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+)
+class CuponesCheckoutTests(TestCase):
+    """Los codigos del admin (PromoCode) se aplican en el checkout."""
+
+    def setUp(self):
+        from tienda.models import PromoCode
+
+        self.PromoCode = PromoCode
+        self.client = Client()
+        self.producto = make_producto(precio=500, stock=5)
+        session = self.client.session
+        session["carrito"] = {
+            f"{self.producto.id}-M-negro--": {
+                "nombre": self.producto.nombre, "precio": "500.00", "cantidad": 2,
+                "talla": "M", "color": "negro", "diseño_pecho": "", "diseño_espalda": "",
+            }
+        }
+        session.save()
+        self.client.get(reverse("tienda:checkout"))
+        self.client.post(reverse("tienda:shipping_details"), {
+            **GuestCheckoutTests.DIRECCION, "contact_email": "ana@example.com", "contact_name": "Ana Lopez",
+        })
+        self.order = Order.objects.get()
+
+    def _aplicar(self, codigo):
+        return self.client.post(reverse("tienda:aplicar_cupon"), {"codigo": codigo})
+
+    def test_porcentaje_sobre_productos(self):
+        self.PromoCode.objects.create(code="VERANO20", discount_type="percentage", discount_value=20)
+        self._aplicar("verano20")
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.promo_code.code, "VERANO20")
+        self.assertEqual(self.order.discount_amount, Decimal("200.00"))
+        self.assertEqual(self.order.total_price, Decimal("950.00"))  # 1000 + 150 - 200
+        pagina = self.client.get(reverse("tienda:shipping_details"))
+        self.assertContains(pagina, "Descuento (VERANO20)")
+        self.assertContains(pagina, "Quitar cupón")
+
+    def test_monto_fijo_y_envio_gratis(self):
+        self.PromoCode.objects.create(code="MENOS100", discount_type="fixed", discount_value=100)
+        self._aplicar("MENOS100")
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.discount_amount, Decimal("100.00"))
+
+        self.PromoCode.objects.create(code="ENVIOGRATIS", discount_type="free_shipping")
+        self._aplicar("ENVIOGRATIS")
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.discount_amount, Decimal("150.00"))
+        self.assertEqual(self.order.total_price, Decimal("1000.00"))
+
+    def test_codigo_invalido_no_se_aplica(self):
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        self.PromoCode.objects.create(code="VIEJO", discount_type="fixed", discount_value=50,
+                                      expiration_date=timezone.localdate() - timedelta(days=1))
+        self.PromoCode.objects.create(code="GRANDE", discount_type="fixed", discount_value=50, min_purchase=5000)
+        self.PromoCode.objects.create(code="AGOTADO", discount_type="fixed", discount_value=50, max_uses=1, uses_count=1)
+        for codigo in ("NOEXISTE", "VIEJO", "GRANDE", "AGOTADO"):
+            self._aplicar(codigo)
+            self.order.refresh_from_db()
+            self.assertIsNone(self.order.promo_code, codigo)
+            self.assertEqual(self.order.discount_amount, Decimal("0.00"), codigo)
+
+    def test_quitar_cupon(self):
+        self.PromoCode.objects.create(code="MENOS100", discount_type="fixed", discount_value=100)
+        self._aplicar("MENOS100")
+        self.client.post(reverse("tienda:aplicar_cupon"), {"quitar": "1"})
+        self.order.refresh_from_db()
+        self.assertIsNone(self.order.promo_code)
+        self.assertEqual(self.order.discount_amount, Decimal("0.00"))
+
+    def test_stripe_cobra_con_descuento_y_cuenta_el_uso_al_pagar(self):
+        from unittest import mock
+
+        promo = self.PromoCode.objects.create(code="MENOS100", discount_type="fixed", discount_value=100)
+        self._aplicar("MENOS100")
+
+        with mock.patch("tienda.views.stripe.Coupon.create", return_value=mock.Mock(id="co_1")) as cupon, \
+                mock.patch("tienda.views.stripe.checkout.Session.create",
+                           return_value=mock.Mock(id="cs_1", url="https://stripe.test/cs_1")) as sesion:
+            self.client.get(reverse("tienda:stripe_checkout"))
+        self.assertEqual(cupon.call_args.kwargs["amount_off"], 10000)
+        self.assertEqual(sesion.call_args.kwargs["discounts"], [{"coupon": "co_1"}])
+        self.assertNotIn("allow_promotion_codes", sesion.call_args.kwargs)
+
+        promo.refresh_from_db()
+        self.assertEqual(promo.uses_count, 0)  # todavia no paga
+        with mock.patch("tienda.views.stripe.checkout.Session.retrieve",
+                        return_value=mock.Mock(payment_status="paid")):
+            self.client.get(reverse("tienda:payment_success") + "?session_id=cs_1")
+        promo.refresh_from_db()
+        self.assertEqual(promo.uses_count, 1)
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.status, "Completed")
+        self.assertEqual(self.order.total_price, Decimal("1050.00"))
+
+    def test_sin_cupon_queda_la_caja_de_stripe_y_se_registra_su_descuento(self):
+        from unittest import mock
+
+        with mock.patch("tienda.views.stripe.checkout.Session.create",
+                        return_value=mock.Mock(id="cs_1", url="https://stripe.test/cs_1")) as sesion:
+            self.client.get(reverse("tienda:stripe_checkout"))
+        self.assertTrue(sesion.call_args.kwargs["allow_promotion_codes"])
+        self.assertNotIn("discounts", sesion.call_args.kwargs)
+
+        pagada = {"payment_status": "paid", "total_details": {"amount_discount": 10000}}
+        sesion_pagada = mock.MagicMock(payment_status="paid")
+        sesion_pagada.get.side_effect = pagada.get
+        with mock.patch("tienda.views.stripe.checkout.Session.retrieve", return_value=sesion_pagada):
+            self.client.get(reverse("tienda:payment_success") + "?session_id=cs_1")
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.discount_amount, Decimal("100.00"))
+        self.assertEqual(self.order.total_price, Decimal("1050.00"))

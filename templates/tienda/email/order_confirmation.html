@@ -49,6 +49,12 @@
                 <td style="padding:12px 0;color:#999;font-size:14px;">Envío</td>
                 <td style="padding:12px 0;color:#ddd;font-size:14px;text-align:right;">${{ order.shipping_total }}</td>
               </tr>
+              {% if order.discount_amount %}
+              <tr>
+                <td style="padding:12px 0;color:#999;font-size:14px;">Descuento{% if order.promo_code %} ({{ order.promo_code.code }}){% endif %}</td>
+                <td style="padding:12px 0;color:#ddd;font-size:14px;text-align:right;">-${{ order.discount_amount }}</td>
+              </tr>
+              {% endif %}
               <tr>
                 <td style="padding:12px 0;color:#ffffff;font-size:16px;font-weight:700;">Total</td>
                 <td style="padding:12px 0;color:#d6c3a1;font-size:16px;font-weight:700;text-align:right;">${{ order.total_price }} MXN</td>
