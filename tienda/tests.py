@@ -94,6 +94,39 @@ class CartTests(TestCase):
         response = self.client.get(reverse("tienda:carrito"))
         self.assertEqual(response.status_code, 200)
 
+    def test_add_to_cart_suma_precio_del_diseno(self):
+        url = reverse("tienda:agregar_al_carrito", args=[self.producto.id])
+        response = self.client.post(url, {
+            "talla": "M",
+            "color": "negro",
+            "diseño_pecho": "dragon_200.png",
+            "diseño_espalda": "",
+        })
+        self.assertRedirects(response, reverse("tienda:carrito"))
+        carrito = self.client.session["carrito"]
+        key = f"{self.producto.id}-M-negro-dragon_200.png-"
+        self.assertIn(key, carrito)
+        self.assertEqual(carrito[key]["cantidad"], 1)
+        # El carrito guarda el precio como string: la sesión se serializa a JSON.
+        self.assertEqual(Decimal(carrito[key]["precio"]), Decimal("700"))  # 500 base + 200 diseño pecho
+
+    def test_add_to_cart_sin_talla_ni_color(self):
+        url = reverse("tienda:agregar_al_carrito", args=[self.producto.id])
+        response = self.client.post(url, {"talla": "", "color": ""})
+        self.assertRedirects(
+            response,
+            reverse("tienda:detalle_producto_by_id", args=[self.producto.id]),
+            fetch_redirect_response=False,
+        )
+        self.assertNotIn("carrito", self.client.session)
+
+    def test_add_to_cart_no_descuenta_stock(self):
+        stock_before = self.producto.stock
+        url = reverse("tienda:agregar_al_carrito", args=[self.producto.id])
+        self.client.post(url, {"talla": "L", "color": "blanco", "diseño_pecho": "", "diseño_espalda": ""})
+        self.producto.refresh_from_db()
+        self.assertEqual(self.producto.stock, stock_before)
+
 
 # ---------------------------------------------------------------------------
 # Review tests
