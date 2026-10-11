@@ -95,8 +95,13 @@ def _recipient_phone(order) -> str:
 
 
 def _validate_payload(data: dict, label: str) -> None:
-    required_fields = ("name", "phone", "street1", "postal_code", "area_level1", "area_level2", "country_code")
+    # area_level3 es la colonia: Skydrop la rechaza en blanco ("no puede estar
+    # en blanco"), asi que se valida aqui para que el error salga claro.
+    required_fields = (
+        "name", "phone", "street1", "postal_code", "area_level1", "area_level2", "area_level3", "country_code"
+    )
     missing = [field for field in required_fields if not _clean_value(data.get(field))]
+    missing = ["area_level3 (colonia)" if field == "area_level3" else field for field in missing]
     if missing:
         raise SkydropError(f"Faltan campos obligatorios en {label}: {', '.join(missing)}.")
 
