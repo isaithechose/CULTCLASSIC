@@ -8,7 +8,7 @@
     {% for producto in page_obj %}
       <div class="col mb-5">
         <div class="card h-100">
-          <img class="card-img-top" src="{{ producto.imagen.url }}" alt="{{ producto.nombre }}">
+          <img class="card-img-top" src="{{ producto.imagen.url }}" alt="{{ producto.nombre }} Shaka Wear – Cult Classics México">
           <div class="card-body p-4">
             <div class="text-center">
               <h5 class="fw-bolder">{{ producto.nombre }}</h5>
@@ -16,7 +16,7 @@
             </div>
           </div>
           <div class="card-footer p-4 pt-0 border-top-0 bg-transparent text-center">
-            <a class="btn btn-outline-dark mt-auto" href="{% url 'tienda:detalle_producto' producto.id %}">Ver diseño</a>
+            <a class="btn btn-outline-dark mt-auto" href="{{ producto.get_absolute_url }}">Ver diseño</a>
           </div>
         </div>
       </div>

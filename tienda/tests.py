@@ -134,8 +134,7 @@ class ReseñaTests(TestCase):
         Reseña.objects.create(
             usuario=self.user, producto=self.producto, comentario="Excelente", calificacion=5
         )
-        url = reverse("tienda:detalle_producto", args=[self.producto.id])
-        response = self.client.get(url)
+        response = self.client.get(self.producto.get_absolute_url())
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Excelente")
 

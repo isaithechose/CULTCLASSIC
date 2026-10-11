@@ -39,9 +39,29 @@ class Producto(models.Model):
     fecha_actualizacion = models.DateTimeField(auto_now=True)
     disponible = models.BooleanField(default=True)
     slug_imagen = models.SlugField(max_length=255, blank=True)
+    slug = models.SlugField(max_length=140, unique=True, blank=True)
 
     def __str__(self):
         return self.nombre
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            from django.utils.text import slugify
+            base = slugify(self.nombre) or f"producto-{self.pk or 'nuevo'}"
+            candidate = base[:135]
+            i = 2
+            while Producto.objects.exclude(pk=self.pk).filter(slug=candidate).exists():
+                suffix = f"-{i}"
+                candidate = (base[:135 - len(suffix)]) + suffix
+                i += 1
+            self.slug = candidate
+        super().save(*args, **kwargs)
+
+    def get_absolute_url(self):
+        from django.urls import reverse
+        if self.slug:
+            return reverse("tienda:detalle_producto", args=[self.slug])
+        return reverse("tienda:detalle_producto_by_id", args=[self.pk])
 
     def uses_variant_inventory(self):
         return self.variants.filter(activo=True).exists()

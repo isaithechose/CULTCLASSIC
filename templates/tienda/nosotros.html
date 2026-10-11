@@ -1,0 +1,162 @@
+{% extends "tienda/base.html" %}
+{% load static %}
+
+{% block title %}Nosotros | Cult Classics, Culto Calle y Shaka Wear México{% endblock %}
+{% block meta_description %}Cult Classics es tienda y distribuidor Shaka Wear en México. Culto Calle es nuestra marca propia de streetwear mexicano estampada sobre blanks premium.{% endblock %}
+{% block og_title %}Nosotros · Cult Classics{% endblock %}
+
+{% block hero %}
+<section class="page-hero page-hero--compact">
+    <div class="container px-4 px-lg-5">
+        <nav class="product-breadcrumb" aria-label="Ruta de navegación" style="margin-bottom:.8rem;">
+            <a href="{% url 'tienda:tienda' %}">Inicio</a>
+            <span aria-hidden="true">/</span>
+            <span class="is-current">Nosotros</span>
+        </nav>
+        <div class="page-hero__inner">
+            <p class="page-eyebrow">Quiénes somos</p>
+            <h1 class="page-hero__title">Una tienda, una marca, un proveedor.</h1>
+            <p class="page-hero__copy">
+                Cult Classics es la tienda. Culto Calle es nuestra marca propia. Shaka Wear es el blank sobre el que trabajamos.
+            </p>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block content %}
+<style>
+    .about-page { padding: 0 0 5rem; }
+    .about-panel {
+        border: 1px solid var(--cc-line);
+        border-radius: 1.8rem;
+        background:
+            radial-gradient(circle at top right, rgba(122,100,51,0.08), transparent 40%),
+            linear-gradient(180deg, rgba(23,21,15,0.05), rgba(23,21,15,0.01));
+        box-shadow: var(--cc-shadow);
+        padding: 1.8rem;
+        margin-bottom: 1.6rem;
+    }
+    .about-eyebrow {
+        color: var(--cc-accent);
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        font-size: 0.76rem;
+        margin: 0 0 0.7rem;
+    }
+    .about-h2 {
+        margin: 0 0 0.75rem;
+        font-family: var(--cc-display);
+        font-size: clamp(1.5rem, 2.4vw, 2.1rem);
+        line-height: 1.05;
+        text-transform: uppercase;
+    }
+    .about-copy {
+        color: var(--cc-ink);
+        line-height: 1.65;
+        font-size: 0.98rem;
+        max-width: 70ch;
+    }
+    .about-copy + .about-copy { margin-top: 0.8rem; }
+
+    .about-brands {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+    .about-brand {
+        padding: 1.2rem 1.2rem 1.3rem;
+        border-radius: 1.1rem;
+        border: 1px solid rgba(122,100,51,0.18);
+        background: rgba(23,21,15,0.035);
+    }
+    .about-brand__role {
+        font-family: var(--cc-mono, "DM Mono", monospace);
+        font-size: 0.72rem;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--cc-accent);
+        margin: 0 0 0.4rem;
+    }
+    .about-brand__name {
+        margin: 0 0 0.6rem;
+        font-family: var(--cc-display);
+        font-size: 1.3rem;
+        text-transform: uppercase;
+    }
+    .about-brand p { margin: 0; color: var(--cc-muted); font-size: 0.9rem; line-height: 1.55; }
+
+    .about-cta { text-align: center; padding: 1.6rem 1.2rem; }
+    .about-cta .btn + .btn { margin-left: 0.5rem; }
+</style>
+
+<section class="about-page">
+    <div class="container px-4 px-lg-5">
+
+        <!-- Las tres piezas -->
+        <div class="about-panel">
+            <p class="about-eyebrow">Las piezas</p>
+            <h2 class="about-h2">Las tres marcas que ves aquí</h2>
+            <p class="about-copy">
+                Mucha gente nos pregunta por qué aparecen tres nombres. La realidad es simple: Cult Classics es la empresa, Culto Calle es lo que creamos nosotros, y Shaka Wear es el fabricante del textil con el que trabajamos.
+            </p>
+            <div class="about-brands">
+                <div class="about-brand">
+                    <p class="about-brand__role">La tienda</p>
+                    <h3 class="about-brand__name">Cult Classics</h3>
+                    <p>Es la casa. El dominio, la bodega, el equipo. Donde entra tu pedido, se arma y sale a envío. Fundada en México con operación 100% nacional.</p>
+                </div>
+                <div class="about-brand">
+                    <p class="about-brand__role">La marca propia</p>
+                    <h3 class="about-brand__name">Culto Calle</h3>
+                    <p>Nuestra línea de streetwear mexicano. Diseños originales estampados sobre blanks heavyweight para que cualquier pieza aguante años de uso.</p>
+                </div>
+                <div class="about-brand">
+                    <p class="about-brand__role">El blank</p>
+                    <h3 class="about-brand__name">Shaka Wear</h3>
+                    <p>Marca americana de blanks premium. Sus playeras heavyweight 7.5 oz y max heavyweight 9.9 oz son nuestra base: tela con cuerpo, caída marcada y acabado honesto.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Historia breve -->
+        <div class="about-panel">
+            <p class="about-eyebrow">Historia</p>
+            <h2 class="about-h2">De dónde venimos</h2>
+            <p class="about-copy">
+                Cult Classics nació buscando una playera que no se deformara al tercer lavado y que al mismo tiempo sirviera como lienzo para los diseños que queríamos sacar. Encontramos esa base en Shaka Wear, un blank americano con tela gruesa y cortes bien resueltos, pero traerlo a México era caro y lento para quien lo quería comprar pieza por pieza.
+            </p>
+            <p class="about-copy">
+                Ahí entra nuestra operación: importamos de forma recurrente, mantenemos bodega en México y lo vendemos como lo pediríamos nosotros — en pesos, con envío claro y cambios garantizados. En paralelo arrancamos <strong>Culto Calle</strong>, nuestra marca propia, para empujar nuestros propios diseños sobre esos mismos blanks.
+            </p>
+        </div>
+
+        <!-- Qué puedes esperar -->
+        <div class="about-panel">
+            <p class="about-eyebrow">Nuestra promesa</p>
+            <h2 class="about-h2">Lo que puedes esperar</h2>
+            <p class="about-copy">
+                Que la ficha de producto diga lo que realmente llega. Que el stock sea real, no proyectado. Que el envío llegue en el plazo que te dijimos. Y que si algo sale mal, nosotros resolvemos — no te mandamos al fabricante.
+            </p>
+            <p class="about-copy">
+                No somos un marketplace ni un intermediario con pedidos preorden. Lo que ves en el catálogo está en nuestra bodega y sale en menos de 48 horas.
+            </p>
+        </div>
+
+        <!-- CTA -->
+        <div class="about-panel about-cta">
+            <h2 class="about-h2">¿Ver qué tenemos?</h2>
+            <p class="about-copy" style="margin-left:auto;margin-right:auto;">
+                Explora el catálogo o entra directo al drop propio de Culto Calle.
+            </p>
+            <div style="margin-top:1rem;">
+                <a class="btn site-btn site-btn--accent" href="{% url 'tienda:lista_productos' %}">Ver catálogo</a>
+                <a class="btn site-btn site-btn--ghost" href="{% url 'tienda:culto_calle' %}">Culto Calle</a>
+                <a class="btn site-btn site-btn--ghost" href="{% url 'tienda:shaka_wear_mexico' %}">Shaka Wear</a>
+            </div>
+        </div>
+
+    </div>
+</section>
+{% endblock %}

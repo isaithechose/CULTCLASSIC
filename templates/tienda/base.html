@@ -4,29 +4,63 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
-    <meta name="description" content="{% block meta_description %}Cult Clasiccs - Ropa y diseños con estilo limpio, compra simple y envío claro.{% endblock %}" />
-    <meta name="author" content="Cult Clasiccs" />
-    <title>{% block title %}Cult Clasiccs | Ropa y diseños con estilo limpio{% endblock %}</title>
+    <meta name="description" content="{% block meta_description %}Cult Classics es distribuidor de blanks Shaka Wear en México y hogar de Culto Calle, nuestra marca propia. Playeras heavyweight 7.5 oz, garment dye y oversize con envío a todo el país.{% endblock %}" />
+    <meta name="keywords" content="{% block meta_keywords %}shaka wear méxico, distribuidor shaka wear, blanks shaka wear, playeras heavyweight, playeras garment dye, oversize 7.5 oz, culto calle, streetwear méxico, cult classics{% endblock %}" />
+    <meta name="author" content="Cult Classics" />
+    <title>{% block title %}Cult Classics | Distribuidor Shaka Wear México · Culto Calle{% endblock %}</title>
     <!-- Open Graph -->
-    <meta property="og:site_name" content="Cult Clasiccs" />
+    <meta property="og:site_name" content="Cult Classics" />
     <meta property="og:type" content="{% block og_type %}website{% endblock %}" />
-    <meta property="og:title" content="{% block og_title %}Cult Clasiccs | Ropa y diseños con estilo limpio{% endblock %}" />
-    <meta property="og:description" content="{% block og_description %}Cult Clasiccs - Ropa y diseños con estilo limpio, compra simple y envío claro.{% endblock %}" />
+    <meta property="og:title" content="{% block og_title %}Cult Classics | Distribuidor Shaka Wear México · Culto Calle{% endblock %}" />
+    <meta property="og:description" content="{% block og_description %}Blanks Shaka Wear en México (heavyweight 7.5 oz, garment dye, oversize) y drops de Culto Calle. Envío a todo el país.{% endblock %}" />
     <meta property="og:image" content="{% block og_image %}{{ request.scheme }}://{{ request.get_host }}/media/productos/max_overweight_oversized_black_001_VtxXVPM.webp{% endblock %}" />
-    <meta property="og:url" content="{{ request.build_absolute_uri }}" />
+    <meta property="og:url" content="{% block og_url %}{{ request.scheme }}://{{ request.get_host }}{{ request.path }}{% endblock %}" />
     <meta property="og:locale" content="es_MX" />
 
     <!-- Twitter card -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="{% block twitter_title %}{% block twitter_title_default %}Cult Clasiccs{% endblock %}{% endblock %}" />
-    <meta name="twitter:description" content="{% block twitter_description %}Ropa y diseños con estilo limpio, compra simple y envío claro.{% endblock %}" />
+    <meta name="twitter:title" content="{% block twitter_title %}Cult Classics | Shaka Wear México · Culto Calle{% endblock %}" />
+    <meta name="twitter:description" content="{% block twitter_description %}Blanks Shaka Wear y drops de Culto Calle. Playeras heavyweight 7.5 oz y garment dye con envío a todo México.{% endblock %}" />
     <meta name="twitter:image" content="{% block twitter_image %}{{ request.scheme }}://{{ request.get_host }}/media/productos/max_overweight_oversized_black_001_VtxXVPM.webp{% endblock %}" />
 
     <!-- Canonical y robots -->
-    <link rel="canonical" href="{{ request.scheme }}://{{ request.get_host }}{{ request.path }}" />
-    <meta name="robots" content="{% block robots %}index, follow{% endblock %}" />
+    <link rel="canonical" href="{% block canonical %}{{ request.scheme }}://{{ request.get_host }}{{ request.path }}{% endblock %}" />
+    <meta name="robots" content="{% block robots %}index, follow, max-image-preview:large{% endblock %}" />
 
+    {% block lcp_preload %}{% endblock %}
     {% block extra_head %}{% endblock %}
+
+    <!-- JSON-LD: Organization (Cult Classics) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "Cult Classics",
+      "alternateName": ["Cult Clasiccs", "Culto Calle"],
+      "url": "https://cultclassics.shop/",
+      "logo": "https://cultclassics.shop{% static 'images/favicon.ico' %}",
+      "description": "Cult Classics es distribuidor de blanks Shaka Wear en México y hogar de Culto Calle, nuestra marca propia de streetwear.",
+      "sameAs": [
+        "https://www.instagram.com/cultclassics.shop/",
+        "https://www.tiktok.com/@cultclassics.shop"
+      ],
+      "areaServed": "MX"
+    }
+    </script>
+    <!-- JSON-LD: WebSite con SearchAction -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "Cult Classics",
+      "url": "https://cultclassics.shop/",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://cultclassics.shop/buscar/?q={search_term_string}",
+        "query-input": "required name=search_term_string"
+      }
+    }
+    </script>
 
     <!-- Favicon -->
     <link rel="icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}" />
@@ -40,8 +74,8 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.5.0/font/bootstrap-icons.css" rel="stylesheet" />
 
     <!-- Core theme CSS -->
-    <link rel="stylesheet" href="{% static 'css/styles.css' %}?v=20261004c">
-    <link rel="stylesheet" href="{% static 'css/brand.css' %}?v=20261004c">
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}?v=20261004d">
+    <link rel="stylesheet" href="{% static 'css/brand.css' %}?v=20261004d">
 
     {% if meta_pixel_id or ga4_measurement_id %}
         {{ meta_pixel_events|json_script:"meta-pixel-events-data" }}
@@ -56,7 +90,7 @@
             gtag('js', new Date());
             gtag('config', '{{ ga4_measurement_id }}');
 
-            // Reenvía a GA4 los mismos eventos de e-commerce que se mandan a Meta.
+            // Reenvia a GA4 los mismos eventos de e-commerce que se mandan a Meta.
             (function () {
                 const node = document.getElementById('meta-pixel-events-data');
                 if (!node) return;
@@ -141,6 +175,9 @@
             <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-4 site-navbar__links">
                 <li class="nav-item">
                     <a class="nav-link active" aria-current="page" href="{% url 'tienda:tienda' %}">Inicio</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'tienda:shaka_wear_mexico' %}">Shaka Wear</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="{% url 'tienda:culto_calle' %}">Culto Calle</a>
@@ -231,8 +268,11 @@
             <div class="site-footer__right">
                 <div class="site-footer__nav">
                     <a href="{% url 'tienda:tienda' %}">Inicio</a>
+                    <a href="{% url 'tienda:shaka_wear_mexico' %}">Shaka Wear México</a>
                     <a href="{% url 'tienda:culto_calle' %}">Culto Calle</a>
+                    <a href="{% url 'tienda:lista_productos' %}">Catálogo</a>
                     <a href="{% url 'tienda:design_creator' %}">Creador</a>
+                    <a href="{% url 'tienda:nosotros' %}">Nosotros</a>
                     <a href="{% url 'tienda:faq' %}">Preguntas frecuentes</a>
                     <a href="{% url 'tienda:devoluciones' %}">Cambios y devoluciones</a>
                     <a href="{% url 'tienda:privacidad' %}">Aviso de privacidad</a>
