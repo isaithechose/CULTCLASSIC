@@ -1190,6 +1190,22 @@ class GuestCheckoutTests(TestCase):
         response = self.client.post(url, {"talla": "M", "color": "negro", "action": "buy_now"})
         self.assertRedirects(response, reverse("tienda:checkout"), fetch_redirect_response=False)
 
+    def test_skydrop_caido_aplica_envio_fijo_de_150(self):
+        from unittest import mock
+
+        import requests
+
+        with override_settings(SKYDROP_CLIENT_ID="id", SKYDROP_CLIENT_SECRET="secreto"), \
+                mock.patch("tienda.skydrop._validate_origin", return_value={}), \
+                mock.patch("tienda.skydrop.requests.post", side_effect=requests.ConnectionError("SSL roto")):
+            response = self._llegar_a_envio(contact_email="invitado@example.com", contact_name="Ana Lopez")
+
+        self.assertEqual(response.status_code, 302)
+        order = Order.objects.get()
+        self.assertEqual(order.shipping_quote_amount, Decimal("150.00"))
+        self.assertEqual(order.skydrop_carrier, "Tarifa fija")
+        self.assertIn("No se pudo conectar con Skydrop", order.skydrop_last_error)
+
     def test_invitado_debe_dar_correo(self):
         response = self._llegar_a_envio(contact_name="Ana Lopez")
         self.assertEqual(response.status_code, 200)
@@ -1245,3 +1261,40 @@ class GuestCheckoutTests(TestCase):
         order = Order.objects.create(contact_email="invitado@example.com", contact_name="Ana López")
         self.assertEqual(_recipient_name(order), "Ana Lopez")
         self.assertEqual(_recipient_email(order), "invitado@example.com")
+
+
+class SkydropErroresDeRedTests(TestCase):
+    """Cualquier falla al hablar con Skydrop sale como SkydropError."""
+
+    def test_timeout_en_token(self):
+        from unittest import mock
+
+        import requests
+
+        from tienda.skydrop import SkydropError, _token
+
+        with mock.patch("tienda.skydrop.requests.post", side_effect=requests.Timeout("lento")):
+            with self.assertRaises(SkydropError):
+                _token()
+
+    def test_error_de_red_en_peticion(self):
+        from unittest import mock
+
+        import requests
+
+        from tienda.skydrop import SkydropError, _request
+
+        with mock.patch("tienda.skydrop.requests.request", side_effect=requests.ConnectionError("caido")):
+            with self.assertRaises(SkydropError):
+                _request("GET", "/api/v1/quotations/1", token="t")
+
+    def test_respuesta_que_no_es_json(self):
+        from unittest import mock
+
+        from tienda.skydrop import SkydropError, _request
+
+        respuesta = mock.Mock(status_code=200, text="<html>mantenimiento</html>")
+        respuesta.json.side_effect = ValueError("no json")
+        with mock.patch("tienda.skydrop.requests.request", return_value=respuesta):
+            with self.assertRaises(SkydropError):
+                _request("GET", "/api/v1/quotations/1", token="t")

@@ -145,22 +145,35 @@ def _validate_origin() -> dict:
     return payload
 
 
+def _json(response: requests.Response, path: str) -> dict:
+    try:
+        return response.json()
+    except ValueError as exc:
+        raise SkydropError(f"Skydrop devolvió una respuesta que no es JSON en {path}.") from exc
+
+
 def _token() -> str:
-    response = requests.post(
-        f"{_api_base_url()}/api/v1/oauth/token",
-        json={
-            "grant_type": "client_credentials",
-            "client_id": settings.SKYDROP_CLIENT_ID,
-            "client_secret": settings.SKYDROP_CLIENT_SECRET,
-        },
-        timeout=20,
-    )
+    path = "/api/v1/oauth/token"
+    try:
+        response = requests.post(
+            f"{_api_base_url()}{path}",
+            json={
+                "grant_type": "client_credentials",
+                "client_id": settings.SKYDROP_CLIENT_ID,
+                "client_secret": settings.SKYDROP_CLIENT_SECRET,
+            },
+            timeout=20,
+        )
+    except requests.RequestException as exc:
+        # Red caida, timeout o SSL: se reporta como SkydropError para que el
+        # checkout caiga al envio fijo en vez de devolver un 500.
+        raise SkydropError(f"No se pudo conectar con Skydrop: {exc}") from exc
     try:
         response.raise_for_status()
     except requests.HTTPError as exc:
         detail = response.text[:500]
         raise SkydropError(f"Skydrop rechazó la autenticación: {detail}") from exc
-    access_token = response.json().get("access_token")
+    access_token = _json(response, path).get("access_token")
     if not access_token:
         raise SkydropError("Skydrop no devolvió access_token.")
     return access_token
@@ -168,22 +181,25 @@ def _token() -> str:
 
 def _request(method: str, path: str, payload: dict | None = None, token: str | None = None) -> dict:
     token = token or _token()
-    response = requests.request(
-        method=method,
-        url=f"{_api_base_url()}{path}",
-        json=payload,
-        headers={
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {token}",
-        },
-        timeout=30,
-    )
+    try:
+        response = requests.request(
+            method=method,
+            url=f"{_api_base_url()}{path}",
+            json=payload,
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {token}",
+            },
+            timeout=30,
+        )
+    except requests.RequestException as exc:
+        raise SkydropError(f"No se pudo conectar con Skydrop en {path}: {exc}") from exc
     try:
         response.raise_for_status()
     except requests.HTTPError as exc:
         detail = response.text[:800]
         raise SkydropError(f"Skydrop devolvió un error en {path}: {detail}") from exc
-    return response.json()
+    return _json(response, path)
 
 
 def _extract_rates(payload: dict) -> list[dict]:

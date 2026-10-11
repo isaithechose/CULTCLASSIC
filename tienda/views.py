@@ -690,7 +690,7 @@ def _aplicar_envio_gratis(order):
 
 
 def _fallback_shipping_amount():
-    return Decimal(str(getattr(settings, "FALLBACK_SHIPPING_FLAT_RATE", "199.00"))).quantize(
+    return Decimal(str(getattr(settings, "FALLBACK_SHIPPING_FLAT_RATE", "150.00"))).quantize(
         Decimal("0.01"), rounding=ROUND_HALF_UP
     )
 
